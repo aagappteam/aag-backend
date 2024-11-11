@@ -1,7 +1,7 @@
 package aagapp_backend.services;
 
-import com.community.api.entity.ErrorResponse;
-import com.community.api.entity.SuccessResponse;
+import aagapp_backend.entity.ErrorResponse;
+import aagapp_backend.entity.SuccessResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
