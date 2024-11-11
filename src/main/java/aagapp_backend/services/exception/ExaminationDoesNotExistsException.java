@@ -1,4 +1,4 @@
-package services.exception;
+package aagapp_backend.services.exception;
 
 public class ExaminationDoesNotExistsException extends Exception
 {

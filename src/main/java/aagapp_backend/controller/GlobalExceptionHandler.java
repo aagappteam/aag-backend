@@ -1,4 +1,4 @@
-package controller;
+package aagapp_backend.controller;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.http.ContentTooLongException;

@@ -1,4 +1,4 @@
-package services.exception;
+package aagapp_backend.services.exception;
 
 
 import com.community.api.services.ResponseService;

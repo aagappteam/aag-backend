@@ -1,4 +1,4 @@
-package services.exception;
+package aagapp_backend.services.exception;
 
 import com.twilio.exception.ApiException;
 import org.springframework.http.HttpStatus;

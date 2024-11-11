@@ -1,4 +1,4 @@
-package controller.Account;
+package aagapp_backend.controller.Account;
 
 
 import com.community.api.component.Constant;
@@ -37,7 +37,7 @@ import static org.apache.commons.lang.StringUtils.isNumeric;
 @RequestMapping(value = "/account",
         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
 )
-public class AccountEndPoint {
+public class Account {
     private CustomerService customerService;
     private JwtUtil jwtUtil;
     private ExceptionHandlingImplement exceptionHandling;
