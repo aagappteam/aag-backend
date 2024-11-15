@@ -111,7 +111,7 @@ public class VendorController {
     }
 
     @Transactional
-    @PatchMapping("save")
+    @PatchMapping("update-vendor")
     public ResponseEntity<?> updateServiceProvider(@RequestParam Long userId, @RequestBody Map<String, Object> serviceProviderDetails) throws Exception {
         try {
             VendorEntity serviceProvider=entityManager.find(VendorEntity.class,userId);
