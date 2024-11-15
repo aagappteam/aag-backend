@@ -7,6 +7,11 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.*;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import io.github.bucket4j.Bucket;
+import jakarta.annotation.Nullable;
+import jakarta.persistence.Column;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -23,6 +28,11 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +85,15 @@ public class VenderServiceImpl implements VenderService {
         this.responseService = responseService;
     }
 
+    public VendorEntity findServiceProviderByUserName(String username) {
+
+        return entityManager.createQuery(Constant.USERNAME_QUERY_SERVICE_PROVIDER, VendorEntity.class)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+    }
+
     @Override
     @Transactional
     public VendorEntity saveServiceProvider(VendorEntity VendorEntity) {
@@ -86,15 +105,191 @@ public class VenderServiceImpl implements VenderService {
         }
     }
 
-    /**
-     * @param userId
-     * @param updates
-     * @return
-     * @throws Exception
-     */
-    @Override
-    public ResponseEntity<?> updateServiceProvider(Long userId, Map<String, Object> updates) throws Exception {
-        return null;
+
+    @Transactional
+    public ResponseEntity<?> updateServiceProvider(Long userId, Map<String, Object> updates) {
+        try {
+//            updates = sharedUtilityService.trimStringValues(updates);
+            List<String> errorMessages = new ArrayList<>();
+
+
+            VendorEntity existingServiceProvider = entityManager.find(VendorEntity.class, userId);
+            if (existingServiceProvider == null) {
+                errorMessages.add("VendorEntity with ID " + userId + " not found");
+            }
+
+
+            String mobileNumber = (String) updates.get("mobileNumber");
+
+         /*   if (updates.containsKey("district") && updates.containsKey("state")*//*&&updates.containsKey("city")*//* && updates.containsKey("pincode") && updates.containsKey("residential_address")) {
+                if (validateAddressFields(updates).isEmpty()) {
+                    if (existingServiceProvider.getSpAddresses().isEmpty()) {
+                        ServiceProviderAddress serviceProviderAddress = new ServiceProviderAddress();
+                        serviceProviderAddress.setAddress_type_id(findAddressName("CURRENT_ADDRESS").getAddress_type_Id());
+                        serviceProviderAddress.setPincode((String) updates.get("pincode"));
+                        serviceProviderAddress.setDistrict((String) updates.get("district"));
+                        serviceProviderAddress.setState((String) updates.get("state"));
+                        *//*serviceProviderAddress.setCity((String) updates.get("city"));*//*
+                        serviceProviderAddress.setAddress_line((String) updates.get("residential_address"));
+                        if (serviceProviderAddress.getAddress_line() != null *//*|| serviceProviderAddress.getCity() != null*//* || serviceProviderAddress.getDistrict() != null || serviceProviderAddress.getState() != null || serviceProviderAddress.getPincode() != null) {
+                            addAddress(existingServiceProvider.getService_provider_id(), serviceProviderAddress);
+                        }
+                    } else {
+                        ServiceProviderAddress serviceProviderAddress = existingServiceProvider.getSpAddresses().get(0);
+                        ServiceProviderAddress serviceProviderAddressDTO = new ServiceProviderAddress();
+                        serviceProviderAddressDTO.setAddress_type_id(serviceProviderAddress.getAddress_type_id());
+                        serviceProviderAddressDTO.setAddress_id(serviceProviderAddress.getAddress_id());
+                        serviceProviderAddressDTO.setState((String) updates.get("state"));
+                        serviceProviderAddressDTO.setDistrict((String) updates.get("district"));
+                        serviceProviderAddressDTO.setAddress_line((String) updates.get("residential_address"));
+                        serviceProviderAddressDTO.setPincode((String) updates.get("pincode"));
+                        serviceProviderAddressDTO.setServiceProviderEntity(existingServiceProvider);
+                        *//*serviceProviderAddressDTO.setCity((String) updates.get("city"));*//*
+                        for (String error : updateAddress(existingServiceProvider.getService_provider_id(), serviceProviderAddress, serviceProviderAddressDTO)) {
+                            errorMessages.add(error);
+                        }
+                    }
+                } else {
+                    errorMessages.addAll(validateAddressFields(updates));
+                }
+            }*/
+
+            //removing key for address
+            updates.remove("residential_address");
+            updates.remove("city");
+            updates.remove("state");
+            updates.remove("district");
+            updates.remove("pincode");
+            // Validate and check for unique constraints
+            VendorEntity existingSPByUsername = null;
+            VendorEntity existingSPByEmail = null;
+
+            if (updates.containsKey("user_name")) {
+                updates.remove("user_name");
+            }
+            if (updates.containsKey("primary_mobile_number")) {
+                String userName = (String) updates.get("user_name");
+                existingSPByUsername = findServiceProviderByUserName(userName);
+            }
+
+            if (updates.containsKey("primary_email")) {
+                String primaryEmail = (String) updates.get("primary_email");
+                existingSPByEmail = findSPbyEmail(primaryEmail);
+            }
+
+            if ((existingSPByUsername != null) || existingSPByEmail != null) {
+                if (existingSPByUsername != null && !existingSPByUsername.getService_provider_id().equals(userId)) {
+                    return responseService.generateErrorResponse("Username is not available", HttpStatus.BAD_REQUEST);
+                }
+                if (existingSPByEmail != null && !existingSPByEmail.getService_provider_id().equals(userId)) {
+                    return responseService.generateErrorResponse("Email not available", HttpStatus.BAD_REQUEST);
+                }
+            }
+
+/*            if (updates.containsKey("date_of_birth")) {
+                String dob = (String) updates.get("date_of_birth");
+                if (sharedUtilityService.isFutureDate(dob))
+                    errorMessages.add("DOB cannot be in future");
+            }*/
+            if (updates.containsKey("pan_number") && ((String) updates.get("pan_number")).isEmpty())
+                errorMessages.add("pan number cannot be empty");
+            for (Map.Entry<String, Object> entry : updates.entrySet()) {
+                String fieldName = entry.getKey();
+                Object newValue = entry.getValue();
+
+                Field field = VendorEntity.class.getDeclaredField(fieldName);
+                System.out.println(field);
+                Column columnAnnotation = field.getAnnotation(Column.class);
+                boolean isColumnNotNull = (columnAnnotation != null && !columnAnnotation.nullable());
+                // Check if the field has the @Nullable annotation
+                boolean isNullable = field.isAnnotationPresent(Nullable.class);
+                field.setAccessible(true);
+                if (newValue.toString().isEmpty() && !isNullable)
+                    errorMessages.add(fieldName + " cannot be null");
+                if (newValue.toString().isEmpty() && isNullable)
+                    continue;
+                if (newValue != null) {
+                    if (field.isAnnotationPresent(Size.class)) {
+                        Size sizeAnnotation = field.getAnnotation(Size.class);
+                        int min = sizeAnnotation.min();
+                        int max = sizeAnnotation.max();
+                        if (newValue.toString().length() > max || newValue.toString().length() < min) {
+                            if (max == min)
+                                errorMessages.add(fieldName + " size should be of size " + max);
+                            else
+                                errorMessages.add(fieldName + " size should be in between " + min + " " + max);
+                            continue;
+                        }
+                    }
+                    if (field.isAnnotationPresent(Email.class)) {
+                        Email emailAnnotation = field.getAnnotation(Email.class);
+                        String message = emailAnnotation.message();
+/*                        if (fieldName.equals("primary_email")) {
+                            if (newValue.equals((String) updates.get("secondary_email")) || (existingServiceProvider.getSecondary_email() != null && newValue.equals(existingServiceProvider.getSecondary_email())))
+                                errorMessages.add("primary and secondary email cannot be same");
+                        } else if (fieldName.equals("secondary_email")) {
+                            if (newValue.equals((String) updates.get("primary_email")) || (existingServiceProvider.getPrimary_email() != null && newValue.equals(existingServiceProvider.getPrimary_email())))
+                                errorMessages.add("primary and secondary email cannot be same");
+                        }*/
+                        if (!this.isValidEmail((String) newValue)) {
+                            errorMessages.add(message.replace("{field}", fieldName));
+                            continue;
+                        }
+                    }
+
+                    if (field.isAnnotationPresent(Pattern.class)) {
+                        Pattern patternAnnotation = field.getAnnotation(Pattern.class);
+                        String regex = patternAnnotation.regexp();
+                        String message = patternAnnotation.message(); // Get custom message
+                        if (!newValue.toString().matches(regex)) {
+                            errorMessages.add(fieldName + "is invalid"); // Use a placeholder
+                            continue;
+                        }
+                    }
+
+                    if (fieldName.equals("date_of_birth")) {
+                        String dobString = (String) newValue;
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+                        try {
+                            LocalDate dob = LocalDate.parse(dobString, formatter);
+                            if (dob.isAfter(LocalDate.now())) {
+                                errorMessages.add("Date of birth cannot be in the future");
+                            }
+                        } catch (DateTimeParseException e) {
+                            errorMessages.add("Invalid date format for " + fieldName + ". Expected format is DD-MM-YYYY.");
+                        }
+                    }
+                }
+                field.setAccessible(true);
+                if (newValue != null && field.getType().isAssignableFrom(newValue.getClass())) {
+                    field.set(existingServiceProvider, newValue);
+                }
+            }
+            if (!errorMessages.isEmpty())
+                return ResponseService.generateErrorResponse(errorMessages.toString(), HttpStatus.BAD_REQUEST);
+
+            entityManager.merge(existingServiceProvider);
+/*            if (existingServiceProvider.getUser_name() == null) {
+                String username = generateUsernameForServiceProvider(existingServiceProvider);
+                existingServiceProvider.setUser_name(username);
+            }*/
+            entityManager.merge(existingServiceProvider);
+
+
+
+//            Map<String, Object> serviceProviderMap = sharedUtilityService.serviceProviderDetailsMap(existingServiceProvider);
+
+            return responseService.generateSuccessResponse("Service Provider Updated Successfully", existingServiceProvider, HttpStatus.OK);
+        } catch (NoSuchFieldException e) {
+            return ResponseService.generateErrorResponse("No such field present :" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Error updating Service Provider : ", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public  boolean isValidEmail(String email) {
+        return email != null && email.matches(Constant.EMAIL_REGEXP);
     }
 
     /**

@@ -1,11 +1,13 @@
 package aagapp_backend.controller.vendor;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,7 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -69,7 +73,7 @@ public class VendorController {
         }
     }
 
-    @GetMapping("/get-service-provider")
+    @GetMapping("/get-vendor")
     public ResponseEntity<?> getServiceProviderById(@RequestParam Long userId) {
         try {
             VendorEntity serviceProviderEntity = vendorService.getServiceProviderById(userId);
@@ -103,6 +107,72 @@ public class VendorController {
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error deleting: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    @PatchMapping("save")
+    public ResponseEntity<?> updateServiceProvider(@RequestParam Long userId, @RequestBody Map<String, Object> serviceProviderDetails) throws Exception {
+        try {
+            VendorEntity serviceProvider=entityManager.find(VendorEntity.class,userId);
+            if(serviceProvider==null)
+                return ResponseService.generateErrorResponse("Vendor with provided Id not found",HttpStatus.NOT_FOUND);
+            return vendorService.updateServiceProvider(userId, serviceProviderDetails);
+        }  catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Some error updating: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @Transactional
+    @GetMapping("/get-all-vendors")
+    public ResponseEntity<?> getAllServiceProviders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            int startPosition = page * limit;
+            // Create the query with pagination
+            Query query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS,VendorEntity.class);
+            query.setFirstResult(startPosition);
+            query.setMaxResults(limit);
+
+            List<VendorEntity> results = query.getResultList();
+
+/*            List<VendorEntity>resultOfSp=new ArrayList<>();
+            for(VendorEntity serviceProvider: results)
+            {
+
+              resultOfSp.add(sharedUtilityService.serviceProviderDetailsMap(serviceProvider));
+            }*/
+
+            return ResponseService.generateSuccessResponse("List of service providers: ", results, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Transactional
+    @GetMapping("/get-all-details/{serviceProviderId}")
+    public ResponseEntity<?> getAllDetails(@PathVariable Long serviceProviderId) {
+        try {
+            VendorEntity serviceProviderEntity = entityManager.find(VendorEntity.class, serviceProviderId);
+            if (serviceProviderEntity == null) {
+                return ResponseService.generateErrorResponse("Service provider does not found", HttpStatus.NOT_FOUND);
+            }
+
+//            Map<String,Object> serviceProviderMap= sharedUtilityService.serviceProviderDetailsMap(serviceProviderEntity);
+            return ResponseService.generateSuccessResponse("Service Provider details retrieved successfully", serviceProviderEntity, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }  catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Some issue in fetching service provider details " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 }

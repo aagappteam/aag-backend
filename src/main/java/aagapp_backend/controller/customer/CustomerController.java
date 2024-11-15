@@ -1,5 +1,6 @@
 package aagapp_backend.controller.customer;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.ApiConstants;
@@ -8,6 +9,7 @@ import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,7 +17,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -37,6 +41,30 @@ public class CustomerController {
 
     @Autowired
     private CustomCustomerService customCustomerService;
+
+    @GetMapping("/get-all-customers")
+    public ResponseEntity<?> getAllCustomers(
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+
+            int startPosition = offset * limit;
+            TypedQuery<CustomCustomer> query = entityManager.createQuery(Constant.GET_ALL_CUSTOMERS, CustomCustomer.class);
+            query.setFirstResult(startPosition);
+            query.setMaxResults(limit);
+            List<CustomCustomer> results = new ArrayList<>();
+            for (CustomCustomer customer : query.getResultList()) {
+                CustomCustomer customerToadd = customCustomerService.readCustomerById(customer.getId());
+                results.add(customerToadd);
+            }
+            return ResponseService.generateSuccessResponse("List of customers : ", results, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }  catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Some issue in customers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @Transactional
     @PostMapping("create-or-update-password")
