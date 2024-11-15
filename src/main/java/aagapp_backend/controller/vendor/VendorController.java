@@ -111,7 +111,7 @@ public class VendorController {
     }
 
     @Transactional
-    @PatchMapping("save")
+    @PatchMapping("update")
     public ResponseEntity<?> updateServiceProvider(@RequestParam Long userId, @RequestBody Map<String, Object> serviceProviderDetails) throws Exception {
         try {
             VendorEntity serviceProvider=entityManager.find(VendorEntity.class,userId);
@@ -148,7 +148,7 @@ public class VendorController {
               resultOfSp.add(sharedUtilityService.serviceProviderDetailsMap(serviceProvider));
             }*/
 
-            return ResponseService.generateSuccessResponse("List of service providers: ", results, HttpStatus.OK);
+            return ResponseService.generateSuccessResponse("List of vendors: ", results, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
