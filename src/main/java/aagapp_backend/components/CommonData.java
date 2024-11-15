@@ -12,7 +12,7 @@ import java.util.Map;
 public class CommonData {
 
     @Autowired
-    ExceptionHandlingImplement exceptionHandling;
+    private ExceptionHandlingImplement exceptionHandling;
 
     public static boolean isValidMobileNumber(String mobileNumber) {
 
@@ -39,7 +39,6 @@ public class CommonData {
             Date currentDate = new Date();
             return inputDate.after(currentDate);
         }  catch (Exception e) {
-            exceptionHandling.handleException(e);
             return false;
         }
     }

@@ -175,7 +175,7 @@ public class OtpEndpoint {
                 CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
 
                 if (existingCustomer == null) {
-                    return responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+                    return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
                 }
 
                 String storedOtp = existingCustomer.getOtp();

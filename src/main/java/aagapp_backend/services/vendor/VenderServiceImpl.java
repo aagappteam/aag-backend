@@ -467,11 +467,12 @@ public class VenderServiceImpl implements VenderService {
                     existingServiceProvider.setToken(newToken);
                     entityManager.persist(existingServiceProvider);
                     Map<String, Object> responseBody = createAuthResponse(newToken, existingServiceProvider).getBody();
-                    if(existingServiceProvider.getSignedUp()==0) {
+/*                    if(existingServiceProvider.getSignedUp()==0) {
                         existingServiceProvider.setSignedUp(1);
                         entityManager.merge(existingServiceProvider);
                         responseBody.put("message", "User has been signed up");
-                    }
+                    }*/
+                    responseBody.put("message", "User has been signed up");
                     return ResponseEntity.ok(responseBody);
                 }
             } else {
