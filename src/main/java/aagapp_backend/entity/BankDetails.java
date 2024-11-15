@@ -1,11 +1,16 @@
 package aagapp_backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.util.Date;
 
 @Entity
 @Table(name = "bank_details")
@@ -19,8 +24,9 @@ public class BankDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "customer_id", referencedColumnName = "customer_id")
+
+    @ManyToOne
+    @JoinColumn(name = "customer_id")
     private CustomCustomer customer;
 
     @Column(name = "customer_name", nullable = false)
@@ -41,6 +47,14 @@ public class BankDetails {
     @Column(name = "account_type", nullable = false)
     private String accountType;
 
+    @CreationTimestamp
+    @Column(name = "created_date", updatable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createdDate;
 
+    @Nullable
+    @Column(name = "updated_date")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date updatedDate;
 }
 

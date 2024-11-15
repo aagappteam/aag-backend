@@ -31,23 +31,42 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>xml-apis</groupId>
+			<artifactId>xml-apis</artifactId>
+			<version>1.4.01</version>
+			<scope>compile</scope>
+		</dependency>
+
+
+<!--		<dependency>
+			<groupId>jakartaxml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.3.1</version>
+		</dependency>-->
+		<dependency>
+			<groupId>jakarta.persistence</groupId>
+			<artifactId>jakarta.persistence-api</artifactId>
+			<version>3.1.0</version> <!-- or use the latest version -->
+		</dependency>
+
+
+
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId> <!-- Or your DB driver -->
+			<artifactId>postgresql</artifactId>
+			<version>42.7.4</version>
 		</dependency>
 
 
-		<dependency>
-			<groupId>javax.persistence</groupId>
-			<artifactId>javax.persistence-api</artifactId>
-			<version>2.2</version> <!-- Or the latest version -->
-		</dependency>
 
 		<!-- Spring Boot Starter Security (for security configurations) -->
 		<dependency>
@@ -60,22 +79,17 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-
-		<!-- Spring Boot DevTools for automatic restarts, live reload, and debugging -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-			<scope>runtime</scope>
-			<optional>true</optional>
-		</dependency>
-
-
-
 		<!-- Spring Boot Starter Test (for testing purposes, provides test utilities) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
 		</dependency>
 
 		<!-- Spring Security Test (for testing security-related components) -->
@@ -137,7 +151,7 @@
 		</dependency>
 
 		<!-- Swagger 2 for API documentation -->
-		<dependency>
+<!--		<dependency>
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger2</artifactId>
 			<version>2.7.0</version>
@@ -151,7 +165,7 @@
 					<artifactId>jackson-annotations</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
+		</dependency>-->
 
 		<!-- Swagger UI for frontend to interact with Swagger-generated API docs -->
 		<dependency>
@@ -161,11 +175,13 @@
 		</dependency>
 
 		<!-- ModelMapper for mapping between DTOs and entities -->
+<!--
 		<dependency>
 			<groupId>org.modelmapper</groupId>
 			<artifactId>modelmapper</artifactId>
 			<version>3.1.1</version>
 		</dependency>
+-->
 
 		<!-- File Upload Utility (for handling file uploads) -->
 		<dependency>
@@ -173,14 +189,13 @@
 			<artifactId>commons-fileupload</artifactId>
 			<version>1.3.3</version>
 		</dependency>
-
-		<!-- XML APIs (for handling XML processing) -->
 		<dependency>
-			<groupId>xml-apis</groupId>
-			<artifactId>xml-apis</artifactId>
-			<version>1.4.01</version>
+			<groupId>org.jetbrains</groupId>
+			<artifactId>annotations</artifactId>
+			<version>26.0.1</version>
 			<scope>compile</scope>
 		</dependency>
+
 
 	</dependencies>
 

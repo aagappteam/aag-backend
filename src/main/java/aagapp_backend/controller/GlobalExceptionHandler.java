@@ -21,6 +21,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 import jakarta.validation.ConstraintViolationException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,6 +34,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleNotFoundRequests(Exception ex, WebRequest request) {
         return generateErrorResponse("Invalid request method", HttpStatus.BAD_REQUEST, ex.getMessage());
     }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(Exception ex) {
+
+        // send a more descriptive error message
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setStatus_code(HttpStatus.BAD_REQUEST.value());
+        errorResponse.setTrace(Arrays.toString(ex.getStackTrace())); // or use a more user-friendly trace
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex) {
         // Collect all violation messages
