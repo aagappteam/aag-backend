@@ -44,7 +44,6 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     @Override
     public String handleException(Exception e) {
 
-        logger.error("Exception occurred: ", e);
         if (e instanceof ApiException) {
             return handleApiException((ApiException) e);
         } else if (e instanceof HttpClientErrorException) {

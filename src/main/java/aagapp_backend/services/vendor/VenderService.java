@@ -15,7 +15,7 @@ public interface VenderService {
     ResponseEntity<?> updateServiceProvider(Long userId, @RequestBody Map<String, Object> updates) throws Exception;
     VendorEntity getServiceProviderById(Long userId);
 
-    VendorEntity findServiceProviderByPhone(String mobileNumber, String countryCode);
+    VendorEntity  findServiceProviderByPhone(String mobileNumber, String countryCode);
 
     ResponseEntity<?> loginWithPassword(Map<String, Object> loginDetails, HttpServletRequest request, HttpSession session);
 
