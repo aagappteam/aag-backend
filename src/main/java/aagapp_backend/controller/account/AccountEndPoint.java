@@ -189,7 +189,7 @@ public class AccountEndPoint {
             if (roleService.findRoleName(role).equals(Constant.roleUser)) {
                 CustomCustomer customerRecords = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
                 if (customerRecords == null) {
-                    return responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+                    return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
 
                 }
                 if (customCustomerService == null) {
@@ -210,18 +210,18 @@ public class AccountEndPoint {
                         return responseService.generateErrorResponse((String) responseBody.get("message"), HttpStatus.BAD_REQUEST);
                     }
                 } else {
-                    return responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+                    return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
                 }
             } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {
                 if (vendorService.findServiceProviderByPhone(mobileNumber, countryCode) != null) {
                     if (vendorService.findServiceProviderByPhone(mobileNumber, countryCode).getOtp() != null) {
-                        responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+                        responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
 
                     }
                     return vendorService.sendOtp(mobileNumber, countryCode, session);
 
                 } else {
-                    return responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+                    return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
                 }
 
             }
@@ -340,7 +340,7 @@ public class AccountEndPoint {
 
                     }
                 } else {
-                    return responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND , HttpStatus.NOT_FOUND);
+                    return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND , HttpStatus.NOT_FOUND);
 
                 }
             } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {

@@ -1,5 +1,6 @@
 package aagapp_backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.annotation.Nullable;
@@ -13,7 +14,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 
 @Entity
@@ -66,6 +69,8 @@ public class VendorEntity {
 
     private int signedUp=0;
 
+    private int isVerified = 0;
+
 
     @Column(name = "is_paid", nullable = false)
     private Boolean isPaid = false;
@@ -95,6 +100,10 @@ public class VendorEntity {
 /*    @Column(name="is_active")
     private Boolean isActive;*/
 
+    @JsonBackReference("bankDetails-vendor")
+    @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<VendorBankDetails> bankDetails = new ArrayList<>();
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -105,6 +114,8 @@ public class VendorEntity {
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
+
+
 }
 
 
