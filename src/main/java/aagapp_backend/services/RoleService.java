@@ -25,9 +25,6 @@ public class RoleService {
     private ResponseService responseService;
     private ExceptionHandlingImplement exceptionHandling;
 
-
-
-
     @Autowired
     public void setResponseService(ResponseService responseService) {
         this.responseService = responseService;
