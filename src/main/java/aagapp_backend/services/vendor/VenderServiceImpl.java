@@ -353,7 +353,7 @@ public class VenderServiceImpl implements VenderService {
      * @return
      */
     @Override
-    public VendorEntity getServiceProviderById(Long userId) {
+    public  VendorEntity getServiceProviderById(Long userId) {
         return entityManager.find(VendorEntity.class, userId);
     }
 
