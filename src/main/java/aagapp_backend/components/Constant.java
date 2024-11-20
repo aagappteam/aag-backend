@@ -37,6 +37,8 @@ public class Constant {
 
     public static String FETCH_ROLE = "SELECT r.roleName FROM Role r WHERE r.roleId = :role_id";
     public static String roleUser = "CUSTOMER";
+    public static String rolesuperadmin = "SUPER_ADMIN";
+
     public static String roleAdminServiceProvider="ADMIN_SERVICE_PROVIDER";
     public static String rolevendor = "VENDOR";
 

@@ -29,10 +29,10 @@ public class SecurityConfig {
                 "/api/**/webjars/**",
                 "/api/**/images/favicon-*",
                 "/api/**/jhawtcode/**",
-                "/api/**/swagger-ui.html", // Remove /** at the end
+                "/api/**/swagger-ui.html/**", // Remove /** at the end
                 "/api/**/swagger-resources/**",
                 "/api/**/v2/api-docs",
-                "/api/**/avisoftdocument/**",
+                "/api/**/aagdocument/**",
                 "/api/**/files/**"
         );
     }
@@ -45,16 +45,18 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/swagger-ui.html/**",
-                                "/v2/api-docs",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/swagger-resources/**",
+                                "/v3/api-docs",
                                 "/webjars/**",
-                                "/images/**",
-                                "/swagger-resources/**",
-                                "/avisoftdocument/**",
+                                "/v2/api-docs",
+                                "/v3/api-docs/**",
                                 "/files/**",
-                                "/api/avisoftdocument/**",
-                                "/otp/**",  // Exclude OTP route from authentication
-                                "/swagger-resources/**",
+                                "/images/**",
+                                "/aagdocument/**",
+                                "/api/aagdocument/**",
+                                "/otp/**",
                                 "/account/**",
                                 "/test/**"
                         ).permitAll()
