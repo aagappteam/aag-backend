@@ -1,4 +1,6 @@
 package aagapp_backend.controller;
+import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.exception.VendorSubmissionException;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.http.ContentTooLongException;
@@ -43,6 +45,15 @@ public class GlobalExceptionHandler {
         errorResponse.setStatus_code(HttpStatus.BAD_REQUEST.value());
         errorResponse.setTrace(Arrays.toString(ex.getStackTrace())); // or use a more user-friendly trace
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(VendorSubmissionException.class)
+    public ResponseEntity<?> handleVendorSubmissionException(VendorSubmissionException ex) {
+        // Return a custom error response for the VendorSubmissionException
+        return ResponseService.generateErrorResponse(
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST
+        );
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
