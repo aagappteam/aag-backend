@@ -2,24 +2,25 @@ package aagapp_backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.annotation.Nullable;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
 
 @Entity
-@Table(name = "customer_bank_details")
-@Getter
-@Setter
+@Table(name = "vendor_bank_details")
 @AllArgsConstructor
 @NoArgsConstructor
-public class BankDetails {
+@Getter
+@Setter
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+public class VendorBankDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,11 +28,11 @@ public class BankDetails {
 
 
     @ManyToOne
-    @JoinColumn(name = "customer_id")
+    @JoinColumn(name = "service_provider_id")
     @JsonBackReference
-    private CustomCustomer customer;
+    private VendorEntity vendorEntity;
 
-    @Column(name = "customer_name", nullable = false)
+    @Column(name = "name", nullable = false)
     private String customerName;
 
     @Column(name = "account_number", nullable = false, unique = true)
@@ -59,4 +60,3 @@ public class BankDetails {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
 }
-

@@ -36,9 +36,9 @@ public class CommandLineService implements CommandLineRunner {
             entityManager.merge(new Role(5, "CUSTOMER", currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
         }
 
-        String alterQuery = "ALTER TABLE service_vendor ALTER COLUMN token TYPE VARCHAR(512)";
+/*        String alterQuery = "ALTER TABLE service_vendor ALTER COLUMN token TYPE VARCHAR(512)";
         Query query = entityManager.createNativeQuery(alterQuery);
-        query.executeUpdate();
+        query.executeUpdate();*/
 
     }
 }

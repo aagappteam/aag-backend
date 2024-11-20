@@ -105,11 +105,120 @@ public class VenderServiceImpl implements VenderService {
         }
     }
 
-
     @Transactional
     public ResponseEntity<?> updateServiceProvider(Long userId, Map<String, Object> updates) {
         try {
-//            updates = sharedUtilityService.trimStringValues(updates);
+            // Trimming string values before proceeding
+            updates = CommonData.trimStringValues(updates);
+            List<String> errorMessages = new ArrayList<>();
+
+            VendorEntity existingServiceProvider = entityManager.find(VendorEntity.class, userId);
+            if (existingServiceProvider == null) {
+                errorMessages.add("VendorEntity with ID " + userId + " not found");
+            }
+
+            // Validating username and email uniqueness
+            if (updates.containsKey("user_name")) {
+                String userName = (String) updates.get("user_name");
+                VendorEntity existingSPByUsername = findServiceProviderByUserName(userName);
+                if (existingSPByUsername != null && !existingSPByUsername.getService_provider_id().equals(userId)) {
+                    return responseService.generateErrorResponse("Username is not available", HttpStatus.BAD_REQUEST);
+                }
+            }
+
+            if (updates.containsKey("primary_email")) {
+                String primaryEmail = (String) updates.get("primary_email");
+                VendorEntity existingSPByEmail = findSPbyEmail(primaryEmail);
+                if (existingSPByEmail != null && !existingSPByEmail.getService_provider_id().equals(userId)) {
+                    return responseService.generateErrorResponse("Email not available", HttpStatus.BAD_REQUEST);
+                }
+            }
+
+            // Preventing the mobile number from being updated (if provided in the request)
+            if (updates.containsKey("mobileNumber")) {
+                updates.remove("mobileNumber"); // Remove mobileNumber from the update map to prevent updating it
+            }
+
+            for (Map.Entry<String, Object> entry : updates.entrySet()) {
+                String fieldName = entry.getKey();
+                Object newValue = entry.getValue();
+
+                // Skip fields that are not valid for update or cannot be empty
+                Field field = VendorEntity.class.getDeclaredField(fieldName);
+                field.setAccessible(true);
+
+                // Check nullable and size constraints
+                Column columnAnnotation = field.getAnnotation(Column.class);
+                boolean isColumnNotNull = (columnAnnotation != null && !columnAnnotation.nullable());
+                boolean isNullable = field.isAnnotationPresent(Nullable.class);
+
+                if (newValue.toString().isEmpty() && !isNullable) {
+                    errorMessages.add(fieldName + " cannot be null");
+                    continue;
+                }
+                if (newValue.toString().isEmpty() && isNullable) {
+                    continue; // Skip nullable fields if empty
+                }
+
+                if (field.isAnnotationPresent(Size.class)) {
+                    Size sizeAnnotation = field.getAnnotation(Size.class);
+                    int min = sizeAnnotation.min();
+                    int max = sizeAnnotation.max();
+                    if (newValue.toString().length() < min || newValue.toString().length() > max) {
+                        errorMessages.add(fieldName + " size should be between " + min + " and " + max);
+                        continue;
+                    }
+                }
+
+                if (field.isAnnotationPresent(Email.class) && !this.isValidEmail((String) newValue)) {
+                    errorMessages.add(fieldName + " is invalid");
+                    continue;
+                }
+
+                if (field.isAnnotationPresent(Pattern.class) && !newValue.toString().matches(field.getAnnotation(Pattern.class).regexp())) {
+                    errorMessages.add(fieldName + " is invalid");
+                    continue;
+                }
+
+                if ("date_of_birth".equals(fieldName)) {
+                    String dobString = (String) newValue;
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+                    try {
+                        LocalDate dob = LocalDate.parse(dobString, formatter);
+                        if (dob.isAfter(LocalDate.now())) {
+                            errorMessages.add("Date of birth cannot be in the future");
+                        }
+                    } catch (DateTimeParseException e) {
+                        errorMessages.add("Invalid date format for " + fieldName + ". Expected format is DD-MM-YYYY.");
+                    }
+                }
+
+                // Set the field value if no validation errors occurred
+                if (errorMessages.isEmpty() && newValue != null) {
+                    if (field.getType().isAssignableFrom(newValue.getClass())) {
+                        field.set(existingServiceProvider, newValue);
+                    }
+                }
+            }
+
+            if (!errorMessages.isEmpty()) {
+                return ResponseService.generateErrorResponse(errorMessages.toString(), HttpStatus.BAD_REQUEST);
+            }
+            entityManager.merge(existingServiceProvider);
+
+            return responseService.generateSuccessResponse("Service Provider Updated Successfully", existingServiceProvider, HttpStatus.OK);
+        } catch (NoSuchFieldException e) {
+            return ResponseService.generateErrorResponse("No such field present: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Error updating Service Provider: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+/*    @Transactional
+    public ResponseEntity<?> updateServiceProvider(Long userId, Map<String, Object> updates) {
+        try {
+          updates = CommonData.trimStringValues(updates);
             List<String> errorMessages = new ArrayList<>();
 
 
@@ -121,45 +230,6 @@ public class VenderServiceImpl implements VenderService {
 
             String mobileNumber = (String) updates.get("mobileNumber");
 
-         /*   if (updates.containsKey("district") && updates.containsKey("state")*//*&&updates.containsKey("city")*//* && updates.containsKey("pincode") && updates.containsKey("residential_address")) {
-                if (validateAddressFields(updates).isEmpty()) {
-                    if (existingServiceProvider.getSpAddresses().isEmpty()) {
-                        ServiceProviderAddress serviceProviderAddress = new ServiceProviderAddress();
-                        serviceProviderAddress.setAddress_type_id(findAddressName("CURRENT_ADDRESS").getAddress_type_Id());
-                        serviceProviderAddress.setPincode((String) updates.get("pincode"));
-                        serviceProviderAddress.setDistrict((String) updates.get("district"));
-                        serviceProviderAddress.setState((String) updates.get("state"));
-                        *//*serviceProviderAddress.setCity((String) updates.get("city"));*//*
-                        serviceProviderAddress.setAddress_line((String) updates.get("residential_address"));
-                        if (serviceProviderAddress.getAddress_line() != null *//*|| serviceProviderAddress.getCity() != null*//* || serviceProviderAddress.getDistrict() != null || serviceProviderAddress.getState() != null || serviceProviderAddress.getPincode() != null) {
-                            addAddress(existingServiceProvider.getService_provider_id(), serviceProviderAddress);
-                        }
-                    } else {
-                        ServiceProviderAddress serviceProviderAddress = existingServiceProvider.getSpAddresses().get(0);
-                        ServiceProviderAddress serviceProviderAddressDTO = new ServiceProviderAddress();
-                        serviceProviderAddressDTO.setAddress_type_id(serviceProviderAddress.getAddress_type_id());
-                        serviceProviderAddressDTO.setAddress_id(serviceProviderAddress.getAddress_id());
-                        serviceProviderAddressDTO.setState((String) updates.get("state"));
-                        serviceProviderAddressDTO.setDistrict((String) updates.get("district"));
-                        serviceProviderAddressDTO.setAddress_line((String) updates.get("residential_address"));
-                        serviceProviderAddressDTO.setPincode((String) updates.get("pincode"));
-                        serviceProviderAddressDTO.setServiceProviderEntity(existingServiceProvider);
-                        *//*serviceProviderAddressDTO.setCity((String) updates.get("city"));*//*
-                        for (String error : updateAddress(existingServiceProvider.getService_provider_id(), serviceProviderAddress, serviceProviderAddressDTO)) {
-                            errorMessages.add(error);
-                        }
-                    }
-                } else {
-                    errorMessages.addAll(validateAddressFields(updates));
-                }
-            }*/
-
-            //removing key for address
-            updates.remove("residential_address");
-            updates.remove("city");
-            updates.remove("state");
-            updates.remove("district");
-            updates.remove("pincode");
             // Validate and check for unique constraints
             VendorEntity existingSPByUsername = null;
             VendorEntity existingSPByEmail = null;
@@ -186,13 +256,13 @@ public class VenderServiceImpl implements VenderService {
                 }
             }
 
-/*            if (updates.containsKey("date_of_birth")) {
+           if (updates.containsKey("date_of_birth")) {
                 String dob = (String) updates.get("date_of_birth");
-                if (sharedUtilityService.isFutureDate(dob))
+                if (CommonData.isFutureDate(dob))
                     errorMessages.add("DOB cannot be in future");
-            }*/
-            if (updates.containsKey("pan_number") && ((String) updates.get("pan_number")).isEmpty())
-                errorMessages.add("pan number cannot be empty");
+            }
+*//*            if (updates.containsKey("pan_number") && ((String) updates.get("pan_number")).isEmpty())
+                errorMessages.add("pan number cannot be empty");*//*
             for (Map.Entry<String, Object> entry : updates.entrySet()) {
                 String fieldName = entry.getKey();
                 Object newValue = entry.getValue();
@@ -224,13 +294,6 @@ public class VenderServiceImpl implements VenderService {
                     if (field.isAnnotationPresent(Email.class)) {
                         Email emailAnnotation = field.getAnnotation(Email.class);
                         String message = emailAnnotation.message();
-/*                        if (fieldName.equals("primary_email")) {
-                            if (newValue.equals((String) updates.get("secondary_email")) || (existingServiceProvider.getSecondary_email() != null && newValue.equals(existingServiceProvider.getSecondary_email())))
-                                errorMessages.add("primary and secondary email cannot be same");
-                        } else if (fieldName.equals("secondary_email")) {
-                            if (newValue.equals((String) updates.get("primary_email")) || (existingServiceProvider.getPrimary_email() != null && newValue.equals(existingServiceProvider.getPrimary_email())))
-                                errorMessages.add("primary and secondary email cannot be same");
-                        }*/
                         if (!this.isValidEmail((String) newValue)) {
                             errorMessages.add(message.replace("{field}", fieldName));
                             continue;
@@ -269,15 +332,8 @@ public class VenderServiceImpl implements VenderService {
                 return ResponseService.generateErrorResponse(errorMessages.toString(), HttpStatus.BAD_REQUEST);
 
             entityManager.merge(existingServiceProvider);
-/*            if (existingServiceProvider.getUser_name() == null) {
-                String username = generateUsernameForServiceProvider(existingServiceProvider);
-                existingServiceProvider.setUser_name(username);
-            }*/
             entityManager.merge(existingServiceProvider);
 
-
-
-//            Map<String, Object> serviceProviderMap = sharedUtilityService.serviceProviderDetailsMap(existingServiceProvider);
 
             return responseService.generateSuccessResponse("Service Provider Updated Successfully", existingServiceProvider, HttpStatus.OK);
         } catch (NoSuchFieldException e) {
@@ -286,7 +342,7 @@ public class VenderServiceImpl implements VenderService {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse("Error updating Service Provider : ", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     public  boolean isValidEmail(String email) {
         return email != null && email.matches(Constant.EMAIL_REGEXP);
@@ -297,7 +353,7 @@ public class VenderServiceImpl implements VenderService {
      * @return
      */
     @Override
-    public VendorEntity getServiceProviderById(Long userId) {
+    public  VendorEntity getServiceProviderById(Long userId) {
         return entityManager.find(VendorEntity.class, userId);
     }
 
@@ -411,11 +467,12 @@ public class VenderServiceImpl implements VenderService {
                     existingServiceProvider.setToken(newToken);
                     entityManager.persist(existingServiceProvider);
                     Map<String, Object> responseBody = createAuthResponse(newToken, existingServiceProvider).getBody();
-                    if(existingServiceProvider.getSignedUp()==0) {
+/*                    if(existingServiceProvider.getSignedUp()==0) {
                         existingServiceProvider.setSignedUp(1);
                         entityManager.merge(existingServiceProvider);
                         responseBody.put("message", "User has been signed up");
-                    }
+                    }*/
+                    responseBody.put("message", "User has been signed up");
                     return ResponseEntity.ok(responseBody);
                 }
             } else {

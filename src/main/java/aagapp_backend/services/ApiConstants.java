@@ -27,6 +27,7 @@ public class ApiConstants {
     public static final String INVALID_DATA = "Invalid data provided";
     public static final String NUMBER_REGISTERED_AS_CUSTOMER = "Number already registered as customer";
     public static final String NO_RECORDS_FOUND = "No records found";
+    public static final String NO_EXISTING_RECORDS_FOUND  ="No Existing Membership Found For This Number";
     public static final String INVALID_ROLE = "Invalid role";
     public static final String CUSTOMER_SERVICE_NOT_INITIALIZED = "Customer service not initialized";
     public static final String ROLE_EMPTY = "Role cannot be empty";
