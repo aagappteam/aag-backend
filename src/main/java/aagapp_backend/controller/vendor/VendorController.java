@@ -134,19 +134,11 @@ public class VendorController {
             @RequestParam(defaultValue = "10") int limit) {
         try {
             int startPosition = page * limit;
-            // Create the query with pagination
             Query query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS,VendorEntity.class);
             query.setFirstResult(startPosition);
             query.setMaxResults(limit);
 
             List<VendorEntity> results = query.getResultList();
-
-/*            List<VendorEntity>resultOfSp=new ArrayList<>();
-            for(VendorEntity serviceProvider: results)
-            {
-
-              resultOfSp.add(sharedUtilityService.serviceProviderDetailsMap(serviceProvider));
-            }*/
 
             return ResponseService.generateSuccessResponse("List of vendors: ", results, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
