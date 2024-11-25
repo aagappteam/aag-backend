@@ -1,5 +1,6 @@
 package aagapp_backend.components;
 
+import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.CustomCustomerService;
@@ -40,7 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final int BEARER_PREFIX_LENGTH = BEARER_PREFIX.length();
     private static final Pattern UNSECURED_URI_PATTERN = Pattern.compile(
-            "^/api/v1/(account|otp|test|files/avisoftdocument/.+/[^/]+|swagger-ui.html|swagger-resources|v2/api-docs|images|webjars).*"
+            "^/api/v1/(account|otp|test|files/aagdocument/.+/[^/]+|swagger-ui.html|swagger-resources|v2/api-docs|images|webjars).*"
     );
 
     @Value("${apiKey}")
@@ -93,7 +94,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String requestURI = request.getRequestURI();
-
 
             if (isUnsecuredUri(requestURI) || bypassimages(requestURI)) {
                 chain.doFilter(request, response);
@@ -156,11 +156,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isUnsecuredUri(String requestURI) {
         return requestURI.startsWith("/api/v1/account")
+
                 || requestURI.startsWith("/api/v1/otp")
                 || requestURI.startsWith("/api/v1/test")
-                || requestURI.startsWith("/api/v1/files/avisoftdocument/**")
+                || requestURI.startsWith("/api/v1/files/aagdocument/**")
                 || requestURI.startsWith("/api/v1/files/**")
-                || requestURI.startsWith("/api/v1/avisoftdocument/**")
+                || requestURI.startsWith("/api/v1/aagdocument/**")
                 || requestURI.startsWith("/api/v1/swagger-ui.html")
                 || requestURI.startsWith("/api/v1/swagger-resources")
                 || requestURI.startsWith("/api/v1/v2/api-docs")
@@ -204,6 +205,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         CustomCustomer customCustomer = null;
         VendorEntity serviceProvider = null;
+        CustomAdmin cusomAdmin = null;
 
         if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleUser)) {
@@ -229,6 +231,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return false;
                 } else {
                     respondWithUnauthorized(response, "Invalid data provided for this vendor");
+                    return true;
+                }
+            } else if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleAdminServiceProvider)) {
+                cusomAdmin=entityManager.find(CustomAdmin.class,id);
+                if (cusomAdmin != null && jwtUtil.validateToken(jwt, ipAddress, userAgent)) {
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            cusomAdmin.getAdmin_id(), null, new ArrayList<>());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    return false;
+                } else {
+                    respondWithUnauthorized(response, "Invalid data provided for this user");
                     return true;
                 }
             } else {

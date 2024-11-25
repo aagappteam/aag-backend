@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;  // Import for LocalDateTime
 import java.util.Date;          // Import for Date
@@ -18,6 +19,10 @@ public class CommandLineService implements CommandLineRunner {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
 
     @Override
@@ -36,9 +41,15 @@ public class CommandLineService implements CommandLineRunner {
             entityManager.merge(new Role(5, "CUSTOMER", currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
         }
 
-        String alterQuery = "ALTER TABLE service_vendor ALTER COLUMN token TYPE VARCHAR(512)";
+/*        if(entityManager.createQuery("SELECT count(e) FROM CustomAdmin e", Long.class).getSingleResult()==0)
+        {
+            entityManager.merge(new CustomAdmin(1L,2,passwordEncoder.encode("Admin#01"),"admin","7740066387","+91",0,currentTimestamp,"SUPER_ADMIN"));
+            entityManager.merge(new CustomAdmin(2L,1,passwordEncoder.encode("SuperAdmin#1357"),"superadmin","9872548680","+91",0,currentTimestamp,"SUPER_ADMIN"));
+        }*/
+
+/*        String alterQuery = "ALTER TABLE service_vendor ALTER COLUMN token TYPE VARCHAR(512)";
         Query query = entityManager.createNativeQuery(alterQuery);
-        query.executeUpdate();
+        query.executeUpdate();*/
 
     }
 }

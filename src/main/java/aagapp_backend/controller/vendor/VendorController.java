@@ -111,7 +111,7 @@ public class VendorController {
     }
 
     @Transactional
-    @PatchMapping("save")
+    @PatchMapping("update")
     public ResponseEntity<?> updateServiceProvider(@RequestParam Long userId, @RequestBody Map<String, Object> serviceProviderDetails) throws Exception {
         try {
             VendorEntity serviceProvider=entityManager.find(VendorEntity.class,userId);
@@ -134,21 +134,13 @@ public class VendorController {
             @RequestParam(defaultValue = "10") int limit) {
         try {
             int startPosition = page * limit;
-            // Create the query with pagination
             Query query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS,VendorEntity.class);
             query.setFirstResult(startPosition);
             query.setMaxResults(limit);
 
             List<VendorEntity> results = query.getResultList();
 
-/*            List<VendorEntity>resultOfSp=new ArrayList<>();
-            for(VendorEntity serviceProvider: results)
-            {
-
-              resultOfSp.add(sharedUtilityService.serviceProviderDetailsMap(serviceProvider));
-            }*/
-
-            return ResponseService.generateSuccessResponse("List of service providers: ", results, HttpStatus.OK);
+            return ResponseService.generateSuccessResponse("List of vendors: ", results, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
