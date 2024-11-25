@@ -1,4 +1,4 @@
-package aagapp_backend.controller.admin;
+package aagapp_backend.controller.admin.vendorsubmission;
 
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
@@ -34,7 +34,6 @@ public class AdminReviewController {
         this.responseService = responseService;
     }
 
-    // Approve Submission
     @PutMapping("/approve/{id}")
     public ResponseEntity<?> approveSubmission(@PathVariable Long id) {
         try {
@@ -53,7 +52,6 @@ public class AdminReviewController {
         }
     }
 
-    // Reject Submission
     @PutMapping("/reject/{id}")
     public ResponseEntity<?> rejectSubmission(@PathVariable Long id) {
         try {
