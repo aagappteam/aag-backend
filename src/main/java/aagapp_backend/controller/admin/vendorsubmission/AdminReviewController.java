@@ -1,4 +1,4 @@
-package aagapp_backend.controller.admin.vendorsubmission;
+package aagapp_backend.controller.admin;
 
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;

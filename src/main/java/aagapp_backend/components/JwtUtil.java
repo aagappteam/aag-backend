@@ -1,5 +1,6 @@
 package aagapp_backend.components;
 
+import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.services.CustomCustomerService;
@@ -96,8 +97,13 @@ public class JwtUtil {
     }
 
     private boolean isMobileDevice(String userAgent) {
-        String devicePattern = "android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini";
-        return userAgent != null && userAgent.toLowerCase().matches(".*(" + devicePattern + ").*");
+       try{
+           String devicePattern = "android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini";
+           return userAgent != null && userAgent.toLowerCase().matches(".*(" + devicePattern + ").*");
+       }catch (Exception e){
+           exceptionHandling.handleException(e);
+           return false;
+       }
     }
 
 
@@ -192,13 +198,13 @@ public class JwtUtil {
                     .parseClaimsJws(token)
                     .getBody();
             String tokenId = claims.getId();
-/*            if (tokenBlacklist.isTokenBlacklisted(tokenId)) {
+            if (tokenBlacklist.isTokenBlacklisted(tokenId)) {
                 return false;
-            }*/
+            }
             int role=extractRoleId(token);
             CustomCustomer existingCustomer=null;
             VendorEntity existingServiceProvider=null;
-//            CustomAdmin existingAdmin=null;
+            CustomAdmin existingAdmin=null;
             if(roleService.findRoleName(role).equals(Constant.roleUser)){
                 existingCustomer = customCustomerService.readCustomerById(id);
                 if (existingCustomer == null) {
@@ -210,14 +216,14 @@ public class JwtUtil {
                 if(existingServiceProvider==null)
                     return false;
             }
-/*            else if(roleService.findRoleName(role).equals(Constant.ADMIN) || roleService.findRoleName(role).equals(Constant.SERVICE_PROVIDER) || roleService.findRoleName(role).equals(Constant.roleAdminServiceProvider))
+            else if(roleService.findRoleName(role).equals(Constant.SUPPORT))
             {
                 existingAdmin= entityManager.find(CustomAdmin.class, id);
                 if(existingAdmin==null)
                 {
                     return false;
                 }
-            }*/
+            }
 
             String storedIpAddress = claims.get("ipAddress", String.class);
 
