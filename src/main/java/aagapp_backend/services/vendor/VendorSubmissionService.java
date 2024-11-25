@@ -131,5 +131,11 @@ public class VendorSubmissionService {
     public VendorSubmissionEntity getSubmissionById(Long id) {
         return submissionRepository.findById(id).orElse(null);
     }
+
+    public void deleteVendorSubmission(Long id) throws VendorSubmissionException {
+
+        submissionRepository.deleteById(id);
+    }
+
 }
 

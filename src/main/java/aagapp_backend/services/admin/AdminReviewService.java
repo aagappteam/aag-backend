@@ -23,18 +23,15 @@ public class AdminReviewService {
         try {
             Optional<VendorSubmissionEntity> submission = submissionRepository.findById(id);
 
-            // Check if submission exists
             if (submission.isPresent()) {
                 VendorSubmissionEntity vendorSubmissionEntity = submission.get();
 
-                // Check if already approved or rejected
                 if (vendorSubmissionEntity.getApproved() != null && vendorSubmissionEntity.getApproved()) {
                     return new SubmissionResponse("The submission has already been approved.", vendorSubmissionEntity);
                 } else if (vendorSubmissionEntity.getApproved() != null && !vendorSubmissionEntity.getApproved()) {
                     return new SubmissionResponse("The submission has already been rejected.", vendorSubmissionEntity);
                 }
 
-                // If not yet approved or rejected, set the status accordingly
                 vendorSubmissionEntity.setApproved(isApproved);
                 submissionRepository.save(vendorSubmissionEntity);
                 return new SubmissionResponse(isApproved ? "The submission has been successfully approved." : "The submission has been successfully rejected.", vendorSubmissionEntity);

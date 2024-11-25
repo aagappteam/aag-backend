@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
 import java.util.List;
 
 @RestController
@@ -115,10 +113,8 @@ public class VendorSubmission {
                 return ResponseService.generateErrorResponse("No existing submission found for this vendor", HttpStatus.NOT_FOUND);
             }
 
-            // Update the vendor submission with the new data
             VendorSubmissionEntity updatedEntity = submissionService.updateVendorSubmission(vendorSubmissionEntity, existingSubmission);
 
-            // Return success response
             return ResponseService.generateSuccessResponse("Submission updated successfully", updatedEntity, HttpStatus.OK);
 
         } catch (Exception e) {
@@ -127,6 +123,35 @@ public class VendorSubmission {
             return ResponseService.generateErrorResponse("Error occurred while updating submission", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteVendorSubmission(@PathVariable Long id) {
+        try {
+            VendorSubmissionEntity existingSubmission = submissionService.getSubmissionById(id);
+
+            if (existingSubmission == null) {
+                return ResponseService.generateErrorResponse(
+                        "No submission found with the provided ID",
+                        HttpStatus.NOT_FOUND
+                );
+            }
+
+            submissionService.deleteVendorSubmission(id);
+
+            return ResponseService.generateSuccessResponse(
+                    "Vendor submission deleted successfully",
+                    null,
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandlingImplement.handleException(e);
+            return ResponseService.generateErrorResponse(
+                    "Error occurred while deleting the vendor submission",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
 
 
 }
