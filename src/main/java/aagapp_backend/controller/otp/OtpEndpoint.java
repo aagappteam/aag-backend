@@ -3,9 +3,11 @@ package aagapp_backend.controller.otp;
 import aagapp_backend.components.CommonData;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
+import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.*;
+import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import com.twilio.Twilio;
@@ -33,6 +35,7 @@ import java.util.Map;
 @RequestMapping("/otp")
 public class OtpEndpoint {
 
+    private AdminService adminService;
     private ExceptionHandlingImplement exceptionHandling;
     private JwtUtil jwtUtil;
     private TwilioService twilioService;
@@ -44,6 +47,11 @@ public class OtpEndpoint {
     private ResponseService responseService;
     @Value("${twilio.accountSid}")
     private String accountSid;
+
+    @Autowired
+    public void setAdminService(AdminService adminService) {
+        this.adminService = adminService;
+    }
 
     @Autowired
     public void setExceptionHandling(ExceptionHandlingImplement exceptionHandling) {
@@ -98,7 +106,6 @@ public class OtpEndpoint {
 
     @Value("${twilio.authToken}")
     private String authToken;
-
 
 
     @PostMapping("/send-otp")
@@ -159,6 +166,7 @@ public class OtpEndpoint {
             String countryCode = (String) loginDetails.get("countryCode");
             String mobileNumber = (String) loginDetails.get("mobileNumber");
 
+
             if (role == null) {
                 return responseService.generateErrorResponse(ApiConstants.ROLE_EMPTY, HttpStatus.BAD_REQUEST);
             }
@@ -213,9 +221,9 @@ public class OtpEndpoint {
                 return serviceProviderService.verifyOtp(loginDetails, session, request);
             }
 
-/*            else if(roleService.findRoleName(role).equals(Constant.ADMIN) ||roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) ||roleService.findRoleName(role).equals(Constant.roleAdminServiceProvider)) {
+            else if(roleService.findRoleName(role).equals(Constant.ADMIN) ||roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) ||roleService.findRoleName(role).equals(Constant.SUPPORT)) {
                 return adminService.verifyOtpForAdmin(loginDetails,session,request);
-            }*/
+            }
             else {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_ROLE, HttpStatus.BAD_REQUEST);
             }
@@ -285,6 +293,67 @@ public class OtpEndpoint {
             return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+    @Transactional
+    @PostMapping("/admin-signup")
+    public ResponseEntity<?> sendOtpToMobileAdmin(@RequestBody Map<String, Object> signupDetails) {
+        try {
+            String mobileNumber = (String) signupDetails.get("mobileNumber");
+            String countryCode = (String) signupDetails.get("countryCode");
+
+
+            mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
+            if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
+                return responseService.generateErrorResponse(ApiConstants.NUMBER_REGISTERED_AS_CUSTOMER, HttpStatus.BAD_REQUEST);
+            }
+
+            if (countryCode == null || countryCode.isEmpty()) {
+                countryCode = Constant.COUNTRY_CODE;
+            }
+
+            if (!CommonData.isValidMobileNumber(mobileNumber)) {
+                return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
+            }
+
+            Twilio.init(accountSid, authToken);
+            String otp = twilioService.generateOTP();
+
+            CustomAdmin existingcustomAdmin = adminService.findAdminByPhone(mobileNumber,countryCode);
+
+            if (existingcustomAdmin == null) {
+                CustomAdmin customAdmin = new CustomAdmin();
+                customAdmin.setCountry_code(countryCode);
+                customAdmin.setMobileNumber(mobileNumber);
+                customAdmin.setOtp(otp);
+                customAdmin.setRole(1);
+                em.persist(customAdmin);
+            } else if (existingcustomAdmin.getOtp() != null) {
+                existingcustomAdmin.setOtp(otp);
+                em.merge(existingcustomAdmin);
+            } else {
+                return responseService.generateErrorResponse(ApiConstants.MOBILE_NUMBER_REGISTERED, HttpStatus.BAD_REQUEST);
+            }
+            Map<String, Object> details = new HashMap<>();
+            String maskedNumber = twilioService.genereateMaskednumber(mobileNumber);
+            details.put("otp", otp);
+            return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + " on " +maskedNumber, otp, HttpStatus.OK);
+
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                return responseService.generateErrorResponse(ApiConstants.UNAUTHORIZED_ACCESS , HttpStatus.UNAUTHORIZED);
+            } else {
+                exceptionHandling.handleHttpClientErrorException(e);
+                return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        } catch (ApiException e) {
+            exceptionHandling.handleApiException(e);
+            return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
 
 
 

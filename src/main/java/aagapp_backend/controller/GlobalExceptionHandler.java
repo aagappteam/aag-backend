@@ -36,16 +36,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleNotFoundRequests(Exception ex, WebRequest request) {
         return generateErrorResponse("Invalid request method", HttpStatus.BAD_REQUEST, ex.getMessage());
     }
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleException(Exception ex) {
 
-        // send a more descriptive error message
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setMessage(ex.getMessage());
-        errorResponse.setStatus_code(HttpStatus.BAD_REQUEST.value());
-        errorResponse.setTrace(Arrays.toString(ex.getStackTrace())); // or use a more user-friendly trace
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
 
     @ExceptionHandler(VendorSubmissionException.class)
     public ResponseEntity<?> handleVendorSubmissionException(VendorSubmissionException ex) {

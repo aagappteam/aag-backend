@@ -22,7 +22,7 @@ public class Constant {
     public static String USERNAME_QUERY_CUSTOM_ADMIN = "SELECT c FROM CustomAdmin c WHERE c.user_name = :username";
     public static final String ADMIN = "ADMIN";
     public static final String SUPER_ADMIN = "SUPER_ADMIN";
-    public static final String SERVICE_PROVIDER = "SERVICE_PROVIDER";
+    public static final String SUPPORT = "SUPPORT";
     public static final String USER = "USER";
     public static final int INITIAL_STATUS = 1;
     public static final Long INITIAL_TEST_STATUS = 1L;
@@ -39,7 +39,7 @@ public class Constant {
     public static String roleUser = "CUSTOMER";
     public static String rolesuperadmin = "SUPER_ADMIN";
 
-    public static String roleAdminServiceProvider="ADMIN_SERVICE_PROVIDER";
+    public static String roleAdminServiceProvider="SUPPORT";
     public static String rolevendor = "VENDOR";
 
     public static String GET_ALL_LANGUAGES = "SELECT s FROM ServiceProviderLanguage s";
