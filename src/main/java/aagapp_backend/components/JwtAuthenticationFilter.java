@@ -1,5 +1,6 @@
 package aagapp_backend.components;
 
+import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.CustomCustomerService;
@@ -204,6 +205,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         CustomCustomer customCustomer = null;
         VendorEntity serviceProvider = null;
+        CustomAdmin cusomAdmin = null;
 
         if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleUser)) {
@@ -229,6 +231,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return false;
                 } else {
                     respondWithUnauthorized(response, "Invalid data provided for this vendor");
+                    return true;
+                }
+            } else if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleAdminServiceProvider)) {
+                cusomAdmin=entityManager.find(CustomAdmin.class,id);
+                if (cusomAdmin != null && jwtUtil.validateToken(jwt, ipAddress, userAgent)) {
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            cusomAdmin.getAdmin_id(), null, new ArrayList<>());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    return false;
+                } else {
+                    respondWithUnauthorized(response, "Invalid data provided for this user");
                     return true;
                 }
             } else {
