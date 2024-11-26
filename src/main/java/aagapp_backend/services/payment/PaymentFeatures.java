@@ -1,5 +1,8 @@
 package aagapp_backend.services.payment;
 
+import aagapp_backend.repository.game.GameRepository;
+import aagapp_backend.repository.payment.PaymentFeaturesRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.naming.LimitExceededException;
@@ -8,7 +11,13 @@ import java.time.LocalDate;
 @Service
 public class PaymentFeatures {
 
-   /* public boolean canPublishGame(Long vendorId) throws LimitExceededException {
+    @Autowired
+    private PaymentFeaturesRepository paymentFeaturesRepository;
+
+    @Autowired
+    private GameRepository gameRepository;
+
+    public boolean canPublishGame(Long vendorId) throws LimitExceededException {
         // Get the active plan for the vendor
         PaymentFeatures activePlan = paymentFeaturesRepository.findActivePlanByVendorId(vendorId)
                 .orElseThrow(() -> new ResourceNotFoundException("No active plan found"));
@@ -25,6 +34,6 @@ public class PaymentFeatures {
         }
 
         return true;
-    }*/
+    }
 
 }
