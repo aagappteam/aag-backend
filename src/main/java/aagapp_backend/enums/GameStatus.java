@@ -4,5 +4,6 @@ public enum GameStatus {
     SCHEDULED,
     ACTIVE,
     EXPIRED,
-    CANCELLED
+    CANCELLED,
+    REJECTED
 }

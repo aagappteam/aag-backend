@@ -41,6 +41,40 @@ public class CommandLineService implements CommandLineRunner {
             entityManager.merge(new Role(5, "CUSTOMER", currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
         }
 
+        if (entityManager.createQuery("SELECT COUNT(t) FROM ThemeEntity t", Long.class).getSingleResult() == 0) {
+
+            // Adding some predefined themes
+            ThemeEntity theme1 = new ThemeEntity();
+            theme1.setName("Space Adventure");
+            theme1.setDescription("A thrilling space-themed experience.");
+            theme1.setImageUrl("https://example.com/images/space-adventure.jpg");
+            theme1.setCreatedDate(java.sql.Timestamp.valueOf(currentTimestamp));
+            theme1.setUpdatedDate(null);  // No updates yet
+
+            ThemeEntity theme2 = new ThemeEntity();
+            theme2.setName("Fantasy World");
+            theme2.setDescription("A magical fantasy world with dragons and wizards.");
+            theme2.setImageUrl("https://example.com/images/fantasy-world.jpg");
+            theme2.setCreatedDate(java.sql.Timestamp.valueOf(currentTimestamp));
+            theme2.setUpdatedDate(null);  // No updates yet
+
+            ThemeEntity theme3 = new ThemeEntity();
+            theme3.setName("Mystery Night");
+            theme3.setDescription("A dark and mysterious world full of puzzles.");
+            theme3.setImageUrl("https://example.com/images/mystery-night.jpg");
+            theme3.setCreatedDate(java.sql.Timestamp.valueOf(currentTimestamp));
+            theme3.setUpdatedDate(null);  // No updates yet
+
+            // Persist the themes into the database
+            entityManager.persist(theme1);
+            entityManager.persist(theme2);
+            entityManager.persist(theme3);
+
+            System.out.println("Predefined themes inserted into the database.");
+        } else {
+            System.out.println("Themes table already populated.");
+        }
+
 /*        if(entityManager.createQuery("SELECT count(e) FROM CustomAdmin e", Long.class).getSingleResult()==0)
         {
             entityManager.merge(new CustomAdmin(1L,2,passwordEncoder.encode("Admin#01"),"admin","7740066387","+91",0,currentTimestamp,"SUPER_ADMIN"));

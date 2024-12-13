@@ -19,13 +19,12 @@ public class Role
 @Id
 @GeneratedValue(strategy = GenerationType.IDENTITY) // This tells Hibernate to auto-generate the value
 
-private int roleId; // Use camel case for consistency
+private int roleId;
     private String roleName;
     private LocalDateTime createdAt; // Use LocalDateTime for timestamps
     private LocalDateTime updatedAt; // Use LocalDateTime for timestamps
     private String createdBy;
 
-    // Constructor with parameters for role creation
     public Role(int roleId, String roleName, LocalDateTime createdAt, LocalDateTime updatedAt, String createdBy) {
         this.roleId = roleId;
         this.roleName = roleName;

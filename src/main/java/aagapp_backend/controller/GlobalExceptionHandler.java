@@ -49,7 +49,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex) {
-        // Collect all violation messages
         StringBuilder errorMessage = new StringBuilder("Validation failed: ");
         ex.getConstraintViolations().forEach(violation -> {
             errorMessage.append(violation.getPropertyPath())
@@ -73,14 +72,13 @@ public class GlobalExceptionHandler {
         return generateErrorResponse("Invalid request body", HttpStatus.BAD_REQUEST,ex.getMessage());
     }
 
-     public ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatus status, WebRequest request) {
+    public ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatus status, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setMessage("Internal Server Error");
         errorResponse.setStatus_code(status.value());
         errorResponse.setStatus(status);
         return new ResponseEntity<>(errorResponse, headers, status);
     }
-
 
     @ExceptionHandler(value = { MethodArgumentNotValidException.class })
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, WebRequest request) {

@@ -1,5 +1,5 @@
 package aagapp_backend.entity.game;
-
+import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.GameStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -11,13 +11,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.ui.context.Theme;
+import java.time.ZonedDateTime;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
-@Table(name = "games")
+@Table(
+        name = "aag_game",
+        indexes = {
+                @Index(name = "idx_vendor_id", columnList = "vendor_id"),
+                @Index(name = "idx_status", columnList = "status"),
+                @Index(name = "idx_scheduled_at", columnList = "scheduled_at"),
+                @Index(name = "idx_created_date", columnList = "created_date")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -49,19 +56,18 @@ public class Game {
 
     @ManyToOne
     @JoinColumn(name = "theme_id", nullable = true)
-    private Theme theme;
+    private ThemeEntity theme;
 
     @Column(name = "scheduled_at")
-    private LocalDateTime scheduledAt;
+    private ZonedDateTime scheduledAt;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date createdDate;
+    private ZonedDateTime createdDate;
 
     @Nullable
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date updatedDate;
-
+    private ZonedDateTime updatedDate;
 }
