@@ -103,10 +103,12 @@ import java.util.Random;
                     existingAdmin.setOtp(otp);
                     entityManager.merge(existingAdmin);
                 }
-                Map<String,Object> details=new HashMap<>();
-                details.put("status", ApiConstants.STATUS_SUCCESS);
-                details.put("otp",otp);
-                return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY,details, HttpStatus.OK);
+                String maskedNumber = this.genereateMaskednumber(mobileNumber);
+
+              String res =   ApiConstants.OTP_SENT_SUCCESSFULLY + " on " + maskedNumber;
+               /* Map<String,Object> details=new HashMap<>();
+                details.put("otp",otp);*/
+                return responseService.generateSuccessResponse(res,otp, HttpStatus.OK);
 
             } catch (ApiException e) {
                 exceptionHandling.handleApiException(e);
@@ -116,7 +118,20 @@ import java.util.Random;
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error sending OTP: " + e.getMessage());
             }
         }
+        public synchronized String genereateMaskednumber(String mobileNumber) {
+            String lastFourDigits = mobileNumber.substring(mobileNumber.length() - 4);
 
+            int numXs = mobileNumber.length() - 4;
+
+            StringBuilder maskBuilder = new StringBuilder();
+            for (int i = 0; i < numXs; i++) {
+                maskBuilder.append('x');
+            }
+            String mask = maskBuilder.toString();
+
+            String maskedNumber = mask + lastFourDigits;
+            return maskedNumber;
+        }
         private synchronized String generateOTPForAdmin() {
             Random random = new Random();
             int otp = 1000 + random.nextInt(8999);

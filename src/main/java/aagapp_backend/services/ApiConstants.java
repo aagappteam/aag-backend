@@ -9,7 +9,7 @@ public class ApiConstants {
 
     public static final String MOBILE_NUMBER_NULL_OR_EMPTY = "Mobile number cannot be null or empty";
     public static final String NUMBER_ALREADY_REGISTERED_SERVICE_PROVIDER = "Number already registered as vendor";
-    public static final String OTP_SENT_SUCCESSFULLY = "OTP has been sent successfully";
+    public static final String OTP_SENT_SUCCESSFULLY = "Otp sent on ";
 
     public static final String UNAUTHORIZED_ACCESS = "Unauthorized access: Please check your API key";
     public static final String INTERNAL_SERVER_ERROR = "Internal server error occurred";

@@ -79,7 +79,7 @@ public class TwilioService {
                 entityManager.persist(customerDetails);
                 return ResponseEntity.ok(Map.of(
                         "otp", otp,
-                        "message", "Otp has been sent successfully on " + maskedNumber
+                        "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber
                 ));
             } else if (existingvendor != null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
@@ -93,7 +93,7 @@ public class TwilioService {
                 return ResponseEntity.ok(Map.of(
 
                         "otp", otp,
-                        "message", "Otp has been sent successfully on " + maskedNumber
+                        "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber
                 ));
             }
 
@@ -179,7 +179,7 @@ public class TwilioService {
             }
 
             String maskedNumber = this.genereateMaskednumber(mobileNumber);
-            return responseService.generateSuccessResponse("Otp has been sent successfully on " + maskedNumber,otp,HttpStatus.OK);
+            return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber,otp,HttpStatus.OK);
 
         } catch (ApiException e) {
             exceptionHandling.handleApiException(e);
