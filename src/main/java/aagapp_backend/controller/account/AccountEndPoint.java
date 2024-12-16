@@ -133,7 +133,7 @@ public class AccountEndPoint {
                 }
             }
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.BAD_REQUEST);
 
         }
@@ -164,7 +164,7 @@ public class AccountEndPoint {
 
             }
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 
         }
@@ -259,7 +259,7 @@ public class AccountEndPoint {
             return responseService.generateErrorResponse("Role not specified", HttpStatus.BAD_REQUEST);
 
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.BAD_REQUEST);
 
         }
@@ -328,7 +328,7 @@ public class AccountEndPoint {
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         }  catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
@@ -361,7 +361,7 @@ public class AccountEndPoint {
                 }
             }
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.BAD_REQUEST);
 
         }
@@ -420,7 +420,7 @@ public class AccountEndPoint {
         }  catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.BAD_REQUEST);
 
         }

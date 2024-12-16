@@ -116,7 +116,7 @@ public class VendorController {
                 return responseService.generateSuccessResponse("Password updated successfully", serviceProvider, HttpStatus.OK);
             }
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse("Error changing/updating password: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -136,7 +136,7 @@ public class VendorController {
             return responseService.generateSuccessResponse("Service provider details are", details, HttpStatus.OK);
 
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
@@ -154,7 +154,7 @@ public class VendorController {
         }  catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error deleting: " + e.getMessage());
         }
     }
@@ -170,7 +170,7 @@ public class VendorController {
         }  catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse("Some error updating: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -193,7 +193,7 @@ public class VendorController {
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }

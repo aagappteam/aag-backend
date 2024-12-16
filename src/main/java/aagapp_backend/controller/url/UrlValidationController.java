@@ -53,11 +53,11 @@ public class UrlValidationController {
             }
 
         } catch (IllegalArgumentException e) {
-            exceptionHandlingImplement.handleException(e);
+            System.out.println(exceptionHandlingImplement.handleException(e));
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
 
         } catch (Exception e) {
-            exceptionHandlingImplement.handleException(e);
+            System.out.println(exceptionHandlingImplement.handleException(e));
             return ResponseService.generateErrorResponse(
                     "Invalid submission. Please check your details.",
                     HttpStatus.BAD_REQUEST
@@ -93,7 +93,7 @@ public class UrlValidationController {
             );
 
         } catch (Exception e) {
-            exceptionHandlingImplement.handleException(e);
+            System.out.println(exceptionHandlingImplement.handleException(e));
             return ResponseService.generateErrorResponse(
                     "Invalid submission. Please check your details.",
                     HttpStatus.BAD_REQUEST

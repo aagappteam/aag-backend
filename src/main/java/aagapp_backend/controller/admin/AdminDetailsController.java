@@ -106,12 +106,8 @@ public class AdminDetailsController {
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse("Some error updating: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
-   
-    
 }

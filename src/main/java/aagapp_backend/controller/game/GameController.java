@@ -30,7 +30,7 @@ public class GameController {
     private PaymentFeatures paymentFeatures;
 
     @Autowired
-    public void setGameService( @Lazy GameService gameService) {
+    public void setGameService(@Lazy GameService gameService) {
         this.gameService = gameService;
     }
 
@@ -61,10 +61,10 @@ public class GameController {
             Page<Game> gamesPage = gameService.getAllGames(status, vendorId, pageable);
 
 
-            return  responseService.generateSuccessResponse("Games fetched successfully",gamesPage,HttpStatus.OK);
+            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage, HttpStatus.OK);
 
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse("Error fetching games", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -88,16 +88,14 @@ public class GameController {
 
 
             Pageable pageable = PageRequest.of(page, size);
-            Page<Game> gamesPage = gameService.findGamesByVendor(vendorId,status , pageable);
+            Page<Game> gamesPage = gameService.findGamesByVendor(vendorId, status, pageable);
 
-            return  responseService.generateSuccessResponse("Games fetched successfully",gamesPage,HttpStatus.OK);
+            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage, HttpStatus.OK);
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
-
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse("Error fetching games by vendor : " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
     @GetMapping("/get-active-games-by-vendor/{vendorId}")
     public ResponseEntity<?> getActiveGamesByVendorId(
@@ -116,19 +114,16 @@ public class GameController {
 
 
             Pageable pageable = PageRequest.of(page, size);
-            Page<Game> gamesPage = gameService.findGamesScheduledForToday(vendorId , pageable);
+            Page<Game> gamesPage = gameService.findGamesScheduledForToday(vendorId, pageable);
 
             return responseService.generateSuccessResponse(
                     "Game fetched successfully", gamesPage, HttpStatus.CREATED
             );
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
-
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse("Error fetching games by vendor : " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
 
     @PostMapping("/publishGame/{vendorId}")
     public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @RequestBody GameRequest gameRequest) {
@@ -160,12 +155,11 @@ public class GameController {
             return responseService.generateErrorResponse("Required entity not found " + e.getMessage(), HttpStatus.NOT_FOUND);
 
         } catch (IllegalArgumentException e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR,e);
-
-            return responseService.generateErrorResponse("Invalid game data "+ e.getMessage(), HttpStatus.BAD_REQUEST);
+            System.out.println(exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e));
+            return responseService.generateErrorResponse("Invalid game data " + e.getMessage(), HttpStatus.BAD_REQUEST);
 
         } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR,e);
+            System.out.println(exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e));
             return responseService.generateErrorResponse("Error publishing game" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -185,14 +179,13 @@ public class GameController {
             return ResponseService.generateSuccessResponse("Game updated successfully", gameRequest, HttpStatus.OK);
 
         } catch (IllegalStateException e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return ResponseService.generateErrorResponse("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
 
 }

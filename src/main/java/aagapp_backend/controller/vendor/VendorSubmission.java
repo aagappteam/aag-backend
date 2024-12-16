@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -42,18 +43,18 @@ public class VendorSubmission {
 
             return ResponseService.generateSuccessResponse("Vendor submission fetched successfully", vendorSubmission, HttpStatus.OK);
         } catch (Exception e) {
-            exceptionHandlingImplement.handleException(e);
+            System.out.println(exceptionHandlingImplement.handleException(e));
             return ResponseService.generateErrorResponse("Error occurred while retrieving the vendor submission", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PostMapping("/submit/{id}")
-    public ResponseEntity<?> submitVendorDetails(@RequestBody @Valid VendorSubmissionEntity vendorSubmissionEntity,@PathVariable Long id) {
+    public ResponseEntity<?> submitVendorDetails(@RequestBody @Valid VendorSubmissionEntity vendorSubmissionEntity, @PathVariable Long id) {
         try {
 
             VendorEntity vendorEntity = venderService.getServiceProviderById(id);
 
-            if(vendorEntity==null){
+            if (vendorEntity == null) {
                 return ResponseService.generateErrorResponse("No Data not found for this vendor ", HttpStatus.NOT_FOUND);
             }
             VendorSubmissionEntity submittedEntity = submissionService.submitDetails(vendorSubmissionEntity, vendorEntity);
@@ -63,13 +64,13 @@ public class VendorSubmission {
                     submittedEntity,
                     HttpStatus.OK);
 
-        }catch (VendorSubmissionException ex) {
+        } catch (VendorSubmissionException ex) {
             return ResponseService.generateErrorResponse(
                     ex.getMessage(),
                     HttpStatus.BAD_REQUEST
             );
         } catch (Exception e) {
-            exceptionHandlingImplement.handleException(e);
+            System.out.println(exceptionHandlingImplement.handleException(e));
             return ResponseService.generateErrorResponse(
                     "Invalid submission. Please check your details.",
                     HttpStatus.BAD_REQUEST
@@ -95,7 +96,7 @@ public class VendorSubmission {
                     HttpStatus.OK
             );
         } catch (Exception e) {
-            exceptionHandlingImplement.handleException(e);
+            System.out.println(exceptionHandlingImplement.handleException(e));
             return ResponseService.generateErrorResponse(
                     "An error occurred while retrieving submissions.",
                     HttpStatus.INTERNAL_SERVER_ERROR
@@ -119,7 +120,7 @@ public class VendorSubmission {
 
         } catch (Exception e) {
             // Log and handle exceptions properly
-            exceptionHandlingImplement.handleException(e);
+            System.out.println(exceptionHandlingImplement.handleException(e));
             return ResponseService.generateErrorResponse("Error occurred while updating submission", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -144,14 +145,11 @@ public class VendorSubmission {
                     HttpStatus.OK
             );
         } catch (Exception e) {
-            exceptionHandlingImplement.handleException(e);
+            System.out.println(exceptionHandlingImplement.handleException(e));
             return ResponseService.generateErrorResponse(
                     "Error occurred while deleting the vendor submission",
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
     }
-
-
-
 }

@@ -39,14 +39,14 @@ public class PaymentController {
                         .body("Vendor ID is required.");
             }
 
-            PaymentEntity payment = paymentService.createPayment(paymentRequest,vendorId);
+            PaymentEntity payment = paymentService.createPayment(paymentRequest, vendorId);
 
-            return responseService.generateSuccessResponse("Payment created successfully", payment,HttpStatus.CREATED);
+            return responseService.generateSuccessResponse("Payment created successfully", payment, HttpStatus.CREATED);
 
 
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
-          return   responseService.generateErrorResponse("An error occurred while processing the payment: " + e.getMessage(),HttpStatus.BAD_REQUEST);
+            System.out.println(exceptionHandling.handleException(e));
+            return responseService.generateErrorResponse("An error occurred while processing the payment: " + e.getMessage(), HttpStatus.BAD_REQUEST);
 
         }
     }
@@ -72,7 +72,6 @@ public class PaymentController {
             return responseService.generateErrorResponse("An error occurred while fetching payments: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
 
 }

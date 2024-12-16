@@ -60,8 +60,8 @@ public class CustomerController {
             return ResponseService.generateSuccessResponse("List of customers : ", results, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }  catch (Exception e) {
-            exceptionHandling.handleException(e);
+        } catch (Exception e) {
+            System.out.println(exceptionHandling.handleException(e));
             return ResponseService.generateErrorResponse("Some issue in customers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
@@ -72,7 +72,7 @@ public class CustomerController {
         try {
 
             String password = (String) passwordDetails.get("password");
-             String newPassword = (String) passwordDetails.get("newPassword");
+            String newPassword = (String) passwordDetails.get("newPassword");
             VendorEntity serviceProvider = entityManager.find(VendorEntity.class, userId);
             if (serviceProvider == null)
                 return responseService.generateErrorResponse("No records found", HttpStatus.NOT_FOUND);
@@ -85,16 +85,17 @@ public class CustomerController {
                     return responseService.generateErrorResponse("Empty password entered", HttpStatus.BAD_REQUEST);
                 if (passwordEncoder.matches(password, serviceProvider.getPassword())) {
                     serviceProvider.setPassword(passwordEncoder.encode(newPassword));
-                if (!passwordEncoder.matches(password, serviceProvider.getPassword())) {
-                    serviceProvider.setPassword(passwordEncoder.encode(password));
-                    entityManager.merge(serviceProvider);
-                    return responseService.generateSuccessResponse("New Password Set", serviceProvider, HttpStatus.OK);
-                }
-                return responseService.generateErrorResponse("Old Password and new Password cannot be same", HttpStatus.BAD_REQUEST);
-            }else
-                    return new ResponseEntity<>("Password do not match", HttpStatus.BAD_REQUEST);}
-        }   catch (Exception e) {
-            exceptionHandling.handleException(e);
+                    if (!passwordEncoder.matches(password, serviceProvider.getPassword())) {
+                        serviceProvider.setPassword(passwordEncoder.encode(password));
+                        entityManager.merge(serviceProvider);
+                        return responseService.generateSuccessResponse("New Password Set", serviceProvider, HttpStatus.OK);
+                    }
+                    return responseService.generateErrorResponse("Old Password and new Password cannot be same", HttpStatus.BAD_REQUEST);
+                } else
+                    return new ResponseEntity<>("Password do not match", HttpStatus.BAD_REQUEST);
+            }
+        } catch (Exception e) {
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse("Error changing/updating password: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -113,7 +114,7 @@ public class CustomerController {
             return responseService.generateSuccessResponse("Service provider details are", details, HttpStatus.OK);
 
         } catch (Exception e) {
-            exceptionHandling.handleException(e);
+            System.out.println(exceptionHandling.handleException(e));
             return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
@@ -128,7 +129,7 @@ public class CustomerController {
             else
                 entityManager.remove(customCustomer);
             return responseService.generateSuccessResponse("Customer Deleted", null, HttpStatus.OK);
-        }  catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
