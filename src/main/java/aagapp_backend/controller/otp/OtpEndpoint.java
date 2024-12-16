@@ -147,7 +147,7 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.RATE_LIMIT_EXCEEDED, HttpStatus.BANDWIDTH_LIMIT_EXCEEDED);
             }
         } catch (Exception e) {
-            System.out.println(exceptionHandling.handleException(e));
+            exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Some error occurred" + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
@@ -228,7 +228,7 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_ROLE, HttpStatus.BAD_REQUEST);
             }
         } catch (Exception e) {
-            System.out.println(exceptionHandling.handleException(e));
+            exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Otp verification error" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -240,11 +240,7 @@ public class OtpEndpoint {
         try {
             String mobileNumber = (String) signupDetails.get("mobileNumber");
             String countryCode = (String) signupDetails.get("countryCode");
-            Bucket bucket = rateLimiterService.resolveBucket(mobileNumber, "/otp/vendor-signup");
 
-            if (!bucket.tryConsume(1)) {
-                return responseService.generateErrorResponse(ApiConstants.RATE_LIMIT_EXCEEDED, HttpStatus.BANDWIDTH_LIMIT_EXCEEDED);
-            }
 
             mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
             if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
@@ -286,14 +282,14 @@ public class OtpEndpoint {
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 return responseService.generateErrorResponse(ApiConstants.UNAUTHORIZED_ACCESS , HttpStatus.UNAUTHORIZED);
             } else {
-                System.out.println(exceptionHandling.handleHttpClientErrorException(e));
+                exceptionHandling.handleHttpClientErrorException(e);
                 return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
             }
         } catch (ApiException e) {
-            System.out.println(exceptionHandling.handleApiException(e));
+            exceptionHandling.handleApiException(e);
             return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            System.out.println(exceptionHandling.handleException(e));
+            exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
@@ -304,11 +300,6 @@ public class OtpEndpoint {
         try {
             String mobileNumber = (String) signupDetails.get("mobileNumber");
             String countryCode = (String) signupDetails.get("countryCode");
-
-            Bucket bucket = rateLimiterService.resolveBucket(mobileNumber, "/otp/admin-signup");
-            if (!bucket.tryConsume(1)) {
-                return responseService.generateErrorResponse(ApiConstants.RATE_LIMIT_EXCEEDED, HttpStatus.BANDWIDTH_LIMIT_EXCEEDED);
-            }
 
 
             mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
@@ -351,14 +342,14 @@ public class OtpEndpoint {
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 return responseService.generateErrorResponse(ApiConstants.UNAUTHORIZED_ACCESS , HttpStatus.UNAUTHORIZED);
             } else {
-                System.out.println(exceptionHandling.handleHttpClientErrorException(e));
+                exceptionHandling.handleHttpClientErrorException(e);
                 return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
             }
         } catch (ApiException e) {
-            System.out.println(exceptionHandling.handleApiException(e));
+            exceptionHandling.handleApiException(e);
             return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            System.out.println(exceptionHandling.handleException(e));
+            exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }

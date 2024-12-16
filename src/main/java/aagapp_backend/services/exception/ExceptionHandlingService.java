@@ -20,14 +20,14 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     }
 
     @Override
-    public String handleHttpClientErrorException(HttpClientErrorException e) {
+    public void handleHttpClientErrorException(HttpClientErrorException e) {
         HttpStatus statusCode = (HttpStatus) e.getStatusCode();
         String responseBody = e.getResponseBodyAsString();
         throw new RuntimeException("HTTP Client Error: " + statusCode + ", Response Body: " + responseBody, e);
     }
 
     @Override
-    public String handleApiException(ApiException e) {
+    public void handleApiException(ApiException e) {
         int errorCode = e.getCode();
         String errorMessage = e.getMessage();
 
@@ -42,26 +42,26 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     }
 
     @Override
-    public String handleException(Exception e) {
+    public void handleException(Exception e) {
 
         if (e instanceof ApiException) {
-            return handleApiException((ApiException) e);
+            logger.error("API exception occurred: ", e.getMessage());
         } else if (e instanceof HttpClientErrorException) {
-            return handleHttpClientErrorException((HttpClientErrorException) e);
+            logger.error("HTTP client error occurred: ", e.getMessage());
         } else {
-            return "Something went wrong: " + e.getMessage();
+            logger.error("Something went wrong: ", e.getMessage());
         }
-
     }
 
-    public String handleException(HttpStatus status, Exception e) {
 
-        if(status.equals(HttpStatus.BAD_REQUEST)){
-            return status + " " + e.getMessage();
-        }else if(status.equals(HttpStatus.INTERNAL_SERVER_ERROR)){
-            return status + " " + e.getMessage();
-        }else{
-            return "Something went wrong: " + e.getMessage();
+    public void handleException(HttpStatus status, Exception e) {
+
+        if (status.equals(HttpStatus.BAD_REQUEST)) {
+            logger.error(status + " " + e.getMessage());
+        } else if (status.equals(HttpStatus.INTERNAL_SERVER_ERROR)) {
+            logger.error(status + " " + e.getMessage());
+        } else {
+            logger.error("Something went wrong: " + e.getMessage());
         }
 
     }
