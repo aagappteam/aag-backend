@@ -45,11 +45,11 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     public void handleException(Exception e) {
 
         if (e instanceof ApiException) {
-            logger.error("API exception occurred: ", e.getMessage());
+            logger.error("API exception occurred: " + e.getMessage());
         } else if (e instanceof HttpClientErrorException) {
-            logger.error("HTTP client error occurred: ", e.getMessage());
+            logger.error("HTTP client error occurred: " + e.getMessage());
         } else {
-            logger.error("Something went wrong: ", e.getMessage());
+            logger.error("Something went wrong: " + e.getMessage());
         }
     }
 
