@@ -177,11 +177,8 @@ public class GameController {
             @RequestBody GameRequest gameRequest
     ) {
         try {
-            System.out.println("Game ID: " + gameId + " Vendor ID: " + vendorId);
-
             ResponseEntity<?> response = gameService.updateGame(vendorId, gameId, gameRequest);
 
-            System.out.println(" response  = " + response);
             return ResponseService.generateSuccessResponse("Game updated successfully", gameRequest, HttpStatus.OK);
 
         } catch (IllegalStateException e) {

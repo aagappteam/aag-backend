@@ -514,7 +514,7 @@ public class GameService {
            throw new RuntimeException("Error retrieving games scheduled for today by vendor ID: " + vendorId, e);
        }
    }
-    private ZonedDateTime convertToKolkataTime(ZonedDateTime dateTime) {
+    public static ZonedDateTime convertToKolkataTime(ZonedDateTime dateTime) {
         return dateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
     }
 
