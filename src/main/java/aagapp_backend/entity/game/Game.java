@@ -38,6 +38,7 @@ public class Game {
     @Column(nullable = false)
     private String name;
 
+
     @Column(nullable = false)
     private String description;
 
@@ -70,4 +71,5 @@ public class Game {
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime updatedDate;
+
 }
