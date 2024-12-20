@@ -32,6 +32,4 @@ public class Player {
             this.status = String.valueOf(PlayerStatus.Waiting);
         }
     }
-
-
 }
