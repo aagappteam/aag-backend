@@ -1,6 +1,9 @@
 package aagapp_backend.enums;
 
-public enum UserStatus {
-    ACTIVATE,
+public enum ProfileStatus {
+    PENDING,
+    ACTIVE,
+    INACTIVE,
+    SUSPENDED
 
 }

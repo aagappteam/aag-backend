@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.CurrentTimestamp;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
@@ -41,6 +43,7 @@ public class CustomCustomer {
     private String profilePic;
 
     @Nullable
+    @Column(name = "profile_status")
     private String profileStatus;
 
     @NotNull(message = "Mobile number is required")
@@ -102,8 +105,14 @@ public class CustomCustomer {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdDate;
 
-    @Nullable
+    // update every login time with current time stamp
+    @CurrentTimestamp
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = new Date();
+    }
 }

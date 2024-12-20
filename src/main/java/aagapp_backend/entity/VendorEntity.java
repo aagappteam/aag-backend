@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.CurrentTimestamp;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -99,10 +100,15 @@ public class VendorEntity {
     private Date createdDate;
 
 
-    @Nullable
+    @CurrentTimestamp
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = new Date();
+    }
 
 
     @JsonManagedReference("submissionentity-vendor")

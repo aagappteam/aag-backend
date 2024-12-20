@@ -7,8 +7,10 @@ import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.game.GameSession;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.enums.GameStatus;
 import aagapp_backend.enums.PaymentStatus;
+import aagapp_backend.enums.PlayerStatus;
 import aagapp_backend.repository.game.GameRepository;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.repository.game.GameSessionRepository;
@@ -560,14 +562,14 @@ public class GameService {
         // Check if player already exists, if not save the player
         if (player.getId() == null) {
             // Save the player if it is not already persisted
-            player = playerRepository.save(player);  // Assuming you have a playerRepository to save the player
+            player = playerRepository.save(player);
         }
 
         // Create the GameRoom
         GameRoom gameRoom = new GameRoom();
         gameRoom.setRoomCode(generateRoomCode());
-        gameRoom.setPlayer1(player);  // Set player1 association
-        gameRoom.setStatus("waiting");
+        gameRoom.setPlayer1(player);
+        gameRoom.setStatus(String.valueOf(PlayerStatus.Waiting));
         gameRoom.setCreatedAt(LocalDateTime.now());
 
         // Save the game room
@@ -589,14 +591,14 @@ public class GameService {
         }
 
         // Fetch available waiting room
-        List<GameRoom> waitingRooms = gameRoomRepository.findByStatus("waiting");
+        List<GameRoom> waitingRooms = gameRoomRepository.findByStatus(String.valueOf(PlayerStatus.Waiting));
         if (waitingRooms.isEmpty()) {
             throw new IllegalStateException("No available game rooms to join.");
         }
 
         GameRoom gameRoom = waitingRooms.get(0);  // Get the first available waiting room
         gameRoom.setPlayer2(player);
-        gameRoom.setStatus("ongoing");
+        gameRoom.setStatus(String.valueOf(GameRoomStatus.Ongoing));
 
         // Update game room to reflect the new state
         gameRoomRepository.save(gameRoom);
@@ -604,7 +606,7 @@ public class GameService {
         // Create and save a new game session
         GameSession gameSession = new GameSession();
         gameSession.setGameRoom(gameRoom);
-        gameSession.setGameState("initialized");
+        gameSession.setGameState(String.valueOf(GameRoomStatus.Initialized));
         gameSessionRepository.save(gameSession);
 
         return gameRoom;

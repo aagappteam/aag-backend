@@ -28,6 +28,9 @@ public class Constant {
     public static final Long INITIAL_TEST_STATUS = 1L;
     public static final Long TEST_COMPLETED_STATUS = 2L;
     public static final Long APPROVED_TEST = 3L;
+    public static String BEARER_CONST="Bearer ";
+    public static final String GAME_ROOM_CREATION_ERROR = "Error creating game room: ";
+    public static final String VALIDATION_FAILED = "Validation failed: ";
 
 
     public static String STATE_CODE_QUERY = "SELECT s FROM StateCode s WHERE s.state_name = :state_name";

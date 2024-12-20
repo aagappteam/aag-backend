@@ -1,7 +1,6 @@
 package aagapp_backend.enums;
 
-public enum PlayerStatus {
-    WAITING,
-    ONGOING,
-    INITIALIZED
+public enum GameRoomStatus {
+    Ongoing,
+    Initialized
 }
