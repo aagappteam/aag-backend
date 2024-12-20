@@ -1,5 +1,4 @@
 package aagapp_backend.controller.game;
-
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.services.GameService.GameService;
@@ -14,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import javax.naming.LimitExceededException;
 import java.util.List;
 import java.util.NoSuchElementException;

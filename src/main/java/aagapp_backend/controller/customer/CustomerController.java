@@ -1,6 +1,7 @@
 package aagapp_backend.controller.customer;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.ApiConstants;
@@ -32,6 +33,10 @@ public class CustomerController {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
 
     @Autowired
     private ResponseService responseService;
@@ -133,6 +138,22 @@ public class CustomerController {
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error deleting: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith(Constant.BEARER_CONST)) {
+            return ResponseEntity.badRequest().body("Token is required");
+        }
+
+        String token = authorizationHeader.substring(7);
+        try {
+            jwtUtil.logoutUser(token);
+            return responseService.generateSuccessResponse("Logged out successfully", null, HttpStatus.OK);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during logout");
         }
     }
 }

@@ -22,7 +22,9 @@ import java.time.ZonedDateTime;
                 @Index(name = "idx_status_league", columnList = "status"),
                 @Index(name = "idx_scheduled_at_league", columnList = "scheduled_at"),
                 @Index(name = "idx_end_date_league", columnList = "end_date"),
-                @Index(name = "idx_created_date_league", columnList = "created_date")
+                @Index(name = "idx_created_date_league", columnList = "created_date"),
+                @Index(name = "idx_vendor_id_status_league", columnList = "vendor_id, status"),
+                @Index(name = "idx_scheduled_at_status_league", columnList = "scheduled_at, status")
         }
 )
 @Getter
@@ -48,16 +50,11 @@ public class League {
     private Double rewardAmount;
 
     @Enumerated(EnumType.STRING)
-    private LeagueStatus status; // Possible values: "UPCOMING", "ONGOING", "COMPLETED"
+    private LeagueStatus status;
 
-    @ManyToOne
-    @JoinColumn(name = "vendor_id", nullable = false)
-    @JsonBackReference
-    private VendorEntity vendorEntity;
+    @Column(name = "vendor_id", nullable = false)
+    private Long vendorId;
 
-/*    @Column(name = "start_date", nullable = false)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private ZonedDateTime startDate;*/
 
     @Column(name = "scheduled_at", nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

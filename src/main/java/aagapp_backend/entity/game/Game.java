@@ -22,7 +22,9 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_vendor_id", columnList = "vendor_id"),
                 @Index(name = "idx_status", columnList = "status"),
                 @Index(name = "idx_scheduled_at", columnList = "scheduled_at"),
-                @Index(name = "idx_created_date", columnList = "created_date")
+                @Index(name = "idx_created_date", columnList = "created_date"),
+                @Index(name = "idx_vendor_id_status", columnList = "vendor_id, status"),
+                @Index(name = "idx_scheduled_at_status", columnList = "scheduled_at, status")
         }
 )
 @Getter

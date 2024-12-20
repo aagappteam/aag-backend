@@ -2,6 +2,7 @@ package aagapp_backend.controller.league;
 
 import aagapp_backend.dto.LeagueRequest;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -28,8 +29,7 @@ public class LeagueController {
     private PaymentFeatures paymentFeatures;
 
     @Autowired
-    public void
-    setLeagueService(@Lazy LeagueService leagueService) {
+    public void setLeagueService(@Lazy LeagueService leagueService) {
         this.leagueService = leagueService;
     }
 
@@ -47,8 +47,7 @@ public class LeagueController {
     public void setPaymentFeatures(@Lazy PaymentFeatures paymentFeatures) {
         this.paymentFeatures = paymentFeatures;
     }
-
-/*    @GetMapping("/get-all-leagues")
+    @GetMapping("/get-all-leagues")
     public ResponseEntity<?> getAllLeagues(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -57,41 +56,20 @@ public class LeagueController {
     ) {
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<League> leaguesPage = leagueService.getAllLeagues(status, vendorId, pageable);
+            Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId);
+
+            if (leaguesPage.isEmpty()) {
+                return responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+            }
+
             return responseService.generateSuccessResponse("Leagues fetched successfully", leaguesPage, HttpStatus.OK);
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse("League not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching leagues", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }*/
-
-    @GetMapping("/get-leagues-by-vendor/{vendorId}")
-    public ResponseEntity<?> getLeaguesByVendorId(
-            @PathVariable Long vendorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(value = "status", required = false) String status
-    ) {
-        try {
-            if (page < 0) {
-                throw new IllegalArgumentException("Page number cannot be negative");
-            }
-            if (size <= 0 || size > 100) {
-                throw new IllegalArgumentException("Size must be between 1 and 100");
-            }
-
-            Pageable pageable = PageRequest.of(page, size);
-            Page<League> leaguesPage = leagueService.findLeaguesByVendor(vendorId, status, pageable);
-            return responseService.generateSuccessResponse("Leagues fetched successfully", leaguesPage, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Error fetching leagues by vendor: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
-
 
     @PostMapping("/publishLeague/{vendorId}")
     public ResponseEntity<?> publishLeague(@PathVariable Long vendorId, @RequestBody LeagueRequest leagueRequest) {
@@ -115,15 +93,11 @@ public class LeagueController {
             }
         } catch (LimitExceededException e) {
             return responseService.generateErrorResponse("Exceeded maximum allowed leagues", HttpStatus.TOO_MANY_REQUESTS);
-
         } catch (NoSuchElementException e) {
             return responseService.generateErrorResponse("Required entity not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
-
         } catch (IllegalArgumentException e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-
             return responseService.generateErrorResponse("Invalid league data: " + e.getMessage(), HttpStatus.BAD_REQUEST);
-
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error publishing league: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -139,14 +113,57 @@ public class LeagueController {
         try {
             League response = leagueService.updateLeague(vendorId, leagueId, leagueRequest);
 
-            return responseService.generateSuccessResponse("League updated successfully", leagueRequest, HttpStatus.OK);
+            return responseService.generateSuccessResponse("League updated successfully", response, HttpStatus.OK);
 
         } catch (IllegalStateException e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse("League not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error updating league details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/delete/{vendorId}/{leagueId}")
+    public ResponseEntity<?> deleteLeague(
+            @PathVariable Long vendorId,
+            @PathVariable Long leagueId
+    ) {
+        try {
+            leagueService.deleteLeague(vendorId, leagueId);
+            return responseService.generateSuccessResponse("League deleted successfully", null, HttpStatus.NO_CONTENT);
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse("League not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error deleting league: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/get-league/{vendorId}/{leagueId}")
+    public ResponseEntity<?> getLeague(
+            @PathVariable Long vendorId,
+            @PathVariable Long leagueId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<League> league = leagueService.getLeagueByVendorIdAndLeagueId(vendorId, leagueId, pageable);
+
+            if (league.isEmpty()) {
+                return responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+
+            }
+
+            return responseService.generateSuccessResponse("League fetched successfully", league, HttpStatus.OK);
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse("League not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching league: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
