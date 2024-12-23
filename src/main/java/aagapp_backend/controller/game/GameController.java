@@ -212,6 +212,7 @@ public class GameController {
             return new ResponseEntity<>(gameRoom, HttpStatus.CREATED);
         } catch (Exception e) {
             // Handle any other errors (e.g., player not found)
+            exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error creating game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -233,10 +234,12 @@ public class GameController {
             return new ResponseEntity<>(gameRoom, HttpStatus.OK);
         } catch (IllegalStateException e) {
             // Handle case where no rooms are available
+            exceptionHandling.handleException(e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             // Handle invalid player details
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Something went wrong:  " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -249,7 +252,11 @@ public class GameController {
             return new ResponseEntity<>(gameSession, HttpStatus.OK);
         } catch (EntityNotFoundException e) {
             // Handle case where room code is not found
+            exceptionHandling.handleException(e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }catch (Exception e){
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Something went wrong: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
