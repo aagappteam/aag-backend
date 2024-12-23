@@ -1,5 +1,6 @@
 package aagapp_backend.entity.league;
 
+import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.LeagueStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -37,32 +38,34 @@ public class League {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Required fields
     @Column(nullable = false)
     private String name;
-
-    @Column(nullable = false)
-    private String description;
 
     @Column(name = "entry_fee", nullable = false)
     private Double entryFee;
 
-    @Column(name = "reward_amount", nullable = false)
-    private Double rewardAmount;
+    @Column(name = "vendor_id", nullable = false)
+    private Long vendorId;
+
+    // Optional fields
+    @Column(nullable = true)
+    private String description;
 
     @Enumerated(EnumType.STRING)
     private LeagueStatus status;
 
-    @Column(name = "vendor_id", nullable = false)
-    private Long vendorId;
-
-
-    @Column(name = "scheduled_at", nullable = false)
+    @Column(name = "scheduled_at", nullable = true)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime scheduledAt;
 
-    @Column(name = "end_date", nullable = false)
+    @Column(name = "end_date", nullable = true)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime endDate;
+
+    @ManyToOne
+    @JoinColumn(name = "theme_id", nullable = true)
+    private ThemeEntity theme;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)

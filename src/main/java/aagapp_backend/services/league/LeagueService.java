@@ -1,11 +1,13 @@
 package aagapp_backend.services.league;
 
 import aagapp_backend.dto.LeagueRequest;
+import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,22 +30,28 @@ public class LeagueService {
     @Autowired
     private ExceptionHandlingService exceptionHandling;
 
+    @Autowired
+    private EntityManager em;
+
     // Publish a new league
     public League publishLeague(LeagueRequest leagueRequest, Long vendorId) {
         try {
-            // Ensure that the VendorEntity exists before proceeding
             Optional<VendorEntity> vendorEntityOptional = leagueRepository.findVendorById(vendorId);
 
-            // Check if VendorEntity is present; if not, throw exception
             if (!vendorEntityOptional.isPresent()) {
                 throw new NoSuchElementException("No records found for vendor with ID: " + vendorId);
+            }
+
+            ThemeEntity theme = em.find(ThemeEntity.class, leagueRequest.getThemeId());
+            if (theme == null) {
+                throw new RuntimeException("No theme found with the provided ID");
             }
 
             League league = new League();
             league.setName(leagueRequest.getName());
             league.setDescription(leagueRequest.getDescription());
             league.setEntryFee(leagueRequest.getEntryFee());
-            league.setVendorId(vendorId); // Set the vendor ID
+            league.setVendorId(vendorId);
 
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             if (leagueRequest.getScheduledAt() != null) {
@@ -53,10 +61,11 @@ public class LeagueService {
                 }
                 league.setScheduledAt(scheduledAtInKolkata);
             } else {
-                league.setScheduledAt(nowInKolkata.plusMinutes(15)); // Default scheduled time
+                league.setScheduledAt(nowInKolkata.plusMinutes(15));
             }
 
             league.setEndDate(league.getScheduledAt().plusDays(7));
+            league.setTheme(theme);
 
             league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
             league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
@@ -75,7 +84,6 @@ public class LeagueService {
     }
 
 
-    // Update an existing league
     public League updateLeague(Long vendorId, Long leagueId, LeagueRequest leagueRequest) {
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new RuntimeException("League not found"));
@@ -99,7 +107,6 @@ public class LeagueService {
         return leagueRepository.save(league);
     }
 
-    // Get leagues by vendor and status
     public Page<League> findLeaguesByVendorAndStatus(Long vendorId, String status, Pageable pageable) {
         try {
             LeagueStatus leagueStatus = LeagueStatus.valueOf(status.toUpperCase());
@@ -114,12 +121,10 @@ public class LeagueService {
         }
     }
 
-    // Get a specific league by vendor ID and league ID
     public Page<League> getLeagueByVendorIdAndLeagueId(Long vendorId, Long leagueId, Pageable pageable) {
         try {
             Page<League> leagues = leagueRepository.findByVendorIdAndId(vendorId, leagueId, pageable);
 
-            // Return an empty page if no leagues are found
             return leagues.isEmpty() ? Page.empty() : leagues;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -127,7 +132,6 @@ public class LeagueService {
         }
     }
 
-    // Get all leagues with filters for status and vendorId
     public Page<League> getAllLeagues(Pageable pageable, String status, Long vendorId) {
         try {
             if (status != null && vendorId != null) {
@@ -145,7 +149,6 @@ public class LeagueService {
         }
     }
 
-    // Delete a league
     public void deleteLeague(Long vendorId, Long leagueId) {
         try {
             Optional<League> leagueOptional = leagueRepository.findById(leagueId);

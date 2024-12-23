@@ -38,5 +38,4 @@ public class VendorSubmissionEntity {
     @ElementCollection
     private Map<String, String> socialMediaUrls;
 
-
 }

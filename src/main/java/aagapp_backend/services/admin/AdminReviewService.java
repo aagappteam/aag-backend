@@ -23,10 +23,10 @@ public class AdminReviewService {
     private ExceptionHandlingImplement exceptionHandlingImplement;
 
     @Autowired
-    private EntityManager entitymanager; // Assuming EntityManager is available to save vendor entity.
+    private EntityManager entitymanager;
 
     @Autowired
-    private VenderService venderService; // Assuming VendorService is available to fetch vendor details.
+    private VenderService venderService;
 
     public Object reviewSubmission(Long id, boolean isApproved) {
         try {

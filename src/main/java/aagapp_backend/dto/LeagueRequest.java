@@ -20,6 +20,7 @@ public class LeagueRequest {
     @NotNull(message = "Entry fee cannot be null")
     private Double entryFee;
 
+    @NotNull(message = "Theme id cannot be null")
     private Long themeId;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")

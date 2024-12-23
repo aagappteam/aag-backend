@@ -18,9 +18,7 @@ public interface LeagueRepository extends JpaRepository<League, Long> {
     @Query("SELECT v FROM VendorEntity v WHERE v.service_provider_id = :vendorId")
     Optional<VendorEntity> findVendorById(@Param("vendorId") Long vendorId);
 
-
     Page<League> findByStatus(String status, Pageable pageable);
-
 
     Page<League> findByVendorId(Long vendorId, Pageable pageable);
     Page<League> findByStatusAndVendorId(String status, Long vendorId, Pageable pageable);

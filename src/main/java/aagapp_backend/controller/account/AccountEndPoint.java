@@ -405,7 +405,6 @@ public class AccountEndPoint {
             }
             else if(roleService.findRoleName(role).equals(Constant.SUPPORT))
             {
-
                 if (customAdmin.getRole() ==1) {
                     return adminService.loginWithPasswordForAdmin(loginDetails, request,session);
                 }
