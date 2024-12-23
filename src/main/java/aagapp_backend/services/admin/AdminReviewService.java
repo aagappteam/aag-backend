@@ -2,6 +2,7 @@ package aagapp_backend.services.admin;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorSubmissionEntity;
+import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.repository.admin.VendorSubmissionRepository;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
@@ -41,9 +42,16 @@ public class AdminReviewService {
                     return new SubmissionResponse("The submission has already been rejected.", vendorSubmissionEntity);
                 }
 
+                if(isApproved){
+                    vendorSubmissionEntity.setProfileStatus(ProfileStatus.ACTIVE);
+                }else {
+                    vendorSubmissionEntity.setProfileStatus(ProfileStatus.REJECTED);
+                }
+
                 vendorSubmissionEntity.setApproved(isApproved);
                 submissionRepository.save(vendorSubmissionEntity);
                 VendorEntity vendorEntity = new VendorEntity();
+
                 vendorEntity.setIsVerified(1);
                 entitymanager.persist(vendorEntity);
 

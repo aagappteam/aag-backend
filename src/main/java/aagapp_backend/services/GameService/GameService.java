@@ -4,17 +4,24 @@ import aagapp_backend.dto.GameRequest;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.game.GameRoom;
+import aagapp_backend.entity.game.GameSession;
+import aagapp_backend.entity.players.Player;
+import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.enums.GameStatus;
 import aagapp_backend.enums.PaymentStatus;
+import aagapp_backend.enums.PlayerStatus;
 import aagapp_backend.repository.game.GameRepository;
+import aagapp_backend.repository.game.GameRoomRepository;
+import aagapp_backend.repository.game.GameSessionRepository;
+import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.services.ResponseService;
-import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.payment.PaymentFeatures;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -25,17 +32,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
 import javax.naming.LimitExceededException;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
@@ -46,6 +52,10 @@ public class GameService {
     private PaymentFeatures paymentFeatures;
     private EntityManager em;
     private ExceptionHandlingService exceptionHandling;
+    private PlayerRepository playerRepository;
+    private GameRoomRepository gameRoomRepository;
+    private GameSessionRepository gameSessionRepository;
+
 
     @Autowired
     public void setExceptionHandling(ExceptionHandlingService exceptionHandling) {
@@ -72,6 +82,15 @@ public class GameService {
         this.em = em;
     }
 
+    @Autowired
+    public void setPlayerRepository(PlayerRepository playerRepository){this.playerRepository=playerRepository;}
+
+    @Autowired
+    public void setGameRoomRepository(GameRoomRepository gameRoomRepository){this.gameRoomRepository=gameRoomRepository;}
+
+    @Autowired
+    public void setGameSessionRepository(GameSessionRepository gameSessionRepository){this.gameSessionRepository=gameSessionRepository;}
+
     @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
@@ -86,27 +105,13 @@ public class GameService {
             }
             page++;
         }
-
-
     }
 
 
     public List<Long> getActiveVendorIdsInBatch(int page, int pageSize) {
         LocalDateTime now = LocalDateTime.now();
 
-        String queryString = "SELECT v.id FROM VendorEntity v " +
-                "JOIN PaymentEntity p ON p.vendorEntity.id = v.id " +
-                "WHERE p.status = :activeStatus " +
-                "AND p.expiryAt IS NOT NULL " +
-                "AND p.expiryAt > :now " +
-                "AND p.expiryAt = (" +
-                "   SELECT MAX(p2.expiryAt) " +
-                "   FROM PaymentEntity p2 " +
-                "   WHERE p2.vendorEntity.id = v.id " +
-                "   AND p2.expiryAt IS NOT NULL " +
-                "   AND p2.expiryAt > :now" +
-                ")";
-
+        String queryString = "SELECT v.id FROM VendorEntity v " + "JOIN PaymentEntity p ON p.vendorEntity.id = v.id " + "WHERE p.status = :activeStatus " + "AND p.expiryAt IS NOT NULL " + "AND p.expiryAt > :now " + "AND p.expiryAt = (" + "   SELECT MAX(p2.expiryAt) " + "   FROM PaymentEntity p2 " + "   WHERE p2.vendorEntity.id = v.id " + "   AND p2.expiryAt IS NOT NULL " + "   AND p2.expiryAt > :now" + ")";
 
         Query query = em.createQuery(queryString);
         query.setParameter("activeStatus", PaymentStatus.ACTIVE);
@@ -144,8 +149,7 @@ public class GameService {
 
             if (gameRequest.getScheduledAt() != null) {
 
-                ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt()
-                        .withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+                ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
                 // Ensure that the game is scheduled at least 4 hours in advance
                 if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
@@ -157,7 +161,7 @@ public class GameService {
             } else {
 //                game.setStatus(GameStatus.ACTIVE);
                 game.setStatus(GameStatus.SCHEDULED);
-               game.setScheduledAt(nowInKolkata.plusMinutes(15));
+                game.setScheduledAt(nowInKolkata.plusMinutes(15));
 //                game.setScheduledAt(nowInKolkata);
 
             }
@@ -250,7 +254,6 @@ public class GameService {
     }
 
 
-
     public ResponseEntity<?> getGameDetails(Long gameId) {
         Optional<Game> game = gameRepository.findById(gameId);
 
@@ -270,30 +273,30 @@ public class GameService {
     }
 
 
-   /* @Transactional
-    public ResponseEntity<?> updateGame(Long vendorId, Long gameId, GameRequest gameRequest) {
-        try {
-            Game game = gameRepository.findById(gameId).orElseThrow(() ->
-                    new IllegalArgumentException("Game with ID " + gameId + " not found.")
-            );
+    /* @Transactional
+     public ResponseEntity<?> updateGame(Long vendorId, Long gameId, GameRequest gameRequest) {
+         try {
+             Game game = gameRepository.findById(gameId).orElseThrow(() ->
+                     new IllegalArgumentException("Game with ID " + gameId + " not found.")
+             );
 
-            if (!game.getVendorEntity().getService_provider_id().equals(vendorId)) {
-                throw new IllegalStateException("Game ID: " + gameId + " does not belong to Vendor ID: " + vendorId);
-            }
+             if (!game.getVendorEntity().getService_provider_id().equals(vendorId)) {
+                 throw new IllegalStateException("Game ID: " + gameId + " does not belong to Vendor ID: " + vendorId);
+             }
 
-            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            if (game.getStatus() == GameStatus.EXPIRED) {
-                throw new IllegalStateException("Game ID: " + game.getId() + " has already expired. No update allowed.");
-            } else if (game.getStatus() == GameStatus.ACTIVE) {
-                throw new IllegalStateException("Game ID: " + game.getId() + " is already active. No update allowed.");
-            }
+             if (game.getStatus() == GameStatus.EXPIRED) {
+                 throw new IllegalStateException("Game ID: " + game.getId() + " has already expired. No update allowed.");
+             } else if (game.getStatus() == GameStatus.ACTIVE) {
+                 throw new IllegalStateException("Game ID: " + game.getId() + " is already active. No update allowed.");
+             }
 
-            if (game.getScheduledAt() != null) {
-                ZonedDateTime scheduledAtInKolkata = game.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+             if (game.getScheduledAt() != null) {
+                 ZonedDateTime scheduledAtInKolkata = game.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
-                // If the scheduled date is today or in the future, disallow updates
-               *//* if (!scheduledAtInKolkata.isBefore(nowInKolkata)) {
+                 // If the scheduled date is today or in the future, disallow updates
+                *//* if (!scheduledAtInKolkata.isBefore(nowInKolkata)) {
                     throw new IllegalStateException("Game ID: " + game.getId() + " is scheduled for today or the future. No update allowed.");
                 }*//*
 
@@ -337,75 +340,72 @@ public class GameService {
             return responseService.generateErrorResponse("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }*/
-   @Transactional
-   public ResponseEntity<?> updateGame(Long vendorId, Long gameId, GameRequest gameRequest) {
-       try {
-           System.out.println("Game ID: " + gameId + " Vendor ID: " + vendorId);
+    @Transactional
+    public ResponseEntity<?> updateGame(Long vendorId, Long gameId, GameRequest gameRequest) {
+        try {
+            System.out.println("Game ID: " + gameId + " Vendor ID: " + vendorId);
 
-           // Updated JPQL query with correct column names
-           String jpql = "SELECT g FROM Game g WHERE g.id = :gameId AND g.vendorEntity.id = :vendorId";
-           TypedQuery<Game> query = em.createQuery(jpql, Game.class);
-           query.setParameter("gameId", gameId);
-           query.setParameter("vendorId", vendorId);
+            // Updated JPQL query with correct column names
+            String jpql = "SELECT g FROM Game g WHERE g.id = :gameId AND g.vendorEntity.id = :vendorId";
+            TypedQuery<Game> query = em.createQuery(jpql, Game.class);
+            query.setParameter("gameId", gameId);
+            query.setParameter("vendorId", vendorId);
 
-           // Fetch the game, throw exception if not found
-           Game game = query.getResultList().stream()
-                   .findFirst()
-                   .orElseThrow(() -> new IllegalStateException("Game ID: " + gameId + " does not belong to Vendor ID: " + vendorId));
+            // Fetch the game, throw exception if not found
+            Game game = query.getResultList().stream().findFirst().orElseThrow(() -> new IllegalStateException("Game ID: " + gameId + " does not belong to Vendor ID: " + vendorId));
 
-           System.out.println("Game ID: " + gameId + " Vendor ID: " + vendorId + " Game: " + game);
+            System.out.println("Game ID: " + gameId + " Vendor ID: " + vendorId + " Game: " + game);
 
-           // Continue with the rest of your logic...
-           ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-           ZonedDateTime scheduledAtInKolkata = game.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+            // Continue with the rest of your logic...
+            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime scheduledAtInKolkata = game.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
-           // Validate game status
-           if (game.getStatus() == GameStatus.EXPIRED) {
-               throw new IllegalStateException("Game ID: " + game.getId() + " has already expired. No update allowed.");
-           } else if (game.getStatus() == GameStatus.ACTIVE) {
-               throw new IllegalStateException("Game ID: " + game.getId() + " is already active. No update allowed.");
-           }
+            // Validate game status
+            if (game.getStatus() == GameStatus.EXPIRED) {
+                throw new IllegalStateException("Game ID: " + game.getId() + " has already expired. No update allowed.");
+            } else if (game.getStatus() == GameStatus.ACTIVE) {
+                throw new IllegalStateException("Game ID: " + game.getId() + " is already active. No update allowed.");
+            }
 
-           // Validate scheduled date
-           if (scheduledAtInKolkata != null) {
-               ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
+            // Validate scheduled date
+            if (scheduledAtInKolkata != null) {
+                ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
 
-               if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
-                   if (game.getStatus() == GameStatus.SCHEDULED) {
-                       game.setStatus(GameStatus.ACTIVE);
-                   }
+                if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
+                    if (game.getStatus() == GameStatus.SCHEDULED) {
+                        game.setStatus(GameStatus.ACTIVE);
+                    }
 
-                   // Update game details if provided
-                   if (gameRequest.getName() != null && !gameRequest.getName().isEmpty()) {
-                       game.setName(gameRequest.getName());
-                   }
-                   if (gameRequest.getEntryFee() != null) {
-                       game.setEntryFee(gameRequest.getEntryFee());
-                   }
-                   if (gameRequest.getDescription() != null && !gameRequest.getDescription().isEmpty()) {
-                       game.setDescription(gameRequest.getDescription());
-                   }
+                    // Update game details if provided
+                    if (gameRequest.getName() != null && !gameRequest.getName().isEmpty()) {
+                        game.setName(gameRequest.getName());
+                    }
+                    if (gameRequest.getEntryFee() != null) {
+                        game.setEntryFee(gameRequest.getEntryFee());
+                    }
+                    if (gameRequest.getDescription() != null && !gameRequest.getDescription().isEmpty()) {
+                        game.setDescription(gameRequest.getDescription());
+                    }
 
-                   game.setScheduledAt(null);
-                   game.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+                    game.setScheduledAt(null);
+                    game.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
-                   em.merge(game);
-                   return ResponseEntity.ok("Game updated successfully"); // Success message
-               } else {
-                   throw new IllegalStateException("Game ID: " + game.getId() + " cannot be updated on the scheduled date or after.");
-               }
-           } else {
-               throw new IllegalStateException("Game ID: " + game.getId() + " does not have a scheduled time.");
-           }
-       } catch (IllegalStateException e) {
-           exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-           return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
-       } catch (Exception e) {
-           exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-           return responseService.generateErrorResponse("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-       }
-   }
-
+                    em.merge(game);
+                    return ResponseEntity.ok("Game updated successfully"); // Success message
+                } else {
+                    throw new IllegalStateException("Game ID: " + game.getId() + " cannot be updated on the scheduled date or after.");
+                }
+            } else {
+                throw new IllegalStateException("Game ID: " + game.getId() + " does not have a scheduled time.");
+            }
+        } catch (IllegalStateException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 
     public int countGamesByVendorIdAndScheduledDate(Long vendorId, LocalDate date) {
@@ -471,49 +471,48 @@ public class GameService {
         }
     }
 
-   @Transactional
-   public Page<Game> findGamesScheduledForToday(Long vendorId, Pageable pageable) {
-       try {
-           ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-           ZonedDateTime startOfDay = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
-           ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1); // End of the current day
+    @Transactional
+    public Page<Game> findGamesScheduledForToday(Long vendorId, Pageable pageable) {
+        try {
+            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime startOfDay = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1); // End of the current day
 
-           String sql = "SELECT * FROM aag_game g WHERE g.vendor_id = :vendorId " +
-                   "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay";
+            String sql = "SELECT * FROM aag_game g WHERE g.vendor_id = :vendorId " + "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay";
 
-           Query query = em.createNativeQuery(sql, Game.class);
-           query.setParameter("vendorId", vendorId);
-           query.setParameter("startOfDay", startOfDay);
-           query.setParameter("endOfDay", endOfDay);
+            Query query = em.createNativeQuery(sql, Game.class);
+            query.setParameter("vendorId", vendorId);
+            query.setParameter("startOfDay", startOfDay);
+            query.setParameter("endOfDay", endOfDay);
 
-           query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
-           query.setMaxResults(pageable.getPageSize());
+            query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
 
-           List<Game> games = query.getResultList();
+            List<Game> games = query.getResultList();
 
-           games.forEach(game -> {
+            games.forEach(game -> {
 
-               game.setCreatedDate(convertToKolkataTime(game.getCreatedDate()));
-               game.setUpdatedDate(convertToKolkataTime(game.getUpdatedDate()));
-               game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
+                game.setCreatedDate(convertToKolkataTime(game.getCreatedDate()));
+                game.setUpdatedDate(convertToKolkataTime(game.getUpdatedDate()));
+                game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
 
-           });
+            });
 
-           String countSql = "SELECT COUNT(*) FROM aag_game g WHERE g.vendor_id = :vendorId " +
-                   "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay";
+            String countSql = "SELECT COUNT(*) FROM aag_game g WHERE g.vendor_id = :vendorId " + "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay";
 
-           Query countQuery = em.createNativeQuery(countSql);
-           countQuery.setParameter("vendorId", vendorId);
-           countQuery.setParameter("startOfDay", startOfDay);
-           countQuery.setParameter("endOfDay", endOfDay);
+            Query countQuery = em.createNativeQuery(countSql);
+            countQuery.setParameter("vendorId", vendorId);
+            countQuery.setParameter("startOfDay", startOfDay);
+            countQuery.setParameter("endOfDay", endOfDay);
 
-           Long count = ((Number) countQuery.getSingleResult()).longValue();
+            Long count = ((Number) countQuery.getSingleResult()).longValue();
 
-           return new PageImpl<>(games, pageable, count);
-       } catch (Exception e) {
-           throw new RuntimeException("Error retrieving games scheduled for today by vendor ID: " + vendorId, e);
-       }
-   }
+            return new PageImpl<>(games, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving games scheduled for today by vendor ID: " + vendorId, e);
+        }
+    }
+
     private ZonedDateTime convertToKolkataTime(ZonedDateTime dateTime) {
         return dateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
     }
@@ -525,8 +524,7 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT * FROM aag_game g WHERE g.vendor_id = :vendorId " +
-                    "AND g.scheduled_at <= :nowInKolkata AND g.status = :status";
+            String sql = "SELECT * FROM aag_game g WHERE g.vendor_id = :vendorId " + "AND g.scheduled_at <= :nowInKolkata AND g.status = :status";
 
             Query query = em.createNativeQuery(sql, Game.class);
             query.setParameter("vendorId", vendorId);
@@ -552,6 +550,121 @@ public class GameService {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error updating game statuses: " + e.getMessage(), e);
         }
+    }
+
+
+    @Transactional
+    public GameRoom createGameRoom(Player player) {
+        if (player == null || player.getUsername() == null) {
+            throw new IllegalArgumentException("Player must be valid.");
+        }
+
+        // Check if player already exists, if not save the player
+        if (player.getId() == null) {
+            // Save the player if it is not already persisted
+            player = playerRepository.save(player);
+        }
+
+        // Create the GameRoom
+        GameRoom gameRoom = new GameRoom();
+        gameRoom.setRoomCode(generateRoomCode());
+        gameRoom.setPlayer1(player);
+        gameRoom.setStatus(String.valueOf(PlayerStatus.Waiting));
+        gameRoom.setCreatedAt(LocalDateTime.now());
+
+        // Save the game room
+        return gameRoomRepository.save(gameRoom);
+    }
+
+
+    // Find a waiting room and join as player 2
+    @Transactional
+    public GameRoom joinGameRoom(Player player) {
+        if (player == null || player.getUsername() == null) {
+            throw new IllegalArgumentException("Player must be valid.");
+        }
+
+        // Check if the player already exists in the database
+        if (player.getId() == null) {
+            // Save the player if it is not already persisted
+            player = playerRepository.save(player);
+        }
+
+        // Fetch available waiting room
+        List<GameRoom> waitingRooms = gameRoomRepository.findByStatus(String.valueOf(PlayerStatus.Waiting));
+        if (waitingRooms.isEmpty()) {
+            throw new IllegalStateException("No available game rooms to join.");
+        }
+
+        GameRoom gameRoom = waitingRooms.get(0);  // Get the first available waiting room
+        gameRoom.setPlayer2(player);
+        gameRoom.setStatus(String.valueOf(GameRoomStatus.Ongoing));
+
+        // Update game room to reflect the new state
+        gameRoomRepository.save(gameRoom);
+
+        // Create and save a new game session
+        GameSession gameSession = new GameSession();
+        gameSession.setGameRoom(gameRoom);
+        gameSession.setGameState(String.valueOf(GameRoomStatus.Initialized));
+        gameSessionRepository.save(gameSession);
+
+        return gameRoom;
+    }
+
+    // Generate random room code
+    private String generateRoomCode() {
+        return UUID.randomUUID().toString().substring(0, 6); // 6 char random code
+    }
+
+    // Get game session by room code
+    @Transactional(readOnly = true)
+    public GameSession getGameSession(String roomCode) {
+        if (roomCode == null || roomCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Room code cannot be null or empty.");
+        }
+
+        GameRoom gameRoom = gameRoomRepository.findByRoomCode(roomCode);
+        if (gameRoom == null) {
+            throw new EntityNotFoundException("Game room not found for the given room code.");
+        }
+
+        GameSession gameSession = gameSessionRepository.findByGameRoom(gameRoom);
+        if (gameSession == null) {
+            throw new EntityNotFoundException("No game session found for the given game room.");
+        }
+
+        return gameSession;
+    }
+
+    // Update the game session (e.g., player's move)
+    @Transactional
+    public GameSession updateGameSession(String roomCode, String gameState) {
+        if (roomCode == null || roomCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Room code cannot be null or empty.");
+        }
+
+        if (gameState == null || gameState.trim().isEmpty()) {
+            throw new IllegalArgumentException("Game state cannot be null or empty.");
+        }
+
+        // Fetch game room by room code
+        GameRoom gameRoom = gameRoomRepository.findByRoomCode(roomCode);
+        if (gameRoom == null) {
+            throw new EntityNotFoundException("Game room not found for the given room code.");
+        }
+
+        // Fetch existing game session
+        GameSession gameSession = gameSessionRepository.findByGameRoom(gameRoom);
+        if (gameSession == null) {
+            throw new EntityNotFoundException("No game session found for the given game room.");
+        }
+
+        // Update the game state
+        gameSession.setGameState(gameState);
+
+        // Save the updated game session
+        return gameSessionRepository.save(gameSession);
     }
 
 

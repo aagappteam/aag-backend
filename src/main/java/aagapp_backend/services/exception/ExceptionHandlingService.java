@@ -32,13 +32,10 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
         String errorMessage = e.getMessage();
 
         if (errorCode == 21408) {
-
             throw new RuntimeException("Permission to send SMS not enabled for the region", e);
         } else {
-
             throw new RuntimeException("Api  Error: " + errorCode + ", Response Body: " + errorMessage, e);
         }
-
     }
 
     @Override
