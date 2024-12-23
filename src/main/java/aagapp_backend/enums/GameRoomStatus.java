@@ -2,5 +2,7 @@ package aagapp_backend.enums;
 
 public enum GameRoomStatus {
     Ongoing,
-    Initialized
+    Initialized,
+    Canceled,
+    Completed
 }

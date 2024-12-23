@@ -44,6 +44,8 @@ public class AdminReviewService {
 
                 if(isApproved){
                     vendorSubmissionEntity.setProfileStatus(ProfileStatus.ACTIVE);
+                }else {
+                    vendorSubmissionEntity.setProfileStatus(ProfileStatus.REJECTED);
                 }
 
                 vendorSubmissionEntity.setApproved(isApproved);

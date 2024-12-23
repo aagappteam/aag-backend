@@ -1,6 +1,8 @@
 package aagapp_backend.entity.players;
 
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.enums.PlayerStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -21,6 +23,11 @@ public class Player {
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     @Column(name = "username", nullable = false, length = 50, unique = true)
     private String username;
+
+    @OneToOne
+    @JoinColumn(name="id", nullable = false)
+    @JsonBackReference
+    private CustomCustomer customCustomer;
 
     @NotNull(message = "Status cannot be null")
     @Column(name = "status", nullable = false, length = 20)
