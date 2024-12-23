@@ -1,5 +1,6 @@
 package aagapp_backend.entity;
 
+import aagapp_backend.enums.ProfileStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -44,7 +45,7 @@ public class CustomCustomer {
 
     @Nullable
     @Column(name = "profile_status")
-    private String profileStatus;
+    private ProfileStatus profileStatus;
 
     @NotNull(message = "Mobile number is required")
     @Column(name = "mobile_number", unique = true)

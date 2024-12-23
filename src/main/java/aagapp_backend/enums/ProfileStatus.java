@@ -4,6 +4,7 @@ public enum ProfileStatus {
     PENDING,
     ACTIVE,
     INACTIVE,
-    SUSPENDED
-
+    SUSPENDED,
+    PAUSED,
+    REJECTED
 }

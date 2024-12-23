@@ -239,7 +239,7 @@ public class AccountEndPoint {
             } else if (roleService.findRoleName(role).equals(Constant.SUPPORT) || roleService.findRoleName(role).equals(Constant.ADMIN)) {
                 CustomAdmin customAdmin = adminService.findAdminByPhone(mobileNumber, countryCode);
                 if (customAdmin != null) {
-                    if (customAdmin.getRole() == 1 || customAdmin.getRole() == 2) {
+                    if (customAdmin.getRole() == Constant.SUPPORT_ROLE || customAdmin.getRole() == Constant.ADMIN_ROLE) {
                         if (adminService.findAdminByPhone(mobileNumber, countryCode).getOtp() != null) {
                             responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
                         }
@@ -392,14 +392,14 @@ public class AccountEndPoint {
             }
             if (roleService.findRoleName(role).equals(Constant.ADMIN)) {
 
-                if (customAdmin.getRole() == 2) {
+                if (customAdmin.getRole() == Constant.ADMIN_ROLE) {
                     return adminService.loginWithPasswordForAdmin(loginDetails, request, session);
                 } else {
                     return responseService.generateErrorResponse("Custom Admin with username " + username + " does not have " + roleService.findRoleName(role) + " role", HttpStatus.BAD_REQUEST);
                 }
             } else if (roleService.findRoleName(role).equals(Constant.SUPPORT)) {
 
-                if (customAdmin.getRole() == 1) {
+                if (customAdmin.getRole() == Constant.SUPPORT_ROLE) {
                     return adminService.loginWithPasswordForAdmin(loginDetails, request, session);
                 } else {
                     return responseService.generateErrorResponse("Custom Admin with username " + username + " does not have " + roleService.findRoleName(role) + " role", HttpStatus.BAD_REQUEST);

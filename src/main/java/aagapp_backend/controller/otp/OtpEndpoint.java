@@ -201,7 +201,7 @@ public class OtpEndpoint {
 
                 if (otpEntered.equals(storedOtp)) {
                     existingCustomer.setOtp(null);
-                    existingCustomer.setProfileStatus(String.valueOf(ProfileStatus.ACTIVE));
+                    existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
                     em.persist(existingCustomer);
 
 
