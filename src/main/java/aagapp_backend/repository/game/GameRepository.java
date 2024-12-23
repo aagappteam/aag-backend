@@ -10,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 
 @Repository
 public interface GameRepository extends JpaRepository<Game, Long> {
-
     Page<Game> findAll(Pageable pageable);
 }
 

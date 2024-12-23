@@ -40,6 +40,7 @@ public class Game {
     @Column(nullable = false)
     private String name;
 
+
     @Column(nullable = false)
     private String description;
 
@@ -77,6 +78,7 @@ public class Game {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime updatedDate;
 
+
     @PrePersist
     public void prePersist() {
         if (this.endDate == null) {
@@ -89,3 +91,4 @@ public class Game {
         this.updatedDate = ZonedDateTime.now();
     }
 }
+

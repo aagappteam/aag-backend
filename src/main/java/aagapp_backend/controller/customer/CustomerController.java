@@ -29,13 +29,13 @@ import java.util.Map;
 public class CustomerController {
 
     @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
     private EntityManager entityManager;
-
-    @Autowired
-    private JwtUtil jwtUtil;
 
 
     @Autowired
@@ -156,4 +156,7 @@ public class CustomerController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during logout");
         }
     }
+
+
+
 }
