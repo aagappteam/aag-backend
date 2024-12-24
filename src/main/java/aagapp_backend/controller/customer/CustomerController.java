@@ -73,27 +73,27 @@ public class CustomerController {
 
     @Transactional
     @PostMapping("create-or-update-password")
-    public ResponseEntity<?> deleteServiceProvider(@RequestBody Map<String, Object> passwordDetails, @RequestParam long userId) {
+    public ResponseEntity<?> createOrUpdatePassword(@RequestBody Map<String, Object> passwordDetails, @RequestParam long userId) {
         try {
 
             String password = (String) passwordDetails.get("password");
              String newPassword = (String) passwordDetails.get("newPassword");
-            VendorEntity serviceProvider = entityManager.find(VendorEntity.class, userId);
-            if (serviceProvider == null)
+            CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, userId);
+            if (customCustomer == null)
                 return responseService.generateErrorResponse("No records found", HttpStatus.NOT_FOUND);
-            if (serviceProvider.getPassword() == null) {
-                serviceProvider.setPassword(passwordEncoder.encode(password));
-                entityManager.merge(serviceProvider);
-                return responseService.generateSuccessResponse("Password created", serviceProvider, HttpStatus.OK);
+            if (customCustomer.getPassword() == null) {
+                customCustomer.setPassword(passwordEncoder.encode(password));
+                entityManager.merge(customCustomer);
+                return responseService.generateSuccessResponse("Password created", customCustomer, HttpStatus.OK);
             } else {
                 if (password == null || newPassword == null)
                     return responseService.generateErrorResponse("Empty password entered", HttpStatus.BAD_REQUEST);
-                if (passwordEncoder.matches(password, serviceProvider.getPassword())) {
-                    serviceProvider.setPassword(passwordEncoder.encode(newPassword));
-                if (!passwordEncoder.matches(password, serviceProvider.getPassword())) {
-                    serviceProvider.setPassword(passwordEncoder.encode(password));
-                    entityManager.merge(serviceProvider);
-                    return responseService.generateSuccessResponse("New Password Set", serviceProvider, HttpStatus.OK);
+                if (passwordEncoder.matches(password, customCustomer.getPassword())) {
+                    customCustomer.setPassword(passwordEncoder.encode(newPassword));
+                if (!passwordEncoder.matches(password, customCustomer.getPassword())) {
+                    customCustomer.setPassword(passwordEncoder.encode(password));
+                    entityManager.merge(customCustomer);
+                    return responseService.generateSuccessResponse("New Password Set", customCustomer, HttpStatus.OK);
                 }
                 return responseService.generateErrorResponse("Old Password and new Password cannot be same", HttpStatus.BAD_REQUEST);
             }else
@@ -125,7 +125,7 @@ public class CustomerController {
 
     @Transactional
     @DeleteMapping("delete")
-    public ResponseEntity<?> deleteServiceProvider(@RequestParam Long userId) {
+    public ResponseEntity<?> deleteCustomer(@RequestParam Long userId) {
         try {
             CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, userId);
             if (customCustomer == null)

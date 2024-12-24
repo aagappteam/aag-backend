@@ -174,9 +174,8 @@ public class GameService {
             // Assuming that the entryFee is determined by some logic or passed in the request
             // For now, you can pick the first fee in the feeToMoves list (you can adjust this)
             if (gameRequest.getFeeToMoves() != null && !gameRequest.getFeeToMoves().isEmpty()) {
-                // For simplicity, you can select the first feeToMove's rupees as entryFee.
                 Double selectedFee = gameRequest.getFeeToMoves().get(0).getRupees();
-                game.calculateMoves(selectedFee); // Calculate moves based on entry fee
+                game.calculateMoves(selectedFee);
             }
 
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
@@ -190,10 +189,14 @@ public class GameService {
 
                 game.setStatus(GameStatus.SCHEDULED);
                 game.setScheduledAt(scheduledInKolkata);
+                game.setEndDate(scheduledInKolkata.plusHours(4));
+
 
             } else {
                 game.setStatus(GameStatus.SCHEDULED);
                 game.setScheduledAt(nowInKolkata.plusMinutes(15));
+                game.setEndDate(nowInKolkata.plusHours(4));
+
             }
 
             game.setCreatedDate(nowInKolkata);
@@ -456,9 +459,7 @@ public class GameService {
                ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
 
                if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
-                   if (game.getStatus() == GameStatus.SCHEDULED) {
-                       game.setStatus(GameStatus.ACTIVE);
-                   }
+
 
                    if (gameRequest.getName() != null && !gameRequest.getName().isEmpty()) {
                        game.setName(gameRequest.getName());
@@ -468,7 +469,6 @@ public class GameService {
                        game.setFeeToMoves(gameRequest.getFeeToMoves());
                        Double entryFee = gameRequest.getFeeToMoves().get(0).getRupees();
 
-                       // Calculate the number of moves based on entry fee
                        FeeToMove feeToMove = gameRequest.getFeeToMoves()
                                .stream()
                                .filter(mapping -> mapping.getRupees().equals(entryFee))
@@ -485,6 +485,7 @@ public class GameService {
 
                    game.setScheduledAt(scheduledInKolkata);
                    game.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+                   game.setEndDate(scheduledInKolkata.plusHours(4));
 
                    em.merge(game);
                    return ResponseEntity.ok("Game updated successfully");
@@ -566,14 +567,17 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             ZonedDateTime startOfDay = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
-            ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1); // End of the current day
+            ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
 
-            String sql = "SELECT * FROM aag_game g WHERE g.vendor_id = :vendorId " + "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay";
+            String sql = "SELECT * FROM aag_game g WHERE g.vendor_id = :vendorId "
+                    + "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay "
+                    + "AND g.status = :status";
 
             Query query = em.createNativeQuery(sql, Game.class);
             query.setParameter("vendorId", vendorId);
             query.setParameter("startOfDay", startOfDay);
             query.setParameter("endOfDay", endOfDay);
+            query.setParameter("status", GameStatus.ACTIVE);
 
             query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
             query.setMaxResults(pageable.getPageSize());
@@ -581,27 +585,19 @@ public class GameService {
             List<Game> games = query.getResultList();
 
             games.forEach(game -> {
-
                 game.setCreatedDate(convertToKolkataTime(game.getCreatedDate()));
                 game.setUpdatedDate(convertToKolkataTime(game.getUpdatedDate()));
                 game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
-
             });
 
-            String countSql = "SELECT COUNT(*) FROM aag_game g WHERE g.vendor_id = :vendorId " + "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay";
-
-            Query countQuery = em.createNativeQuery(countSql);
-            countQuery.setParameter("vendorId", vendorId);
-            countQuery.setParameter("startOfDay", startOfDay);
-            countQuery.setParameter("endOfDay", endOfDay);
-
-            Long count = ((Number) countQuery.getSingleResult()).longValue();
+            long count = games.size();
 
             return new PageImpl<>(games, pageable, count);
         } catch (Exception e) {
-            throw new RuntimeException("Error retrieving games scheduled for today by vendor ID: " + vendorId, e);
+            throw new RuntimeException("Error retrieving active games scheduled for today by vendor ID: " + vendorId, e);
         }
     }
+
 
 
     private ZonedDateTime convertToKolkataTime(ZonedDateTime dateTime) {

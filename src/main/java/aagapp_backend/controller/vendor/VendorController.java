@@ -102,9 +102,9 @@ public class VendorController {
                 }
 
                 // Verify the old password matches the stored one
-              /*  if (password == null || !passwordEncoder.matches(password, serviceProvider.getPassword())) {
+                if (password == null || !passwordEncoder.matches(password, serviceProvider.getPassword())) {
                     return responseService.generateErrorResponse("Old password does not match", HttpStatus.BAD_REQUEST);
-                }*/
+                }
 
                 // Check if the new password is different from the old password
                 if (passwordEncoder.matches(newPassword, serviceProvider.getPassword())) {

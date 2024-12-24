@@ -5,14 +5,17 @@ import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.FeeToMove;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.enums.GameStatus;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
@@ -103,19 +106,16 @@ public class LeagueService {
     }*/
     public League publishLeague(LeagueRequest leagueRequest, Long vendorId) {
         try {
-            // Create a new League entity
             League league = new League();
             league.setName(leagueRequest.getName());
             league.setDescription(leagueRequest.getDescription());
             league.setFeeToMoves(leagueRequest.getFeeToMoves());
 
-            // Validate and set the vendor entity
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
             if (vendorEntity == null) {
                 throw new RuntimeException("No records found for vendor with ID: " + vendorId);
             }
 
-            // Validate and set the theme
             ThemeEntity theme = em.find(ThemeEntity.class, leagueRequest.getThemeId());
             if (theme == null) {
                 throw new RuntimeException("No theme found with the provided ID");
@@ -124,10 +124,9 @@ public class LeagueService {
             league.setVendorId(vendorId);
             league.setTheme(theme);
 
-            // Calculate the moves based on the selected fee
             if (leagueRequest.getFeeToMoves() != null && !leagueRequest.getFeeToMoves().isEmpty()) {
                 Double selectedFee = leagueRequest.getFeeToMoves().get(0).getRupees();
-                league.calculateMoves(selectedFee);  // Calculate moves based on the fee
+                league.calculateMoves(selectedFee);
             }
 
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
@@ -139,10 +138,14 @@ public class LeagueService {
                     throw new IllegalArgumentException("The league must be scheduled at least 4 hours in advance.");
                 }
                 league.setScheduledAt(scheduledAtInKolkata);
-                league.setStatus(LeagueStatus.SCHEDULED);  // Set status to scheduled
-            } else {
-                league.setScheduledAt(nowInKolkata.plusMinutes(15)); // Default to 15 minutes from now
+                league.setEndDate(scheduledAtInKolkata.plusHours(4));
+
                 league.setStatus(LeagueStatus.SCHEDULED);
+            } else {
+                league.setScheduledAt(nowInKolkata.plusMinutes(15));
+                league.setStatus(LeagueStatus.SCHEDULED);
+                league.setEndDate(nowInKolkata.plusHours(4));
+
             }
 
             if (leagueRequest.getRegistrationDeadline() != null) {
@@ -185,26 +188,67 @@ public class LeagueService {
 
 
     public League updateLeague(Long vendorId, Long leagueId, LeagueRequest leagueRequest) {
-        League league = leagueRepository.findById(leagueId)
-                .orElseThrow(() -> new RuntimeException("League not found"));
 
-        try {
-            for (Field field : LeagueRequest.class.getDeclaredFields()) {
-                field.setAccessible(true);
-                Object value = field.get(leagueRequest);
+        String jpql = "SELECT l FROM League l WHERE l.id = :leagueId AND l.vendorEntity.id = :vendorId";
+        TypedQuery<League> query = em.createQuery(jpql, League.class);
+        query.setParameter("leagueId", leagueId);
+        query.setParameter("vendorId", vendorId);
 
-                if (value != null) {
-                    Field leagueField = League.class.getDeclaredField(field.getName());
-                    leagueField.setAccessible(true);
-                    leagueField.set(league, value);
-                }
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error updating league", e);
+        League league = query.getResultList().stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("League ID: " + leagueId + " does not belong to Vendor ID: " + vendorId));
+
+        if (league.getStatus() == LeagueStatus.EXPIRED) {
+            throw new IllegalStateException("League ID: " + league.getId() + " has been expired and cannot be updated.");
+        } else if (league.getStatus() == LeagueStatus.ACTIVE) {
+            throw new IllegalStateException("League ID: " + league.getId() + " is already active and cannot be updated.");
         }
 
-        return leagueRepository.save(league);
+        if (leagueRequest.getName() != null && !leagueRequest.getName().isEmpty()) {
+            league.setName(leagueRequest.getName());
+        }
+        ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        ZonedDateTime scheduledAtInKolkata = league.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+
+        if (scheduledAtInKolkata != null) {
+            ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
+
+            if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
+
+
+                if (leagueRequest.getFeeToMoves() != null && !leagueRequest.getFeeToMoves().isEmpty()) {
+                    league.setFeeToMoves(leagueRequest.getFeeToMoves());
+                    Double entryFee = leagueRequest.getFeeToMoves().get(0).getRupees();
+
+                    FeeToMove feeToMove = leagueRequest.getFeeToMoves()
+                            .stream()
+                            .filter(mapping -> mapping.getRupees().equals(entryFee))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (feeToMove != null) {
+                        league.setMoves(feeToMove.getMoves());
+                    } else {
+                        league.setMoves(0);
+                    }
+                }
+                ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+
+                league.setScheduledAt(scheduledInKolkata);
+                league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+                league.setEndDate(scheduledInKolkata.plusHours(4));
+
+              return   em.merge(league);
+            } else {
+                throw new IllegalStateException("Game ID: " + league.getId() + " cannot be updated on the scheduled date or after.");
+
+            }
+        } else {
+            throw new IllegalStateException("Game ID: " + league.getId() + " does not have a scheduled time.");
+        }
+
+
+
     }
 
     public Page<League> findLeaguesByVendorAndStatus(Long vendorId, String status, Pageable pageable) {
