@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Date;
 
 @Entity
-@Table(name = "CUSTOM_CUSTOMER")
+@Table(name = "CUSTOM_USER")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -100,7 +100,6 @@ public class CustomCustomer {
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BankDetails> bankDetails = new ArrayList<>();
 
-    // Created Date with current timestamp
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

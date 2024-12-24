@@ -1,5 +1,4 @@
 package aagapp_backend.controller.game;
-
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.game.GameRoom;
@@ -22,7 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
-
 import javax.naming.LimitExceededException;
 import java.util.NoSuchElementException;
 
@@ -178,19 +176,16 @@ public class GameController {
             @RequestBody GameRequest gameRequest
     ) {
         try {
-            System.out.println("Game ID: " + gameId + " Vendor ID: " + vendorId);
-
             ResponseEntity<?> response = gameService.updateGame(vendorId, gameId, gameRequest);
 
-            System.out.println(" response  = " + response);
             return ResponseService.generateSuccessResponse("Game updated successfully", gameRequest, HttpStatus.OK);
 
         } catch (IllegalStateException e) {
             exceptionHandling.handleException(e);
-            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return ResponseService.generateErrorResponse("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

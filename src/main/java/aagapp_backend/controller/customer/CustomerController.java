@@ -37,6 +37,7 @@ public class CustomerController {
     @Autowired
     private EntityManager entityManager;
 
+
     @Autowired
     private ResponseService responseService;
 
@@ -155,6 +156,7 @@ public class CustomerController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during logout");
         }
     }
+
 
 
 }

@@ -1,11 +1,13 @@
 package aagapp_backend.dto;
 
 import aagapp_backend.entity.ThemeEntity;
+import aagapp_backend.entity.game.FeeToMove;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
 
 @Data
@@ -18,10 +20,8 @@ public class GameRequest {
     @NotNull
     private String name;
 
-    private String description;
-
     @NotNull
-    private Double entryFee;
+    private List<FeeToMove> feeToMoves;
 
     private Long themeId;
 

@@ -9,6 +9,7 @@ public class Constant {
     public static final long MIN_SIGNATURE_IMAGE_SIZE = 300 * 1024;
     public static final long MAX_PDF_SIZE = 1 * 1024 * 1024;
     public static final long MIN_PDF_SIZE = 500 * 1024;
+    public static final String BEARER_CONST= "Bearer ";
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.otp=:otp";
@@ -27,7 +28,6 @@ public class Constant {
     public static final Long INITIAL_TEST_STATUS = 1L;
     public static final Long TEST_COMPLETED_STATUS = 2L;
     public static final Long APPROVED_TEST = 3L;
-    public static String BEARER_CONST = "Bearer ";
     public static final String GAME_ROOM_CREATION_ERROR = "Error creating game room: ";
     public static final String VALIDATION_FAILED = "Validation failed: ";
     public static int SUPPORT_ROLE = 1;
@@ -165,5 +165,14 @@ public class Constant {
     public static final String SP_REQUEST_ACTION_RETURN = "RETURN";
     public static final String SP_REQUEST_ACTION_VIEW = "VIEW";
     public static final String NOT_ELIGIBLE_SP = "SELECT s.service_provider_id FROM sp_orders_requests s WHERE order_id = :orderId AND request_status ='RETURNED'";
+
+
+    public static String SCHEDULED = "SCHEDULED";
+    public static String ACTIVE = "ACTIVE";
+
+    public static String EXPIRED = "EXPIRED";
+
+
+
 
 }

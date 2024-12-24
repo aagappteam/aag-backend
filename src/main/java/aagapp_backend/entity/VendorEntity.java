@@ -67,6 +67,8 @@ public class VendorEntity {
     private int isVerified = 0;
 
 
+
+
     @Column(name = "is_paid", nullable = false)
     private Boolean isPaid = false;
 
