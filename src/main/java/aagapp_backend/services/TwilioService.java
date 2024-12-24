@@ -66,7 +66,7 @@ public class TwilioService {
         try {
             String otp = generateOTP();
 
-//            this.sendOtp(countryCode,mobileNumber,otp);
+//           this.sendOtp(countryCode,mobileNumber,otp);
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
             VendorEntity existingvendor = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
@@ -137,11 +137,11 @@ public class TwilioService {
         String messageBody = "Your OTP is: " + otp;
 
         try {
-/*            Message message = Message.creator(
+           Message message = Message.creator(
                     new PhoneNumber(completeMobileNumber),
                     new PhoneNumber(twilioPhoneNumber),
                     messageBody
-            ).create();*/
+            ).create();
 
             System.out.println("OTP sent successfully to " + completeMobileNumber);
         } catch (Exception e) {

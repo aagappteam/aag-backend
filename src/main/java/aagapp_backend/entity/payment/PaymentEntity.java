@@ -48,11 +48,6 @@ public class PaymentEntity {
     @Column(name = "daily_limit", nullable = false)
     private Integer dailyLimit = 5;
 
-/*
-    @Column(name = "weekly_limit", nullable = false)
-    private Integer weeklyLimit = 35;
-*/
-
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
@@ -60,7 +55,6 @@ public class PaymentEntity {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // This field is optional, as it will be generated on the backend.
     @Column(name = "expiry_at")
     private LocalDateTime expiryAt;
 
@@ -68,11 +62,15 @@ public class PaymentEntity {
     @Column(name = "plan_duration")
     private String planDuration;  // "Monthly", "Yearly", etc.
 
-    // This field is to determine the type of payment: "RECURRING", "ONETIME"
     @Column(name = "payment_type")
     private String paymentType;
 
     // New field to mark if it's a test payment or not
     @Column(name = "is_test", nullable = false)
     private Boolean isTest = false;
+
+    @Column(name = "gateway_response")
+    private String gatewayResponse;
+
+
 }

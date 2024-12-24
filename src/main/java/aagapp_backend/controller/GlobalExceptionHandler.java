@@ -37,6 +37,15 @@ public class GlobalExceptionHandler {
         return generateErrorResponse("Invalid request method", HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<?> handleIllegalStateException(IllegalStateException e) {
+
+
+        return generateErrorResponse("Invalid data", HttpStatus.BAD_REQUEST, e.getMessage());
+
+    }
+
+
 
     @ExceptionHandler(VendorSubmissionException.class)
     public ResponseEntity<?> handleVendorSubmissionException(VendorSubmissionException ex) {

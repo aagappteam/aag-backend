@@ -14,6 +14,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.ZonedDateTime;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(
@@ -41,11 +42,12 @@ public class Game {
     private String name;
 
 
-    @Column(nullable = false)
-    private String description;
+    @ElementCollection
+    @CollectionTable(name = "game_fee_to_moves", joinColumns = @JoinColumn(name = "game_id"))
+    private List<FeeToMove> feeToMoves;
 
-    @Column(name = "entry_fee", nullable = false)
-    private Double entryFee;
+    private Integer moves;
+
 
     @Enumerated(EnumType.STRING)
     private GameStatus status;
@@ -61,13 +63,16 @@ public class Game {
     @JoinColumn(name = "theme_id", nullable = true)
     private ThemeEntity theme;
 
-    @Column(name = "scheduled_at", nullable = false)
+    @Column(name = "scheduled_at", nullable = true)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime scheduledAt;
 
     @Column(name = "end_date", nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime endDate;
+
+    private Integer minPlayersPerTeam;
+    private Integer maxPlayersPerTeam;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
@@ -81,6 +86,12 @@ public class Game {
 
     @PrePersist
     public void prePersist() {
+        if (this.minPlayersPerTeam == null) {
+            this.minPlayersPerTeam = 1; // Default value for minPlayersPerTeam
+        }
+        if (this.maxPlayersPerTeam == null) {
+            this.maxPlayersPerTeam = 2; // Default value for maxPlayersPerTeam
+        }
         if (this.endDate == null) {
             this.endDate = ZonedDateTime.now();
         }
@@ -89,6 +100,24 @@ public class Game {
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = ZonedDateTime.now();
+    }
+
+    public void calculateMoves(Double selectedFee) {
+        if (feeToMoves != null && selectedFee != null) {
+            FeeToMove feeToMove = feeToMoves
+                    .stream()
+                    .filter(mapping -> mapping.getRupees().equals(selectedFee))
+                    .findFirst()
+                    .orElse(null);
+
+            if (feeToMove != null) {
+                this.moves = feeToMove.getMoves();
+            } else {
+                this.moves = 0;
+            }
+        } else {
+            this.moves = 0;
+        }
     }
 }
 

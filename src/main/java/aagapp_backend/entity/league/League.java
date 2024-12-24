@@ -1,9 +1,8 @@
 package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.ThemeEntity;
-import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.game.FeeToMove;
 import aagapp_backend.enums.LeagueStatus;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -14,6 +13,8 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
+import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(
@@ -38,28 +39,34 @@ public class League {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Required fields
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "entry_fee", nullable = false)
-    private Double entryFee;
+    @ElementCollection
+    @CollectionTable(name = "game_fee_to_moves", joinColumns = @JoinColumn(name = "game_id"))
+    private List<FeeToMove> feeToMoves;
+
+    private Integer moves;
 
     @Column(name = "vendor_id", nullable = false)
     private Long vendorId;
 
-    // Optional fields
+    private String shareableLink;
+
     @Column(nullable = true)
     private String description;
 
     @Enumerated(EnumType.STRING)
     private LeagueStatus status;
 
+    @Column(name = "league_type", nullable = true)
+    private String leagueType;
+
     @Column(name = "scheduled_at", nullable = true)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime scheduledAt;
 
-    @Column(name = "end_date", nullable = true)
+    @Column(name = "end_date", nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime endDate;
 
@@ -79,4 +86,40 @@ public class League {
 
     private Integer minPlayersPerTeam;
     private Integer maxPlayersPerTeam;
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = ZonedDateTime.now();
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (this.minPlayersPerTeam == null) {
+            this.minPlayersPerTeam = 1; // Default value for minPlayersPerTeam
+        }
+        if (this.maxPlayersPerTeam == null) {
+            this.maxPlayersPerTeam = 2; // Default value for maxPlayersPerTeam
+        }
+        if (this.endDate == null) {
+            this.endDate = ZonedDateTime.now();
+        }
+    }
+
+    public void calculateMoves(Double selectedFee) {
+        if (feeToMoves != null && selectedFee != null) {
+            FeeToMove feeToMove = feeToMoves
+                    .stream()
+                    .filter(mapping -> mapping.getRupees().equals(selectedFee))
+                    .findFirst()
+                    .orElse(null);
+
+            if (feeToMove != null) {
+                this.moves = feeToMove.getMoves();
+            } else {
+                this.moves = 0;
+            }
+        } else {
+            this.moves = 0;
+        }
+    }
 }

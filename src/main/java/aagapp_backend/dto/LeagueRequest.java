@@ -1,5 +1,6 @@
 package aagapp_backend.dto;
 
+import aagapp_backend.entity.game.FeeToMove;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -17,8 +18,8 @@ public class LeagueRequest {
 
     private String description;
 
-    @NotNull(message = "Entry fee cannot be null")
-    private Double entryFee;
+    @NotNull
+    private List<FeeToMove> feeToMoves;
 
     @NotNull(message = "Theme id cannot be null")
     private Long themeId;

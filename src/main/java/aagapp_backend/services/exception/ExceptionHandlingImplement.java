@@ -9,11 +9,11 @@ import org.springframework.web.client.HttpClientErrorException;
 public interface ExceptionHandlingImplement {
     void handleHttpError(ResponseEntity<String> response);
 
-    void handleHttpClientErrorException(HttpClientErrorException e);
+    String handleHttpClientErrorException(HttpClientErrorException e);
 
-    void handleApiException(ApiException e);
+    String handleApiException(ApiException e);
 
-    void handleException(Exception e);
+    String handleException(Exception e);
 
-    void handleException(HttpStatus status, Exception e);
+    String handleException(HttpStatus status, Exception e);
 }
