@@ -682,120 +682,120 @@ public class GameService {
         }
     }
 
-
-    @Transactional
-    public GameRoom createGameRoom(Player player) {
-        if (player == null || player.getUsername() == null) {
-            throw new IllegalArgumentException("Player must be valid.");
-        }
-
-        // Check if player already exists, if not save the player
-        if (player.getId() == null) {
-            // Save the player if it is not already persisted
-            player = playerRepository.save(player);
-        }
-
-        // Create the GameRoom
-        GameRoom gameRoom = new GameRoom();
-        gameRoom.setRoomCode(generateRoomCode());
-        gameRoom.setPlayer1(player);
-        gameRoom.setStatus(String.valueOf(PlayerStatus.Waiting));
-        gameRoom.setCreatedAt(LocalDateTime.now());
-
-        // Save the game room
-        return gameRoomRepository.save(gameRoom);
-    }
-
-
-    // Find a waiting room and join as player 2
-    @Transactional
-    public GameRoom joinGameRoom(Player player) {
-        if (player == null || player.getUsername() == null) {
-            throw new IllegalArgumentException("Player must be valid.");
-        }
-
-        // Check if the player already exists in the database
-        if (player.getId() == null) {
-            // Save the player if it is not already persisted
-            player = playerRepository.save(player);
-        }
-
-        // Fetch available waiting room
-        List<GameRoom> waitingRooms = gameRoomRepository.findByStatus(String.valueOf(PlayerStatus.Waiting));
-        if (waitingRooms.isEmpty()) {
-            throw new IllegalStateException("No available game rooms to join.");
-        }
-
-        GameRoom gameRoom = waitingRooms.get(0);  // Get the first available waiting room
-        gameRoom.setPlayer2(player);
-        gameRoom.setStatus(String.valueOf(GameRoomStatus.Ongoing));
-
-        // Update game room to reflect the new state
-        gameRoomRepository.save(gameRoom);
-
-        // Create and save a new game session
-        GameSession gameSession = new GameSession();
-        gameSession.setGameRoom(gameRoom);
-        gameSession.setGameState(String.valueOf(GameRoomStatus.Initialized));
-        gameSessionRepository.save(gameSession);
-
-        return gameRoom;
-    }
-
-    // Generate random room code
-    private String generateRoomCode() {
-        return UUID.randomUUID().toString().substring(0, 6); // 6 char random code
-    }
-
-    // Get game session by room code
-    @Transactional(readOnly = true)
-    public GameSession getGameSession(String roomCode) {
-        if (roomCode == null || roomCode.trim().isEmpty()) {
-            throw new IllegalArgumentException("Room code cannot be null or empty.");
-        }
-
-        GameRoom gameRoom = gameRoomRepository.findByRoomCode(roomCode);
-        if (gameRoom == null) {
-            throw new EntityNotFoundException("Game room not found for the given room code.");
-        }
-
-        GameSession gameSession = gameSessionRepository.findByGameRoom(gameRoom);
-        if (gameSession == null) {
-            throw new EntityNotFoundException("No game session found for the given game room.");
-        }
-
-        return gameSession;
-    }
-
-    // Update the game session (e.g., player's move)
-    @Transactional
-    public GameSession updateGameSession(String roomCode, String gameState) {
-        if (roomCode == null || roomCode.trim().isEmpty()) {
-            throw new IllegalArgumentException("Room code cannot be null or empty.");
-        }
-
-        if (gameState == null || gameState.trim().isEmpty()) {
-            throw new IllegalArgumentException("Game state cannot be null or empty.");
-        }
-
-        // Fetch game room by room code
-        GameRoom gameRoom = gameRoomRepository.findByRoomCode(roomCode);
-        if (gameRoom == null) {
-            throw new EntityNotFoundException("Game room not found for the given room code.");
-        }
-
-        // Fetch existing game session
-        GameSession gameSession = gameSessionRepository.findByGameRoom(gameRoom);
-        if (gameSession == null) {
-            throw new EntityNotFoundException("No game session found for the given game room.");
-        }
-
-        // Update the game state
-        gameSession.setGameState(gameState);
-
-        // Save the updated game session
-        return gameSessionRepository.save(gameSession);
-    }
+//
+//    @Transactional
+//    public GameRoom createGameRoom(Player player) {
+//        if (player == null || player.getUsername() == null) {
+//            throw new IllegalArgumentException("Player must be valid.");
+//        }
+//
+//        // Check if player already exists, if not save the player
+//        if (player.getId() == null) {
+//            // Save the player if it is not already persisted
+//            player = playerRepository.save(player);
+//        }
+//
+//        // Create the GameRoom
+//        GameRoom gameRoom = new GameRoom();
+//        gameRoom.setRoomCode(generateRoomCode());
+//        gameRoom.setPlayer1(player);
+//        gameRoom.setStatus(String.valueOf(PlayerStatus.WAITING));
+//        gameRoom.setCreatedAt(LocalDateTime.now());
+//
+//        // Save the game room
+//        return gameRoomRepository.save(gameRoom);
+//    }
+//
+//
+//    // Find a waiting room and join as player 2
+//    @Transactional
+//    public GameRoom joinGameRoom(Player player) {
+//        if (player == null || player.getUsername() == null) {
+//            throw new IllegalArgumentException("Player must be valid.");
+//        }
+//
+//        // Check if the player already exists in the database
+//        if (player.getId() == null) {
+//            // Save the player if it is not already persisted
+//            player = playerRepository.save(player);
+//        }
+//
+//        // Fetch available waiting room
+//        List<GameRoom> waitingRooms = gameRoomRepository.findByStatus(String.valueOf(PlayerStatus.WAITING));
+//        if (waitingRooms.isEmpty()) {
+//            throw new IllegalStateException("No available game rooms to join.");
+//        }
+//
+//        GameRoom gameRoom = waitingRooms.get(0);  // Get the first available waiting room
+//        gameRoom.setPlayer2(player);
+//        gameRoom.setStatus(String.valueOf(GameRoomStatus.Ongoing));
+//
+//        // Update game room to reflect the new state
+//        gameRoomRepository.save(gameRoom);
+//
+//        // Create and save a new game session
+//        GameSession gameSession = new GameSession();
+//        gameSession.setGameRoom(gameRoom);
+//        gameSession.setGameState(String.valueOf(GameRoomStatus.Initialized));
+//        gameSessionRepository.save(gameSession);
+//
+//        return gameRoom;
+//    }
+//
+//    // Generate random room code
+//    private String generateRoomCode() {
+//        return UUID.randomUUID().toString().substring(0, 6); // 6 char random code
+//    }
+//
+//    // Get game session by room code
+//    @Transactional(readOnly = true)
+//    public GameSession getGameSession(String roomCode) {
+//        if (roomCode == null || roomCode.trim().isEmpty()) {
+//            throw new IllegalArgumentException("Room code cannot be null or empty.");
+//        }
+//
+//        GameRoom gameRoom = gameRoomRepository.findByRoomCode(roomCode);
+//        if (gameRoom == null) {
+//            throw new EntityNotFoundException("Game room not found for the given room code.");
+//        }
+//
+//        GameSession gameSession = gameSessionRepository.findByGameRoom(gameRoom);
+//        if (gameSession == null) {
+//            throw new EntityNotFoundException("No game session found for the given game room.");
+//        }
+//
+//        return gameSession;
+//    }
+//
+//    // Update the game session (e.g., player's move)
+//    @Transactional
+//    public GameSession updateGameSession(String roomCode, String gameState) {
+//        if (roomCode == null || roomCode.trim().isEmpty()) {
+//            throw new IllegalArgumentException("Room code cannot be null or empty.");
+//        }
+//
+//        if (gameState == null || gameState.trim().isEmpty()) {
+//            throw new IllegalArgumentException("Game state cannot be null or empty.");
+//        }
+//
+//        // Fetch game room by room code
+//        GameRoom gameRoom = gameRoomRepository.findByRoomCode(roomCode);
+//        if (gameRoom == null) {
+//            throw new EntityNotFoundException("Game room not found for the given room code.");
+//        }
+//
+//        // Fetch existing game session
+//        GameSession gameSession = gameSessionRepository.findByGameRoom(gameRoom);
+//        if (gameSession == null) {
+//            throw new EntityNotFoundException("No game session found for the given game room.");
+//        }
+//
+//        // Update the game state
+//        gameSession.setGameState(gameState);
+//
+//        // Save the updated game session
+//        return gameSessionRepository.save(gameSession);
+//    }
 
 
 

@@ -189,71 +189,71 @@ public class GameController {
         }
     }
 
-    //create ludo room
-    @PostMapping("/create-ludo-room")
-    public ResponseEntity<?> createGameRoom(@Valid @RequestBody Player player, BindingResult result) {
-        // If validation fails, return a detailed error message
-        if (result.hasErrors()) {
-            StringBuilder errorMessages = new StringBuilder("Validation failed: ");
-            for (FieldError error : result.getFieldErrors()) {
-                errorMessages.append(error.getField()).append(" - ").append(error.getDefaultMessage()).append("; ");
-            }
-            return ResponseEntity.badRequest().body(errorMessages.toString());
-        }
-
-        try {
-            // Proceed to create the game room if validation is successful
-            GameRoom gameRoom = gameService.createGameRoom(player);
-            return new ResponseEntity<>(gameRoom, HttpStatus.CREATED);
-        } catch (Exception e) {
-            // Handle any other errors (e.g., player not found)
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Error creating game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // Join an existing game room
-    @PostMapping("/join-ludo-room")
-    public ResponseEntity<?> joinGameRoom(@Valid @RequestBody Player player, BindingResult result) {
-        // If validation fails, return a detailed error message
-        if (result.hasErrors()) {
-            StringBuilder errorMessages = new StringBuilder("Validation failed: ");
-            for (FieldError error : result.getFieldErrors()) {
-                errorMessages.append(error.getField()).append(" - ").append(error.getDefaultMessage()).append("; ");
-            }
-            return ResponseEntity.badRequest().body(errorMessages.toString());
-        }
-
-        try {
-            GameRoom gameRoom = gameService.joinGameRoom(player);
-            return new ResponseEntity<>(gameRoom, HttpStatus.OK);
-        } catch (IllegalStateException e) {
-            // Handle case where no rooms are available
-            exceptionHandling.handleException(e);
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            // Handle invalid player details
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Something went wrong:  " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-
-    // Get game session state by room code
-    @GetMapping("/{roomCode}")
-    public ResponseEntity<?> getGameSession(@PathVariable String roomCode) {
-        try {
-            GameSession gameSession = gameService.getGameSession(roomCode);
-            return new ResponseEntity<>(gameSession, HttpStatus.OK);
-        } catch (EntityNotFoundException e) {
-            // Handle case where room code is not found
-            exceptionHandling.handleException(e);
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
-        }catch (Exception e){
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Something went wrong: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+//    //create ludo room
+//    @PostMapping("/create-ludo-room")
+//    public ResponseEntity<?> createGameRoom(@Valid @RequestBody Player player, BindingResult result) {
+//        // If validation fails, return a detailed error message
+//        if (result.hasErrors()) {
+//            StringBuilder errorMessages = new StringBuilder("Validation failed: ");
+//            for (FieldError error : result.getFieldErrors()) {
+//                errorMessages.append(error.getField()).append(" - ").append(error.getDefaultMessage()).append("; ");
+//            }
+//            return ResponseEntity.badRequest().body(errorMessages.toString());
+//        }
+//
+//        try {
+//            // Proceed to create the game room if validation is successful
+//            GameRoom gameRoom = gameService.createGameRoom(player);
+//            return new ResponseEntity<>(gameRoom, HttpStatus.CREATED);
+//        } catch (Exception e) {
+//            // Handle any other errors (e.g., player not found)
+//            exceptionHandling.handleException(e);
+//            return responseService.generateErrorResponse("Error creating game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+//        }
+//    }
+//
+//    // Join an existing game room
+//    @PostMapping("/join-ludo-room")
+//    public ResponseEntity<?> joinGameRoom(@Valid @RequestBody Player player, BindingResult result) {
+//        // If validation fails, return a detailed error message
+//        if (result.hasErrors()) {
+//            StringBuilder errorMessages = new StringBuilder("Validation failed: ");
+//            for (FieldError error : result.getFieldErrors()) {
+//                errorMessages.append(error.getField()).append(" - ").append(error.getDefaultMessage()).append("; ");
+//            }
+//            return ResponseEntity.badRequest().body(errorMessages.toString());
+//        }
+//
+//        try {
+//            GameRoom gameRoom = gameService.joinGameRoom(player);
+//            return new ResponseEntity<>(gameRoom, HttpStatus.OK);
+//        } catch (IllegalStateException e) {
+//            // Handle case where no rooms are available
+//            exceptionHandling.handleException(e);
+//            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+//        } catch (Exception e) {
+//            // Handle invalid player details
+//            exceptionHandling.handleException(e);
+//            return responseService.generateErrorResponse("Something went wrong:  " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+//        }
+//    }
+//
+//
+//    // Get game session state by room code
+//    @GetMapping("/{roomCode}")
+//    public ResponseEntity<?> getGameSession(@PathVariable String roomCode) {
+//        try {
+//            GameSession gameSession = gameService.getGameSession(roomCode);
+//            return new ResponseEntity<>(gameSession, HttpStatus.OK);
+//        } catch (EntityNotFoundException e) {
+//            // Handle case where room code is not found
+//            exceptionHandling.handleException(e);
+//            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+//        }catch (Exception e){
+//            exceptionHandling.handleException(e);
+//            return responseService.generateErrorResponse("Something went wrong: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+//        }
+//    }
 
 //    // Update the game session (player's move)
 //    @PutMapping("/session/{roomCode}")
@@ -271,5 +271,8 @@ public class GameController {
 //            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
 //        }
 //    }
+
+
+
 
 }
