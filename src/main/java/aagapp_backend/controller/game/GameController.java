@@ -196,7 +196,7 @@ public class GameController {
     }
 
     //create ludo room
-    @PostMapping("/create-ludo-room")
+/*    @PostMapping("/create-ludo-room")
     public ResponseEntity<?> createGameRoom(@Valid @RequestBody Player player, BindingResult result) {
         // If validation fails, return a detailed error message
         if (result.hasErrors()) {
@@ -215,10 +215,10 @@ public class GameController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error creating game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     // Join an existing game room
-    @PostMapping("/join-ludo-room")
+/*    @PostMapping("/join-ludo-room")
     public ResponseEntity<?> joinGameRoom(@Valid @RequestBody Player player, BindingResult result) {
         // If validation fails, return a detailed error message
         if (result.hasErrors()) {
@@ -258,7 +258,8 @@ public class GameController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Something went wrong: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
+
 
 //    // Update the game session (player's move)
 //    @PutMapping("/session/{roomCode}")
@@ -276,5 +277,8 @@ public class GameController {
 //            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
 //        }
 //    }
+
+
+
 
 }

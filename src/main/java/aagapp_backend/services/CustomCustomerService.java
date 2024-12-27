@@ -100,4 +100,11 @@ public class CustomCustomerService {
     }
 
 
+    public CustomCustomer getCustomerById(Long customerId) {
+        return entityManager.createQuery("SELECT c FROM CustomCustomer c WHERE c.id = :customerId", CustomCustomer.class)
+                .setParameter("customerId", customerId)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+    }
 }
