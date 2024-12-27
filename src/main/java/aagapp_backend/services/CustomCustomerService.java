@@ -3,6 +3,7 @@ package aagapp_backend.services;
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 
+import aagapp_backend.enums.ProfileStatus;
 import org.springframework.stereotype.Service;
 
 import jakarta.persistence.EntityManager;
@@ -81,7 +82,7 @@ public class CustomCustomerService {
         return entityManager.createQuery(Constant.PHONE_QUERY_OTP, CustomCustomer.class)
                 .setParameter("mobileNumber", mobileNumber)
                 .setParameter("countryCode", countryCode)
-                .setParameter("otp", null)
+                .setParameter("profileStatus", ProfileStatus.ACTIVE)
                 .getResultStream()
                 .findFirst()
                 .orElse(null);
@@ -106,4 +107,14 @@ public class CustomCustomerService {
                 .findFirst()
                 .orElse(null);
     }
+
+    public CustomCustomer findCustomCustomerByReferralCode(String referralCode) {
+        return entityManager.createQuery(Constant.REFERRAL_CODE_QUERY, CustomCustomer.class)
+               .setParameter("referralCode", referralCode)
+               .getResultStream()
+               .findFirst()
+               .orElse(null);
+    }
+
+
 }

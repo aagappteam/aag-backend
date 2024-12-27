@@ -3,6 +3,7 @@ package aagapp_backend.services;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +77,7 @@ public class TwilioService {
                 customerDetails.setCountryCode(countryCode);
                 customerDetails.setMobileNumber(mobileNumber);
                 customerDetails.setOtp(otp);
+                customerDetails.setProfileStatus(ProfileStatus.PENDING);
                 entityManager.persist(customerDetails);
                 return ResponseEntity.ok(Map.of(
                         "otp", otp,

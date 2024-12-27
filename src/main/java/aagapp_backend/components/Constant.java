@@ -10,9 +10,12 @@ public class Constant {
     public static final long MAX_PDF_SIZE = 1 * 1024 * 1024;
     public static final long MIN_PDF_SIZE = 500 * 1024;
     public static final String BEARER_CONST= "Bearer ";
+    public static final String REFERRAL_CODE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.referralCode = :referralCode";
+    public static final float USER_REFERAL_BALANCE = 50.0f;
+    public static final String REFERAL_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
-    public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.otp=:otp";
+    public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
     public static String ID_QUERY = "SELECT c FROM CustomCustomer c WHERE c.customer_id = :customer_id";
     public static final String FIND_ALL_SERVICE_PROVIDER_TEST_STATUS_QUERY = "SELECT q FROM ServiceProviderTestStatus q";
     public static final String FIND_ALL_SERVICE_PROVIDER_TEST_RANK_QUERY = "SELECT q FROM ServiceProviderRank q";
