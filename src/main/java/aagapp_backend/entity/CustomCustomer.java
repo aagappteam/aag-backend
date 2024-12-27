@@ -123,6 +123,9 @@ public class CustomCustomer {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
 
+
+    private String refferalCode;
+
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = new Date();

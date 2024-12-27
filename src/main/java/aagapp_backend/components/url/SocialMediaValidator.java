@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class SocialMediaValidator {
     private static final Pattern FACEBOOK_PATTERN = Pattern.compile("^https://(www\\.)?facebook\\.com/(profile\\.php\\?id=\\d+|[a-zA-Z0-9.\\-_]+)(/)?$");
-//    private static final Pattern TWITTER_PATTERN = Pattern.compile("^https://(www\\.)?twitter\\.com/(?:@)?[a-zA-Z0-9_]{1,15}/?$");
     private static final Pattern TWITTER_PATTERN = Pattern.compile("^(https?://)?(www\\.)?twitter\\.com/(?:@)?[a-zA-Z0-9_]{1,15}/?$");
 
     private static final Pattern SNAPCHAT_PATTERN = Pattern.compile("^https://(www\\.)?snapchat\\.com/add/[^/]+/?$");

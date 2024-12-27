@@ -21,8 +21,6 @@ import java.time.temporal.IsoFields;
 
 @Service
 public class PaymentFeatures {
-
-
     private GameRepository gameRepository;
     private GameService gameService;
     private PaymentRepository paymentRepository;
@@ -42,10 +40,10 @@ public class PaymentFeatures {
         this.paymentRepository = paymentRepository;
     }
     public ResponseEntity<?> canPublishGame(Long vendorId) throws LimitExceededException {
-
         try {
             PaymentStatus status = PaymentStatus.ACTIVE;
             Optional<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
+
 
             if (activePlanOptional.isEmpty()) {
                 return ResponseService.generateErrorResponse(
@@ -56,18 +54,8 @@ public class PaymentFeatures {
 
             PaymentEntity activePlan = activePlanOptional.get();
 
-            // Get the daily usage count of games published by the vendor
             int dailyUsage = gameService.countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
 
-
-            // Get the current year and week number
-         /*   int year = LocalDate.now().getYear();
-            int weekOfYear = LocalDate.now().get(ChronoField.ALIGNED_WEEK_OF_YEAR); */// Correctly get the ISO week of the year
-
-            // Get the weekly usage count of games published by the vendor
-          /*  int weeklyUsage = gameService.countGamesByVendorIdAndWeek(vendorId, year, weekOfYear);*/
-
-            System.out.println(dailyUsage +  " dailyUsage " );
 
             // Compare daily usage with the daily limit
             if (dailyUsage >= activePlan.getDailyLimit()) {
@@ -90,7 +78,5 @@ public class PaymentFeatures {
             );
         }
     }
-
-
 
 }
