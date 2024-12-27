@@ -25,6 +25,9 @@ public class GameRequest {
 
     private Long themeId;
 
+    private Integer minPlayersPerTeam;
+    private Integer maxPlayersPerTeam;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;
 }

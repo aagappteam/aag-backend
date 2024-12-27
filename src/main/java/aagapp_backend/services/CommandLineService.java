@@ -20,7 +20,6 @@ public class CommandLineService implements CommandLineRunner {
     @PersistenceContext
     private EntityManager entityManager;
 
-
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -43,7 +42,6 @@ public class CommandLineService implements CommandLineRunner {
 
         if (entityManager.createQuery("SELECT COUNT(t) FROM ThemeEntity t", Long.class).getSingleResult() == 0) {
 
-            // Adding some predefined themes
             ThemeEntity theme1 = new ThemeEntity();
             theme1.setName("Space Adventure");
             theme1.setDescription("A thrilling space-themed experience.");

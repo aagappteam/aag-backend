@@ -38,8 +38,6 @@ public class CustomCustomer {
     @Nullable
     private String password;
 
-
-
     @Nullable
     private String profilePic;
 
@@ -110,6 +108,9 @@ public class CustomCustomer {
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
+
+
+    private String refferalCode;
 
     @PreUpdate
     public void preUpdate() {

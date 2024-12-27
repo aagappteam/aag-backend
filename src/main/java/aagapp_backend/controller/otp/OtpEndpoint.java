@@ -134,6 +134,8 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.CUSTOMER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
             }
 
+
+
             Bucket bucket = rateLimiterService.resolveBucket(customerDetails.getMobileNumber(), "/otp/send-otp");
             if (bucket.tryConsume(1)) {
                 if (!customCustomerService.isValidMobileNumber(mobileNumber)) {

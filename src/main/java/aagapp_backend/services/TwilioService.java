@@ -3,6 +3,7 @@ package aagapp_backend.services;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import java.util.Random;
 
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
+
 @Service
 public class TwilioService {
 
@@ -46,9 +48,10 @@ public class TwilioService {
 
     @Autowired
     public void setVenderService(@Lazy
-                                      VenderServiceImpl venderService) {
+                                 VenderServiceImpl venderService) {
         this.venderService = venderService;
     }
+
     @Autowired
     public TwilioService(ExceptionHandlingImplement exceptionHandlingImplement, CustomCustomerService customCustomerService) {
         this.exceptionHandling = exceptionHandlingImplement;
@@ -76,18 +79,20 @@ public class TwilioService {
                 customerDetails.setCountryCode(countryCode);
                 customerDetails.setMobileNumber(mobileNumber);
                 customerDetails.setOtp(otp);
+                customerDetails.setProfileStatus(ProfileStatus.PENDING);
                 entityManager.persist(customerDetails);
                 return ResponseEntity.ok(Map.of(
                         "otp", otp,
                         "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber
                 ));
             } else if (existingvendor != null) {
+
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                         "status", ApiConstants.STATUS_ERROR,
                         "status_code", HttpStatus.BAD_REQUEST,
                         "message", ApiConstants.NUMBER_ALREADY_REGISTERED_SERVICE_PROVIDER
                 ));
-            }else {
+            } else {
                 existingCustomer.setOtp(otp);
                 entityManager.merge(existingCustomer);
                 return ResponseEntity.ok(Map.of(
@@ -129,7 +134,7 @@ public class TwilioService {
         }
     }
 
-    public String sendOtp(String countryCode, String mobileNumber,String otp) {
+    public String sendOtp(String countryCode, String mobileNumber, String otp) {
 
         Twilio.init(accountSid, authToken);
         String completeMobileNumber = countryCode + mobileNumber;
@@ -137,7 +142,7 @@ public class TwilioService {
         String messageBody = "Your OTP is: " + otp;
 
         try {
-           Message message = Message.creator(
+            Message message = Message.creator(
                     new PhoneNumber(completeMobileNumber),
                     new PhoneNumber(twilioPhoneNumber),
                     messageBody
@@ -159,18 +164,17 @@ public class TwilioService {
         }
 
         try {
-
-
             String otp = generateOTP();
 //            this.sendOtp(countryCode,mobileNumber,otp);
 
-            VendorEntity existingServiceProvider = venderService.findServiceProviderByPhone(mobileNumber,countryCode);
+            VendorEntity existingServiceProvider = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
 
             if (existingServiceProvider == null) {
                 existingServiceProvider = new VendorEntity();
                 existingServiceProvider.setCountry_code(countryCode);
                 existingServiceProvider.setMobileNumber(mobileNumber);
                 existingServiceProvider.setOtp(otp);
+                existingServiceProvider.setIsVerified(0);
                 entityManager.persist(existingServiceProvider);
             } else {
                 existingServiceProvider.setOtp(null);
@@ -179,7 +183,8 @@ public class TwilioService {
             }
 
             String maskedNumber = this.genereateMaskednumber(mobileNumber);
-            return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber,otp,HttpStatus.OK);
+            return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber, otp, HttpStatus.OK);
+
 
         } catch (ApiException e) {
             exceptionHandling.handleApiException(e);
