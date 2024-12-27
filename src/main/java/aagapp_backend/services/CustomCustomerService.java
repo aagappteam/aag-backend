@@ -107,4 +107,14 @@ public class CustomCustomerService {
                 .findFirst()
                 .orElse(null);
     }
+
+    public CustomCustomer findCustomCustomerByReferralCode(String referralCode) {
+        return entityManager.createQuery(Constant.REFERRAL_CODE_QUERY, CustomCustomer.class)
+               .setParameter("referralCode", referralCode)
+               .getResultStream()
+               .findFirst()
+               .orElse(null);
+    }
+
+
 }
