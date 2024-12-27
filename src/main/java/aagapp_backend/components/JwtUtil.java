@@ -142,6 +142,7 @@ public class JwtUtil {
                 throw new IllegalArgumentException("Token is required");
             }
 
+
             String userAgent = extractUserAgent(token);
 
             return Jwts.parserBuilder()

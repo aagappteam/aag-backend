@@ -150,7 +150,7 @@ public class GameService {
 
         return query.getResultList();
     }
-    public Game publishGame(GameRequest gameRequest, Long vendorId) throws LimitExceededException {
+    public Game publishLudoGame(GameRequest gameRequest, Long vendorId) throws LimitExceededException {
         try {
             Game game = new Game();
             game.setName(gameRequest.getName());
@@ -191,12 +191,19 @@ public class GameService {
                 game.setScheduledAt(scheduledInKolkata);
                 game.setEndDate(scheduledInKolkata.plusHours(4));
 
-
             } else {
-                game.setStatus(GameStatus.SCHEDULED);
+                game.setStatus(GameStatus.ACTIVE);
                 game.setScheduledAt(nowInKolkata.plusMinutes(15));
                 game.setEndDate(nowInKolkata.plusHours(4));
 
+            }
+
+            if(gameRequest.getMinPlayersPerTeam()!=null){
+                game.setMinPlayersPerTeam(gameRequest.getMinPlayersPerTeam());
+            }
+
+            if(gameRequest.getMaxPlayersPerTeam()!=null){
+                game.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
             }
 
             game.setCreatedDate(nowInKolkata);
@@ -444,7 +451,6 @@ public class GameService {
                    .findFirst()
                    .orElseThrow(() -> new IllegalStateException("Game ID: " + gameId + " does not belong to Vendor ID: " + vendorId));
 
-           System.out.println("Game ID: " + gameId + " Vendor ID: " + vendorId + " Game: " + game);
 
            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
            ZonedDateTime scheduledAtInKolkata = game.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));

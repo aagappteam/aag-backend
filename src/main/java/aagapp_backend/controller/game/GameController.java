@@ -22,6 +22,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import javax.naming.LimitExceededException;
+import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -106,7 +107,6 @@ public class GameController {
             @RequestParam(defaultValue = "10") int size
     ) {
         try {
-
             if (page < 0) {
                 throw new IllegalArgumentException("Page number cannot be negative");
             }
@@ -114,17 +114,25 @@ public class GameController {
                 throw new IllegalArgumentException("Size must be between 1 and 100");
             }
 
-
             Pageable pageable = PageRequest.of(page, size);
+
             Page<Game> gamesPage = gameService.findGamesScheduledForToday(vendorId, pageable);
 
             return responseService.generateSuccessResponse(
-                    "Game fetched successfully", gamesPage, HttpStatus.CREATED
+                    "Games fetched successfully", gamesPage, HttpStatus.OK
             );
+
+        } catch (IllegalArgumentException e) {
+
+            return responseService.generateErrorResponse(
+                    "Invalid input: " + e.getMessage(), HttpStatus.BAD_REQUEST
+            );
+
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-
-            return responseService.generateErrorResponse("Error fetching games by vendor : " + e, HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse(
+                    "Error fetching games by vendor: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
     }
 
@@ -133,15 +141,13 @@ public class GameController {
     public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @RequestBody GameRequest gameRequest) {
         try {
 
-
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
 
             if (paymentEntity.getStatusCode() != HttpStatus.OK) {
                 return paymentEntity;
             }
 
-
-            Game publishedGame = gameService.publishGame(gameRequest, vendorId);
+            Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId);
 
             if (gameRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse(
@@ -202,7 +208,6 @@ public class GameController {
         }
 
         try {
-            // Proceed to create the game room if validation is successful
             GameRoom gameRoom = gameService.createGameRoom(player);
             return new ResponseEntity<>(gameRoom, HttpStatus.CREATED);
         } catch (Exception e) {

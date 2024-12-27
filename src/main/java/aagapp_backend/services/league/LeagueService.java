@@ -5,7 +5,6 @@ import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.FeeToMove;
 import aagapp_backend.entity.league.League;
-import aagapp_backend.enums.GameStatus;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.services.exception.ExceptionHandlingService;
@@ -15,16 +14,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Field;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class LeagueService {
@@ -143,7 +138,7 @@ public class LeagueService {
                 league.setStatus(LeagueStatus.SCHEDULED);
             } else {
                 league.setScheduledAt(nowInKolkata.plusMinutes(15));
-                league.setStatus(LeagueStatus.SCHEDULED);
+                league.setStatus(LeagueStatus.ACTIVE);
                 league.setEndDate(nowInKolkata.plusHours(4));
 
             }
@@ -155,8 +150,8 @@ public class LeagueService {
 
             league.setCreatedDate(nowInKolkata);
             league.setUpdatedDate(nowInKolkata);
-            league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
-            league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
+          /*  league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
+            league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());*/
 
             league.setLeagueType(leagueRequest.getLeagueType());
 
