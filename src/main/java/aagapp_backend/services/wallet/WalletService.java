@@ -54,6 +54,7 @@ public class WalletService {
             if (isTest) {
                 //implement this logic according to realtime wallet
                 //TODO: implement
+                wallet.setIsTest(true);
                 System.out.println("wallet created  successfully for test wallet " + customer);
             } else {
                 //TODO: implement
