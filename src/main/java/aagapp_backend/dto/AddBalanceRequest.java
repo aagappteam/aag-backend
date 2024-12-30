@@ -17,4 +17,7 @@ public class AddBalanceRequest {
     @NotNull
     @Positive(message = "Amount must be a positive number")
     private float amount;
+
+    @NotNull(message = "Is True must not be null")
+    private Boolean isTest;
 }
