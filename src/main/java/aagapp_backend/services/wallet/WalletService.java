@@ -12,6 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 public class WalletService {
 
@@ -81,8 +84,12 @@ public class WalletService {
                 return responseService.generateErrorResponse("No wallet found for the customer with ID: " + customerId, HttpStatus.NOT_FOUND);
             }
 
+            Map<String, Object> balanceData = new HashMap<>();
+            balanceData.put("walletBalance", wallet.getBalance());
+            balanceData.put("bonusBalance", customer.getBonusBalance());
+
             // Return the wallet balance
-            return responseService.generateSuccessResponse("Wallet balance retrieved successfully", Float.toString(wallet.getBalance()), HttpStatus.OK);
+            return responseService.generateSuccessResponse("Wallet balance retrieved successfully", balanceData, HttpStatus.OK);
         } catch (Exception e) {
 //            logger.error("Error occurred while retrieving wallet balance for customer ID: " + customerId, e);
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -159,8 +166,5 @@ public class WalletService {
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while withdrawing balance from wallet", e);
         }
-
     }
-
-
 }
