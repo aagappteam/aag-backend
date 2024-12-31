@@ -65,7 +65,7 @@ public class CustomerController {
             return ResponseService.generateSuccessResponse("List of customers : ", results, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }  catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse("Some issue in customers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -77,7 +77,7 @@ public class CustomerController {
         try {
 
             String password = (String) passwordDetails.get("password");
-             String newPassword = (String) passwordDetails.get("newPassword");
+            String newPassword = (String) passwordDetails.get("newPassword");
             CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, userId);
             if (customCustomer == null)
                 return responseService.generateErrorResponse("No records found", HttpStatus.NOT_FOUND);
@@ -90,15 +90,16 @@ public class CustomerController {
                     return responseService.generateErrorResponse("Empty password entered", HttpStatus.BAD_REQUEST);
                 if (passwordEncoder.matches(password, customCustomer.getPassword())) {
                     customCustomer.setPassword(passwordEncoder.encode(newPassword));
-                if (!passwordEncoder.matches(password, customCustomer.getPassword())) {
-                    customCustomer.setPassword(passwordEncoder.encode(password));
-                    entityManager.merge(customCustomer);
-                    return responseService.generateSuccessResponse("New Password Set", customCustomer, HttpStatus.OK);
-                }
-                return responseService.generateErrorResponse("Old Password and new Password cannot be same", HttpStatus.BAD_REQUEST);
-            }else
-                    return new ResponseEntity<>("Password do not match", HttpStatus.BAD_REQUEST);}
-        }   catch (Exception e) {
+                    if (!passwordEncoder.matches(password, customCustomer.getPassword())) {
+                        customCustomer.setPassword(passwordEncoder.encode(password));
+                        entityManager.merge(customCustomer);
+                        return responseService.generateSuccessResponse("New Password Set", customCustomer, HttpStatus.OK);
+                    }
+                    return responseService.generateErrorResponse("Old Password and new Password cannot be same", HttpStatus.BAD_REQUEST);
+                } else
+                    return new ResponseEntity<>("Password do not match", HttpStatus.BAD_REQUEST);
+            }
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error changing/updating password: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -133,7 +134,7 @@ public class CustomerController {
             else
                 entityManager.remove(customCustomer);
             return responseService.generateSuccessResponse("Customer Deleted", null, HttpStatus.OK);
-        }  catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
@@ -156,7 +157,6 @@ public class CustomerController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during logout");
         }
     }
-
 
 
 }

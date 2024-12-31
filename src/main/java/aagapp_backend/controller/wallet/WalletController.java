@@ -59,8 +59,10 @@ public class WalletController {
                 return responseService.generateErrorResponse("Amount must be greater than 0", HttpStatus.BAD_REQUEST);
             }
 
+            boolean isTest = addBalanceRequest.getIsTest();
+
             // Call the wallet service to add balance to the wallet
-            Wallet updatedWallet = walletService.addBalanceToWallet(customerId, amount);
+            Wallet updatedWallet = walletService.addBalanceToWallet(customerId, amount, isTest);
 
             // Return success response
             return responseService.generateSuccessResponse("Balance added successfully", updatedWallet, HttpStatus.OK);

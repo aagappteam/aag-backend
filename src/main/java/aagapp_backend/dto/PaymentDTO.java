@@ -2,6 +2,7 @@ package aagapp_backend.dto;
 
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.enums.PaymentStatus;
+import aagapp_backend.enums.PaymentType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,10 +20,11 @@ public class PaymentDTO {
     private String planName;
     private Integer dailyLimit;
     private PaymentStatus status;
+    private String transactionType;
     private LocalDateTime createdAt;
     private LocalDateTime expiryAt;
     private String planDuration;
-    private String paymentType;
+    private PaymentType paymentType;
     private Boolean isTest;
 
 
