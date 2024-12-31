@@ -589,4 +589,18 @@ public class VenderServiceImpl implements VenderService {
         return validateServiceProvider(existingServiceProvider, password, request, session);
     }
 
+
+    @Override
+    @Transactional
+    public VendorEntity saveOrUpdate(VendorEntity VendorEntity) {
+        try {
+            return entityManager.merge(VendorEntity);
+        }catch (Exception e) {
+            exceptionHandling.handleException(e);
+            throw new RuntimeException("Error saving or updating vendor: " + e.getMessage());
+        }
+
+    }
+
+
 }
