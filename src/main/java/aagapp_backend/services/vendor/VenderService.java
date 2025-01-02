@@ -20,4 +20,6 @@ public interface VenderService {
     ResponseEntity<?> loginWithPassword(Map<String, Object> loginDetails, HttpServletRequest request, HttpSession session);
 
     ResponseEntity<?> sendOtp(String mobileNumber, String countryCode, HttpSession session);
+
+    VendorEntity saveOrUpdate(VendorEntity vendorEntity);
 }

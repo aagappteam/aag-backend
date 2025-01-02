@@ -48,6 +48,7 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
 
     @Override
     public String handleException(Exception e) {
+        logger.error("Error occurred: " + e.getMessage());
 
         if (e instanceof ApiException) {
             return handleApiException((ApiException) e);

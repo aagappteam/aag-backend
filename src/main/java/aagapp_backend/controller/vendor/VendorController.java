@@ -151,7 +151,7 @@ public class VendorController {
             else
                 entityManager.remove(serviceProviderToBeDeleted);
             return responseService.generateSuccessResponse("Service Provider Deleted", null, HttpStatus.OK);
-        }  catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
@@ -163,11 +163,11 @@ public class VendorController {
     @PatchMapping("update")
     public ResponseEntity<?> updateServiceProvider(@RequestParam Long userId, @RequestBody Map<String, Object> serviceProviderDetails) throws Exception {
         try {
-            VendorEntity serviceProvider=entityManager.find(VendorEntity.class,userId);
-            if(serviceProvider==null)
-                return ResponseService.generateErrorResponse("Vendor with provided Id not found",HttpStatus.NOT_FOUND);
+            VendorEntity serviceProvider = entityManager.find(VendorEntity.class, userId);
+            if (serviceProvider == null)
+                return ResponseService.generateErrorResponse("Vendor with provided Id not found", HttpStatus.NOT_FOUND);
             return vendorService.updateServiceProvider(userId, serviceProviderDetails);
-        }  catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
@@ -183,7 +183,7 @@ public class VendorController {
             @RequestParam(defaultValue = "10") int limit) {
         try {
             int startPosition = page * limit;
-            Query query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS,VendorEntity.class);
+            Query query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS, VendorEntity.class);
             query.setFirstResult(startPosition);
             query.setMaxResults(limit);
 
@@ -211,9 +211,55 @@ public class VendorController {
             return ResponseService.generateSuccessResponse("Service Provider details retrieved successfully", serviceProviderEntity, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }  catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse("Some issue in fetching service provider details " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+    @PostMapping("/account-private")
+    public ResponseEntity<?> createAccountPrivate(@RequestParam Long userId, @RequestBody Map<String, Object> params) {
+        try {
+            Boolean isPrivate = (Boolean) params.get("isPrivate");
+            if (isPrivate == null) {
+                return responseService.generateErrorResponse("isPrivate field is required", HttpStatus.BAD_REQUEST);
+            }
+            VendorEntity vendorEntity = vendorService.getServiceProviderById(userId);
+            if (vendorEntity == null)
+                return responseService.generateErrorResponse("No vendor found with provided ID", HttpStatus.NOT_FOUND);
+
+            vendorEntity.setIsPrivate(isPrivate);
+            vendorService.saveOrUpdate(vendorEntity);
+            return responseService.generateSuccessResponse("Private account status updated successfully", vendorEntity, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error updating private account status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+
+    @Transactional
+    @PostMapping("/account-pause")
+    public ResponseEntity<?> makeAccountPouse(@RequestParam Long userId, @RequestBody Map<String, Object> params) {
+        try {
+            Boolean isPaused = (Boolean) params.get("isPaused");
+            String pauseReason = (String) params.get("pauseReason");
+            if (isPaused == null || pauseReason == null) {
+                return responseService.generateErrorResponse("isPaused and pauseReason fields are required", HttpStatus.BAD_REQUEST);
+            }
+            VendorEntity vendorEntity = vendorService.getServiceProviderById(userId);
+            if (vendorEntity == null) {
+                return responseService.generateErrorResponse("No vendor found with provided ID", HttpStatus.NOT_FOUND);
+            }
+            vendorEntity.setIsPaused(isPaused);
+            vendorEntity.setPauseReason(pauseReason);
+
+            return responseService.generateSuccessResponse("your account has been paused ", pauseReason, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error updating pause duration: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
