@@ -1,5 +1,6 @@
 package aagapp_backend.entity;
 
+import aagapp_backend.enums.ProfileStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -7,12 +8,14 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.CurrentTimestamp;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
 
 @Entity
-@Table(name = "CUSTOM_CUSTOMER")
+@Table(name = "CUSTOM_USER")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -35,13 +38,12 @@ public class CustomCustomer {
     @Nullable
     private String password;
 
-
-
     @Nullable
     private String profilePic;
 
     @Nullable
-    private String profileStatus;
+    @Column(name = "profile_status")
+    private ProfileStatus profileStatus;
 
     @NotNull(message = "Mobile number is required")
     @Column(name = "mobile_number", unique = true)
@@ -96,14 +98,22 @@ public class CustomCustomer {
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BankDetails> bankDetails = new ArrayList<>();
 
-    // Created Date with current timestamp
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdDate;
 
-    @Nullable
+    // update every login time with current time stamp
+    @CurrentTimestamp
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
+
+
+    private String refferalCode;
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = new Date();
+    }
 }

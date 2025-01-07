@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.CurrentTimestamp;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -45,10 +46,6 @@ public class VendorEntity {
 
     private String country_code;
 
-/*
-    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-(\\d{4})$", message = "Date of birth must be in the format DD-MM-YYYY")
-    private String date_of_birth;*/
-
 
     private String mobileNumber;
     private String otp;
@@ -63,9 +60,6 @@ public class VendorEntity {
 
     @Nullable
     private String password;
-
-    @Nullable
-    private String business_location;
 
 
     private int signedUp=0;
@@ -93,13 +87,8 @@ public class VendorEntity {
     @Column(length = 512)
     private String token;
 
-/*    @JsonIgnore
-    @JsonBackReference
-    @OneToMany(mappedBy = "serviceProvider", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CustomerReferrer> myReferrals = new ArrayList<>();
-    */
-/*    @Column(name="is_active")
-    private Boolean isActive;*/
+    @Column(name="is_active")
+    private Boolean isActive;
 
     @JsonBackReference("bankDetails-vendor")
     @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -111,10 +100,15 @@ public class VendorEntity {
     private Date createdDate;
 
 
-    @Nullable
+    @CurrentTimestamp
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = new Date();
+    }
 
 
     @JsonManagedReference("submissionentity-vendor")

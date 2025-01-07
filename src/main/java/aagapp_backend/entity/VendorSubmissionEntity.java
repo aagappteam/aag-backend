@@ -1,4 +1,5 @@
 package aagapp_backend.entity;
+import aagapp_backend.enums.ProfileStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -35,8 +36,9 @@ public class VendorSubmissionEntity {
 
     private Boolean approved = false;
 
+    private ProfileStatus profileStatus;
+
     @ElementCollection
     private Map<String, String> socialMediaUrls;
-
 
 }

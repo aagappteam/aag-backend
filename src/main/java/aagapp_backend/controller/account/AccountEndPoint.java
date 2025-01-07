@@ -1,17 +1,17 @@
 package aagapp_backend.controller.account;
 
-
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.game.Game;
 import aagapp_backend.services.*;
+import aagapp_backend.services.GameService.GameService;
 import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,8 +42,8 @@ public class AccountEndPoint {
     private OtpEndpoint otpEndpoint;
     private VenderService vendorService;
     private ResponseService responseService;
-
     private AdminService adminService;
+    private GameService gameService;
 
     @Autowired
     @Lazy
@@ -101,6 +101,10 @@ public class AccountEndPoint {
         this.responseService = responseService;
     }
 
+    @Autowired
+    public void setGameService(GameService gameService) {
+        this.gameService = gameService;
+    }
 
     @PostMapping("/login-with-otp")
     public ResponseEntity<?> verifyAndLogin(@RequestBody Map<String, Object> loginDetails, HttpSession session) {
@@ -123,8 +127,6 @@ public class AccountEndPoint {
                 loginDetails.put("mobileNumber", mobileNumber);
                 Integer role = (Integer) loginDetails.get("role");
 
-
-
                 if (customCustomerService.isValidMobileNumber(mobileNumber)) {
 
                     return loginWithPhoneOtp(loginDetails, session);
@@ -135,7 +137,6 @@ public class AccountEndPoint {
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.BAD_REQUEST);
-
         }
         return null;
     }
@@ -159,7 +160,7 @@ public class AccountEndPoint {
                 } else {
                     return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
                 }
-            }  else {
+            } else {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_DATA, HttpStatus.INTERNAL_SERVER_ERROR);
 
             }
@@ -235,25 +236,21 @@ public class AccountEndPoint {
                     return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
                 }
 
-            }
-            else if (roleService.findRoleName(role).equals(Constant.SUPPORT)  ||roleService.findRoleName(role).equals(Constant.ADMIN)) {
-                CustomAdmin customAdmin = adminService.findAdminByPhone(mobileNumber,countryCode);
+            } else if (roleService.findRoleName(role).equals(Constant.SUPPORT) || roleService.findRoleName(role).equals(Constant.ADMIN)) {
+                CustomAdmin customAdmin = adminService.findAdminByPhone(mobileNumber, countryCode);
                 if (customAdmin != null) {
-                    if (customAdmin.getRole() == 1 || customAdmin.getRole() ==2) {
+                    if (customAdmin.getRole() == Constant.SUPPORT_ROLE || customAdmin.getRole() == Constant.ADMIN_ROLE) {
                         if (adminService.findAdminByPhone(mobileNumber, countryCode).getOtp() != null) {
                             responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
                         }
                         return adminService.sendOtpForAdmin(mobileNumber, countryCode, session);
+                    } else {
+                        return responseService.generateErrorResponse("Custom Admin with mobileNumber " + mobileNumber + " does not have " + roleService.findRoleName(role) + " role", HttpStatus.BAD_REQUEST);
                     }
-                    else{
-                        return responseService.generateErrorResponse("Custom Admin with mobileNumber " + mobileNumber + " does not have "+ roleService.findRoleName(role)+" role", HttpStatus.BAD_REQUEST);
-                    }
-                }
-                else {
+                } else {
                     return responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
                 }
-            }
-            else {
+            } else {
                 responseService.generateErrorResponse(ApiConstants.ROLE_EMPTY, HttpStatus.BAD_REQUEST);
             }
             return responseService.generateErrorResponse("Role not specified", HttpStatus.BAD_REQUEST);
@@ -265,6 +262,7 @@ public class AccountEndPoint {
         }
 
     }
+
     @RequestMapping(value = "customer-login-with-password", method = RequestMethod.POST)
     public ResponseEntity<?> loginWithCustomerPassword(@RequestBody Map<String, Object> loginDetails, HttpSession session,
                                                        HttpServletRequest request) {
@@ -301,7 +299,7 @@ public class AccountEndPoint {
                         String userAgent = request.getHeader("User-Agent");
 
                         if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
-                            return ResponseEntity.ok(new OtpEndpoint.ApiResponse(existingToken, customer, HttpStatus.OK.value(), HttpStatus.OK.name(),"User has been logged in"));
+                            return ResponseEntity.ok(new OtpEndpoint.ApiResponse(existingToken, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in"));
 
                         } else {
 
@@ -309,25 +307,25 @@ public class AccountEndPoint {
                             existingCustomer.setToken(token);
                             em.persist(existingCustomer);
                             session.setAttribute(tokenKey, token);
-                            return ResponseEntity.ok(new OtpEndpoint.ApiResponse(token, customer, HttpStatus.OK.value(), HttpStatus.OK.name(),"User has been logged in"));
+                            return ResponseEntity.ok(new OtpEndpoint.ApiResponse(token, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in"));
                         }
 
                     } else {
-                        return responseService.generateErrorResponse("Incorrect Password" , HttpStatus.UNAUTHORIZED);
+                        return responseService.generateErrorResponse("Incorrect Password", HttpStatus.UNAUTHORIZED);
 
                     }
                 } else {
-                    return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND , HttpStatus.NOT_FOUND);
+                    return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
 
                 }
             } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {
-                return vendorService.loginWithPassword(loginDetails,request,session);
-            } else  return responseService.generateErrorResponse(ApiConstants.INVALID_ROLE , HttpStatus.BAD_REQUEST);
+                return vendorService.loginWithPassword(loginDetails, request, session);
+            } else return responseService.generateErrorResponse(ApiConstants.INVALID_ROLE, HttpStatus.BAD_REQUEST);
 
 
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }  catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -370,8 +368,7 @@ public class AccountEndPoint {
 
     @jakarta.transaction.Transactional
     @RequestMapping(value = "admin-login-with-password", method = RequestMethod.POST)
-    public ResponseEntity<?> adminLoginWithPassword(@RequestBody Map<String, Object> loginDetails, HttpSession session, HttpServletRequest request)
-    {
+    public ResponseEntity<?> adminLoginWithPassword(@RequestBody Map<String, Object> loginDetails, HttpSession session, HttpServletRequest request) {
         try {
 
             if (loginDetails == null) {
@@ -382,42 +379,35 @@ public class AccountEndPoint {
             String mobilenumber = (String) loginDetails.get("mobileNumber");
             String countryCode = (String) loginDetails.get("countryCode");
 
-            if(countryCode==null){
+            if (countryCode == null) {
                 countryCode = Constant.COUNTRY_CODE;
             }
 
             String password = (String) loginDetails.get("password");
             Integer role = (Integer) loginDetails.get("role");
 
-            CustomAdmin customAdmin=adminService.findAdminByPhone(mobilenumber,countryCode);
+            CustomAdmin customAdmin = adminService.findAdminByPhone(mobilenumber, countryCode);
             if (customAdmin == null) {
                 return responseService.generateErrorResponse("Custom Admin with username " + username + " not found", HttpStatus.NOT_FOUND);
             }
-            if(roleService.findRoleName(role).equals(Constant.ADMIN))
-            {
+            if (roleService.findRoleName(role).equals(Constant.ADMIN)) {
 
-                if (customAdmin.getRole() ==2) {
-                    return adminService.loginWithPasswordForAdmin(loginDetails, request,session);
+                if (customAdmin.getRole() == Constant.ADMIN_ROLE) {
+                    return adminService.loginWithPasswordForAdmin(loginDetails, request, session);
+                } else {
+                    return responseService.generateErrorResponse("Custom Admin with username " + username + " does not have " + roleService.findRoleName(role) + " role", HttpStatus.BAD_REQUEST);
                 }
-                else{
-                    return responseService.generateErrorResponse("Custom Admin with username " + username + " does not have "+ roleService.findRoleName(role)+" role", HttpStatus.BAD_REQUEST);
-                }
-            }
-            else if(roleService.findRoleName(role).equals(Constant.SUPPORT))
-            {
+            } else if (roleService.findRoleName(role).equals(Constant.SUPPORT)) {
 
-                if (customAdmin.getRole() ==1) {
-                    return adminService.loginWithPasswordForAdmin(loginDetails, request,session);
+                if (customAdmin.getRole() == Constant.SUPPORT_ROLE) {
+                    return adminService.loginWithPasswordForAdmin(loginDetails, request, session);
+                } else {
+                    return responseService.generateErrorResponse("Custom Admin with username " + username + " does not have " + roleService.findRoleName(role) + " role", HttpStatus.BAD_REQUEST);
                 }
-                else{
-                    return responseService.generateErrorResponse("Custom Admin with username " + username + " does not have "+ roleService.findRoleName(role)+" role", HttpStatus.BAD_REQUEST);
-                }
-            }
-
-            else {
+            } else {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_ROLE, HttpStatus.BAD_REQUEST);
             }
-        }  catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);

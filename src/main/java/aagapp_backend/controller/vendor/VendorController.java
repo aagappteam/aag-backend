@@ -40,41 +40,58 @@ public class VendorController {
     @Autowired
     private VenderService vendorService;
 
+
     @Transactional
     @PostMapping("create-or-update-password")
-    public ResponseEntity<?> deleteServiceProvider(@RequestBody Map<String, Object> passwordDetails, @RequestParam long userId) {
+    public ResponseEntity<?> createOrUpdatePassword(
+            @RequestBody Map<String, Object> passwordDetails,
+            @RequestParam long userId) {
         try {
-
             String password = (String) passwordDetails.get("password");
-             String newPassword = (String) passwordDetails.get("newPassword");
+            String newPassword = (String) passwordDetails.get("newPassword");
+
             VendorEntity serviceProvider = entityManager.find(VendorEntity.class, userId);
-            if (serviceProvider == null)
+            if (serviceProvider == null) {
                 return responseService.generateErrorResponse("No records found", HttpStatus.NOT_FOUND);
+            }
+
+            // Case 1: If the user doesn't have a password yet (first-time password creation)
             if (serviceProvider.getPassword() == null) {
+                if (password == null || password.isEmpty()) {
+                    return responseService.generateErrorResponse("Password is required", HttpStatus.BAD_REQUEST);
+                }
                 serviceProvider.setPassword(passwordEncoder.encode(password));
                 entityManager.merge(serviceProvider);
-                return responseService.generateSuccessResponse("Password created", serviceProvider, HttpStatus.OK);
+                return responseService.generateSuccessResponse("Password created successfully", serviceProvider, HttpStatus.CREATED);
             } else {
-                if (password == null || newPassword == null)
-                    return responseService.generateErrorResponse("Empty password entered", HttpStatus.BAD_REQUEST);
-                if (passwordEncoder.matches(password, serviceProvider.getPassword())) {
-                    serviceProvider.setPassword(passwordEncoder.encode(newPassword));
-                if (!passwordEncoder.matches(password, serviceProvider.getPassword())) {
-                    serviceProvider.setPassword(passwordEncoder.encode(password));
-                    entityManager.merge(serviceProvider);
-                    return responseService.generateSuccessResponse("New Password Set", serviceProvider, HttpStatus.OK);
+                // Case 2: User already has a password, so allow updating
+                if (newPassword == null || newPassword.isEmpty()) {
+                    return responseService.generateErrorResponse("New password is required", HttpStatus.BAD_REQUEST);
                 }
-                return responseService.generateErrorResponse("Old Password and new Password cannot be same", HttpStatus.BAD_REQUEST);
-            }else
-                    return new ResponseEntity<>("Password do not match", HttpStatus.BAD_REQUEST);}
-        }   catch (Exception e) {
+
+                // Verify the old password matches the stored one
+                if (password == null || !passwordEncoder.matches(password, serviceProvider.getPassword())) {
+                    return responseService.generateErrorResponse("Old password does not match", HttpStatus.BAD_REQUEST);
+                }
+
+                // Check if the new password is different from the old password
+                if (passwordEncoder.matches(newPassword, serviceProvider.getPassword())) {
+                    return responseService.generateErrorResponse("New password cannot be the same as the old password", HttpStatus.BAD_REQUEST);
+                }
+
+                serviceProvider.setPassword(passwordEncoder.encode(newPassword));
+                entityManager.merge(serviceProvider);
+                return responseService.generateSuccessResponse("Password updated successfully", serviceProvider, HttpStatus.OK);
+            }
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error changing/updating password: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+
     @GetMapping("/get-vendor")
-    public ResponseEntity<?> getServiceProviderById(@RequestParam Long userId) {
+    public ResponseEntity<?> getVendorDetailsById(@RequestParam Long userId) {
         try {
             VendorEntity serviceProviderEntity = vendorService.getServiceProviderById(userId);
             if (serviceProviderEntity == null) {

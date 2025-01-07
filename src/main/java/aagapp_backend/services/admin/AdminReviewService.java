@@ -1,8 +1,12 @@
 package aagapp_backend.services.admin;
 
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorSubmissionEntity;
+import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.repository.admin.VendorSubmissionRepository;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.vendor.VenderService;
+import jakarta.persistence.EntityManager;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +23,12 @@ public class AdminReviewService {
     @Autowired
     private ExceptionHandlingImplement exceptionHandlingImplement;
 
+    @Autowired
+    private EntityManager entitymanager;
+
+    @Autowired
+    private VenderService venderService;
+
     public Object reviewSubmission(Long id, boolean isApproved) {
         try {
             Optional<VendorSubmissionEntity> submission = submissionRepository.findById(id);
@@ -32,8 +42,19 @@ public class AdminReviewService {
                     return new SubmissionResponse("The submission has already been rejected.", vendorSubmissionEntity);
                 }
 
+                if(isApproved){
+                    vendorSubmissionEntity.setProfileStatus(ProfileStatus.ACTIVE);
+                }else {
+                    vendorSubmissionEntity.setProfileStatus(ProfileStatus.REJECTED);
+                }
+
                 vendorSubmissionEntity.setApproved(isApproved);
                 submissionRepository.save(vendorSubmissionEntity);
+                VendorEntity vendorEntity = new VendorEntity();
+
+                vendorEntity.setIsVerified(1);
+                entitymanager.persist(vendorEntity);
+
                 return new SubmissionResponse(isApproved ? "The submission has been successfully approved." : "The submission has been successfully rejected.", vendorSubmissionEntity);
             }
             return new SubmissionResponse("Submission with ID " + id + " not found.", null); // Submission not found

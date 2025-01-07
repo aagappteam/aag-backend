@@ -23,50 +23,63 @@ import java.util.Arrays;
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
+//    @Bean
+//    public WebSecurityCustomizer webSecurityCustomizer() {
+//        return (web) -> web.ignoring().requestMatchers(
+//                "/api/**/webjars/**",
+//                "/api/**/images/favicon-*",
+//                "/api/**/jhawtcode/**",
+//                "/swagger-ui.html",               // Correct path for Swagger UI
+//                "/swagger-ui/**",                 // Correct path for Swagger UI static resources
+//                "/swagger-resources/**",          // Swagger resource URL
+//                "/v3/api-docs/**",
+//                "/webjars/**",
+//                "/api/**/aagdocument/**",
+//                "/api/**/files/**"
+//        );
+//    }
+
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring().requestMatchers(
-                "/api/**/webjars/**",
-                "/api/**/images/favicon-*",
-                "/api/**/jhawtcode/**",
-                "/api/**/swagger-ui.html/**", // Remove /** at the end
-                "/api/**/swagger-resources/**",
-                "/api/**/v2/api-docs",
+                "/swagger-ui.html",               // Swagger UI path
+                "/swagger-ui/**",                 // Swagger UI static resources
+                "/swagger-resources/**",          // Swagger resource URL
+                "/v3/api-docs/**",                // OpenAPI docs path
+                "/webjars/**",                    // Webjar resources for Swagger
+                "/swagger-resources/**" ,          // Swagger resources
                 "/api/**/aagdocument/**",
                 "/api/**/files/**"
         );
     }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS configuration
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/swagger-resources/**",
-                                "/v3/api-docs",
-                                "/webjars/**",
-                                "/v2/api-docs",
-                                "/v3/api-docs/**",
-                                "/files/**",
-                                "/images/**",
-                                "/aagdocument/**",
-                                "/api/aagdocument/**",
-                                "/otp/**",
-                                "/account/**",
-                                "/test/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+   @Bean
+   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+       http
+               .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS configuration
+               .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
+               .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
+               .authorizeRequests(auth -> auth
+                       .requestMatchers(
+                               "/swagger-ui.html",           // Swagger UI path
+                               "/swagger-ui/**",             // Swagger UI resources
+                               "/swagger-resources/**",      // Swagger resources
+                               "/v3/api-docs/**",            // OpenAPI documentation
+                               "/webjars/**",                // Webjars for Swagger UI
+                               "/files/**",
+                               "/images/**",
+                               "/aagdocument/**",
+                               "/api/aagdocument/**",
+                               "/otp/**",
+                               "/account/**",
+                               "/test/**"
+                       ).permitAll() // Allow public access to Swagger UI and some other resources
+                       .anyRequest().authenticated() // Require authentication for all other paths
+               )
+               .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class); // Add JWT filter
 
-        return http.build();
-    }
-
+       return http.build();
+   }
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

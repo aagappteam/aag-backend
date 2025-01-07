@@ -95,6 +95,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String requestURI = request.getRequestURI();
 
+            if (requestURI.startsWith("/swagger-ui") || requestURI.startsWith("/v3/api-docs")) {
+                chain.doFilter(request, response);
+                return;
+            }
+
+
             if (isUnsecuredUri(requestURI) || bypassimages(requestURI)) {
                 chain.doFilter(request, response);
                 return;

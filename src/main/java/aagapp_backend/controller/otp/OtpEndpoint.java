@@ -6,6 +6,7 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.*;
 import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -13,6 +14,8 @@ import aagapp_backend.services.vendor.VenderServiceImpl;
 import com.twilio.Twilio;
 import com.twilio.exception.ApiException;
 import io.github.bucket4j.Bucket;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +50,9 @@ public class OtpEndpoint {
     private ResponseService responseService;
     @Value("${twilio.accountSid}")
     private String accountSid;
+    @Enumerated(EnumType.STRING)
+    private ProfileStatus profileStatus;
+
 
     @Autowired
     public void setAdminService(AdminService adminService) {
@@ -128,6 +134,8 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.CUSTOMER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
             }
 
+
+
             Bucket bucket = rateLimiterService.resolveBucket(customerDetails.getMobileNumber(), "/otp/send-otp");
             if (bucket.tryConsume(1)) {
                 if (!customCustomerService.isValidMobileNumber(mobileNumber)) {
@@ -195,6 +203,7 @@ public class OtpEndpoint {
 
                 if (otpEntered.equals(storedOtp)) {
                     existingCustomer.setOtp(null);
+                    existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
                     em.persist(existingCustomer);
 
 

@@ -1,3 +1,4 @@
+
 package aagapp_backend.services.exception;
 
 import com.twilio.exception.ApiException;
@@ -16,6 +17,8 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     public void handleHttpError(ResponseEntity<String> response) {
         HttpStatus statusCode = (HttpStatus) response.getStatusCode();
         String responseBody = response.getBody();
+        logger.error("HTTP Error: " + statusCode + ", Response Body: " + responseBody);
+
         throw new RuntimeException("HTTP Error: " + statusCode + ", Response Body: " + responseBody);
     }
 
@@ -23,6 +26,7 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     public String handleHttpClientErrorException(HttpClientErrorException e) {
         HttpStatus statusCode = (HttpStatus) e.getStatusCode();
         String responseBody = e.getResponseBodyAsString();
+        logger.error("HTTP Error: " + statusCode + ", Response Body: " +e);
         throw new RuntimeException("HTTP Client Error: " + statusCode + ", Response Body: " + responseBody, e);
     }
 
@@ -32,10 +36,11 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
         String errorMessage = e.getMessage();
 
         if (errorCode == 21408) {
+            logger.error("HTTP Client Error " + errorMessage, e);
 
             throw new RuntimeException("Permission to send SMS not enabled for the region", e);
         } else {
-
+            logger.error("HTTP Client Error: " + errorMessage, e);
             throw new RuntimeException("Api  Error: " + errorCode + ", Response Body: " + errorMessage, e);
         }
 
@@ -49,6 +54,7 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
         } else if (e instanceof HttpClientErrorException) {
             return handleHttpClientErrorException((HttpClientErrorException) e);
         } else {
+            logger.error("Unhandled exception" + e.getMessage());
             return "Something went wrong: " + e.getMessage();
         }
 
@@ -57,10 +63,14 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     public String handleException(HttpStatus status, Exception e) {
 
         if(status.equals(HttpStatus.BAD_REQUEST)){
+            logger.error("Bad request " + status + " " + e.getMessage());
             return status + " " + e.getMessage();
         }else if(status.equals(HttpStatus.INTERNAL_SERVER_ERROR)){
+
+            logger.error("Internal server error " + status + " " + e.getMessage());
             return status + " " + e.getMessage();
         }else{
+            logger.error("Unhandled exception " + status + " " + e.getMessage());
             return "Something went wrong: " + e.getMessage();
         }
 
