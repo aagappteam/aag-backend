@@ -31,5 +31,6 @@ public class ApiConstants {
     public static final String INVALID_ROLE = "Invalid role";
     public static final String CUSTOMER_SERVICE_NOT_INITIALIZED = "Customer service not initialized";
     public static final String ROLE_EMPTY = "Role cannot be empty";
+    public static final String INVALID_REFERRAL_CODE= "You have provided wrong or expired referral code";
 }
 

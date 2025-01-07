@@ -10,6 +10,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.CurrentTimestamp;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
@@ -44,6 +45,20 @@ public class CustomCustomer {
     @Nullable
     @Column(name = "profile_status")
     private ProfileStatus profileStatus;
+
+    @Nullable
+    @Column(name = "referral_code", unique = true)
+    private String referralCode;
+
+
+    @Nullable
+    @Column(name = "referred_count")
+    private int referralCount;
+
+    @Nullable
+    @Column(name = "bonus_balance")
+    private BigDecimal bonusBalance = BigDecimal.ZERO;
+
 
     @NotNull(message = "Mobile number is required")
     @Column(name = "mobile_number", unique = true)
@@ -103,7 +118,6 @@ public class CustomCustomer {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdDate;
 
-    // update every login time with current time stamp
     @CurrentTimestamp
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -116,4 +130,6 @@ public class CustomCustomer {
     public void preUpdate() {
         this.updatedDate = new Date();
     }
+
+
 }
