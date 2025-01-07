@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -209,7 +208,7 @@ public class VendorController {
 
     @Transactional
     @PostMapping("/account-pause")
-    public ResponseEntity<?> makeAccountPouse(@RequestParam Long userId, @RequestBody Map<String, Object> params) {
+    public ResponseEntity<?> makeAccountPause(@RequestParam Long userId, @RequestBody Map<String, Object> params) {
         try {
             Boolean isPaused = (Boolean) params.get("isPaused");
             String pauseReason = (String) params.get("pauseReason");
