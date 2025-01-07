@@ -82,7 +82,8 @@ public class VendorSubmissionService {
 
     public VendorSubmissionEntity getVendorSubmissionByServiceProviderId(Long serviceProviderId) {
         try {
-            String jpql = "SELECT v FROM VendorSubmissionEntity v WHERE v.vendorEntity.service_provider_id = :serviceProviderId";
+//            String jpql = "SELECT v FROM VendorSubmissionEntity v WHERE v.vendorEntity.service_provider_id = :serviceProviderId";
+            String jpql = "SELECT v FROM VendorSubmissionEntity v JOIN FETCH v.vendorEntity WHERE v.vendorEntity.service_provider_id = :serviceProviderId";
 
             TypedQuery<VendorSubmissionEntity> query = entityManager.createQuery(jpql, VendorSubmissionEntity.class);
             query.setParameter("serviceProviderId", serviceProviderId);
