@@ -18,7 +18,7 @@ import java.util.List;
 
 @Entity
 @Table(
-        name = "aag_game",
+        name = "aag_ludo_game",
         indexes = {
                 @Index(name = "idx_vendor_id_aag_ludo_game", columnList = "vendor_id"),
                 @Index(name = "idx_status_aag_ludo_game", columnList = "status"),
