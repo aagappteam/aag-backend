@@ -93,7 +93,7 @@ public class Game {
             this.maxPlayersPerTeam = 2; // Default value for maxPlayersPerTeam
         }
         if (this.endDate == null) {
-            this.endDate = ZonedDateTime.now();
+            this.endDate = ZonedDateTime.now().plusHours(4);
         }
     }
 

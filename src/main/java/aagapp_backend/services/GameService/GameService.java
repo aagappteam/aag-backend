@@ -290,7 +290,7 @@ public class GameService {
     @Transactional
     public Page<Game> getAllGames(String status, Long vendorId, Pageable pageable) {
         try {
-            StringBuilder sql = new StringBuilder("SELECT * FROM aag_game g WHERE 1=1");
+            StringBuilder sql = new StringBuilder("SELECT * FROM aag_ludo_game g WHERE 1=1");
 
             if (status != null && !status.isEmpty()) {
                 sql.append(" AND g.status = :status");
@@ -326,7 +326,7 @@ public class GameService {
                 }
             });
 
-            String countSql = "SELECT COUNT(*) FROM aag_game g WHERE 1=1";
+            String countSql = "SELECT COUNT(*) FROM aag_ludo_game g WHERE 1=1";
             if (status != null && !status.isEmpty()) {
                 countSql += " AND g.status = :status";
             }
@@ -518,7 +518,7 @@ public class GameService {
     @Transactional
     public Page<Game> findGamesByVendor(Long vendorId, String status, Pageable pageable) {
         try {
-            String sql = "SELECT * FROM aag_game g WHERE g.vendor_id = :vendorId";
+            String sql = "SELECT * FROM aag_ludo_game g WHERE g.vendor_id = :vendorId";
 
             if (status != null && !status.isEmpty()) {
                 sql += " AND g.status = :status";
@@ -549,7 +549,7 @@ public class GameService {
                 }
             });
 
-            String countSql = "SELECT COUNT(*) FROM aag_game g WHERE g.vendor_id = :vendorId";
+            String countSql = "SELECT COUNT(*) FROM aag_ludo_game g WHERE g.vendor_id = :vendorId";
             if (status != null && !status.isEmpty()) {
                 countSql += " AND g.status = :status";
             }
@@ -575,7 +575,7 @@ public class GameService {
             ZonedDateTime startOfDay = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
             ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
 
-            String sql = "SELECT * FROM aag_game g WHERE g.vendor_id = :vendorId "
+            String sql = "SELECT * FROM aag_ludo_game g WHERE g.vendor_id = :vendorId "
                     + "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay "
                     + "AND g.status = :status";
 
@@ -654,7 +654,7 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT * FROM aag_game g WHERE g.vendor_id = :vendorId " +
+            String sql = "SELECT * FROM aag_ludo_game g WHERE g.vendor_id = :vendorId " +
                     "AND g.scheduled_at <= :nowInKolkata AND g.status = :status";
 
 

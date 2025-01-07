@@ -11,6 +11,7 @@ public class Constant {
     public static final long MIN_PDF_SIZE = 500 * 1024;
     public static final String BEARER_CONST= "Bearer ";
     public static String COUNTRY_CODE = "+91";
+
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
     public static String ID_QUERY = "SELECT c FROM CustomCustomer c WHERE c.customer_id = :customer_id";
