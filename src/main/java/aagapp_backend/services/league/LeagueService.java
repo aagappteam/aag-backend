@@ -104,7 +104,7 @@ public class LeagueService {
             League league = new League();
             league.setName(leagueRequest.getName());
             league.setDescription(leagueRequest.getDescription());
-            league.setFeeToMoves(leagueRequest.getFeeToMoves());
+//            league.setFeeToMoves(leagueRequest.getFeeToMoves());
 
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
             if (vendorEntity == null) {
@@ -119,10 +119,10 @@ public class LeagueService {
             league.setVendorId(vendorId);
             league.setTheme(theme);
 
-            if (leagueRequest.getFeeToMoves() != null && !leagueRequest.getFeeToMoves().isEmpty()) {
+           /* if (leagueRequest.getFeeToMoves() != null && !leagueRequest.getFeeToMoves().isEmpty()) {
                 Double selectedFee = leagueRequest.getFeeToMoves().get(0).getRupees();
                 league.calculateMoves(selectedFee);
-            }
+            }*/
 
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
@@ -211,7 +211,7 @@ public class LeagueService {
             if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
 
 
-                if (leagueRequest.getFeeToMoves() != null && !leagueRequest.getFeeToMoves().isEmpty()) {
+/*                if (leagueRequest.getFeeToMoves() != null && !leagueRequest.getFeeToMoves().isEmpty()) {
                     league.setFeeToMoves(leagueRequest.getFeeToMoves());
                     Double entryFee = leagueRequest.getFeeToMoves().get(0).getRupees();
 
@@ -226,7 +226,7 @@ public class LeagueService {
                     } else {
                         league.setMoves(0);
                     }
-                }
+                }*/
                 ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
                 league.setScheduledAt(scheduledInKolkata);

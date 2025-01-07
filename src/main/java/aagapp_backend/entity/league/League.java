@@ -42,9 +42,10 @@ public class League {
     @Column(nullable = false)
     private String name;
 
-    @ElementCollection
+   /* @ElementCollection
     @CollectionTable(name = "game_fee_to_moves", joinColumns = @JoinColumn(name = "game_id"))
-    private List<FeeToMove> feeToMoves;
+
+    private List<FeeToMove> feeToMoves;*/
 
     private Integer moves;
 
@@ -84,8 +85,8 @@ public class League {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime updatedDate;
 
-    /*private Integer minPlayersPerTeam;
-    private Integer maxPlayersPerTeam;*/
+    private Integer minPlayersPerTeam;
+    private Integer maxPlayersPerTeam;
 
     @PreUpdate
     public void preUpdate() {
@@ -94,18 +95,18 @@ public class League {
 
     @PrePersist
     public void prePersist() {
-/*        if (this.minPlayersPerTeam == null) {
+       if (this.minPlayersPerTeam == null) {
             this.minPlayersPerTeam = 1; // Default value for minPlayersPerTeam
         }
         if (this.maxPlayersPerTeam == null) {
             this.maxPlayersPerTeam = 2; // Default value for maxPlayersPerTeam
-        }*/
+        }
         if (this.endDate == null) {
             this.endDate = ZonedDateTime.now();
         }
     }
 
-    public void calculateMoves(Double selectedFee) {
+   /* public void calculateMoves(Double selectedFee) {
         if (feeToMoves != null && selectedFee != null) {
             FeeToMove feeToMove = feeToMoves
                     .stream()
@@ -121,5 +122,5 @@ public class League {
         } else {
             this.moves = 0;
         }
-    }
+    }*/
 }

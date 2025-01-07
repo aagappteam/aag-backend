@@ -20,12 +20,12 @@ import java.util.List;
 @Table(
         name = "aag_game",
         indexes = {
-                @Index(name = "idx_vendor_id", columnList = "vendor_id"),
-                @Index(name = "idx_status", columnList = "status"),
-                @Index(name = "idx_scheduled_at", columnList = "scheduled_at"),
-                @Index(name = "idx_created_date", columnList = "created_date"),
-                @Index(name = "idx_vendor_id_status", columnList = "vendor_id, status"),
-                @Index(name = "idx_scheduled_at_status", columnList = "scheduled_at, status")
+                @Index(name = "idx_vendor_id_aag_ludo_game", columnList = "vendor_id"),
+                @Index(name = "idx_status_aag_ludo_game", columnList = "status"),
+                @Index(name = "idx_scheduled_at_aag_ludo_game", columnList = "scheduled_at"),
+                @Index(name = "idx_created_date_aag_ludo_game", columnList = "created_date"),
+                @Index(name = "idx_vendor_id_status_aag_ludo_game", columnList = "vendor_id, status"),
+                @Index(name = "idx_scheduled_at_status_aag_ludo_game", columnList = "scheduled_at, status")
         }
 )
 @Getter
