@@ -150,8 +150,15 @@ public class LeagueService {
 
             league.setCreatedDate(nowInKolkata);
             league.setUpdatedDate(nowInKolkata);
-          /*  league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
-            league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());*/
+
+            if(leagueRequest.getMinPlayersPerTeam()!=null){
+                league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
+            }
+
+            if(leagueRequest.getMaxPlayersPerTeam()!=null){
+                league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
+            }
+
 
             league.setLeagueType(leagueRequest.getLeagueType());
 
