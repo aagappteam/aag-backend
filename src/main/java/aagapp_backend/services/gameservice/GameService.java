@@ -261,7 +261,7 @@ public class GameService {
             // 6. Update player status to PLAYING
             updatePlayerStatusToPlaying(player);
 
-            return responseService.generateSuccessResponse("Player join in the Game Room ", game + " and " + player, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Player join in the Game Room ", game.getId(), HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -334,7 +334,7 @@ public class GameService {
     // Create a new empty room for a game
     private GameRoom createNewEmptyRoom(Game game) {
         GameRoom newRoom = new GameRoom();
-        newRoom.setMaxPlayers(2);
+        newRoom.setMaxPlayers(game.getMaxPlayersPerTeam());
         newRoom.setCurrentPlayers(new ArrayList<>());
         newRoom.setStatus(GameRoomStatus.INITIALIZED);
         newRoom.setCreatedAt(LocalDateTime.now());

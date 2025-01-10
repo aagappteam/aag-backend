@@ -41,10 +41,7 @@ public class GameRoom {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-//    @Column(name = "current_players")
-//    private Integer currentPlayersCount;
 
-    // New fields for managing player limits
     @Column(name = "max_players", nullable = false)
     private int maxPlayers;
 
