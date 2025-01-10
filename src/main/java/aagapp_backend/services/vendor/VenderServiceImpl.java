@@ -373,6 +373,7 @@ public class VenderServiceImpl implements VenderService {
                 .orElse(null);
     }
 
+
     public List<VendorEntity> getAllSp(int page, int limit) {
         int startPosition = page * limit;
         TypedQuery<VendorEntity> query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS, VendorEntity.class);

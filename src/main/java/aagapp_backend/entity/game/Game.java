@@ -40,7 +40,6 @@ public class Game {
     @Column(nullable = false)
     private String name;
 
-
     @ElementCollection
     @CollectionTable(name = "game_fee_to_moves", joinColumns = @JoinColumn(name = "game_id"))
     private List<FeeToMove> feeToMoves;

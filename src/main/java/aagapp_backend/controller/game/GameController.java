@@ -1,16 +1,17 @@
 package aagapp_backend.controller.game;
+
 import aagapp_backend.dto.GameRequest;
+import aagapp_backend.dto.JoinRoomRequest;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.game.GameRoom;
-import aagapp_backend.entity.game.GameSession;
 import aagapp_backend.entity.players.Player;
-import aagapp_backend.services.GameService.GameService;
+import aagapp_backend.enums.GameRoomStatus;
+import aagapp_backend.repository.game.GameRoomRepository;
+import aagapp_backend.repository.game.PlayerRepository;
+import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentFeatures;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -18,12 +19,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+
 import javax.naming.LimitExceededException;
-import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/games")
@@ -33,10 +33,22 @@ public class GameController {
     private ExceptionHandlingImplement exceptionHandling;
     private ResponseService responseService;
     private PaymentFeatures paymentFeatures;
+    private PlayerRepository playerRepository;
+    private GameRoomRepository gameRoomRepository;
 
     @Autowired
     public void setGameService(@Lazy GameService gameService) {
         this.gameService = gameService;
+    }
+
+    @Autowired
+    public void setPlayerRepository(@Lazy PlayerRepository playerRepository) {
+        this.playerRepository = playerRepository;
+    }
+
+    @Autowired
+    public void setGameRoomRepository(@Lazy GameRoomRepository gameRoomRepository) {
+        this.gameRoomRepository = gameRoomRepository;
     }
 
     @Autowired
@@ -55,12 +67,7 @@ public class GameController {
     }
 
     @GetMapping("/get-all-games")
-    public ResponseEntity<?> getAllGames(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "vendorId", required = false) Long vendorId
-    ) {
+    public ResponseEntity<?> getAllGames(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(value = "status", required = false) String status, @RequestParam(value = "vendorId", required = false) Long vendorId) {
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<Game> gamesPage = gameService.getAllGames(status, vendorId, pageable);
@@ -74,12 +81,7 @@ public class GameController {
 
 
     @GetMapping("/get-games-by-vendor/{vendorId}")
-    public ResponseEntity<?> getGamesByVendorId(
-            @PathVariable Long vendorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(value = "status", required = false) String status
-    ) {
+    public ResponseEntity<?> getGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(value = "status", required = false) String status) {
         try {
 
             if (page < 0) {
@@ -101,11 +103,7 @@ public class GameController {
 
 
     @GetMapping("/get-active-games-by-vendor/{vendorId}")
-    public ResponseEntity<?> getActiveGamesByVendorId(
-            @PathVariable Long vendorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
+    public ResponseEntity<?> getActiveGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         try {
             if (page < 0) {
                 throw new IllegalArgumentException("Page number cannot be negative");
@@ -118,21 +116,15 @@ public class GameController {
 
             Page<Game> gamesPage = gameService.findGamesScheduledForToday(vendorId, pageable);
 
-            return responseService.generateSuccessResponse(
-                    "Games fetched successfully", gamesPage, HttpStatus.OK
-            );
+            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage, HttpStatus.OK);
 
         } catch (IllegalArgumentException e) {
 
-            return responseService.generateErrorResponse(
-                    "Invalid input: " + e.getMessage(), HttpStatus.BAD_REQUEST
-            );
+            return responseService.generateErrorResponse("Invalid input: " + e.getMessage(), HttpStatus.BAD_REQUEST);
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse(
-                    "Error fetching games by vendor: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR
-            );
+            return responseService.generateErrorResponse("Error fetching games by vendor: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -150,13 +142,9 @@ public class GameController {
             Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId);
 
             if (gameRequest.getScheduledAt() != null) {
-                return responseService.generateSuccessResponse(
-                        "Game scheduled successfully", publishedGame, HttpStatus.CREATED
-                );
+                return responseService.generateSuccessResponse("Game scheduled successfully", publishedGame, HttpStatus.CREATED);
             } else {
-                return responseService.generateSuccessResponse(
-                        "Game published successfully", publishedGame, HttpStatus.CREATED
-                );
+                return responseService.generateSuccessResponse("Game published successfully", publishedGame, HttpStatus.CREATED);
             }
         } catch (LimitExceededException e) {
             return responseService.generateErrorResponse("Exceeded maximum allowed games ", HttpStatus.TOO_MANY_REQUESTS);
@@ -176,11 +164,7 @@ public class GameController {
     }
 
     @PutMapping("/update/{vendorId}/{gameId}")
-    public ResponseEntity<?> updateStatuses(
-            @PathVariable Long vendorId,
-            @PathVariable Long gameId,
-            @RequestBody GameRequest gameRequest
-    ) {
+    public ResponseEntity<?> updateStatuses(@PathVariable Long vendorId, @PathVariable Long gameId, @RequestBody GameRequest gameRequest) {
         try {
             ResponseEntity<?> response = gameService.updateGame(vendorId, gameId, gameRequest);
 
@@ -195,90 +179,15 @@ public class GameController {
         }
     }
 
-    //create ludo room
-/*    @PostMapping("/create-ludo-room")
-    public ResponseEntity<?> createGameRoom(@Valid @RequestBody Player player, BindingResult result) {
-        // If validation fails, return a detailed error message
-        if (result.hasErrors()) {
-            StringBuilder errorMessages = new StringBuilder("Validation failed: ");
-            for (FieldError error : result.getFieldErrors()) {
-                errorMessages.append(error.getField()).append(" - ").append(error.getDefaultMessage()).append("; ");
-            }
-            return ResponseEntity.badRequest().body(errorMessages.toString());
-        }
-
+    @PostMapping("/joinRoom")
+    public ResponseEntity<?> joinGameRoom(@RequestBody JoinRoomRequest joinRoomRequest) {
         try {
-            GameRoom gameRoom = gameService.createGameRoom(player);
-            return new ResponseEntity<>(gameRoom, HttpStatus.CREATED);
+            return gameService.joinRoom(joinRoomRequest.getPlayerId(), joinRoomRequest.getGameId());
         } catch (Exception e) {
-            // Handle any other errors (e.g., player not found)
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Error creating game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
-
-    // Join an existing game room
-/*    @PostMapping("/join-ludo-room")
-    public ResponseEntity<?> joinGameRoom(@Valid @RequestBody Player player, BindingResult result) {
-        // If validation fails, return a detailed error message
-        if (result.hasErrors()) {
-            StringBuilder errorMessages = new StringBuilder("Validation failed: ");
-            for (FieldError error : result.getFieldErrors()) {
-                errorMessages.append(error.getField()).append(" - ").append(error.getDefaultMessage()).append("; ");
-            }
-            return ResponseEntity.badRequest().body(errorMessages.toString());
-        }
-
-        try {
-            GameRoom gameRoom = gameService.joinGameRoom(player);
-            return new ResponseEntity<>(gameRoom, HttpStatus.OK);
-        } catch (IllegalStateException e) {
-            // Handle case where no rooms are available
-            exceptionHandling.handleException(e);
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            // Handle invalid player details
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Something went wrong:  " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in joining game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
-    // Get game session state by room code
-    @GetMapping("/{roomCode}")
-    public ResponseEntity<?> getGameSession(@PathVariable String roomCode) {
-        try {
-            GameSession gameSession = gameService.getGameSession(roomCode);
-            return new ResponseEntity<>(gameSession, HttpStatus.OK);
-        } catch (EntityNotFoundException e) {
-            // Handle case where room code is not found
-            exceptionHandling.handleException(e);
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
-        }catch (Exception e){
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Something went wrong: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
-
-
-//    // Update the game session (player's move)
-//    @PutMapping("/session/{roomCode}")
-//    public ResponseEntity<?> updateGameSession(
-//            @PathVariable String roomCode,
-//            @RequestBody @Valid GameStateDTO gameStateDTO) {
-//        try {
-//            GameSession gameSession = gameService.updateGameSession(roomCode, gameStateDTO.getGameState());
-//            return new ResponseEntity<>(gameSession, HttpStatus.OK);
-//        } catch (EntityNotFoundException e) {
-//            // Handle case where room code or game session is not found
-//            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
-//        } catch (IllegalArgumentException e) {
-//            // Handle invalid game state
-//            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-//        }
-//    }
-
-
 
 
 }
