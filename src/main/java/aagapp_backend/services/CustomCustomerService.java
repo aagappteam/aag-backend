@@ -92,7 +92,7 @@ public class CustomCustomerService {
 
     public CustomCustomer readCustomerById(Long customerId) {
         return entityManager.createQuery("SELECT c FROM CustomCustomer c WHERE c.id = :customerId", CustomCustomer.class)
-               .setParameter("customerId", customerId)
+                .setParameter("customerId", customerId)
                 .getResultStream()
                 .findFirst()
                 .orElse(null);
@@ -110,10 +110,10 @@ public class CustomCustomerService {
 
     public CustomCustomer findCustomCustomerByReferralCode(String referralCode) {
         return entityManager.createQuery(Constant.REFERRAL_CODE_QUERY, CustomCustomer.class)
-               .setParameter("referralCode", referralCode)
-               .getResultStream()
-               .findFirst()
-               .orElse(null);
+                .setParameter("referralCode", referralCode)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 
 

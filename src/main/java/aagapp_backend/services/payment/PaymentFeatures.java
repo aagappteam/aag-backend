@@ -4,7 +4,7 @@ import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.repository.game.GameRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
-import aagapp_backend.services.GameService.GameService;
+import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.ResponseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -13,11 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import javax.naming.LimitExceededException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoField;
 import java.util.Optional;
-import java.time.temporal.IsoFields;
 
 @Service
 public class PaymentFeatures {
@@ -55,7 +52,6 @@ public class PaymentFeatures {
             PaymentEntity activePlan = activePlanOptional.get();
 
             int dailyUsage = gameService.countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
-
 
             // Compare daily usage with the daily limit
             if (dailyUsage >= activePlan.getDailyLimit()) {
