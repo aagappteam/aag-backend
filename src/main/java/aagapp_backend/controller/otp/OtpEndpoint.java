@@ -6,9 +6,11 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.*;
 import aagapp_backend.services.admin.AdminService;
+import aagapp_backend.services.devicemange.DeviceMange;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.referal.ReferralService;
 import aagapp_backend.services.vendor.VenderServiceImpl;
@@ -31,6 +33,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -50,6 +53,12 @@ public class OtpEndpoint {
     @Value("${twilio.accountSid}")
     private String accountSid;
     private ReferralService referralService;
+    private DeviceMange deviceMange;
+
+    @Autowired
+    public void setDeviceMange(DeviceMange deviceMange) {
+        this.deviceMange = deviceMange;
+    }
 
 
     @Autowired
@@ -185,7 +194,6 @@ public class OtpEndpoint {
             String mobileNumber = (String) loginDetails.get("mobileNumber");
             String referredCode = (String) loginDetails.get("referralCode");
 
-
             if (role == null) {
                 return responseService.generateErrorResponse(ApiConstants.ROLE_EMPTY, HttpStatus.BAD_REQUEST);
             }
@@ -211,8 +219,15 @@ public class OtpEndpoint {
                 String userAgent = request.getHeader("User-Agent");
                 String tokenKey = "authToken_" + mobileNumber;
                 CustomCustomer customer = customCustomerService.readCustomerById(existingCustomer.getId());
+                Long userId = existingCustomer.getId();
 
                 String referralCode = referralService.generateReferralCode(existingCustomer);
+
+                boolean isNewDevice = deviceMange.isLoggedInFromNewDevice(userId, ipAddress, userAgent);
+                if (isNewDevice) {
+                    deviceMange.recordLoginDevice(customer, ipAddress, userAgent);
+                }
+
                 if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                     existingCustomer.setReferralCode(referralCode);
                     em.persist(existingCustomer);
@@ -431,6 +446,17 @@ public class OtpEndpoint {
             public CustomCustomer getUserDetails() {
                 return userDetails;
             }
+        }
+    }
+
+    @GetMapping("/details")
+    public ResponseEntity<?> getDeviceDetails(@RequestParam Long userId) {
+        try {
+            List<UserDevice> deviceDetails = deviceMange.getDeviceDetailsForUser(userId);
+            return ResponseEntity.ok(deviceDetails);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching device details: " + e.getMessage());
         }
     }
 
