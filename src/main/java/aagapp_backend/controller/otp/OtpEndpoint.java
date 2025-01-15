@@ -454,7 +454,17 @@ public class OtpEndpoint {
     @GetMapping("/customerdevice/details")
     public ResponseEntity<?> getDeviceDetails(@RequestParam Long userId) {
         try {
+            if (userId == null || userId <= 0) {
+                return responseService.generateErrorResponse("Invalid user ID provided.", HttpStatus.BAD_REQUEST);
+            }
+            CustomCustomer user = customCustomerService.findCustomCustomerById(userId);
+            if (user == null) {
+                return responseService.generateErrorResponse("User not found.", HttpStatus.NOT_FOUND);
+            }
             List<CustomerDeviceDTO> deviceDetails = deviceMange.getCustomerDeviceLoginDetails(userId);
+            if (deviceDetails == null || deviceDetails.isEmpty()) {
+                return responseService.generateErrorResponse("No device details found for the user.", HttpStatus.NOT_FOUND);
+            }
             return responseService.generateSuccessResponse("Customer login device details fetched.", deviceDetails, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
@@ -465,7 +475,17 @@ public class OtpEndpoint {
     @GetMapping("/vendordevice/details")
     public ResponseEntity<?> getVendorDeviceDetails(@RequestParam Long userId) {
         try {
+            if (userId == null || userId <= 0) {
+                return responseService.generateErrorResponse("Invalid user ID provided.", HttpStatus.BAD_REQUEST);
+            }
+            VendorEntity user = serviceProviderService.getServiceProviderById(userId);
+            if (user == null) {
+                return responseService.generateErrorResponse("User not found.", HttpStatus.NOT_FOUND);
+            }
             List<VendorDeviceDTO> deviceDetails = deviceMange.getVendorDeviceLoginDetails(userId);
+            if (deviceDetails == null || deviceDetails.isEmpty()) {
+                return responseService.generateErrorResponse("No device details found for the user.", HttpStatus.NOT_FOUND);
+            }
             return responseService.generateSuccessResponse("vendor login device details fetched.", deviceDetails, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
