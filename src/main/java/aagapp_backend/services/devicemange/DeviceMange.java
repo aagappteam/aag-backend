@@ -1,11 +1,13 @@
 package aagapp_backend.services.devicemange;
 
+import aagapp_backend.dto.CustomerDeviceDTO;
+import aagapp_backend.dto.VendorDeviceDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.entity.devices.VendorDevice;
-import aagapp_backend.repository.CustomerDeviceMangeRepository;
-import aagapp_backend.repository.VendorDeviceRepo;
+import aagapp_backend.repository.customcustomer.CustomerDeviceMangeRepository;
+import aagapp_backend.repository.vendor.VendorDeviceRepo;
 import aagapp_backend.services.CustomCustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,7 +78,6 @@ public class DeviceMange {
 
     public void recordVendorLoginDevice(VendorEntity user, String ipAddress, String userAgent) {
         VendorDevice vendorDevice = new VendorDevice();
-//        vendorDevice.setVendorId(user.getService_provider_id());
         vendorDevice.setVendor(user);
         vendorDevice.setIpAddress(ipAddress);
         vendorDevice.setUserAgent(userAgent);
@@ -84,16 +85,38 @@ public class DeviceMange {
         vendorDeviceRepo.save(vendorDevice);
     }
 
-    public List<UserDevice> getDeviceDetailsForUser(Long userId) {
+    public List<CustomerDeviceDTO> getCustomerDeviceLoginDetails(Long userId) {
         List<UserDevice> loginHistoryList = deviceMangeRepository.findByUserId(userId);
 
-        List<UserDevice> devices = new ArrayList<UserDevice>();
+        List<CustomerDeviceDTO> devices = new ArrayList<>();
         for (UserDevice device : loginHistoryList) {
-            devices.add(device);
+            CustomerDeviceDTO dto = new CustomerDeviceDTO(
+                    device.getUser().getId(),
+                    device.getIpAddress(),
+                    device.getUserAgent(),
+                    device.getLoginTime()
+            );
+            devices.add(dto);
 
         }
         return devices;
 
+    }
+
+    public List<VendorDeviceDTO> getVendorDeviceLoginDetails(Long userId) {
+        List<VendorDevice> loginHistoryList = vendorDeviceRepo.findByVendorId(userId);
+
+        List<VendorDeviceDTO> deviceDetails = new ArrayList<>();
+        for (VendorDevice device : loginHistoryList) {
+            VendorDeviceDTO dto = new VendorDeviceDTO(
+                    device.getVendor().getService_provider_id(),
+                    device.getIpAddress(),
+                    device.getUserAgent(),
+                    device.getLoginTime()
+            );
+            deviceDetails.add(dto);
+        }
+        return deviceDetails;
     }
 
 }

@@ -1,7 +1,6 @@
-package aagapp_backend.repository;
+package aagapp_backend.repository.customcustomer;
 
 import aagapp_backend.entity.devices.UserDevice;
-import aagapp_backend.entity.devices.VendorDevice;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

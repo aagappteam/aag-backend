@@ -3,6 +3,8 @@ package aagapp_backend.controller.otp;
 import aagapp_backend.components.CommonData;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
+import aagapp_backend.dto.CustomerDeviceDTO;
+import aagapp_backend.dto.VendorDeviceDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -449,14 +451,25 @@ public class OtpEndpoint {
         }
     }
 
-    @GetMapping("/details")
+    @GetMapping("/customerdevice/details")
     public ResponseEntity<?> getDeviceDetails(@RequestParam Long userId) {
         try {
-            List<UserDevice> deviceDetails = deviceMange.getDeviceDetailsForUser(userId);
-            return ResponseEntity.ok(deviceDetails);
+            List<CustomerDeviceDTO> deviceDetails = deviceMange.getCustomerDeviceLoginDetails(userId);
+            return responseService.generateSuccessResponse("Customer login device details fetched.", deviceDetails, HttpStatus.OK);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching device details: " + e.getMessage());
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching device details: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/vendordevice/details")
+    public ResponseEntity<?> getVendorDeviceDetails(@RequestParam Long userId) {
+        try {
+            List<VendorDeviceDTO> deviceDetails = deviceMange.getVendorDeviceLoginDetails(userId);
+            return responseService.generateSuccessResponse("vendor login device details fetched.", deviceDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching device details: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 

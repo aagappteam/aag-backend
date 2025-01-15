@@ -1,6 +1,5 @@
-package aagapp_backend.repository;
+package aagapp_backend.repository.vendor;
 
-import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.devices.VendorDevice;
 import org.springframework.data.jpa.repository.JpaRepository;
 
