@@ -50,6 +50,7 @@ public class VenderServiceImpl implements VenderService {
     private DeviceMange deviceMange;
 
     @Autowired
+    @Lazy
     public void setDeviceMange(DeviceMange deviceMange) {
         this.deviceMange = deviceMange;
     }
@@ -466,7 +467,7 @@ public class VenderServiceImpl implements VenderService {
                 Long userId = existingServiceProvider.getService_provider_id();
                 boolean isNewDevice = deviceMange.isVendorLoginFromNewDevice(userId, ipAddress, userAgent);
                 if (isNewDevice) {
-                    deviceMange.recordVendorLoginDevice(existingServiceProvider, ipAddress, userAgent);
+                    deviceMange.recordVendorLoginDevice(existingServiceProvider, ipAddress, userAgent, jwtUtil.generateToken(existingServiceProvider.getService_provider_id(), role, ipAddress, userAgent));
                 }
 
                 System.out.println("existingToken is " + existingToken);
@@ -617,6 +618,8 @@ public class VenderServiceImpl implements VenderService {
         }
 
     }
+
+
 
 
 }

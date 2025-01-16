@@ -22,4 +22,5 @@ public interface VenderService {
     ResponseEntity<?> sendOtp(String mobileNumber, String countryCode, HttpSession session);
 
     VendorEntity saveOrUpdate(VendorEntity vendorEntity);
+
 }

@@ -35,10 +35,16 @@ public class VendorDevice {
     private String ipAddress;
 
 
+
+
     @Column(name = "userAgent")
     private String userAgent;
 
     @Column(name = "loginTime")
     private LocalDateTime loginTime;
+
+    @Column(name = "updated_date")
+    private LocalDateTime updatedDate;
+
 }
 

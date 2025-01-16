@@ -10,6 +10,11 @@ import aagapp_backend.repository.customcustomer.CustomerDeviceMangeRepository;
 import aagapp_backend.repository.vendor.VendorDeviceRepo;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.vendor.VenderService;
+import aagapp_backend.services.vendor.VendorDeviceService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +29,8 @@ public class DeviceMange {
     private CustomerDeviceMangeRepository deviceMangeRepository;
 
     @Autowired
-    private VendorDeviceRepo vendorDeviceRepo;
+    @Lazy
+    private VendorDeviceService vendorDeviceService;  // Use VendorDeviceService
 
     @Autowired
     private CustomCustomerService customCustomerService;
@@ -32,6 +38,12 @@ public class DeviceMange {
     @Autowired
     private ExceptionHandlingImplement exceptionHandling;
 
+    @Autowired
+    private VendorDeviceRepo vendorDeviceRepo;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Method to check if the user is logged in from a new device
     public boolean isLoggedInFromNewDevice(Long user, String ipAddress, String userAgent) {
         try {
             if (ipAddress == null || userAgent == null) {
@@ -77,7 +89,8 @@ public class DeviceMange {
     }
 
 
-    public void recordLoginDevice(CustomCustomer user, String ipAddress, String userAgent) {
+    // Method to record customer login device
+    public void recordLoginDevice(CustomCustomer user, String ipAddress, String userAgent, String jwtToken) {
         try {
             UserDevice userDevice = new UserDevice();
             userDevice.setUser(user);
@@ -85,24 +98,26 @@ public class DeviceMange {
             userDevice.setUserAgent(userAgent);
             userDevice.setLoginTime(LocalDateTime.now());
             deviceMangeRepository.save(userDevice);
+
+            // Add the JWT token to the user's serialized token list
+            List<String> tokens = getSerializedTokenForCustomer(user);
+            tokens.add(jwtToken);
+            saveSerializedTokensForCustomer(user, tokens);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
         }
     }
 
-    public void recordVendorLoginDevice(VendorEntity user, String ipAddress, String userAgent) {
+    // Method to record vendor login device (delegated to VendorDeviceService)
+    public void recordVendorLoginDevice(VendorEntity user, String ipAddress, String userAgent, String jwtToken) {
         try {
-            VendorDevice vendorDevice = new VendorDevice();
-            vendorDevice.setVendor(user);
-            vendorDevice.setIpAddress(ipAddress);
-            vendorDevice.setUserAgent(userAgent);
-            vendorDevice.setLoginTime(LocalDateTime.now());
-            vendorDeviceRepo.save(vendorDevice);
+            vendorDeviceService.recordVendorLoginDevice(user, ipAddress, userAgent, jwtToken);  // Delegation
         } catch (Exception e) {
             exceptionHandling.handleException(e);
         }
     }
 
+    // Method to get the login details of a customer (list of devices)
     public List<CustomerDeviceDTO> getCustomerDeviceLoginDetails(Long userId) {
         try {
             List<UserDevice> loginHistoryList = deviceMangeRepository.findByUserId(userId);
@@ -111,30 +126,45 @@ public class DeviceMange {
             for (UserDevice device : loginHistoryList) {
                 CustomerDeviceDTO dto = new CustomerDeviceDTO(device.getUser().getId(), device.getIpAddress(), device.getUserAgent(), device.getLoginTime());
                 devices.add(dto);
-
             }
             return devices;
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return null;
         }
-
     }
 
+    // Method to get the login details of a vendor (list of devices)
     public List<VendorDeviceDTO> getVendorDeviceLoginDetails(Long userId) {
         try {
-            List<VendorDevice> loginHistoryList = vendorDeviceRepo.findByVendorId(userId);
-
-            List<VendorDeviceDTO> deviceDetails = new ArrayList<>();
-            for (VendorDevice device : loginHistoryList) {
-                VendorDeviceDTO dto = new VendorDeviceDTO(device.getVendor().getService_provider_id(), device.getIpAddress(), device.getUserAgent(), device.getLoginTime());
-                deviceDetails.add(dto);
-            }
-            return deviceDetails;
+            return vendorDeviceService.getVendorDeviceLoginDetails(userId);  // Delegation
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return null;
         }
     }
 
+    // Helper method to save the serialized JWT tokens list for a customer
+    private void saveSerializedTokensForCustomer(CustomCustomer user, List<String> tokens) {
+        try {
+            String serializedTokens = objectMapper.writeValueAsString(tokens);
+            user.setToken(serializedTokens); // Save serialized tokens to the user
+            customCustomerService.save(user);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+        }
+    }
+
+    // Helper method to retrieve the serialized JWT tokens list for a customer
+    private List<String> getSerializedTokenForCustomer(CustomCustomer user) {
+        try {
+            if (user.getToken() == null || user.getToken().isEmpty()) {
+                return new ArrayList<>();
+            }
+            return objectMapper.readValue(user.getToken(), new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return new ArrayList<>();
+        }
+    }
 }
