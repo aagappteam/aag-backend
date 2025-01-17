@@ -1,4 +1,4 @@
-package aagapp_backend.repository;
+package aagapp_backend.repository.customcustomer;
 
 import aagapp_backend.entity.CustomCustomer;
 import org.springframework.data.jpa.repository.JpaRepository;

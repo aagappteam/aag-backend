@@ -5,6 +5,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.*;
+import aagapp_backend.services.devicemange.DeviceMange;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.Nullable;
@@ -46,6 +47,13 @@ public class VenderServiceImpl implements VenderService {
     private JwtUtil jwtUtil;
     private ResponseService responseService;
     private TwilioService twilioService;
+    private DeviceMange deviceMange;
+
+    @Autowired
+    @Lazy
+    public void setDeviceMange(DeviceMange deviceMange) {
+        this.deviceMange = deviceMange;
+    }
 
     @Autowired
     public void setTwilioService(@Lazy
@@ -436,6 +444,7 @@ public class VenderServiceImpl implements VenderService {
                 mobileNumber = mobileNumber.substring(1);
             VendorEntity existingServiceProvider = findServiceProviderByPhone(mobileNumber, countryCode);
 
+
             if (existingServiceProvider == null) {
                 return responseService.generateErrorResponse("Invalid Data Provided ", HttpStatus.UNAUTHORIZED);
 
@@ -453,6 +462,13 @@ public class VenderServiceImpl implements VenderService {
                 existingServiceProvider.setOtp(null);
                 entityManager.merge(existingServiceProvider);
                 String existingToken = existingServiceProvider.getToken();
+
+
+                Long userId = existingServiceProvider.getService_provider_id();
+                boolean isNewDevice = deviceMange.isVendorLoginFromNewDevice(userId, ipAddress, userAgent);
+                if (isNewDevice) {
+                    deviceMange.recordVendorLoginDevice(existingServiceProvider, ipAddress, userAgent, jwtUtil.generateToken(existingServiceProvider.getService_provider_id(), role, ipAddress, userAgent));
+                }
 
                 System.out.println("existingToken is " + existingToken);
 //                Map<String,Object> serviceProviderResponse= sharedUtilityService.serviceProviderDetailsMap(existingServiceProvider);
@@ -602,6 +618,8 @@ public class VenderServiceImpl implements VenderService {
         }
 
     }
+
+
 
 
 }

@@ -1,5 +1,6 @@
 package aagapp_backend.entity;
 
+import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.enums.ProfileStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
+import java.util.Set;
 
 @Entity
 @Table(name = "CUSTOM_USER")
@@ -29,6 +31,10 @@ public class CustomCustomer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "customerId")
     private Long id;
+
+    @OneToMany(mappedBy = "user")
+    @JsonBackReference
+    private Set<UserDevice> devices;
 
     @Nullable
     private String name;
@@ -122,9 +128,6 @@ public class CustomCustomer {
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
-
-
-    private String refferalCode;
 
     @PreUpdate
     public void preUpdate() {

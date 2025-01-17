@@ -2,7 +2,7 @@ package aagapp_backend.services.referal;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
-import aagapp_backend.repository.CustomCustomerRepository;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import org.springframework.beans.factory.annotation.Autowired;

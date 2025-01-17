@@ -32,6 +32,7 @@ public class VendorEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "service_provider_id")
     private Long service_provider_id;
 
     @Nullable

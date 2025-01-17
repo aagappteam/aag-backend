@@ -116,5 +116,10 @@ public class CustomCustomerService {
                 .orElse(null);
     }
 
+    public CustomCustomer save(CustomCustomer customer) {
+        entityManager.persist(customer);
+        return customer;
+    }
+
 
 }
