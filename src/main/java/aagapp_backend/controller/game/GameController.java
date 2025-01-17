@@ -2,6 +2,7 @@ package aagapp_backend.controller.game;
 
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.dto.JoinRoomRequest;
+import aagapp_backend.dto.LeaveRoomRequest;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.players.Player;
@@ -189,5 +190,14 @@ public class GameController {
         }
     }
 
+    @PostMapping("/leftGameRoom")
+    public ResponseEntity<?> leaveGameRoom(@RequestBody LeaveRoomRequest leaveRoomRequest) {
+        try {
+            return gameService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getGameId());
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 }
