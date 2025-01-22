@@ -32,6 +32,7 @@ public class VendorEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "service_provider_id")
     private Long service_provider_id;
 
     @Nullable
@@ -55,14 +56,13 @@ public class VendorEntity {
 
     @Nullable
     @Email(message = "invalid email format")
-    @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",message = "Please enter a valid email address.")
+    @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "Please enter a valid email address.")
     private String primary_email;
 
     @Nullable
     private String password;
 
-
-    private int signedUp=0;
+    private int signedUp = 0;
 
     private int isVerified = 0;
 
@@ -87,8 +87,18 @@ public class VendorEntity {
     @Column(length = 512)
     private String token;
 
-    @Column(name="is_active")
+    @Column(name = "is_active")
     private Boolean isActive;
+
+    @Column(name = "is_private")
+    private Boolean isPrivate=false;
+
+    @Column(name = "is_paused")
+    private Boolean isPaused=false;
+
+    @Nullable
+    @Column(name = "pause_reason")
+    private String pauseReason;
 
     @JsonBackReference("bankDetails-vendor")
     @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)

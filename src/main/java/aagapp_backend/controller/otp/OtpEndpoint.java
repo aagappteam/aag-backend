@@ -3,19 +3,22 @@ package aagapp_backend.controller.otp;
 import aagapp_backend.components.CommonData;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
+import aagapp_backend.dto.CustomerDeviceDTO;
+import aagapp_backend.dto.VendorDeviceDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.*;
 import aagapp_backend.services.admin.AdminService;
+import aagapp_backend.services.devicemange.DeviceMange;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.referal.ReferralService;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import com.twilio.Twilio;
 import com.twilio.exception.ApiException;
 import io.github.bucket4j.Bucket;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +35,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -50,9 +54,19 @@ public class OtpEndpoint {
     private ResponseService responseService;
     @Value("${twilio.accountSid}")
     private String accountSid;
-    @Enumerated(EnumType.STRING)
-    private ProfileStatus profileStatus;
+    private ReferralService referralService;
+    private DeviceMange deviceMange;
 
+    @Autowired
+    public void setDeviceMange(DeviceMange deviceMange) {
+        this.deviceMange = deviceMange;
+    }
+
+
+    @Autowired
+    public void setReferralService(ReferralService referralService) {
+        this.referralService = referralService;
+    }
 
     @Autowired
     public void setAdminService(AdminService adminService) {
@@ -92,7 +106,7 @@ public class OtpEndpoint {
 
     @Autowired
     public void setCustomerService(CustomCustomerService customerService) {
-        this.customCustomerService = customerService;  // Same as customCustomerService, decide which to keep
+        this.customCustomerService = customerService;
     }
 
     @Autowired
@@ -134,6 +148,13 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.CUSTOMER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
             }
 
+            if (customerDetails.getReferralCode() != null && !customerDetails.getReferralCode().isEmpty()) {
+                CustomCustomer referralCustomer = customCustomerService.findCustomCustomerByReferralCode(customerDetails.getReferralCode());
+                if (referralCustomer == null) {
+                    return responseService.generateErrorResponse(ApiConstants.INVALID_REFERRAL_CODE, HttpStatus.BAD_REQUEST);
+                }
+                customerDetails.setReferralCode(String.valueOf(referralCustomer.getId()));
+            }
 
 
             Bucket bucket = rateLimiterService.resolveBucket(customerDetails.getMobileNumber(), "/otp/send-otp");
@@ -146,7 +167,7 @@ public class OtpEndpoint {
                 ResponseEntity<Map<String, Object>> otpResponse = twilioService.sendOtpToMobile(mobileNumber, countryCode);
                 Map<String, Object> responseBody = otpResponse.getBody();
 
-                if (responseBody.get("otp")!=null) {
+                if (responseBody.get("otp") != null) {
                     return responseService.generateSuccessResponse((String) responseBody.get("message"), responseBody.get("otp"), HttpStatus.OK);
                 } else {
                     return responseService.generateErrorResponse((String) responseBody.get("message"), HttpStatus.BAD_REQUEST);
@@ -173,14 +194,14 @@ public class OtpEndpoint {
             Integer role = (Integer) loginDetails.get("role");
             String countryCode = (String) loginDetails.get("countryCode");
             String mobileNumber = (String) loginDetails.get("mobileNumber");
-
+            String referredCode = (String) loginDetails.get("referralCode");
 
             if (role == null) {
                 return responseService.generateErrorResponse(ApiConstants.ROLE_EMPTY, HttpStatus.BAD_REQUEST);
             }
 
             if (roleService.findRoleName(role).equals(Constant.roleUser)) {
-                 if (mobileNumber == null) {
+                if (mobileNumber == null) {
                     return responseService.generateErrorResponse(ApiConstants.INVALID_DATA, HttpStatus.INTERNAL_SERVER_ERROR);
                 }
 
@@ -200,17 +221,36 @@ public class OtpEndpoint {
                 String userAgent = request.getHeader("User-Agent");
                 String tokenKey = "authToken_" + mobileNumber;
                 CustomCustomer customer = customCustomerService.readCustomerById(existingCustomer.getId());
+                Long userId = existingCustomer.getId();
+
+                String referralCode = referralService.generateReferralCode(existingCustomer);
+                boolean isNewDevice = deviceMange.isLoggedInFromNewDevice(userId, ipAddress, userAgent);
+                if (isNewDevice) {
+                    deviceMange.recordLoginDevice(customer, ipAddress, userAgent, jwtUtil.generateToken(userId, role, ipAddress, userAgent));
+                }
+
+                if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
+                    existingCustomer.setReferralCode(referralCode);
+                    em.persist(existingCustomer);
+                }
+                if (referredCode != null && existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
+                    referralService.updateReferrerEarnings(referredCode);
+
+                }
 
                 if (otpEntered.equals(storedOtp)) {
+                    if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
+                        existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
+                    }
+
                     existingCustomer.setOtp(null);
-                    existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
                     em.persist(existingCustomer);
 
 
                     String existingToken = existingCustomer.getToken();
 
-                    if (existingToken!= null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
-                        ApiResponse response = new ApiResponse(existingToken,customer, HttpStatus.OK.value(), HttpStatus.OK.name(),"User has been logged in");
+                    if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
+                        ApiResponse response = new ApiResponse(existingToken, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in");
                         return ResponseEntity.ok(response);
 
                     } else {
@@ -219,7 +259,7 @@ public class OtpEndpoint {
                         existingCustomer.setToken(newToken);
                         em.persist(existingCustomer);
 
-                        ApiResponse response = new ApiResponse(newToken,customer, HttpStatus.OK.value(), HttpStatus.OK.name(),"User has been logged in");
+                        ApiResponse response = new ApiResponse(newToken, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in");
                         return ResponseEntity.ok(response);
 
                     }
@@ -228,12 +268,9 @@ public class OtpEndpoint {
                 }
             } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {
                 return serviceProviderService.verifyOtp(loginDetails, session, request);
-            }
-
-            else if(roleService.findRoleName(role).equals(Constant.ADMIN) ||roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) ||roleService.findRoleName(role).equals(Constant.SUPPORT)) {
-                return adminService.verifyOtpForAdmin(loginDetails,session,request);
-            }
-            else {
+            } else if (roleService.findRoleName(role).equals(Constant.ADMIN) || roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(role).equals(Constant.SUPPORT)) {
+                return adminService.verifyOtpForAdmin(loginDetails, session, request);
+            } else {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_ROLE, HttpStatus.BAD_REQUEST);
             }
         } catch (Exception e) {
@@ -285,11 +322,11 @@ public class OtpEndpoint {
             Map<String, Object> details = new HashMap<>();
             String maskedNumber = twilioService.genereateMaskednumber(mobileNumber);
             details.put("otp", otp);
-            return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + " on " +maskedNumber, otp, HttpStatus.OK);
+            return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + " on " + maskedNumber, otp, HttpStatus.OK);
 
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                return responseService.generateErrorResponse(ApiConstants.UNAUTHORIZED_ACCESS , HttpStatus.UNAUTHORIZED);
+                return responseService.generateErrorResponse(ApiConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
             } else {
                 exceptionHandling.handleHttpClientErrorException(e);
                 return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -327,7 +364,7 @@ public class OtpEndpoint {
             Twilio.init(accountSid, authToken);
             String otp = twilioService.generateOTP();
 
-            CustomAdmin existingcustomAdmin = adminService.findAdminByPhone(mobileNumber,countryCode);
+            CustomAdmin existingcustomAdmin = adminService.findAdminByPhone(mobileNumber, countryCode);
 
             if (existingcustomAdmin == null) {
                 CustomAdmin customAdmin = new CustomAdmin();
@@ -345,11 +382,11 @@ public class OtpEndpoint {
             Map<String, Object> details = new HashMap<>();
             String maskedNumber = twilioService.genereateMaskednumber(mobileNumber);
             details.put("otp", otp);
-            return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + " on " +maskedNumber, otp, HttpStatus.OK);
+            return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + " on " + maskedNumber, otp, HttpStatus.OK);
 
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                return responseService.generateErrorResponse(ApiConstants.UNAUTHORIZED_ACCESS , HttpStatus.UNAUTHORIZED);
+                return responseService.generateErrorResponse(ApiConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
             } else {
                 exceptionHandling.handleHttpClientErrorException(e);
                 return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -362,9 +399,6 @@ public class OtpEndpoint {
             return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
-
-
-
 
 
     public static class ApiResponse {
@@ -403,7 +437,7 @@ public class OtpEndpoint {
             return message;
         }
 
-        public  class Data {
+        public class Data {
             private CustomCustomer userDetails;
 
             public Data(CustomCustomer customerDetails) {
@@ -413,6 +447,48 @@ public class OtpEndpoint {
             public CustomCustomer getUserDetails() {
                 return userDetails;
             }
+        }
+    }
+
+    @GetMapping("/customerdevice/details")
+    public ResponseEntity<?> getDeviceDetails(@RequestParam Long userId) {
+        try {
+            if (userId == null || userId <= 0) {
+                return responseService.generateErrorResponse("Invalid user ID provided.", HttpStatus.BAD_REQUEST);
+            }
+            CustomCustomer user = customCustomerService.findCustomCustomerById(userId);
+            if (user == null) {
+                return responseService.generateErrorResponse("User not found.", HttpStatus.NOT_FOUND);
+            }
+            List<CustomerDeviceDTO> deviceDetails = deviceMange.getCustomerDeviceLoginDetails(userId);
+            if (deviceDetails == null || deviceDetails.isEmpty()) {
+                return responseService.generateErrorResponse("No device details found for the user.", HttpStatus.NOT_FOUND);
+            }
+            return responseService.generateSuccessResponse("Customer login device details fetched.", deviceDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching device details: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/vendordevice/details")
+    public ResponseEntity<?> getVendorDeviceDetails(@RequestParam Long userId) {
+        try {
+            if (userId == null || userId <= 0) {
+                return responseService.generateErrorResponse("Invalid user ID provided.", HttpStatus.BAD_REQUEST);
+            }
+            VendorEntity user = serviceProviderService.getServiceProviderById(userId);
+            if (user == null) {
+                return responseService.generateErrorResponse("User not found.", HttpStatus.NOT_FOUND);
+            }
+            List<VendorDeviceDTO> deviceDetails = deviceMange.getVendorDeviceLoginDetails(userId);
+            if (deviceDetails == null || deviceDetails.isEmpty()) {
+                return responseService.generateErrorResponse("No device details found for the user.", HttpStatus.NOT_FOUND);
+            }
+            return responseService.generateSuccessResponse("vendor login device details fetched.", deviceDetails, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching device details: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 

@@ -5,6 +5,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.*;
+import aagapp_backend.services.devicemange.DeviceMange;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.Nullable;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 @Service
 public class VenderServiceImpl implements VenderService {
 
@@ -45,10 +47,17 @@ public class VenderServiceImpl implements VenderService {
     private JwtUtil jwtUtil;
     private ResponseService responseService;
     private TwilioService twilioService;
+    private DeviceMange deviceMange;
+
+    @Autowired
+    @Lazy
+    public void setDeviceMange(DeviceMange deviceMange) {
+        this.deviceMange = deviceMange;
+    }
 
     @Autowired
     public void setTwilioService(@Lazy
-                                      TwilioService twilioService) {
+                                 TwilioService twilioService) {
         this.twilioService = twilioService;
     }
 
@@ -61,7 +70,7 @@ public class VenderServiceImpl implements VenderService {
     private PasswordEncoder passwordEncoder;
 
     @PersistenceContext
-    public void setEntityManager( EntityManager entityManager) {
+    public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
     }
 
@@ -344,7 +353,7 @@ public class VenderServiceImpl implements VenderService {
         }
     }*/
 
-    public  boolean isValidEmail(String email) {
+    public boolean isValidEmail(String email) {
         return email != null && email.matches(Constant.EMAIL_REGEXP);
     }
 
@@ -371,6 +380,7 @@ public class VenderServiceImpl implements VenderService {
                 .findFirst()
                 .orElse(null);
     }
+
 
     public List<VendorEntity> getAllSp(int page, int limit) {
         int startPosition = page * limit;
@@ -421,7 +431,7 @@ public class VenderServiceImpl implements VenderService {
                 countryCode = Constant.COUNTRY_CODE;
             }
 
-             if (mobileNumber == null || mobileNumber.isEmpty()) {
+            if (mobileNumber == null || mobileNumber.isEmpty()) {
                 return responseService.generateErrorResponse("mobile number can not be null ", HttpStatus.BAD_REQUEST);
 
             }
@@ -433,6 +443,7 @@ public class VenderServiceImpl implements VenderService {
             if (mobileNumber.startsWith("0"))
                 mobileNumber = mobileNumber.substring(1);
             VendorEntity existingServiceProvider = findServiceProviderByPhone(mobileNumber, countryCode);
+
 
             if (existingServiceProvider == null) {
                 return responseService.generateErrorResponse("Invalid Data Provided ", HttpStatus.UNAUTHORIZED);
@@ -451,6 +462,13 @@ public class VenderServiceImpl implements VenderService {
                 existingServiceProvider.setOtp(null);
                 entityManager.merge(existingServiceProvider);
                 String existingToken = existingServiceProvider.getToken();
+
+
+                Long userId = existingServiceProvider.getService_provider_id();
+                boolean isNewDevice = deviceMange.isVendorLoginFromNewDevice(userId, ipAddress, userAgent);
+                if (isNewDevice) {
+                    deviceMange.recordVendorLoginDevice(existingServiceProvider, ipAddress, userAgent, jwtUtil.generateToken(existingServiceProvider.getService_provider_id(), role, ipAddress, userAgent));
+                }
 
                 System.out.println("existingToken is " + existingToken);
 //                Map<String,Object> serviceProviderResponse= sharedUtilityService.serviceProviderDetailsMap(existingServiceProvider);
@@ -491,7 +509,7 @@ public class VenderServiceImpl implements VenderService {
     public ResponseEntity<?> loginWithPassword(@RequestBody Map<String, Object> serviceProviderDetails, HttpServletRequest request, HttpSession session) {
         try {
             String mobileNumber = (String) serviceProviderDetails.get("mobileNumber");
-            if(mobileNumber!=null) {
+            if (mobileNumber != null) {
                 if (mobileNumber.startsWith("0"))
                     mobileNumber = mobileNumber.substring(1);
             }
@@ -506,7 +524,7 @@ public class VenderServiceImpl implements VenderService {
             }
             if (mobileNumber != null && !mobileNumber.isEmpty()) {
                 return authenticateByPhone(mobileNumber, countryCode, password, request, session);
-            }  else {
+            } else {
                 return responseService.generateErrorResponse("Empty Phone Number or username", HttpStatus.BAD_REQUEST);
 
             }
@@ -559,7 +577,7 @@ public class VenderServiceImpl implements VenderService {
 //            Map<String,Object> serviceProviderResponse= sharedUtilityService.serviceProviderDetailsMap(serviceProvider);
 
 
-            if(existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
+            if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
 
                 Map<String, Object> responseBody = createAuthResponse(existingToken, serviceProvider).getBody();
 
@@ -582,9 +600,26 @@ public class VenderServiceImpl implements VenderService {
             return responseService.generateErrorResponse(ApiConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
         }
     }
+
     public ResponseEntity<?> authenticateByPhone(String mobileNumber, String countryCode, String password, HttpServletRequest request, HttpSession session) {
         VendorEntity existingServiceProvider = findServiceProviderByPhone(mobileNumber, countryCode);
         return validateServiceProvider(existingServiceProvider, password, request, session);
     }
+
+
+    @Override
+    @Transactional
+    public VendorEntity saveOrUpdate(VendorEntity VendorEntity) {
+        try {
+            return entityManager.merge(VendorEntity);
+        }catch (Exception e) {
+            exceptionHandling.handleException(e);
+            throw new RuntimeException("Error saving or updating vendor: " + e.getMessage());
+        }
+
+    }
+
+
+
 
 }

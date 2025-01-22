@@ -2,6 +2,7 @@ package aagapp_backend.entity.payment;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.PaymentStatus;
+import aagapp_backend.enums.PaymentType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -62,8 +63,9 @@ public class PaymentEntity {
     @Column(name = "plan_duration")
     private String planDuration;  // "Monthly", "Yearly", etc.
 
-    @Column(name = "payment_type")
-    private String paymentType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", nullable = false)
+    private PaymentType paymentType;
 
     // New field to mark if it's a test payment or not
     @Column(name = "is_test", nullable = false)
@@ -72,5 +74,7 @@ public class PaymentEntity {
     @Column(name = "gateway_response")
     private String gatewayResponse;
 
+    @Column(name = "transaction_date")
+    private LocalDateTime transactionDate;
 
 }

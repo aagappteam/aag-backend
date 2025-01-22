@@ -1,7 +1,6 @@
 package aagapp_backend.entity.wallet;
 
 import aagapp_backend.entity.CustomCustomer;
-import aagapp_backend.entity.players.Player;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -26,8 +25,14 @@ public class Wallet {
     @JoinColumn(name = "customerId", nullable = false)
     private CustomCustomer customCustomer;
 
-    @Column(name = "balance", nullable = false)
-    private float balance;
+    @Column(name = "unplayed_balance", nullable = false)
+    private float unplayedBalance;
+
+    @Column(name = "winning_amount", nullable = false)
+    private float winningAmount;
+
+    @Column(name = "is_test", nullable = false)
+    private Boolean isTest = false;
 
     @Column(name = "created_at", updatable = false)
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

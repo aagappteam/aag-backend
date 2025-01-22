@@ -3,6 +3,8 @@ package aagapp_backend.services;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.players.Player;
+import aagapp_backend.enums.PlayerStatus;
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderServiceImpl;
@@ -81,6 +83,10 @@ public class TwilioService {
                 customerDetails.setOtp(otp);
                 customerDetails.setProfileStatus(ProfileStatus.PENDING);
                 entityManager.persist(customerDetails);
+                Player player = new Player();
+                player.setPlayerId(customerDetails.getId());
+                player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
+                entityManager.persist(player);
                 return ResponseEntity.ok(Map.of(
                         "otp", otp,
                         "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber
