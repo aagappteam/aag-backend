@@ -70,7 +70,6 @@ public class WalletService {
             return wallet;
         } catch (Exception e) {
             // Log the error for debugging purposes
-//            logger.error("Error occurred while adding balance to wallet for customer ID: " + customerId, e);
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while adding balance to wallet", e);
         }

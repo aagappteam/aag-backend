@@ -22,7 +22,7 @@ import java.util.List;
 
 
 @Entity
-@Table(name = "service_vendor")
+@Table(name = "vendor_table")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
