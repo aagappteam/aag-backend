@@ -53,9 +53,11 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
         if (e instanceof ApiException) {
             return handleApiException((ApiException) e);
         } else if (e instanceof HttpClientErrorException) {
+            logger.error("Unhandled exception" + e);
+
             return handleHttpClientErrorException((HttpClientErrorException) e);
         } else {
-            logger.error("Unhandled exception" + e.getMessage());
+            logger.error("Unhandled exception" + e);
             return "Something went wrong: " + e.getMessage();
         }
 
@@ -71,7 +73,7 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
             logger.error("Internal server error " + status + " " + e.getMessage());
             return status + " " + e.getMessage();
         }else{
-            logger.error("Unhandled exception " + status + " " + e.getMessage());
+            logger.error("Unhandled exception " + status + " " + e);
             return "Something went wrong: " + e.getMessage();
         }
 

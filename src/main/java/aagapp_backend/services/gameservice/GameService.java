@@ -11,14 +11,12 @@ import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.*;
-import aagapp_backend.repository.game.GameRepository;
+import aagapp_backend.repository.game.*;
 
-import aagapp_backend.repository.game.GameRoomRepository;
-import aagapp_backend.repository.game.GameSessionRepository;
-import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import aagapp_backend.services.ludo.PCGService;
 import aagapp_backend.services.payment.PaymentFeatures;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -45,10 +43,17 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.transaction.annotation.Transactional;
+import java.util.*;
 
 
 @Service
 public class GameService {
+
+    @Autowired
+    private MoveRepository moveRepository;
+
+    private Map<Integer, List<Token>> boardPositions = new HashMap<>();
+    private Map<Long, PlayerState> playerStates = new HashMap<>(); // Track player progress
 
     private GameRepository gameRepository;
     private ResponseService responseService;
@@ -716,5 +721,55 @@ public class GameService {
         }
     }
 
+
+    public int rollDice() {
+        PCGService service = new PCGService();
+        return service.nextInt(); // Generate and return random number between 1 and 6
+
+
+    }
+
+    public String moveToken(Long gameId, Long playerId, String tokenId, int newPosition) {
+        Token token = findToken(gameId, playerId, tokenId);
+        int currentPosition = token.getPosition();
+
+        boardPositions.getOrDefault(currentPosition, new ArrayList<>()).remove(token);
+
+        List<Token> tokensAtNewPosition = boardPositions.getOrDefault(newPosition, new ArrayList<>());
+
+        for (Token otherToken : tokensAtNewPosition) {
+            if (!otherToken.getPlayerId().equals(playerId)) {
+                // Cut the other token
+                otherToken.setPosition(0);
+                boardPositions.getOrDefault(0, new ArrayList<>()).add(otherToken);
+
+                // Update the player state of the cut token
+                PlayerState otherPlayerState = playerStates.get(otherToken.getPlayerId());
+                if (otherPlayerState != null) {
+                    otherPlayerState.resetTokenPosition(otherToken.getTokenId());
+                }
+
+                return "Token " + otherToken.getTokenId() + " of player " + otherToken.getPlayerId() + " was cut!";
+            }
+        }
+
+        tokensAtNewPosition.add(token);
+        boardPositions.put(newPosition, tokensAtNewPosition);
+
+        token.setPosition(newPosition);
+
+        // Update player state
+        PlayerState playerState = playerStates.get(playerId);
+        playerState.updateTokenPosition(tokenId, newPosition);
+        if (playerState.isTokenInHome(tokenId)) {
+            return "Token " + tokenId + " reached home!";
+        }
+
+        return "Token moved successfully.";
+    }
+
+    private Token findToken(Long gameId, Long playerId, String tokenId) {
+        return new Token(playerId, tokenId, 0);
+    }
 }
 
