@@ -5,10 +5,12 @@ import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.services.ludo.PCGService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.*;
 
+@Service
 public class LudoGameService {
 
     // Use ConcurrentHashMap for thread-safe operations
