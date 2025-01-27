@@ -224,10 +224,11 @@ public class OtpEndpoint {
                 Long userId = existingCustomer.getId();
 
                 String referralCode = referralService.generateReferralCode(existingCustomer);
-                boolean isNewDevice = deviceMange.isLoggedInFromNewDevice(userId, ipAddress, userAgent);
+//                @todo:- need to work on new devices & existing device checks for multiple login devices
+               /* boolean isNewDevice = deviceMange.isLoggedInFromNewDevice(userId, ipAddress, userAgent);
                 if (isNewDevice) {
                     deviceMange.recordLoginDevice(customer, ipAddress, userAgent, jwtUtil.generateToken(userId, role, ipAddress, userAgent));
-                }
+                }*/
 
                 if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                     existingCustomer.setReferralCode(referralCode);
