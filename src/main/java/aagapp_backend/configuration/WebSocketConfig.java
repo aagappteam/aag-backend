@@ -18,6 +18,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/game-websocket").setAllowedOrigins("*").withSockJS();
+        registry.addEndpoint("/ludo-websocket").setAllowedOrigins("*").withSockJS();  // Game WebSocket endpoint
     }
+
 }
