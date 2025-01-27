@@ -1,8 +1,16 @@
 package aagapp_backend.services.gameservice;
 public class Token {
-    private Long playerId;
     private String tokenId;
-    private int position;
+    private Long roomId;
+    private Long playerId;
+    private int position = 0;
+    private boolean isAtHome = false;
+
+/*    public Token(Long playerId,String tokenId, Long playerId) {
+        this.roomId = roomId;
+        this.tokenId = tokenId;
+        this.playerId = playerId;
+    }*/
 
     public Token(Long playerId, String tokenId, int position) {
         this.playerId = playerId;
@@ -10,12 +18,12 @@ public class Token {
         this.position = position;
     }
 
-    public Long getPlayerId() {
-        return playerId;
-    }
-
     public String getTokenId() {
         return tokenId;
+    }
+
+    public Long getPlayerId() {
+        return playerId;
     }
 
     public int getPosition() {
@@ -24,5 +32,22 @@ public class Token {
 
     public void setPosition(int position) {
         this.position = position;
+    }
+
+    public boolean isAtHome() {
+        return isAtHome;
+    }
+
+    public void setAtHome(boolean atHome) {
+        isAtHome = atHome;
+    }
+
+    @Override
+    public String toString() {
+        return "Token{" +
+                "playerId=" + playerId +
+                ", tokenId='" + tokenId + '\'' +
+                ", position=" + position +
+                '}';
     }
 }

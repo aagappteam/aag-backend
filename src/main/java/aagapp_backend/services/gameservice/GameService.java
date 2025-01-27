@@ -721,55 +721,5 @@ public class GameService {
         }
     }
 
-
-    public int rollDice() {
-        PCGService service = new PCGService();
-        return service.nextInt(); // Generate and return random number between 1 and 6
-
-
-    }
-
-    public String moveToken(Long gameId, Long playerId, String tokenId, int newPosition) {
-        Token token = findToken(gameId, playerId, tokenId);
-        int currentPosition = token.getPosition();
-
-        boardPositions.getOrDefault(currentPosition, new ArrayList<>()).remove(token);
-
-        List<Token> tokensAtNewPosition = boardPositions.getOrDefault(newPosition, new ArrayList<>());
-
-        for (Token otherToken : tokensAtNewPosition) {
-            if (!otherToken.getPlayerId().equals(playerId)) {
-                // Cut the other token
-                otherToken.setPosition(0);
-                boardPositions.getOrDefault(0, new ArrayList<>()).add(otherToken);
-
-                // Update the player state of the cut token
-                PlayerState otherPlayerState = playerStates.get(otherToken.getPlayerId());
-                if (otherPlayerState != null) {
-                    otherPlayerState.resetTokenPosition(otherToken.getTokenId());
-                }
-
-                return "Token " + otherToken.getTokenId() + " of player " + otherToken.getPlayerId() + " was cut!";
-            }
-        }
-
-        tokensAtNewPosition.add(token);
-        boardPositions.put(newPosition, tokensAtNewPosition);
-
-        token.setPosition(newPosition);
-
-        // Update player state
-        PlayerState playerState = playerStates.get(playerId);
-        playerState.updateTokenPosition(tokenId, newPosition);
-        if (playerState.isTokenInHome(tokenId)) {
-            return "Token " + tokenId + " reached home!";
-        }
-
-        return "Token moved successfully.";
-    }
-
-    private Token findToken(Long gameId, Long playerId, String tokenId) {
-        return new Token(playerId, tokenId, 0);
-    }
 }
 

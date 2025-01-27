@@ -12,14 +12,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable simple in-memory broker for /topic messages
         config.enableSimpleBroker("/topic");
-        config.setApplicationDestinationPrefixes("/app");
+        config.setApplicationDestinationPrefixes("/app"); // Prefix for client-to-server messages
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register the "/game" endpoint with SockJS fallback options
-        registry.addEndpoint("/game").setAllowedOrigins("*").withSockJS();
+        registry.addEndpoint("/ludo-websocket").setAllowedOrigins("*").withSockJS();  // Game WebSocket endpoint
     }
+
 }
