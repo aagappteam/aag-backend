@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GameRoomRepository extends JpaRepository<GameRoom, Long> {
+
+
     GameRoom findByRoomCode(String roomCode);
 
     List<GameRoom> findByStatus(GameRoomStatus status);

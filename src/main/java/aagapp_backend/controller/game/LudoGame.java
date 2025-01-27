@@ -2,6 +2,7 @@ package aagapp_backend.controller.game;
 
 import aagapp_backend.handler.GameWebSocketHandler;
 import aagapp_backend.services.gameservice.GameService;
+import aagapp_backend.services.gameservice.LudoGameService;
 import aagapp_backend.services.ludo.PCGService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -19,7 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class LudoGame {
 
     @Autowired
-    private GameService gameService;
+    private LudoGameService gameService;
 
 
     private final PCGService pcgService;
@@ -50,6 +51,7 @@ public class LudoGame {
     @SendTo("/topic/game")
     public String moveToken(GameWebSocketHandler.GameMessage message) {
         return gameService.moveToken(
+                message.getRoomId(),
                 message.getGameId(),
                 message.getPlayerId(),
                 message.getTokenId(),

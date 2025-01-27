@@ -1,10 +1,7 @@
 package aagapp_backend.entity.game;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,5 +23,10 @@ public class Move {
     private Integer moveNumber;
     private Integer diceRollValue;
     private String tokenMoved;
+
+    @ManyToOne
+    @JoinColumn(name = "game_room_id", nullable = false)
+    private GameRoom gameRoom;
+
 
 }
