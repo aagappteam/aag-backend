@@ -4,9 +4,12 @@ import aagapp_backend.components.CommonData;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.*;
 import aagapp_backend.services.devicemange.DeviceMange;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.referal.ReferralService;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
@@ -48,11 +51,26 @@ public class VenderServiceImpl implements VenderService {
     private ResponseService responseService;
     private TwilioService twilioService;
     private DeviceMange deviceMange;
+    private ReferralService referralService;
+
+    @Autowired
+    private VendorRepository vendorRepository;
 
     @Autowired
     @Lazy
     public void setDeviceMange(DeviceMange deviceMange) {
         this.deviceMange = deviceMange;
+    }
+
+
+    public VendorEntity findServiceProviderByReferralCode(String referralCode) {
+        return vendorRepository.findServiceProviderByReferralCode(referralCode);
+    }
+
+    @Autowired
+    @Lazy
+    public void setReferralService(ReferralService referralService) {
+        this.referralService = referralService;
     }
 
     @Autowired
@@ -426,6 +444,7 @@ public class VenderServiceImpl implements VenderService {
             String otpEntered = (String) loginDetails.get("otpEntered");
             String mobileNumber = (String) loginDetails.get("mobileNumber");
             String countryCode = (String) loginDetails.get("countryCode");
+            String referralCode = (String) loginDetails.get("referralCode");
             Integer role = (Integer) loginDetails.get("role");
             if (countryCode == null || countryCode.isEmpty()) {
                 countryCode = Constant.COUNTRY_CODE;
@@ -460,17 +479,45 @@ public class VenderServiceImpl implements VenderService {
             }
             if (otpEntered.equals(storedOtp)) {
                 existingServiceProvider.setOtp(null);
+
+                // Generate and assign a referral code if it's a new Vendor
+                if (existingServiceProvider.getReferralCode() == null || existingServiceProvider.getReferralCode().isEmpty()) {
+                    String newReferralCode = referralService.generateVendorReferralCode(existingServiceProvider);
+                    existingServiceProvider.setReferralCode(newReferralCode);
+                }
+
                 entityManager.merge(existingServiceProvider);
                 String existingToken = existingServiceProvider.getToken();
 
+                // After obtaining the referrer using the referral code
+                if (referralCode != null && !referralCode.isEmpty()) {
+                    // Find the referrer by referral code
+                    VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
-                Long userId = existingServiceProvider.getService_provider_id();
+                    if (referrer != null) {
+                        // Create a VendorReferral entry
+                        VendorReferral vendorReferral = new VendorReferral();
+                        vendorReferral.setReferrerId(referrer);
+                        vendorReferral.setReferredId(existingServiceProvider);
+
+                        // Persist the VendorReferral entry
+                        entityManager.persist(vendorReferral);
+
+                        // Update the referrer's referral count
+                        referrer.setReferralCount(referrer.getReferralCount() + 1);
+                        entityManager.merge(referrer);
+                    }
+                }
+
+
+
+                /*Long userId = existingServiceProvider.getService_provider_id();
                 boolean isNewDevice = deviceMange.isVendorLoginFromNewDevice(userId, ipAddress, userAgent);
                 if (isNewDevice) {
                     deviceMange.recordVendorLoginDevice(existingServiceProvider, ipAddress, userAgent, jwtUtil.generateToken(existingServiceProvider.getService_provider_id(), role, ipAddress, userAgent));
-                }
+                }*/
 
-                System.out.println("existingToken is " + existingToken);
+//                System.out.println("existingToken is " + existingToken);
 //                Map<String,Object> serviceProviderResponse= sharedUtilityService.serviceProviderDetailsMap(existingServiceProvider);
                 if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
 
@@ -612,14 +659,12 @@ public class VenderServiceImpl implements VenderService {
     public VendorEntity saveOrUpdate(VendorEntity VendorEntity) {
         try {
             return entityManager.merge(VendorEntity);
-        }catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             throw new RuntimeException("Error saving or updating vendor: " + e.getMessage());
         }
 
     }
-
-
 
 
 }

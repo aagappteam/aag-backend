@@ -1,5 +1,6 @@
 package aagapp_backend.entity;
 
+import aagapp_backend.enums.VendorLevelPlan;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -8,7 +9,6 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -99,6 +99,20 @@ public class VendorEntity {
     @Nullable
     @Column(name = "pause_reason")
     private String pauseReason;
+
+    @Nullable
+    @Column(name = "referral_code", unique = true)
+    private String referralCode;
+
+
+    @Nullable
+    @Column(name = "referred_count")
+    private int referralCount;
+
+    @OneToMany(mappedBy = "referrerId", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<VendorReferral> vendorReferralList = new ArrayList<>();
+
+    private VendorLevelPlan vendorLevelPlan;
 
     @JsonBackReference("bankDetails-vendor")
     @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
