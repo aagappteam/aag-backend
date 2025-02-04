@@ -65,9 +65,6 @@ public class PaymentController {
                 return responseService.generateErrorResponse("Invalid payment amount", HttpStatus.BAD_REQUEST);
             }
 
-            if (paymentRequest.getAmount() > 10000) {
-                return responseService.generateErrorResponse("Payment amount exceeds the maximum limit", HttpStatus.BAD_REQUEST);
-            }
 
             PaymentEntity payment = paymentService.createPayment(paymentRequest, vendorId);
             return responseService.generateSuccessResponse("Payment created successfully", payment, HttpStatus.CREATED);

@@ -465,10 +465,10 @@ public class VenderServiceImpl implements VenderService {
 
 
                 Long userId = existingServiceProvider.getService_provider_id();
-                boolean isNewDevice = deviceMange.isVendorLoginFromNewDevice(userId, ipAddress, userAgent);
+               /* boolean isNewDevice = deviceMange.isVendorLoginFromNewDevice(userId, ipAddress, userAgent);
                 if (isNewDevice) {
                     deviceMange.recordVendorLoginDevice(existingServiceProvider, ipAddress, userAgent, jwtUtil.generateToken(existingServiceProvider.getService_provider_id(), role, ipAddress, userAgent));
-                }
+                }*/
 
                 System.out.println("existingToken is " + existingToken);
 //                Map<String,Object> serviceProviderResponse= sharedUtilityService.serviceProviderDetailsMap(existingServiceProvider);

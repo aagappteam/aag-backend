@@ -74,6 +74,8 @@ public class PaymentService {
         expireExistingActivePayments(vendorId);
 
         // Save and return the newly created payment
+        existingVendor.setIsPaid(true);
+        entityManager.persist(existingVendor);
         return paymentRepository.save(paymentRequest);
     }
 
