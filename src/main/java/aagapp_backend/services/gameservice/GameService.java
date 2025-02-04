@@ -8,6 +8,7 @@ import aagapp_backend.entity.game.FeeToMove;
 import aagapp_backend.entity.game.Game;
 
 import aagapp_backend.entity.game.GameRoom;
+import aagapp_backend.entity.game.Token;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.*;
@@ -41,19 +42,13 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import org.springframework.transaction.annotation.Transactional;
-import java.util.*;
-
 
 @Service
 public class GameService {
 
     @Autowired
     private MoveRepository moveRepository;
-
-    private Map<Integer, List<Token>> boardPositions = new HashMap<>();
-    private Map<Long, PlayerState> playerStates = new HashMap<>(); // Track player progress
 
     private GameRepository gameRepository;
     private ResponseService responseService;
@@ -69,7 +64,6 @@ public class GameService {
 
     private PlayerRepository playerRepository;
     private GameRoomRepository gameRoomRepository;
-    private GameSessionRepository gameSessionRepository;
 
 
     @Autowired
@@ -107,10 +101,7 @@ public class GameService {
         this.gameRoomRepository = gameRoomRepository;
     }
 
-    @Autowired
-    public void setGameSessionRepository(GameSessionRepository gameSessionRepository) {
-        this.gameSessionRepository = gameSessionRepository;
-    }
+
 
     @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {

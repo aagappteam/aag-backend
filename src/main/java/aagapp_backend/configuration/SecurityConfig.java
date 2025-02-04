@@ -23,37 +23,19 @@ import java.util.Arrays;
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
-//    @Bean
-//    public WebSecurityCustomizer webSecurityCustomizer() {
-//        return (web) -> web.ignoring().requestMatchers(
-//                "/api/**/webjars/**",
-//                "/api/**/images/favicon-*",
-//                "/api/**/jhawtcode/**",
-//                "/swagger-ui.html",               // Correct path for Swagger UI
-//                "/swagger-ui/**",                 // Correct path for Swagger UI static resources
-//                "/swagger-resources/**",          // Swagger resource URL
-//                "/v3/api-docs/**",
-//                "/webjars/**",
-//                "/api/**/aagdocument/**",
-//                "/api/**/files/**"
-//        );
-//    }
+/*    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS configuration
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
+                .authorizeRequests()
+                .requestMatchers("/ludo-websocket/**").permitAll()
+                .anyRequest().authenticated();
 
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().requestMatchers(
-                "/swagger-ui.html",               // Swagger UI path
-                "/swagger-ui/**",                 // Swagger UI static resources
-                "/swagger-resources/**",          // Swagger resource URL
-                "/v3/api-docs/**",                // OpenAPI docs path
-                "/webjars/**",                    // Webjar resources for Swagger
-                "/swagger-resources/**" ,          // Swagger resources
-                "/api/**/aagdocument/**",
-                "/api/**/files/**"
-        );
-    }
+        return http.build();
+    }*/
 
-   @Bean
+
+       @Bean
    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
        http
                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS configuration
@@ -72,7 +54,9 @@ public class SecurityConfig {
                                "/api/aagdocument/**",
                                "/otp/**",
                                "/account/**",
-                               "/test/**"
+                               "/test/**",
+                               "/ludo-websocket/**"          // Allow WebSocket endpoint
+
                        ).permitAll() // Allow public access to Swagger UI and some other resources
                        .anyRequest().authenticated() // Require authentication for all other paths
                )
@@ -93,7 +77,7 @@ public class SecurityConfig {
         return source;
     }
 
-    @Bean
+   @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
         return new JwtAuthenticationFilter();
     }

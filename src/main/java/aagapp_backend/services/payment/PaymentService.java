@@ -98,7 +98,6 @@ public class PaymentService {
         }
     }
 
-
     private void expireExistingActivePayments(Long vendorId) {
         List<PaymentEntity> existingActivePayments = this.findActivePlansByVendorId(vendorId);
         if (existingActivePayments != null && !existingActivePayments.isEmpty()) {

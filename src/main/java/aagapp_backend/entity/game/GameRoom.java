@@ -11,9 +11,7 @@ import lombok.Setter;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Table(name = "game_rooms")
@@ -24,23 +22,18 @@ public class GameRoom {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Long id;
 
     @Column(name = "room_code", unique = true, nullable = false, length = 10)
     private String roomCode;
 
-    @OneToMany(mappedBy = "gameRoom", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "gameRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference(value = "gameRoomReference")
-    private List<Player> players = new ArrayList<>();
+    private List<Player> currentPlayers = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private GameRoomStatus status;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
 
     @Column(name = "max_players", nullable = false)
     private int maxPlayers;
@@ -49,11 +42,33 @@ public class GameRoom {
     @JoinColumn(name = "game_id", nullable = false)
     private Game game;
 
+    private Long currentPlayerId; // ID of the current player's turn
 
-    @OneToMany(mappedBy = "gameRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JsonManagedReference(value = "gameRoomReference")
-    private List<Player> currentPlayers = new ArrayList<>();
+    @Column(name = "turn_order")
+    private int turnOrder = 0;
 
+    @ElementCollection
+    @CollectionTable(name = "game_room_winners", joinColumns = @JoinColumn(name = "game_room_id"))
+    @Column(name = "player_id")
+    private Set<Long> winners = new HashSet<>();
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "active_players_count")
+    private int activePlayersCount;
+
+    @ElementCollection
+    @CollectionTable(name = "game_timers", joinColumns = @JoinColumn(name = "game_room_id"))
+    private Map<Long, LocalDateTime> gameTimers = new HashMap<>();
+
+    @ElementCollection
+    @CollectionTable(name = "player_afk_status", joinColumns = @JoinColumn(name = "game_room_id"))
+    private Map<Long, Integer> playerAFKStatus = new HashMap<>();
+
+    @ElementCollection
+    @CollectionTable(name = "spectators", joinColumns = @JoinColumn(name = "game_room_id"))
+    private List<Long> spectators = new ArrayList<>();
 
     @PrePersist
     @PreUpdate
@@ -61,18 +76,22 @@ public class GameRoom {
         if (this.status == null) {
             this.status = GameRoomStatus.INITIALIZED;
         }
-
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
-
         if (this.maxPlayers == 0) {
             this.maxPlayers = 2;
         }
-//        this.currentPlayersCount = this.currentPlayers.size();
-
-
+        this.activePlayersCount = this.currentPlayers.size();
     }
 
+    public Player getPlayerById(Long playerId) {
+        for (Player player : currentPlayers) {
+            if (player.getPlayerId().equals(playerId)) {
+                return player;
+            }
+        }
+        return null;  // Player not found
+    }
 
 }

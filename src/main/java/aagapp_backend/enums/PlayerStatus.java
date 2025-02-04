@@ -8,6 +8,8 @@ public enum PlayerStatus {
     QUIT,
     COMPLETED,
     BY_PASSED,
-    DISQUALIFIED
+    DISQUALIFIED,
+    DISCONNECTED,
+    LOST;
 
 }
