@@ -56,10 +56,10 @@ public class PaymentService {
         // Generate a unique transaction ID
         paymentRequest.setTransactionId(UUID.randomUUID().toString());
 
-        // Set default daily limit if not provided
+        /*// Set default daily limit if not provided
         if (paymentRequest.getDailyLimit() == null) {
             paymentRequest.setDailyLimit(5);  // Default to 5 if not set
-        }
+        }*/
 
         // Set status to ACTIVE by default
         paymentRequest.setStatus(PaymentStatus.ACTIVE);
