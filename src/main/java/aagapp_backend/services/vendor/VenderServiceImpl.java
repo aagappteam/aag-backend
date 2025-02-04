@@ -490,7 +490,7 @@ public class VenderServiceImpl implements VenderService {
                 String existingToken = existingServiceProvider.getToken();
 
                 // After obtaining the referrer using the referral code
-                if (referralCode != null && !referralCode.isEmpty()) {
+                if (referralCode != null && !referralCode.isEmpty() && existingServiceProvider.getSignedUp()==0) {
                     // Find the referrer by referral code
                     VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
@@ -532,11 +532,10 @@ public class VenderServiceImpl implements VenderService {
                     existingServiceProvider.setToken(newToken);
                     entityManager.persist(existingServiceProvider);
                     Map<String, Object> responseBody = createAuthResponse(newToken, existingServiceProvider).getBody();
-/*                    if(existingServiceProvider.getSignedUp()==0) {
+                    if(existingServiceProvider.getSignedUp()==0) {
                         existingServiceProvider.setSignedUp(1);
                         entityManager.merge(existingServiceProvider);
-                        responseBody.put("message", "User has been signed up");
-                    }*/
+                    }
                     responseBody.put("message", "User has been signed up");
                     return ResponseEntity.ok(responseBody);
                 }
