@@ -15,7 +15,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class VendorReferral {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,12 +22,12 @@ public class VendorReferral {
 
     @ManyToOne
     @JoinColumn(name = "vendor_id")
-    @JsonBackReference
+    @JsonBackReference("vendor-referrer")
     private VendorEntity referrerId;
 
     @ManyToOne
     @JoinColumn(name = "referred_id")
-    @JsonBackReference
+    @JsonBackReference("vendor-referred")
     private VendorEntity referredId;
 
 
