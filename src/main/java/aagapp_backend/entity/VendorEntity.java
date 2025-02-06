@@ -1,5 +1,4 @@
 package aagapp_backend.entity;
-
 import aagapp_backend.enums.VendorLevelPlan;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -109,8 +108,18 @@ public class VendorEntity {
     @Column(name = "referred_count")
     private int referralCount;
 
+    /*@JsonManagedReference("vendor-referred")
+    @OneToMany(mappedBy = "referrerId", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<VendorReferral> vendorReferralList = new ArrayList<>();*/
+
+    @JsonManagedReference("vendor-referrer")  //for the referrer relationship
     @OneToMany(mappedBy = "referrerId", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VendorReferral> vendorReferralList = new ArrayList<>();
+
+    @JsonManagedReference("vendor-referred")  // Unique name for the referred relationship
+    @OneToMany(mappedBy = "referredId", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<VendorReferral> referredVendorReferralList = new ArrayList<>();
+
 
     private VendorLevelPlan vendorLevelPlan;
 
