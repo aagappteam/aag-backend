@@ -63,9 +63,9 @@ public class VenderServiceImpl implements VenderService {
     }
 
 
-   /* public VendorEntity findServiceProviderByReferralCode(String referralCode) {
+    public VendorEntity findServiceProviderByReferralCode(String referralCode) {
         return vendorRepository.findServiceProviderByReferralCode(referralCode);
-    }*/
+    }
 
     @Autowired
     @Lazy
@@ -480,16 +480,16 @@ public class VenderServiceImpl implements VenderService {
             if (otpEntered.equals(storedOtp)) {
                 existingServiceProvider.setOtp(null);
 
-                /*// Generate and assign a referral code if it's a new Vendor
+                // Generate and assign a referral code if it's a new Vendor
                 if (existingServiceProvider.getReferralCode() == null || existingServiceProvider.getReferralCode().isEmpty()) {
                     String newReferralCode = referralService.generateVendorReferralCode(existingServiceProvider);
                     existingServiceProvider.setReferralCode(newReferralCode);
-                }*/
+                }
 
                 entityManager.merge(existingServiceProvider);
                 String existingToken = existingServiceProvider.getToken();
 
-                /*// After obtaining the referrer using the referral code
+                // After obtaining the referrer using the referral code
                 if (referralCode != null && !referralCode.isEmpty() && existingServiceProvider.getSignedUp()==0) {
                     // Find the referrer by referral code
                     VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
@@ -504,10 +504,10 @@ public class VenderServiceImpl implements VenderService {
                         entityManager.persist(vendorReferral);
 
                         // Update the referrer's referral count
-//                        referrer.setReferralCount(referrer.getReferralCount() + 1);
+                        referrer.setReferralCount(referrer.getReferralCount() + 1);
                         entityManager.merge(referrer);
                     }
-                }*/
+                }
 
 
 
