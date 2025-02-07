@@ -7,6 +7,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.enums.PlayerStatus;
 import aagapp_backend.repository.game.GameRoomRepository;
+import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.services.ludo.PCGService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,11 @@ public class LudoGameService {
     private PCGService pcgService;
 
     @Autowired
+    private PlayerRepository  playerRepository;
+
+    @Autowired
     private GameRoomRepository gameRoomRepository;
+
 
     public LudoResponse rollDice(Long roomId, Long playerId) {
         GameRoom gameRoom = getRoomById(roomId);
@@ -40,8 +45,13 @@ public class LudoGameService {
         if (diceRoll == 0) {
             return new LudoResponse(false, "Dice rolled a 0, skipping your turn!", diceRoll, playerId, nextPlayerId);
         }
+
+        updatePlayerScore(playerId, diceRoll);
+
         return new LudoResponse(true, "Dice rolled successfully!", diceRoll, playerId,nextPlayerId);
     }
+
+
     public Long getNextPlayerId(GameRoom gameRoom) {
         List<Player> activePlayers = gameRoom.getCurrentPlayers().stream()
                 .filter(p -> !gameRoom.getWinners().contains(p.getPlayerId()))
@@ -135,6 +145,8 @@ public class LudoGameService {
         return winnersCount >= maxPlayers - 1; // Game is complete if all but one player has won
     }
 
+
+
     // Move a token
     public String moveToken(Long roomId, Long gameId, Long playerId, String tokenId, int diceRoll) {
         GameState gameState = gameStateMap.get(roomId);
@@ -157,6 +169,9 @@ public class LudoGameService {
         if (token == null) {
             return "Invalid token!";
         }
+        if (token.getPosition() == -1) {
+            return "Token is already at home and cannot be moved!";
+        }
 
         synchronized (gameState) {
             int currentPosition = token.getPosition();
@@ -170,8 +185,9 @@ public class LudoGameService {
                 return "You need a 6 to move this token out of the starting position.";
             }
 
-            // Check for cutting logic (if not in a safe zone)
             boolean extraTurn = false;
+
+            // Check for cutting logic (if not in a safe zone)
             if (!isSafeZone(newPosition)) {
                 Optional<Token> occupyingToken = findTokenAtPosition(gameRoom, newPosition);
                 if (occupyingToken.isPresent()) {
@@ -179,12 +195,17 @@ public class LudoGameService {
                     if (!opponentToken.getPlayerId().equals(playerId)) {
                         sendTokenHome(opponentToken);
                         extraTurn = true; // Player gets an extra turn for cutting an opponent
+
+                        //  Deduct score based on how many moves opponent's token took
+                        int opponentMoves = opponentToken.getMoveCount();
+                        updatePlayerScore(opponentToken.getPlayerId(), -opponentMoves);
                     }
                 }
             }
 
-            // Move the token
             token.setPosition(newPosition);
+            token.incrementMoveCount(); // Track how many times this token has moved
+
 
             // Check if the token reaches home
             if (newPosition == gameState.getFinalHomePosition(playerId)) {
@@ -201,11 +222,11 @@ public class LudoGameService {
                 return "Game Over. Player " + playerId + " has won the game!";
             }
 
-            // Add score based on the dice roll value
-           /* Player currentPlayer = gameState.getCurrentPlayerId();
+            // Add score based on dice roll value
+            Player currentPlayer = gameState.getPlayerById(playerId);
             if (currentPlayer != null) {
-                currentPlayer.setScore(diceRoll); // Add points based on dice roll
-            }*/
+                currentPlayer.setScore(currentPlayer.getScore() + diceRoll);
+            }
 
             // Grant another turn if rolled a 6 or cut an opponent's token
             if (diceRoll == 6 || extraTurn) {
@@ -217,6 +238,24 @@ public class LudoGameService {
         }
 
         return "Token moved to position " + token.getPosition() + " successfully.";
+    }
+
+    private void updatePlayerScore(Long playerId, int points) {
+        Optional<Player> playerOpt = playerRepository.findById(playerId);
+        if (playerOpt.isPresent()) {
+            Player player = playerOpt.get();
+            player.setScore(player.getScore() + points);
+            playerRepository.save(player);
+        }
+    }
+
+    public Map<Long, Integer> getPlayerScores() {
+        List<Player> players = playerRepository.findAll();
+        Map<Long, Integer> scores = new HashMap<>();
+        for (Player player : players) {
+            scores.put(player.getPlayerId(), player.getScore());
+        }
+        return scores;
     }
 
 

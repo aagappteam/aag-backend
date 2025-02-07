@@ -40,6 +40,7 @@ public class Player {
 
     private String color; // Red, Blue, Green, Yellow
 
+    private int moveCount = 0;
 
     private boolean hasWon;
 

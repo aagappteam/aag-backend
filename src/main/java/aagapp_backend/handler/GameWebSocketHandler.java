@@ -120,6 +120,8 @@ public class GameWebSocketHandler {
             response.put("data", data);
         }
 
+//        String destination = isSpectator ? "/topic/spectators/" + roomId : "/topic/game/" + roomId;
+
         messagingTemplate.convertAndSend("/topic/game/" + roomId, response);
     }
 

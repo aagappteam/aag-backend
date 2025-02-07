@@ -47,4 +47,8 @@ public class Token {
         this.isActive = false;
     }
 
+    public void incrementMoveCount() {
+        this.moveCount++;
+
+    }
 }

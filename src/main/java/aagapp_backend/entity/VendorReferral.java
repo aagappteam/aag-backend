@@ -21,7 +21,7 @@ public class VendorReferral {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "vendor_id")
+    @JoinColumn(name = "service_provider_id")
     @JsonBackReference("vendor-referrer")
     private VendorEntity referrerId;
 

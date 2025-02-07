@@ -19,45 +19,32 @@ public class GameState {
     private Map<Long, Integer> playerTokensAtHome; // Player ID -> Number of tokens at home
     private Set<Long> winners; // Store the winners
 //    private Enum gameStatus = GameRoomStatus.ONGOING;
+private List<Player> players; //  Store players for easy lookup
 
     private GameRoomStatus gameStatus = GameRoomStatus.ONGOING;
 
     @Autowired
     private LudoGameService ludogameservice;
 
-/*    public GameState(Long gameId, List<Long> playerIds) {
+    public GameState(Long gameId, GameRoom gameRoom) {
         this.gameId = gameId;
         this.playerTokens = new HashMap<>();
         this.finalHomePositions = new HashMap<>();
         this.playerTokensAtHome = new HashMap<>();
         this.winners = new HashSet<>();
         this.gameStatus = GameRoomStatus.ONGOING;
+        this.players = new ArrayList<>(gameRoom.getCurrentPlayers());
 
-        for (Long playerId : playerIds) {
-            playerTokens.put(playerId, initializeTokens(playerId,gameId));
-            finalHomePositions.put(playerId, boardSize); // Example: Home is at the board's end
-            playerTokensAtHome.put(playerId, 0); // Initialize all players with 0 tokens at home
+        for (Player player : gameRoom.getCurrentPlayers()) {
+            Long playerId = player.getPlayerId();
+            playerTokens.put(playerId, initializeTokens(player));
+            finalHomePositions.put(playerId, boardSize);
+            playerTokensAtHome.put(playerId, 0);
+
         }
 
-        this.currentPlayerId = playerIds.get(0); // Start with the first player
-    }*/
-public GameState(Long gameId, GameRoom gameRoom) {
-    this.gameId = gameId;
-    this.playerTokens = new HashMap<>();
-    this.finalHomePositions = new HashMap<>();
-    this.playerTokensAtHome = new HashMap<>();
-    this.winners = new HashSet<>();
-    this.gameStatus = GameRoomStatus.ONGOING;
-
-    for (Player player : gameRoom.getCurrentPlayers()) {
-        Long playerId = player.getPlayerId();
-        playerTokens.put(playerId, initializeTokens(player));
-        finalHomePositions.put(playerId, boardSize);
-        playerTokensAtHome.put(playerId, 0);
+        this.currentPlayerId = gameRoom.getCurrentPlayers().get(0).getPlayerId(); // Start with the first player
     }
-
-    this.currentPlayerId = gameRoom.getCurrentPlayers().get(0).getPlayerId(); // Start with the first player
-}
 
     // Updated initializeTokens method
     private List<Token> initializeTokens(Player player) {
@@ -116,6 +103,7 @@ public GameState(Long gameId, GameRoom gameRoom) {
 
     }
 
+
     public void markTokenHome(Token token) {
         List<Token> tokens = playerTokens.get(token.getPlayerId());
         if (tokens != null) {
@@ -172,5 +160,12 @@ public GameState(Long gameId, GameRoom gameRoom) {
         gameStatus = GameRoomStatus.CANCELED;
     }
 
+
+    public Player getPlayerById(Long playerId) {
+        return players.stream()
+                .filter(player -> player.getPlayerId().equals(playerId))
+                .findFirst()
+                .orElse(null);
+    }
 
 }
