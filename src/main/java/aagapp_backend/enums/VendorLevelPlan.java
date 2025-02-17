@@ -72,4 +72,8 @@ public enum VendorLevelPlan {
         }
         return null;
     }
+
+    public static VendorLevelPlan getDefaultLevel() {
+        return STANDARD_A;
+    }
 }

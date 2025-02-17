@@ -1,4 +1,5 @@
 package aagapp_backend.entity;
+
 import aagapp_backend.enums.VendorLevelPlan;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -91,10 +92,10 @@ public class VendorEntity {
     private Boolean isActive;
 
     @Column(name = "is_private")
-    private Boolean isPrivate=false;
+    private Boolean isPrivate = false;
 
     @Column(name = "is_paused")
-    private Boolean isPaused=false;
+    private Boolean isPaused = false;
 
     @Nullable
     @Column(name = "pause_reason")
@@ -128,8 +129,7 @@ public class VendorEntity {
 
 
     @Enumerated(EnumType.STRING)
-    private VendorLevelPlan vendorLevelPlan;
-
+    private VendorLevelPlan vendorLevelPlan = VendorLevelPlan.getDefaultLevel();
 
     @JsonBackReference("bankDetails-vendor")
     @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -166,7 +166,6 @@ public class VendorEntity {
     public VendorReferral getReceivedReferral() {
         return receivedReferral;
     }*/
-
 
 
 }
