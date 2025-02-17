@@ -1,9 +1,12 @@
 package aagapp_backend.services.payment;
 
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.VendorReferral;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.enums.PaymentStatus;
+import aagapp_backend.enums.VendorLevelPlan;
 import aagapp_backend.repository.payment.PaymentRepository;
+import aagapp_backend.repository.vendor.VendorReferralRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -28,6 +32,9 @@ public class PaymentService {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private VendorReferralRepository vendorReferralRepository;
 
 
     public List<PaymentEntity> findActivePlansByVendorId(Long vendorId) {
@@ -73,8 +80,27 @@ public class PaymentService {
         // Expire any existing active payments for the vendor
         expireExistingActivePayments(vendorId);
 
+        // Check if it's the vendor's first payment and handle referral rewards
+        if (isFirstPayment(existingVendor)) {
+            Optional<VendorReferral> vendorReferralOpt = Optional.ofNullable(vendorReferralRepository.findByReferredId(existingVendor));
+            if (vendorReferralOpt.isPresent()) {
+                VendorEntity referrer = vendorReferralOpt.get().getReferrerId();
+                double commission = calculateReferralCommission(referrer, paymentRequest.getAmount());
+                updateReferrerWallet(referrer, commission);
+            }
+        }
+
+
         // Save and return the newly created payment
         return paymentRepository.save(paymentRequest);
+    }
+
+    // Update referrer wallet balance
+    private void updateReferrerWallet(VendorEntity referrer, double amount) {
+        if (referrer != null) {
+            referrer.setWalletBalance(referrer.getWalletBalance() + amount);
+            entityManager.merge(referrer);
+        }
     }
 
 
@@ -119,5 +145,81 @@ public class PaymentService {
     public List<PaymentEntity> getAllTransactionsByVendorName(String vendorName, int page, int size, String transactionReference) {
         Pageable pageable = PageRequest.of(page, size);
         return paymentRepository.findAllTransactionsByVendorName(vendorName, transactionReference, pageable);
+    }
+
+    // Method to check if it's the vendor's first payment
+    private boolean isFirstPayment(VendorEntity vendor) {
+        // Query the number of payments made by this vendor, if it's the first payment (count = 0)
+        long paymentCount = paymentRepository.countByVendorEntity(vendor);
+        return paymentCount == 0;
+    }
+
+    // Dynamic commission calculation method
+    private double calculateReferralCommission(VendorEntity referrer, double paymentAmount) {
+
+        // Check if referrer or referrer's VendorLevelPlan is null, and assign STANDARD_A as default
+        if (referrer == null || referrer.getVendorLevelPlan() == null) {
+            // Assign the default value if null
+            referrer.setVendorLevelPlan(VendorLevelPlan.STANDARD_A);
+        }
+        // Get the VendorLevelPlan of the referrer
+        VendorLevelPlan referrerLevel = referrer.getVendorLevelPlan();
+
+        // Define commission rates based on the vendor level and the case
+        double commissionPercentage = 0.0;
+
+        switch (referrerLevel) {
+            case STANDARD_A:
+                commissionPercentage = 0.05;
+                break;
+            case STANDARD_B:
+                commissionPercentage = 0.06;
+                break;
+            case STANDARD_C:
+                commissionPercentage = 0.07;
+                break;
+            case STANDARD_D:
+                commissionPercentage = 0.08;
+                break;
+            case STANDARD_E:
+                commissionPercentage = 0.09;
+                break;
+            case PRO_A:
+                commissionPercentage = 0.05;
+                break;
+            case PRO_B:
+                commissionPercentage = 0.06;
+                break;
+            case PRO_C:
+                commissionPercentage = 0.07;
+                break;
+            case PRO_D:
+                commissionPercentage = 0.08;
+                break;
+            case PRO_E:
+                commissionPercentage = 0.09;
+                break;
+            case ELITE_A:
+                commissionPercentage = 0.05;
+                break;
+            case ELITE_B:
+                commissionPercentage = 0.06;
+                break;
+            case ELITE_C:
+                commissionPercentage = 0.07;
+                break;
+            case ELITE_D:
+                commissionPercentage = 0.08;
+                break;
+            case ELITE_E:
+                commissionPercentage = 0.09;
+                break;
+            default:
+                commissionPercentage = 0.05;
+                break;
+        }
+
+        // Calculate the commission based on the payment amount
+        return paymentAmount * commissionPercentage;
     }
 }

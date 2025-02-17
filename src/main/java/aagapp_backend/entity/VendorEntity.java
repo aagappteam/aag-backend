@@ -27,6 +27,7 @@ import java.util.List;
 @Getter
 @Setter
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+
 public class VendorEntity {
 
     @Id
@@ -108,24 +109,34 @@ public class VendorEntity {
     @Column(name = "referred_count")
     private int referralCount;
 
-    /*@JsonManagedReference("vendor-referred")
+
+    /*@JsonManagedReference("vendor-referrer")  //for the referrer relationship
     @OneToMany(mappedBy = "referrerId", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<VendorReferral> vendorReferralList = new ArrayList<>();*/
+    private List<VendorReferral> givenReferral = new ArrayList<>();
 
-    @JsonManagedReference("vendor-referrer")  //for the referrer relationship
+    @JsonIgnoreProperties({"referrerId", "referredId"})
+    @OneToOne(mappedBy = "referredId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private VendorReferral receivedReferral;*/
+
+    /*@JsonManagedReference("vendor-referrer")
     @OneToMany(mappedBy = "referrerId", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<VendorReferral> vendorReferralList = new ArrayList<>();
+    private List<VendorReferral> givenReferral = new ArrayList<>();
 
-    @JsonManagedReference("vendor-referred")  // Unique name for the referred relationship
-    @OneToMany(mappedBy = "referredId", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<VendorReferral> referredVendorReferralList = new ArrayList<>();
+    @JsonIgnoreProperties({"referrerId", "referredId"})
+    @OneToOne(mappedBy = "referredId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private VendorReferral receivedReferral;*/
 
 
+    @Enumerated(EnumType.STRING)
     private VendorLevelPlan vendorLevelPlan;
+
 
     @JsonBackReference("bankDetails-vendor")
     @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VendorBankDetails> bankDetails = new ArrayList<>();
+
+    @Column(name = "wallet_balance", nullable = false)
+    private double walletBalance = 0.0;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
@@ -147,6 +158,16 @@ public class VendorEntity {
     @JsonManagedReference("submissionentity-vendor")
     @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private VendorSubmissionEntity submissionEntity;
+
+    /*public List<VendorReferral> getSentReferrals() {
+        return givenReferral;
+    }
+
+    public VendorReferral getReceivedReferral() {
+        return receivedReferral;
+    }*/
+
+
 
 }
 
