@@ -35,7 +35,7 @@ public class PaymentController {
     @PostMapping("/create/{vendorId}")
     public ResponseEntity<?> createPayment(
             @PathVariable Long vendorId,
-            @RequestBody @Valid PaymentEntity paymentRequest,
+            @RequestBody PaymentEntity paymentRequest,
             @RequestHeader(value = "Authorization") String authorization) {
 
         try {
