@@ -34,6 +34,19 @@ public class SecurityConfig {
         return http.build();
     }*/
 
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers(
+                "/swagger-ui.html",               // Swagger UI path
+                "/swagger-ui/**",                 // Swagger UI static resources
+                "/swagger-resources/**",          // Swagger resource URL
+                "/v3/api-docs/**",                // OpenAPI docs path
+                "/webjars/**",                    // Webjar resources for Swagger
+                "/swagger-resources/**" ,          // Swagger resources
+                "/api/**/aagdocument/**",
+                "/api/**/files/**"
+        );
+    }
 
        @Bean
    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
