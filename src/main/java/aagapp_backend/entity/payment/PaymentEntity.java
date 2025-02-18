@@ -67,7 +67,6 @@ public class PaymentEntity {
     @Column(name = "payment_type", nullable = false)
     private PaymentType paymentType;
 
-    // New field to mark if it's a test payment or not
     @Column(name = "is_test", nullable = false)
     private Boolean isTest = false;
 
