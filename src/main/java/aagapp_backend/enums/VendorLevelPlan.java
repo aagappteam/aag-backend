@@ -4,55 +4,76 @@ import lombok.Getter;
 
 @Getter
 public enum VendorLevelPlan {
-    // Standard Plan
-    STANDARD_A("Standard A", 5, 2, 4, 1000, "Rank B", 5, 5, 10000), // Price added here
-    STANDARD_B("Standard B", 5, 2, 5, 2000, "Rank C", 5, 6, 10000),
-    STANDARD_C("Standard C", 7, 3, 7, 5000, "Rank D", 7, 7, 10000),
-    STANDARD_D("Standard D", 8, 4, 8, 7000, "Rank E", 8, 8, 10000),
-    STANDARD_E("Standard E", 10, 5, 10, 10000, "League access & Special event entry", 10, 9, 10000), // Price added here
+    STANDARD_A(5, 1000, 4, "Standard A", 1, 1),
+    STANDARD_B(5, 2000, 5, "Standard B", 1, 2),
+    STANDARD_C(7, 5000, 7, "Standard C", 2, 3),
+    STANDARD_D(8, 7000, 8, "Standard D", 3, 4),
+    STANDARD_E(10, 10000, 10, "Standard E", 3, 5),
 
-    // Pro Plan
-    PRO_A("Pro A", 10, 4, 4, 5000, "Rank B", 10, 5, 20000), // Price added here
-    PRO_B("Pro B", 10, 5, 5, 7000, "Rank C", 10, 6, 20000),
-    PRO_C("Pro C", 12, 7, 7, 10000, "Rank D", 12, 7, 20000),
-    PRO_D("Pro D", 13, 9, 8, 12000, "Rank E", 13, 8, 20000),
-    PRO_E("Pro E", 15, 9, 10, 15000, "Tournament & event access & Special event entry", 15, 9, 20000), // Price added here
+    PRO_A(10, 5000, 4, "Pro A", 1, 1),
+    PRO_B(10, 7000, 5, "Pro B", 2, 2),
+    PRO_C(12, 10000, 7, "Pro C", 3, 3),
+    PRO_D(13, 12000, 8, "Pro D", 4, 4),
+    PRO_E(15, 15000, 10, "Pro E", 5, 5),
 
-    // Elite Plan
-    ELITE_A("Elite A", 15, 7, 4, 10000, "Rank B", 15, 5, 50000), // Price added here
-    ELITE_B("Elite B", 17, 9, 5, 12000, "Rank C", 17, 6, 50000),
-    ELITE_C("Elite C", 20, 10, 7, 15000, "Rank D", 20, 7, 50000),
-    ELITE_D("Elite D", 25, 10, 8, 17000, "Rank E", 25, 8, 50000),
-    ELITE_E("Elite E", 25, 13, 10, 20000, "Tournament & event entry & Two special event entries", 25, 9, 50000); // Price added here
+    ELITE_A(15, 10000, 4, "Elite A", 4, 6),
+    ELITE_B(17, 12000, 5, "Elite B", 5, 7),
+    ELITE_C(20, 15000, 7, "Elite C", 6, 8),
+    ELITE_D(25, 17000, 8, "Elite D", 7, 9),
+    ELITE_E(25, 20000, 10, "Elite E", 8, 10);
 
-    private final String name;
     private final int dailyGameLimit;
-    private final int themeCount;
-    private final int returnXSubscription;
     private final int userCounterRequirement;
-    private final String progressionCondition;
-    private final int resetCounterCondition;
-    private final int profitPercentage;
-    private final int price; // New field for price
+    private final int returnMultiplier;
+    private final String levelName;
+    private final int themeCount;
+    private final int featureSlots;
 
-    VendorLevelPlan(String name, int dailyGameLimit, int themeCount, int returnXSubscription, int userCounterRequirement, String progressionCondition, int resetCounterCondition, int profitPercentage, int price) {
-        this.name = name;
+    VendorLevelPlan(int dailyGameLimit, int userCounterRequirement, int returnMultiplier,
+                    String levelName, int themeCount, int featureSlots) {
         this.dailyGameLimit = dailyGameLimit;
-        this.themeCount = themeCount;
-        this.returnXSubscription = returnXSubscription;
         this.userCounterRequirement = userCounterRequirement;
-        this.progressionCondition = progressionCondition;
-        this.resetCounterCondition = resetCounterCondition;
-        this.profitPercentage = profitPercentage;
-        this.price = price;
+        this.returnMultiplier = returnMultiplier;
+        this.levelName = levelName;
+        this.themeCount = themeCount;
+        this.featureSlots = featureSlots;
     }
 
-    public static VendorLevelPlan fromString(String name) {
-        for (VendorLevelPlan vendorLevelPlan : VendorLevelPlan.values()) {
-            if (vendorLevelPlan.name.equalsIgnoreCase(name)) {
-                return vendorLevelPlan;
-            }
+    public int getDailyGameLimit() {
+        return dailyGameLimit;
+    }
+
+    public int getUserCounterRequirement() {
+        return userCounterRequirement;
+    }
+
+    public int getReturnMultiplier() {
+        return returnMultiplier;
+    }
+
+    public String getLevelName() {
+        return levelName;
+    }
+
+    public int getThemeCount() {
+        return themeCount;
+    }
+
+    public int getFeatureSlots() {
+        return featureSlots;
+    }
+
+    // Method to get the next level
+    public VendorLevelPlan getNextLevel() {
+        VendorLevelPlan[] levels = VendorLevelPlan.values();
+        int index = ordinal();
+        if (index < levels.length - 1) {
+            return levels[index + 1];
         }
-        throw new IllegalArgumentException("No enum constant with name " + name);
+        return null;
+    }
+
+    public static VendorLevelPlan getDefaultLevel() {
+        return STANDARD_A;
     }
 }

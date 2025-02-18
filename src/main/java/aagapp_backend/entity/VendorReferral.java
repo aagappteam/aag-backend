@@ -2,6 +2,7 @@ package aagapp_backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,13 +23,11 @@ public class VendorReferral {
 
     @ManyToOne
     @JoinColumn(name = "vendor_id")
-    @JsonBackReference("vendor-referrer")
+    @JsonIgnoreProperties("givenReferral")
     private VendorEntity referrerId;
 
     @ManyToOne
     @JoinColumn(name = "referred_id")
-    @JsonBackReference("vendor-referred")
+    @JsonIgnoreProperties("receivedReferral")
     private VendorEntity referredId;
-
-
 }
