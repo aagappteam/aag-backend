@@ -1,7 +1,6 @@
 package aagapp_backend.dto;
 
 import aagapp_backend.entity.ThemeEntity;
-import aagapp_backend.entity.game.FeeToMove;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -20,16 +19,21 @@ public class GameRequest {
     @NotNull
     private String name;
 
-    @NotNull
-    private List<FeeToMove> feeToMoves;
 
     private Long themeId;
 
     private Integer minPlayersPerTeam;
     private Integer maxPlayersPerTeam;
 
+    @NotNull
+    private Double fee;
+
+    private Integer move;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;
+
+
 }
 
 

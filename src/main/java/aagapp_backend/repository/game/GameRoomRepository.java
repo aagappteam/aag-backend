@@ -18,8 +18,11 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, Long> {
 
     List<GameRoom> findByStatus(GameRoomStatus status);
 
+
+    Optional<GameRoom> findByGameId(Long gameId);
+
     List findByGameAndStatus(Game game, GameRoomStatus gameRoomStatus);
 
-    Optional<Object> findByPlayersContains(Player player);
+    Optional<GameRoom> findByCurrentPlayersContains(Player player);
 }
 

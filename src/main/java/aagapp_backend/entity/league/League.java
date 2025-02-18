@@ -1,7 +1,6 @@
 package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.ThemeEntity;
-import aagapp_backend.entity.game.FeeToMove;
 import aagapp_backend.enums.LeagueStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
@@ -42,12 +41,10 @@ public class League {
     @Column(nullable = false)
     private String name;
 
-   /* @ElementCollection
-    @CollectionTable(name = "game_fee_to_moves", joinColumns = @JoinColumn(name = "game_id"))
+    @Column(nullable = false)
+    private Double fee;
 
-    private List<FeeToMove> feeToMoves;*/
-
-    private Integer moves;
+    private Integer move;
 
     @Column(name = "vendor_id", nullable = false)
     private Long vendorId;
@@ -104,23 +101,11 @@ public class League {
         if (this.endDate == null) {
             this.endDate = ZonedDateTime.now();
         }
+
+        if (this.move == null) {
+            this.move = 12; // Default value for move if not provided
+        }
     }
 
-   /* public void calculateMoves(Double selectedFee) {
-        if (feeToMoves != null && selectedFee != null) {
-            FeeToMove feeToMove = feeToMoves
-                    .stream()
-                    .filter(mapping -> mapping.getRupees().equals(selectedFee))
-                    .findFirst()
-                    .orElse(null);
 
-            if (feeToMove != null) {
-                this.moves = feeToMove.getMoves();
-            } else {
-                this.moves = 0;
-            }
-        } else {
-            this.moves = 0;
-        }
-    }*/
 }

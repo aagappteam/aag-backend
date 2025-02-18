@@ -176,7 +176,7 @@ public class Constant {
 
     public static String EXPIRED = "EXPIRED";
 
-
+    public static Integer TOKEN_SIZE = 2;
 
 
 }

@@ -4,10 +4,8 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.game.FeeToMove;
-import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.game.*;
 
-import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.*;
@@ -41,19 +39,13 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import org.springframework.transaction.annotation.Transactional;
-import java.util.*;
-
 
 @Service
 public class GameService {
 
     @Autowired
     private MoveRepository moveRepository;
-
-    private Map<Integer, List<Token>> boardPositions = new HashMap<>();
-    private Map<Long, PlayerState> playerStates = new HashMap<>(); // Track player progress
 
     private GameRepository gameRepository;
     private ResponseService responseService;
@@ -69,7 +61,6 @@ public class GameService {
 
     private PlayerRepository playerRepository;
     private GameRoomRepository gameRoomRepository;
-    private GameSessionRepository gameSessionRepository;
 
 
     @Autowired
@@ -107,10 +98,7 @@ public class GameService {
         this.gameRoomRepository = gameRoomRepository;
     }
 
-    @Autowired
-    public void setGameSessionRepository(GameSessionRepository gameSessionRepository) {
-        this.gameSessionRepository = gameSessionRepository;
-    }
+
 
     @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
@@ -164,7 +152,6 @@ public class GameService {
             // Create a new Game entity
             Game game = new Game();
             game.setName(gameRequest.getName());
-            game.setFeeToMoves(gameRequest.getFeeToMoves());
 
             // Fetch Vendor and Theme Entities
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
@@ -182,10 +169,12 @@ public class GameService {
             game.setTheme(theme);
 
             // Calculate moves based on the selected fee
-            if (gameRequest.getFeeToMoves() != null && !gameRequest.getFeeToMoves().isEmpty()) {
-                Double selectedFee = gameRequest.getFeeToMoves().get(0).getRupees();
-                game.calculateMoves(selectedFee);
+
+            game.setFee(gameRequest.getFee());
+            if(gameRequest.getMove()!= null){
+                game.setMove(gameRequest.getMove());
             }
+
 
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
@@ -238,7 +227,7 @@ public class GameService {
     }
 
     @Transactional
-    public ResponseEntity<?> joinRoom(Long playerId, Long gameId) {
+    public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
         try {
             Player player = getPlayerById(playerId);
             Game game = getGameById(gameId);
@@ -273,6 +262,8 @@ public class GameService {
             return responseService.generateErrorResponse("Player can not joined in the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
+
+
 
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long gameId) {
@@ -509,21 +500,11 @@ public class GameService {
                     game.setName(gameRequest.getName());
                 }
 
-                if (gameRequest.getFeeToMoves() != null && !gameRequest.getFeeToMoves().isEmpty()) {
-                    game.setFeeToMoves(gameRequest.getFeeToMoves());
-                    Double entryFee = gameRequest.getFeeToMoves().get(0).getRupees();
+                // Calculate moves based on the selected fee
 
-                    FeeToMove feeToMove = gameRequest.getFeeToMoves()
-                            .stream()
-                            .filter(mapping -> mapping.getRupees().equals(entryFee))
-                            .findFirst()
-                            .orElse(null);
-
-                    if (feeToMove != null) {
-                        game.setMoves(feeToMove.getMoves());
-                    } else {
-                        game.setMoves(0);
-                    }
+                game.setFee(gameRequest.getFee());
+                if(gameRequest.getMove()!= null){
+                    game.setMove(gameRequest.getMove());
                 }
                 ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 

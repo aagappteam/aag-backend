@@ -1,6 +1,12 @@
 package aagapp_backend.services.gameservice;
 
+import aagapp_backend.components.Constant;
+import aagapp_backend.entity.game.GameRoom;
+import aagapp_backend.entity.game.Token;
+import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.GameRoomStatus;
+import aagapp_backend.enums.GameStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -12,35 +18,43 @@ public class GameState {
     private Map<Long, Integer> finalHomePositions; // Player ID -> Final Home Position
     private Map<Long, Integer> playerTokensAtHome; // Player ID -> Number of tokens at home
     private Set<Long> winners; // Store the winners
-    private Enum gameStatus = GameRoomStatus.ONGOING;
+//    private Enum gameStatus = GameRoomStatus.ONGOING;
+private List<Player> players; //  Store players for easy lookup
 
-    public GameState(Long gameId, List<Long> playerIds) {
+    private GameRoomStatus gameStatus = GameRoomStatus.ONGOING;
+
+    @Autowired
+    private LudoGameService ludogameservice;
+
+    public GameState(Long gameId, GameRoom gameRoom) {
         this.gameId = gameId;
         this.playerTokens = new HashMap<>();
         this.finalHomePositions = new HashMap<>();
         this.playerTokensAtHome = new HashMap<>();
         this.winners = new HashSet<>();
         this.gameStatus = GameRoomStatus.ONGOING;
+        this.players = new ArrayList<>(gameRoom.getCurrentPlayers());
 
-        for (Long playerId : playerIds) {
-            playerTokens.put(playerId, initializeTokens(playerId));
-            finalHomePositions.put(playerId, boardSize); // Example: Home is at the board's end
-            playerTokensAtHome.put(playerId, 0); // Initialize all players with 0 tokens at home
+        for (Player player : gameRoom.getCurrentPlayers()) {
+            Long playerId = player.getPlayerId();
+            playerTokens.put(playerId, initializeTokens(player));
+            finalHomePositions.put(playerId, boardSize);
+            playerTokensAtHome.put(playerId, 0);
+
         }
 
-        this.currentPlayerId = playerIds.get(0); // Start with the first player
+        this.currentPlayerId = gameRoom.getCurrentPlayers().get(0).getPlayerId(); // Start with the first player
     }
 
-    private List<Token> initializeTokens(Long playerId) {
+    // Updated initializeTokens method
+    private List<Token> initializeTokens(Player player) {
         List<Token> tokens = new ArrayList<>();
-        // Example: Initialize 4 tokens with unique IDs, starting positions, and assigned player IDs
-
-        for (int i = 1; i <= 4; i++) {
-            tokens.add(new Token(playerId, "Token" + i, 0)); // Start all tokens at position 0
+        for (int i = 1; i <= Constant.TOKEN_SIZE; i++) {
+            String uniqueTokenId = player.getPlayerId() + "_Token" + i;
+            tokens.add(new Token(player.getPlayerId(), uniqueTokenId, 0));
         }
         return tokens;
     }
-
 
 
     public Long getGameId() {
@@ -68,12 +82,6 @@ public class GameState {
                 .orElse(null);
     }
 
-/*    public Token getPlayerToken(Long playerId, String tokenId) {
-        return playerTokens.getOrDefault(playerId, Collections.emptyList()).stream()
-                .filter(token -> token.getTokenId().equals(tokenId))
-                .findFirst()
-                .orElse(null);
-    }*/
 
     public void addWinner(Long playerId) {
         if (!winners.contains(playerId)) {
@@ -90,12 +98,11 @@ public class GameState {
     }
 
     public boolean hasPlayerWon(Long playerId) {
-/*        int tokensAtHomeToWin = 4;
-        return playerTokensAtHome.get(playerId) >= tokensAtHomeToWin;*/
         int tokensAtHomeToWin = 4;
         return playerTokensAtHome.getOrDefault(playerId, 0) >= tokensAtHomeToWin;
 
     }
+
 
     public void markTokenHome(Token token) {
         List<Token> tokens = playerTokens.get(token.getPlayerId());
@@ -140,20 +147,17 @@ public class GameState {
         return gameStatus;
     }
 
-    public void setGameStatus(Enum gameStatus) {
+    public void setGameStatus(GameRoomStatus gameStatus) {
         this.gameStatus = gameStatus;
     }
 
-    public boolean isGameCompleted() {
-        return winners.size() >= playerTokens.size() - 1;
-    }
 
 
-    public boolean isGameCancelled() {
-        return gameStatus == GameRoomStatus.CANCELED;
+    public Player getPlayerById(Long playerId) {
+        return players.stream()
+                .filter(player -> player.getPlayerId().equals(playerId))
+                .findFirst()
+                .orElse(null);
     }
 
-    public void cancelGame() {
-        gameStatus = GameRoomStatus.CANCELED;
-    }
 }

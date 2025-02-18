@@ -505,6 +505,7 @@ public class VenderServiceImpl implements VenderService {
                     // Find the referrer by referral code
 //                    VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
+
                     if (referrer != null) {
                         // Create a VendorReferral entry
                         VendorReferral vendorReferral = new VendorReferral();
@@ -528,8 +529,6 @@ public class VenderServiceImpl implements VenderService {
                     deviceMange.recordVendorLoginDevice(existingServiceProvider, ipAddress, userAgent, jwtUtil.generateToken(existingServiceProvider.getService_provider_id(), role, ipAddress, userAgent));
                 }*/
 
-//                System.out.println("existingToken is " + existingToken);
-//                Map<String,Object> serviceProviderResponse= sharedUtilityService.serviceProviderDetailsMap(existingServiceProvider);
                 if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
 
 
