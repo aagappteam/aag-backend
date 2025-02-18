@@ -92,6 +92,8 @@ public class PaymentService {
 
 
         // Save and return the newly created payment
+        existingVendor.setIsPaid(true);
+        entityManager.persist(existingVendor);
         return paymentRepository.save(paymentRequest);
     }
 
@@ -123,7 +125,6 @@ public class PaymentService {
             paymentRequest.setExpiryAt(LocalDateTime.now().plusDays(1));
         }
     }
-
 
     private void expireExistingActivePayments(Long vendorId) {
         List<PaymentEntity> existingActivePayments = this.findActivePlansByVendorId(vendorId);

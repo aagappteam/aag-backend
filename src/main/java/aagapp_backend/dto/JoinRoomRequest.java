@@ -16,4 +16,6 @@ public class JoinRoomRequest {
 
     @NotNull(message="Game id can not be null")
     private Long gameId;
+
+    private String gametype;
 }

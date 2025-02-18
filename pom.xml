@@ -81,11 +81,7 @@
 			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
 
-		<!-- Spring Messaging for STOMP -->
-<!--		<dependency>
-			<groupId>org.springframework.messaging</groupId>
-			<artifactId>spring-messaging</artifactId>
-		</dependency>-->
+
 		<!-- Jackson for JSON conversion -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>

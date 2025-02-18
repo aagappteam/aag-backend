@@ -5,8 +5,10 @@ import java.util.Map;
 
 public class PlayerState {
     private Long playerId;
+    private String name;
     private Map<String, Integer> tokenPositions = new HashMap<>();
     private int homeCount = 0;
+    private boolean hasWon;
 
     public PlayerState(Long playerId) {
         this.playerId = playerId;
