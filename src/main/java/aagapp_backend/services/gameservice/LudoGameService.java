@@ -1,5 +1,6 @@
 package aagapp_backend.services.gameservice;
 
+import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.game.Token;
 import aagapp_backend.entity.players.Player;
@@ -83,6 +84,11 @@ public class LudoGameService {
 
     public void saveGameState(GameRoom gameRoom) {
         gameRoom.setActivePlayersCount(gameRoom.getCurrentPlayers().size());
+
+        //    get game entity by game room id
+
+//        Game game = gameRoom.getGame(gameRoom.getId());
+
 
         if (gameRoom.getStatus() == GameRoomStatus.ONGOING) {
             // Check if the game is over and change the status

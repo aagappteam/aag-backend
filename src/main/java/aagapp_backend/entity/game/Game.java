@@ -39,12 +39,13 @@ public class Game {
     @Column(nullable = false)
     private String name;
 
-    @ElementCollection
-    @CollectionTable(name = "game_fee_to_moves", joinColumns = @JoinColumn(name = "game_id"))
-    private List<FeeToMove> feeToMoves;
 
-    private Integer moves;
+    // Fee and Move columns
+    @Column(name = "fee", nullable = false)
+    private Double fee;
 
+    @Column(name = "move", nullable = false)
+    private Integer move;
 
     @Enumerated(EnumType.STRING)
     private GameStatus status;
@@ -92,6 +93,9 @@ public class Game {
         if (this.endDate == null) {
             this.endDate = ZonedDateTime.now().plusHours(4);
         }
+        if (this.move == null) {
+            this.move = 12; // Default value for move if not provided
+        }
     }
 
     @PreUpdate
@@ -99,23 +103,7 @@ public class Game {
         this.updatedDate = ZonedDateTime.now();
     }
 
-    public void calculateMoves(Double selectedFee) {
-        if (feeToMoves != null && selectedFee != null) {
-            FeeToMove feeToMove = feeToMoves
-                    .stream()
-                    .filter(mapping -> mapping.getRupees().equals(selectedFee))
-                    .findFirst()
-                    .orElse(null);
 
-            if (feeToMove != null) {
-                this.moves = feeToMove.getMoves();
-            } else {
-                this.moves = 0;
-            }
-        } else {
-            this.moves = 0;
-        }
-    }
 
 }
 

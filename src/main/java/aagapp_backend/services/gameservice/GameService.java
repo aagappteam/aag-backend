@@ -152,7 +152,6 @@ public class GameService {
             // Create a new Game entity
             Game game = new Game();
             game.setName(gameRequest.getName());
-            game.setFeeToMoves(gameRequest.getFeeToMoves());
 
             // Fetch Vendor and Theme Entities
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
@@ -170,10 +169,12 @@ public class GameService {
             game.setTheme(theme);
 
             // Calculate moves based on the selected fee
-            if (gameRequest.getFeeToMoves() != null && !gameRequest.getFeeToMoves().isEmpty()) {
-                Double selectedFee = gameRequest.getFeeToMoves().get(0).getRupees();
-                game.calculateMoves(selectedFee);
+
+            game.setFee(gameRequest.getFee());
+            if(gameRequest.getMove()!= null){
+                game.setMove(gameRequest.getMove());
             }
+
 
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
@@ -499,21 +500,11 @@ public class GameService {
                     game.setName(gameRequest.getName());
                 }
 
-                if (gameRequest.getFeeToMoves() != null && !gameRequest.getFeeToMoves().isEmpty()) {
-                    game.setFeeToMoves(gameRequest.getFeeToMoves());
-                    Double entryFee = gameRequest.getFeeToMoves().get(0).getRupees();
+                // Calculate moves based on the selected fee
 
-                    FeeToMove feeToMove = gameRequest.getFeeToMoves()
-                            .stream()
-                            .filter(mapping -> mapping.getRupees().equals(entryFee))
-                            .findFirst()
-                            .orElse(null);
-
-                    if (feeToMove != null) {
-                        game.setMoves(feeToMove.getMoves());
-                    } else {
-                        game.setMoves(0);
-                    }
+                game.setFee(gameRequest.getFee());
+                if(gameRequest.getMove()!= null){
+                    game.setMove(gameRequest.getMove());
                 }
                 ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 

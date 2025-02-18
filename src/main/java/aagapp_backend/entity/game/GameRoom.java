@@ -4,12 +4,10 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.GameRoomStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -60,8 +58,6 @@ public class GameRoom {
 
     @Column(name = "active_players_count")
     private int activePlayersCount;
-
-
 
     @PrePersist
     @PreUpdate
