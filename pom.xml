@@ -37,6 +37,10 @@
 			<version>1.4.01</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.hateoas</groupId>
+			<artifactId>spring-hateoas</artifactId>
+		</dependency>
 
 
 <!--		<dependency>
@@ -66,8 +70,23 @@
 			<version>42.7.4</version>
 		</dependency>
 
+<!--		<dependency>
+			<groupId>javax.websocket</groupId>
+			<artifactId>javax.websocket-api</artifactId>
+			<version>1.1</version>
+		</dependency>-->
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
 
 
+		<!-- Jackson for JSON conversion -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
 		<!-- Spring Boot Starter Security (for security configurations) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -150,29 +169,14 @@
 			<version>0.11.5</version>
 		</dependency>
 
-		<!-- Swagger 2 for API documentation -->
-<!--		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger2</artifactId>
-			<version>2.7.0</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework</groupId>
-					<artifactId>spring-aop</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>com.fasterxml.jackson.core</groupId>
-					<artifactId>jackson-annotations</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>-->
-
-		<!-- Swagger UI for frontend to interact with Swagger-generated API docs -->
+		<!-- Springdoc OpenAPI 3 for Swagger UI -->
+		<!-- https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-ui -->
 		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger-ui</artifactId>
-			<version>2.7.0</version>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.7.0</version>
 		</dependency>
+
 
 		<!-- ModelMapper for mapping between DTOs and entities -->
 <!--

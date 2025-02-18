@@ -87,13 +87,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+
+        String requestURI = request.getRequestURI();
+        if (requestURI.startsWith("/ludo-websocket")) {
+            // Log the WebSocket request and skip JWT authentication
+            logger.info("Bypassing JWT authentication for WebSocket handshake");
+            chain.doFilter(request, response);
+            return;
+        }
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
             return;
         }
 
         try {
-            String requestURI = request.getRequestURI();
+
+
+            if (requestURI.startsWith("/swagger-ui") || requestURI.startsWith("/v3/api-docs")) {
+                chain.doFilter(request, response);
+                return;
+            }
+
 
             if (isUnsecuredUri(requestURI) || bypassimages(requestURI)) {
                 chain.doFilter(request, response);
