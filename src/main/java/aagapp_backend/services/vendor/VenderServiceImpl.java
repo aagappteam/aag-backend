@@ -485,7 +485,6 @@ public class VenderServiceImpl implements VenderService {
             VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
 
-
             if (otpEntered == null || otpEntered.trim().isEmpty()) {
                 return responseService.generateErrorResponse("OTP cannot be empty", HttpStatus.BAD_REQUEST);
             }
@@ -502,7 +501,7 @@ public class VenderServiceImpl implements VenderService {
                 String existingToken = existingServiceProvider.getToken();
 
                 // After obtaining the referrer using the referral code
-                if (referralCode != null && !referralCode.isEmpty() && existingServiceProvider.getSignedUp()==0) {
+                if (referralCode != null && !referralCode.isEmpty() && existingServiceProvider.getSignedUp() == 0) {
                     // Find the referrer by referral code
 //                    VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
@@ -544,9 +543,9 @@ public class VenderServiceImpl implements VenderService {
                     existingServiceProvider.setToken(newToken);
                     entityManager.persist(existingServiceProvider);
                     Map<String, Object> responseBody = createAuthResponse(newToken, existingServiceProvider).getBody();
-                    if(existingServiceProvider.getSignedUp()==0) {
+                    if (existingServiceProvider.getSignedUp() == 0) {
                         existingServiceProvider.setSignedUp(1);
-                        VendorReferral vendorReferral= vendorReferralRepository.findByReferredId(existingServiceProvider);
+                        VendorReferral vendorReferral = vendorReferralRepository.findByReferredId(existingServiceProvider);
                         entityManager.merge(existingServiceProvider);
                     }
                     responseBody.put("message", "User has been signed up");

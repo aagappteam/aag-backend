@@ -6,8 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface VendorReferralRepository extends JpaRepository<VendorReferral, Long>{
+public interface VendorReferralRepository extends JpaRepository<VendorReferral, Long> {
     List<VendorReferral> findByReferrerId(VendorEntity referrerId);
+
     VendorReferral findByReferredId(VendorEntity referredId);
 
 }

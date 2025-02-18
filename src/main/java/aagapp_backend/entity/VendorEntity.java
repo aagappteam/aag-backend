@@ -72,18 +72,6 @@ public class VendorEntity {
     private Boolean isPaid = false;
 
 
-/*    @OneToOne(cascade = CascadeType.ALL,orphanRemoval = true)
-    @JoinColumn(name = "status_id", referencedColumnName = "status_id")
-    private ServiceProviderStatus status;*/
-
-
-/*    @ManyToMany
-    @JoinTable(
-            name = "service_provider_privileges", // The name of the join table
-            joinColumns = @JoinColumn(name = "service_provider_id"), // Foreign key for ServiceProvider
-            inverseJoinColumns = @JoinColumn(name = "privilege_id")) // Foreign key for Privilege
-    private List<Privileges> privileges;*/
-
     @Nullable
     @Column(length = 512)
     private String token;
@@ -109,23 +97,6 @@ public class VendorEntity {
     @Nullable
     @Column(name = "referred_count")
     private int referralCount;
-
-
-    /*@JsonManagedReference("vendor-referrer")  //for the referrer relationship
-    @OneToMany(mappedBy = "referrerId", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<VendorReferral> givenReferral = new ArrayList<>();
-
-    @JsonIgnoreProperties({"referrerId", "referredId"})
-    @OneToOne(mappedBy = "referredId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private VendorReferral receivedReferral;*/
-
-    /*@JsonManagedReference("vendor-referrer")
-    @OneToMany(mappedBy = "referrerId", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<VendorReferral> givenReferral = new ArrayList<>();
-
-    @JsonIgnoreProperties({"referrerId", "referredId"})
-    @OneToOne(mappedBy = "referredId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private VendorReferral receivedReferral;*/
 
 
     @Enumerated(EnumType.STRING)
@@ -158,14 +129,6 @@ public class VendorEntity {
     @JsonManagedReference("submissionentity-vendor")
     @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private VendorSubmissionEntity submissionEntity;
-
-    /*public List<VendorReferral> getSentReferrals() {
-        return givenReferral;
-    }
-
-    public VendorReferral getReceivedReferral() {
-        return receivedReferral;
-    }*/
 
 
 }
