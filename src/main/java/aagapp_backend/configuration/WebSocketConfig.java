@@ -19,7 +19,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ludo-websocket") // WebSocket endpoint
+        registry.addEndpoint("/ludo-websocket")
                 .setAllowedOrigins("http://localhost:8080","http://localhost:8081", "https://yourdomain.com") // Allow specific domains
 
                 .withSockJS(); // Enable SockJS fallback

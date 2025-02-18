@@ -152,14 +152,6 @@ private List<Player> players; //  Store players for easy lookup
     }
 
 
-    public boolean isGameCancelled() {
-        return gameStatus == GameRoomStatus.CANCELED;
-    }
-
-    public void cancelGame() {
-        gameStatus = GameRoomStatus.CANCELED;
-    }
-
 
     public Player getPlayerById(Long playerId) {
         return players.stream()

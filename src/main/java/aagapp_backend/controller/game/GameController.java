@@ -26,7 +26,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/games")
 public class GameController {
-
     private GameService gameService;
     private ExceptionHandlingImplement exceptionHandling;
     private ResponseService responseService;
@@ -177,7 +176,7 @@ public class GameController {
         }
     }
 
-    @PostMapping("/joinRoom")
+/*    @PostMapping("/joinRoom")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinRoomRequest joinRoomRequest) {
         try {
             return gameService.joinRoom(joinRoomRequest.getPlayerId(), joinRoomRequest.getGameId());
@@ -185,7 +184,7 @@ public class GameController {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in joining game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     @PostMapping("/leftGameRoom")
     public ResponseEntity<?> leaveGameRoom(@RequestBody LeaveRoomRequest leaveRoomRequest) {

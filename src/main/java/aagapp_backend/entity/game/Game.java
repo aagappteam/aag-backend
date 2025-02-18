@@ -4,7 +4,6 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.GameStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

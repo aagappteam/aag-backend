@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
-@Table(name = "game_rooms")
+@Table(name = "ludo_game_rooms")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,6 +26,9 @@ public class GameRoom {
 
     @Column(name = "room_code", unique = true, nullable = false, length = 10)
     private String roomCode;
+
+    private String gameType; // LUDO, SNAKE_LADDER, KNIFE_THROW, FRUIT_NINJA
+
 
     @OneToMany(mappedBy = "gameRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference(value = "gameRoomReference")
@@ -48,7 +51,7 @@ public class GameRoom {
     private int turnOrder = 0;
 
     @ElementCollection
-    @CollectionTable(name = "game_room_winners", joinColumns = @JoinColumn(name = "game_room_id"))
+    @CollectionTable(name = "ludo_game_room_winners", joinColumns = @JoinColumn(name = "game_room_id"))
     @Column(name = "player_id")
     private Set<Long> winners = new HashSet<>();
 
@@ -58,17 +61,7 @@ public class GameRoom {
     @Column(name = "active_players_count")
     private int activePlayersCount;
 
-    @ElementCollection
-    @CollectionTable(name = "game_timers", joinColumns = @JoinColumn(name = "game_room_id"))
-    private Map<Long, LocalDateTime> gameTimers = new HashMap<>();
 
-    @ElementCollection
-    @CollectionTable(name = "player_afk_status", joinColumns = @JoinColumn(name = "game_room_id"))
-    private Map<Long, Integer> playerAFKStatus = new HashMap<>();
-
-    @ElementCollection
-    @CollectionTable(name = "spectators", joinColumns = @JoinColumn(name = "game_room_id"))
-    private List<Long> spectators = new ArrayList<>();
 
     @PrePersist
     @PreUpdate

@@ -4,11 +4,8 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.game.FeeToMove;
-import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.game.*;
 
-import aagapp_backend.entity.game.GameRoom;
-import aagapp_backend.entity.game.Token;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.*;
@@ -229,7 +226,7 @@ public class GameService {
     }
 
     @Transactional
-    public ResponseEntity<?> joinRoom(Long playerId, Long gameId) {
+    public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
         try {
             Player player = getPlayerById(playerId);
             Game game = getGameById(gameId);
@@ -264,6 +261,8 @@ public class GameService {
             return responseService.generateErrorResponse("Player can not joined in the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
+
+
 
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long gameId) {

@@ -17,11 +17,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class LudoGameService {
+public class SnakeLadderGameService {
+
 
     // Use ConcurrentHashMap for thread-safe operations
     private ConcurrentHashMap<Long, GameState> gameStateMap = new ConcurrentHashMap<>();
-    List<Integer> board = new ArrayList<>(52); // Represents the board
+    List<Integer> board = new ArrayList<>(100); // Represents the board
 
     private static final String INVALID_TOKEN = "Invalid token!";
     private static final String NOT_YOUR_TURN = "It's not your turn!";
@@ -33,6 +34,8 @@ public class LudoGameService {
     @Autowired
     private PlayerRepository  playerRepository;
 
+/*    @Autowired
+    private SnakeGameRoomRepository snakeGameRoomRepository;*/
     @Autowired
     private GameRoomRepository gameRoomRepository;
 
@@ -50,7 +53,6 @@ public class LudoGameService {
 
         return new LudoResponse(true, "Dice rolled successfully!", diceRoll, playerId,nextPlayerId);
     }
-
 
 
     public Long getNextPlayerId(GameRoom gameRoom) {
@@ -98,20 +100,6 @@ public class LudoGameService {
     }
 
 
-/*    public Map<String, Object> getGameState(Long roomId) {
-        GameState gameState = gameStateMap.get(roomId);
-        if (gameState == null) {
-            return Collections.emptyMap();  // Game not found
-        }
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("players", gameState.getPlayers());
-        data.put("board", gameState.getBoard());
-        // Add any other relevant game data you want to share with spectators
-        return data;
-    }*/
-
-
     public boolean isValidPlayer(Long roomId, Long playerId) {
         GameRoom gameRoom = getRoomById(roomId);
         if (gameRoom == null) {
@@ -128,8 +116,6 @@ public class LudoGameService {
                 ? nextPlayerId
                 : null;
     }
-
-
 
 
     // Fetch GameRoom by ID
@@ -292,14 +278,14 @@ public class LudoGameService {
 
 
     public boolean isPlayerInGame(Long roomId, Long playerId) {
-        GameRoom gameRoom = this.getRoomById(roomId);
+        GameRoom gameRoom = getRoomById(roomId);
 
         return gameRoom != null &&
                 gameRoom.getCurrentPlayers().stream()
                         .anyMatch(player -> player.getPlayerId().equals(playerId));
     }
     public boolean isGameInProgress(Long roomId) {
-        GameRoom gameRoom = this.getRoomById(roomId);
+        GameRoom gameRoom = getRoomById(roomId);
         return gameRoom!= null && gameRoom.getStatus().equals(GameRoomStatus.ONGOING);
     }
 
@@ -313,5 +299,4 @@ public class LudoGameService {
         GameRoom gameRoom = this.getRoomById(roomId);
         return gameRoom != null && gameRoom.getCurrentPlayerId().equals(playerId);
     }
-
 }
