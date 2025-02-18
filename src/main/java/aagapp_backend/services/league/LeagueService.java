@@ -146,6 +146,7 @@ public class LeagueService {
         ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
         ZonedDateTime scheduledAtInKolkata = league.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
+
         if (scheduledAtInKolkata != null) {
             ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
 
