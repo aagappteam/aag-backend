@@ -3,9 +3,15 @@ package aagapp_backend.services.vendor;
 import aagapp_backend.components.CommonData;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
+import aagapp_backend.dto.ReferralDTO;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.repository.vendor.VendorReferralRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.*;
+import aagapp_backend.services.devicemange.DeviceMange;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.referal.ReferralService;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
@@ -32,10 +38,7 @@ import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class VenderServiceImpl implements VenderService {
@@ -46,6 +49,34 @@ public class VenderServiceImpl implements VenderService {
     private JwtUtil jwtUtil;
     private ResponseService responseService;
     private TwilioService twilioService;
+    private DeviceMange deviceMange;
+    private ReferralService referralService;
+    private VendorReferralRepository vendorReferralRepository;
+
+    @Autowired
+    private VendorRepository vendorRepository;
+
+    @Autowired
+    public void setVendorReferralRepository(VendorReferralRepository vendorReferralRepository) {
+        this.vendorReferralRepository = vendorReferralRepository;
+    }
+
+    @Autowired
+    @Lazy
+    public void setDeviceMange(DeviceMange deviceMange) {
+        this.deviceMange = deviceMange;
+    }
+
+
+    public VendorEntity findServiceProviderByReferralCode(String referralCode) {
+        return vendorRepository.findServiceProviderByReferralCode(referralCode);
+    }
+
+    @Autowired
+    @Lazy
+    public void setReferralService(ReferralService referralService) {
+        this.referralService = referralService;
+    }
 
     @Autowired
     public void setTwilioService(@Lazy
@@ -373,6 +404,7 @@ public class VenderServiceImpl implements VenderService {
                 .orElse(null);
     }
 
+
     public List<VendorEntity> getAllSp(int page, int limit) {
         int startPosition = page * limit;
         TypedQuery<VendorEntity> query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS, VendorEntity.class);
@@ -392,8 +424,13 @@ public class VenderServiceImpl implements VenderService {
     private ResponseEntity<Map<String, Object>> createAuthResponse(String token, VendorEntity vendorEntity) {
         Map<String, Object> responseBody = new HashMap<>();
 
+        List<ReferralDTO> sentReferrals = getSentReferrals(vendorEntity.getService_provider_id());
+        ReferralDTO receivedReferral = getReceivedReferral(vendorEntity.getService_provider_id());
+
         Map<String, Object> data = new HashMap<>();
         data.put("venderDetails", vendorEntity);
+        data.put("sentReferrals", sentReferrals);
+        data.put("receivedReferral", receivedReferral); // Assuming this is a single referral
         responseBody.put("status_code", HttpStatus.OK.value());
         responseBody.put("data", data);
         responseBody.put("token", token);
@@ -417,6 +454,7 @@ public class VenderServiceImpl implements VenderService {
             String otpEntered = (String) loginDetails.get("otpEntered");
             String mobileNumber = (String) loginDetails.get("mobileNumber");
             String countryCode = (String) loginDetails.get("countryCode");
+            String referralCode = (String) loginDetails.get("referralCode");
             Integer role = (Integer) loginDetails.get("role");
             if (countryCode == null || countryCode.isEmpty()) {
                 countryCode = Constant.COUNTRY_CODE;
@@ -435,6 +473,7 @@ public class VenderServiceImpl implements VenderService {
                 mobileNumber = mobileNumber.substring(1);
             VendorEntity existingServiceProvider = findServiceProviderByPhone(mobileNumber, countryCode);
 
+
             if (existingServiceProvider == null) {
                 return responseService.generateErrorResponse("Invalid Data Provided ", HttpStatus.UNAUTHORIZED);
 
@@ -443,6 +482,7 @@ public class VenderServiceImpl implements VenderService {
             String storedOtp = existingServiceProvider.getOtp();
             String ipAddress = request.getRemoteAddr();
             String userAgent = request.getHeader("User-Agent");
+            VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
 
             if (otpEntered == null || otpEntered.trim().isEmpty()) {
@@ -450,11 +490,45 @@ public class VenderServiceImpl implements VenderService {
             }
             if (otpEntered.equals(storedOtp)) {
                 existingServiceProvider.setOtp(null);
+
+                // Generate and assign a referral code if it's a new Vendor
+                if (existingServiceProvider.getReferralCode() == null || existingServiceProvider.getReferralCode().isEmpty()) {
+                    String newReferralCode = referralService.generateVendorReferralCode(existingServiceProvider);
+                    existingServiceProvider.setReferralCode(newReferralCode);
+                }
+
                 entityManager.merge(existingServiceProvider);
                 String existingToken = existingServiceProvider.getToken();
 
-                System.out.println("existingToken is " + existingToken);
-//                Map<String,Object> serviceProviderResponse= sharedUtilityService.serviceProviderDetailsMap(existingServiceProvider);
+                // After obtaining the referrer using the referral code
+                if (referralCode != null && !referralCode.isEmpty() && existingServiceProvider.getSignedUp() == 0) {
+                    // Find the referrer by referral code
+//                    VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
+
+
+                    if (referrer != null) {
+                        // Create a VendorReferral entry
+                        VendorReferral vendorReferral = new VendorReferral();
+                        vendorReferral.setReferrerId(referrer);
+                        vendorReferral.setReferredId(existingServiceProvider);
+
+                        // Persist the VendorReferral entry
+                        entityManager.persist(vendorReferral);
+
+                        // Update the referrer's referral count
+                        referrer.setReferralCount(referrer.getReferralCount() + 1);
+                        entityManager.merge(referrer);
+                    }
+                }
+
+
+
+                /*Long userId = existingServiceProvider.getService_provider_id();
+                boolean isNewDevice = deviceMange.isVendorLoginFromNewDevice(userId, ipAddress, userAgent);
+                if (isNewDevice) {
+                    deviceMange.recordVendorLoginDevice(existingServiceProvider, ipAddress, userAgent, jwtUtil.generateToken(existingServiceProvider.getService_provider_id(), role, ipAddress, userAgent));
+                }*/
+
                 if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
 
 
@@ -468,11 +542,11 @@ public class VenderServiceImpl implements VenderService {
                     existingServiceProvider.setToken(newToken);
                     entityManager.persist(existingServiceProvider);
                     Map<String, Object> responseBody = createAuthResponse(newToken, existingServiceProvider).getBody();
-/*                    if(existingServiceProvider.getSignedUp()==0) {
+                    if (existingServiceProvider.getSignedUp() == 0) {
                         existingServiceProvider.setSignedUp(1);
+                        VendorReferral vendorReferral = vendorReferralRepository.findByReferredId(existingServiceProvider);
                         entityManager.merge(existingServiceProvider);
-                        responseBody.put("message", "User has been signed up");
-                    }*/
+                    }
                     responseBody.put("message", "User has been signed up");
                     return ResponseEntity.ok(responseBody);
                 }
@@ -595,11 +669,43 @@ public class VenderServiceImpl implements VenderService {
     public VendorEntity saveOrUpdate(VendorEntity VendorEntity) {
         try {
             return entityManager.merge(VendorEntity);
-        }catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             throw new RuntimeException("Error saving or updating vendor: " + e.getMessage());
         }
 
+    }
+
+    public ReferralDTO getReceivedReferral(Long vendorId) {
+        VendorEntity vendorEntity = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+
+        VendorReferral vendorReferral = vendorReferralRepository.findByReferredId(vendorEntity);
+
+        if (vendorReferral != null) {
+            Long referrerId = vendorReferral.getReferrerId().getService_provider_id(); // Get the referrer ID
+            Long referredId = vendorReferral.getReferredId().getService_provider_id(); // Get the referred ID
+            return new ReferralDTO(vendorReferral.getId(), referrerId, referredId);
+        }
+
+        return null; // or throw an exception if you prefer
+    }
+
+    public List<ReferralDTO> getSentReferrals(Long vendorId) {
+        VendorEntity vendorEntity = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+
+        List<VendorReferral> sentReferrals = vendorReferralRepository.findByReferrerId(vendorEntity);
+
+        // Convert to DTO
+        List<ReferralDTO> referralDTOs = new ArrayList<>();
+        for (VendorReferral referral : sentReferrals) {
+            referralDTOs.add(new ReferralDTO(referral.getId(),
+                    referral.getReferrerId().getService_provider_id(),
+                    referral.getReferredId().getService_provider_id()));
+        }
+
+        return referralDTOs;
     }
 
 

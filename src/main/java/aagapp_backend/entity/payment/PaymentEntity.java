@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "payments", indexes = {
-        @Index(name = "idx_vendor_payment", columnList = "vendor_id"),
+        @Index(name = "idx_vendor_payment", columnList = "service_provider_id"),
         @Index(name = "idx_payment_status", columnList = "status"),
         @Index(name = "idx_payment_plan", columnList = "plan_name")
 })
@@ -31,7 +31,7 @@ public class PaymentEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "vendor_id", nullable = false)
+    @JoinColumn(name = "service_provider_id", nullable = false)
     private VendorEntity vendorEntity;
 
     @Column(name = "transaction_id", unique = true, nullable = false)
@@ -67,7 +67,6 @@ public class PaymentEntity {
     @Column(name = "payment_type", nullable = false)
     private PaymentType paymentType;
 
-    // New field to mark if it's a test payment or not
     @Column(name = "is_test", nullable = false)
     private Boolean isTest = false;
 

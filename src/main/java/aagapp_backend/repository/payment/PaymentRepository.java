@@ -1,5 +1,6 @@
 package aagapp_backend.repository.payment;
 
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.enums.PaymentStatus;
 import org.springframework.data.domain.Pageable;
@@ -35,4 +36,8 @@ public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
     List<PaymentEntity> findAllTransactionsByVendorName(@Param("vendorName") String vendorName,
                                                         @Param("transactionReference") String transactionReference,
                                                         Pageable pageable);
+
+
+    // Custom method to count the number of payments for a given vendor
+    long countByVendorEntity(VendorEntity vendor);
 }
