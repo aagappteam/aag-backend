@@ -216,7 +216,7 @@ public class PaymentService {
                 commissionPercentage = 0.09;
                 break;
             default:
-                commissionPercentage = 0.05;
+                commissionPercentage = 0.00;
                 break;
         }
 
