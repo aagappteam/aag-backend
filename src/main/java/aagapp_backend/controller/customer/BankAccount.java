@@ -1,4 +1,4 @@
-package aagapp_backend.controller.bank;
+package aagapp_backend.controller.customer;
 
 import aagapp_backend.dto.BankAccountDTO;
 import aagapp_backend.entity.BankDetails;
@@ -15,15 +15,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+@RestController
+@RequestMapping("user-bank")
 public class BankAccount {
 
-    /**
-     * The Bank account service.
-     */
+
     @Autowired
-    BankAccountService bankAccountService;
+    private BankAccountService bankAccountService;
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandling;
@@ -37,16 +38,11 @@ public class BankAccount {
     @Autowired
     private CustomCustomerService customerService;
 
-    /**
-     * Add bank account response entity.
-     *
-     * @param customerId     the customer id
-     * @param bankAccountDTO the bank account dto
-     * @return the response entity
-     */
+
     @PostMapping("/add/{customerId}")
     public ResponseEntity<?> addBankAccount(
             @PathVariable Long customerId,
+
             @RequestBody @Valid BankAccountDTO bankAccountDTO) {
 
         try {
@@ -124,17 +120,10 @@ public class BankAccount {
 
         }    }
 
-    /**
-     * Update bank account response entity.
-     *
-     * @param accountId      the account id
-     * @param bankAccountDTO the bank account dto
-     * @return the response entity
-     */
     @PutMapping("/update/{accountId}")
     public ResponseEntity<?> updateBankAccount(
             @PathVariable Long accountId,
-            @RequestBody  BankAccountDTO bankAccountDTO) {
+            @RequestBody Map<String, Object> params) {
         try {
             if (accountId == null) {
                 return ResponseService.generateErrorResponse("Account ID is required", HttpStatus.BAD_REQUEST);
@@ -145,7 +134,8 @@ public class BankAccount {
                 return ResponseService.generateErrorResponse("Bank account not found for this Id", HttpStatus.NOT_FOUND);
             }
 
-            String result = bankAccountService.updateBankAccount(accountId, bankAccountDTO);
+            // Pass the params map to the service method for updating
+            String result = bankAccountService.updateBankAccount(accountId, params);
             if (result.equals("Account number already exists.")) {
                 return ResponseService.generateErrorResponse(result, HttpStatus.BAD_REQUEST);
             }
@@ -161,8 +151,8 @@ public class BankAccount {
                 return ResponseService.generateErrorResponse("Updated bank account not found", HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
+            // Return the updated account as DTO (optional)
             BankAccountDTO updatedBankAccountDTO = bankAccountService.convertToDTO(updatedAccount.get());
-
             return ResponseService.generateSuccessResponse("Bank account updated successfully!", updatedBankAccountDTO, HttpStatus.OK);
 
         } catch (Exception e) {
@@ -170,6 +160,7 @@ public class BankAccount {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
 
 
