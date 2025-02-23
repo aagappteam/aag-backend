@@ -214,7 +214,6 @@ public class BankAccountService {
         }
     }
 
-
     /**
      * Gets bank accounts by customer id.
      *
