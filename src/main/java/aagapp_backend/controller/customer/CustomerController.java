@@ -105,6 +105,22 @@ public class CustomerController {
         }
     }
 
+    @Transactional
+    @PatchMapping("update")
+    public ResponseEntity<?> updateUser(@RequestParam Long id, @RequestBody Map<String, Object> userdetails) throws Exception {
+        try {
+            CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, id);
+            if (customCustomer == null)
+                return ResponseService.generateErrorResponse("User with provided Id not found", HttpStatus.NOT_FOUND);
+            return customCustomerService.updateCustomer(id, userdetails);
+        } catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Some error updating: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/get-user")
     public ResponseEntity<?> getUserById(@RequestParam Long userId) {
         try {

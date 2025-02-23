@@ -26,7 +26,6 @@ public class VendorBankDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     @ManyToOne
     @JoinColumn(name = "service_provider_id")
     @JsonBackReference

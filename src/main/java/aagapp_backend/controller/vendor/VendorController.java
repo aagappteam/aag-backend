@@ -1,14 +1,18 @@
 package aagapp_backend.controller.vendor;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.dto.BankAccountDTO;
+import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
+import aagapp_backend.services.vendor.VendorBankAccountService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/vendor")
@@ -26,6 +31,9 @@ public class VendorController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private VendorBankAccountService bankAccountService;
 
     @Autowired
     private EntityManager entityManager;
@@ -44,12 +52,12 @@ public class VendorController {
     @PostMapping("create-or-update-password")
     public ResponseEntity<?> createOrUpdatePassword(
             @RequestBody Map<String, Object> passwordDetails,
-            @RequestParam long userId) {
+            @RequestParam long serviceProviderId) {
         try {
             String password = (String) passwordDetails.get("password");
             String newPassword = (String) passwordDetails.get("newPassword");
 
-            VendorEntity serviceProvider = entityManager.find(VendorEntity.class, userId);
+            VendorEntity serviceProvider = entityManager.find(VendorEntity.class, serviceProviderId);
             if (serviceProvider == null) {
                 return responseService.generateErrorResponse("No records found", HttpStatus.NOT_FOUND);
             }
@@ -89,12 +97,12 @@ public class VendorController {
     }
 
 
-    @GetMapping("/get-vendor")
-    public ResponseEntity<?> getVendorDetailsById(@RequestParam Long userId) {
+    @GetMapping("/get-vendor/{serviceProviderId}")
+    public ResponseEntity<?> getVendorDetailsById(@PathVariable Long serviceProviderId) {
         try {
-            VendorEntity serviceProviderEntity = vendorService.getServiceProviderById(userId);
+            VendorEntity serviceProviderEntity = vendorService.getServiceProviderById(serviceProviderId);
             if (serviceProviderEntity == null) {
-                return responseService.generateErrorResponse("Service provider not found " + userId, HttpStatus.BAD_REQUEST);
+                return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
             }
             Map<String, Object> details = new HashMap<>();
             details.put("status", ApiConstants.STATUS_SUCCESS);
@@ -109,10 +117,10 @@ public class VendorController {
     }
 
     @Transactional
-    @DeleteMapping("delete")
-    public ResponseEntity<?> deleteServiceProvider(@RequestParam Long userId) {
+    @DeleteMapping("delete/{serviceProviderId}")
+    public ResponseEntity<?> deleteServiceProvider(@PathVariable Long serviceProviderId) {
         try {
-            VendorEntity serviceProviderToBeDeleted = entityManager.find(VendorEntity.class, userId);
+            VendorEntity serviceProviderToBeDeleted = entityManager.find(VendorEntity.class, serviceProviderId);
             if (serviceProviderToBeDeleted == null)
                 return responseService.generateErrorResponse("No record found", HttpStatus.NOT_FOUND);
             else
@@ -127,13 +135,13 @@ public class VendorController {
     }
 
     @Transactional
-    @PatchMapping("update")
-    public ResponseEntity<?> updateServiceProvider(@RequestParam Long userId, @RequestBody Map<String, Object> serviceProviderDetails) throws Exception {
+    @PatchMapping("update/{serviceProviderId}")
+    public ResponseEntity<?> updateServiceProvider(@PathVariable Long serviceProviderId, @RequestBody Map<String, Object> serviceProviderDetails) throws Exception {
         try {
-            VendorEntity serviceProvider = entityManager.find(VendorEntity.class, userId);
+            VendorEntity serviceProvider = entityManager.find(VendorEntity.class, serviceProviderId);
             if (serviceProvider == null)
                 return ResponseService.generateErrorResponse("Vendor with provided Id not found", HttpStatus.NOT_FOUND);
-            return vendorService.updateServiceProvider(userId, serviceProviderDetails);
+            return vendorService.updateServiceProvider(serviceProviderId, serviceProviderDetails);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -186,13 +194,13 @@ public class VendorController {
 
 
     @PostMapping("/account-private")
-    public ResponseEntity<?> createAccountPrivate(@RequestParam Long userId, @RequestBody Map<String, Object> params) {
+    public ResponseEntity<?> createAccountPrivate(@RequestParam Long serviceProviderId, @RequestBody Map<String, Object> params) {
         try {
             Boolean isPrivate = (Boolean) params.get("isPrivate");
             if (isPrivate == null) {
                 return responseService.generateErrorResponse("isPrivate field is required", HttpStatus.BAD_REQUEST);
             }
-            VendorEntity vendorEntity = vendorService.getServiceProviderById(userId);
+            VendorEntity vendorEntity = vendorService.getServiceProviderById(serviceProviderId);
             if (vendorEntity == null)
                 return responseService.generateErrorResponse("No vendor found with provided ID", HttpStatus.NOT_FOUND);
 
@@ -208,14 +216,14 @@ public class VendorController {
 
     @Transactional
     @PostMapping("/account-pause")
-    public ResponseEntity<?> makeAccountPause(@RequestParam Long userId, @RequestBody Map<String, Object> params) {
+    public ResponseEntity<?> makeAccountPause(@RequestParam Long serviceProviderId, @RequestBody Map<String, Object> params) {
         try {
             Boolean isPaused = (Boolean) params.get("isPaused");
             String pauseReason = (String) params.get("pauseReason");
             if (isPaused == null || pauseReason == null) {
                 return responseService.generateErrorResponse("isPaused and pauseReason fields are required", HttpStatus.BAD_REQUEST);
             }
-            VendorEntity vendorEntity = vendorService.getServiceProviderById(userId);
+            VendorEntity vendorEntity = vendorService.getServiceProviderById(serviceProviderId);
             if (vendorEntity == null) {
                 return responseService.generateErrorResponse("No vendor found with provided ID", HttpStatus.NOT_FOUND);
             }
@@ -229,4 +237,156 @@ public class VendorController {
             return responseService.generateErrorResponse("Error updating pause duration: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @PostMapping("/add/{serviceProviderId}")
+    public ResponseEntity<?> addBankAccount(
+            @PathVariable Long serviceProviderId,
+
+            @RequestBody @Valid BankAccountDTO bankAccountDTO) {
+
+        try {
+            if (serviceProviderId == null) {
+                return ResponseService.generateErrorResponse("Customer Id not specified", HttpStatus.BAD_REQUEST);
+            }
+            VendorEntity serviceProvider = entityManager.find(VendorEntity.class, serviceProviderId);
+
+            if (serviceProvider == null) {
+                return ResponseService.generateErrorResponse("Vendor not found for this Id", HttpStatus.NOT_FOUND);
+            }
+
+            String result = bankAccountService.addBankAccount(serviceProvider, bankAccountDTO);
+
+            if (result.contains("Account numbers do not match.")) {
+                return ResponseService.generateErrorResponse(result, HttpStatus.BAD_REQUEST);
+            }
+            if (result.contains("Account number already exists.")) {
+                return ResponseService.generateErrorResponse(result, HttpStatus.BAD_REQUEST);
+            }
+            String[] resultParts = result.split("ID: ");
+            Long generatedId = Long.parseLong(resultParts[1].trim());
+            BankAccountDTO responseDTO = new BankAccountDTO(
+                    generatedId,
+                    bankAccountDTO.getCustomerName(),
+                    bankAccountDTO.getAccountNumber(),
+                    bankAccountDTO.getReEnterAccountNumber(),
+                    bankAccountDTO.getIfscCode(),
+                    bankAccountDTO.getBankName(),
+                    bankAccountDTO.getBranchName(),
+                    bankAccountDTO.getAccountType()
+            );
+
+
+            return ResponseService.generateSuccessResponse("Bank account added successfully!", responseDTO, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @GetMapping("/getbankdetails/{serviceProviderId}")
+    public ResponseEntity<?> getBankAccountsByCustomerId(@PathVariable Long serviceProviderId) {
+        try{
+            if (serviceProviderId == null) {
+                return ResponseService.generateErrorResponse("Customer Id not specified", HttpStatus.BAD_REQUEST);
+            }
+
+            VendorEntity serviceProvider = entityManager.find(VendorEntity.class, serviceProviderId);
+            if (serviceProvider == null) {
+                return ResponseService.generateErrorResponse("Customer not found for this Id", HttpStatus.NOT_FOUND);
+            }
+
+            List<BankAccountDTO> bankAccounts = bankAccountService.getBankAccountsByCustomerId(serviceProviderId);
+
+            if (bankAccounts.isEmpty()) {
+                return ResponseService.generateErrorResponse("No bank accounts found for this vendor", HttpStatus.NOT_FOUND);
+            }
+
+            return ResponseService.generateSuccessResponse("Bank accounts fetched successfully!", bankAccounts, HttpStatus.OK);
+
+        }
+        catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+
+        }    }
+
+
+    @PutMapping("/update-bank/{accountId}")
+    public ResponseEntity<?> updateBankAccount(
+            @PathVariable Long accountId,
+            @RequestBody Map<String, Object> params) {
+        try {
+            if (accountId == null) {
+                return ResponseService.generateErrorResponse("Account ID is required", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<VendorBankDetails> existingAccount = bankAccountService.getBankAccountById(accountId);
+            if (!existingAccount.isPresent()) {
+                return ResponseService.generateErrorResponse("Bank account not found for this Id", HttpStatus.NOT_FOUND);
+            }
+
+            String result = bankAccountService.updateBankAccount(accountId, params);
+            if (result.equals("Account number already exists.")) {
+                return ResponseService.generateErrorResponse(result, HttpStatus.BAD_REQUEST);
+            }
+            if (result.equals("Account numbers do not match.")) {
+                return ResponseService.generateErrorResponse(result, HttpStatus.BAD_REQUEST);
+            }
+            if (result.equals("Account update failed")) {
+                return ResponseService.generateErrorResponse("Failed to update bank account", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            Optional<VendorBankDetails> updatedAccount = bankAccountService.getBankAccountById(accountId);
+            if (updatedAccount.isEmpty()) {
+                return ResponseService.generateErrorResponse("Updated bank account not found", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            BankAccountDTO updatedBankAccountDTO = bankAccountService.convertToDTO(updatedAccount.get());
+
+            return ResponseService.generateSuccessResponse("Bank account updated successfully!", updatedBankAccountDTO, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+    /**
+     * Delete bank account response entity.
+     *
+     * @param accountId the account id
+     * @return the response entity
+     */
+    @DeleteMapping("/delete-bank-account/{accountId}")
+    public ResponseEntity<?> deleteBank(@PathVariable Long accountId) {
+        try {
+            if (accountId == null) {
+                return ResponseService.generateErrorResponse("Account ID is required", HttpStatus.BAD_REQUEST);
+            }
+
+
+            Optional<VendorBankDetails> existingAccount = bankAccountService.getBankAccountById(accountId);
+            if (!existingAccount.isPresent()) {
+                return ResponseService.generateErrorResponse("Bank account not found for this Id", HttpStatus.NOT_FOUND);
+            }
+
+            String result = bankAccountService.deleteBankAccount(accountId);
+            if (result.equals("Account deletion failed")) {
+                return ResponseService.generateErrorResponse("Failed to delete bank account", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            return ResponseService.generateSuccessResponse("Bank account deleted successfully!", null, HttpStatus.OK);
+
+        }
+        catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+
+        }
+    }
+
+
 }
