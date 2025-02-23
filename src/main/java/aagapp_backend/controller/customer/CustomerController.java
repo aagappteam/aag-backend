@@ -106,8 +106,8 @@ public class CustomerController {
     }
 
     @Transactional
-    @PatchMapping("update")
-    public ResponseEntity<?> updateUser(@RequestParam Long id, @RequestBody Map<String, Object> userdetails) throws Exception {
+    @PatchMapping("update/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, Object> userdetails) throws Exception {
         try {
             CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, id);
             if (customCustomer == null)
@@ -121,8 +121,8 @@ public class CustomerController {
         }
     }
 
-    @GetMapping("/get-user")
-    public ResponseEntity<?> getUserById(@RequestParam Long userId) {
+    @GetMapping("/get-user/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long userId) {
         try {
             CustomCustomer customCustomer = customCustomerService.readCustomerById(userId);
             if (customCustomer == null) {
@@ -141,8 +141,8 @@ public class CustomerController {
     }
 
     @Transactional
-    @DeleteMapping("delete")
-    public ResponseEntity<?> deleteCustomer(@RequestParam Long userId) {
+    @DeleteMapping("delete/{id}")
+    public ResponseEntity<?> deleteCustomer(@PathVariable Long userId) {
         try {
             CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, userId);
             if (customCustomer == null)
