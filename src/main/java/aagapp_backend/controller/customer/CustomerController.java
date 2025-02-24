@@ -105,8 +105,24 @@ public class CustomerController {
         }
     }
 
-    @GetMapping("/get-user")
-    public ResponseEntity<?> getUserById(@RequestParam Long userId) {
+    @Transactional
+    @PatchMapping("update/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, Object> userdetails) throws Exception {
+        try {
+            CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, id);
+            if (customCustomer == null)
+                return ResponseService.generateErrorResponse("User with provided Id not found", HttpStatus.NOT_FOUND);
+            return customCustomerService.updateCustomer(id, userdetails);
+        } catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Some error updating: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/get-user/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long userId) {
         try {
             CustomCustomer customCustomer = customCustomerService.readCustomerById(userId);
             if (customCustomer == null) {
@@ -125,8 +141,8 @@ public class CustomerController {
     }
 
     @Transactional
-    @DeleteMapping("delete")
-    public ResponseEntity<?> deleteCustomer(@RequestParam Long userId) {
+    @DeleteMapping("delete/{id}")
+    public ResponseEntity<?> deleteCustomer(@PathVariable Long userId) {
         try {
             CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, userId);
             if (customCustomer == null)

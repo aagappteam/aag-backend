@@ -1,8 +1,9 @@
-package aagapp_backend.services;
-
+package aagapp_backend.services.vendor;
 import aagapp_backend.dto.BankAccountDTO;
-import aagapp_backend.entity.BankDetails;
+import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorBankDetails;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -16,7 +17,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 @Service
-public class BankAccountService {
+public class VendorBankAccountService  {
 
 
     /**
@@ -25,18 +26,12 @@ public class BankAccountService {
     @Autowired
     EntityManager entityManager;
 
-    @Autowired
-    ExceptionHandlingImplement exceptionHandlingImplement;
 
-    /**
-     * Add bank account string.
-     *
-     * @param customCustomer the custom customer
-     * @param bankAccountDTO the bank account dto
-     * @return the string
-     */
+    @Autowired
+    ExceptionHandlingImplement exceptionHandling;
+
     @Transactional
-    public String addBankAccount(CustomCustomer customCustomer, BankAccountDTO bankAccountDTO) {
+    public String addBankAccount(VendorEntity vendorEntity, BankAccountDTO bankAccountDTO) {
         try {
             if (isAccountNumberExists(bankAccountDTO.getAccountNumber(), null)) {
                 return "Account number already exists.";
@@ -46,11 +41,11 @@ public class BankAccountService {
                 return "Account numbers do not match.";
             }
 
-            BankDetails bankDetails = new BankDetails();
+            VendorBankDetails bankDetails = new VendorBankDetails();
             bankDetails.setId(bankAccountDTO.getId());
             bankDetails.setCustomerName(bankAccountDTO.getCustomerName());
             bankDetails.setAccountNumber(bankAccountDTO.getAccountNumber());
-            bankDetails.setCustomer(customCustomer);
+            bankDetails.setVendorEntity(vendorEntity);
             bankDetails.setIfscCode(bankAccountDTO.getIfscCode());
             bankDetails.setBankName(bankAccountDTO.getBankName());
             bankDetails.setBranchName(bankAccountDTO.getBranchName());
@@ -62,8 +57,8 @@ public class BankAccountService {
 
             return "Bank account added successfully! ID: " + generatedId;
         } catch (Exception e) {
-            e.printStackTrace();
-            exceptionHandlingImplement.handleException(e);
+            exceptionHandling.handleException(e);
+
             return "Error adding bank account: " + e.getMessage();
         }
     }
@@ -78,7 +73,7 @@ public class BankAccountService {
     @Transactional
     public String deleteBankAccount(Long accountId) {
         try {
-            BankDetails bankDetails = entityManager.find(BankDetails.class, accountId);
+            VendorBankDetails bankDetails = entityManager.find(VendorBankDetails.class, accountId);
             if (bankDetails != null) {
                 entityManager.remove(bankDetails); // Delete the bank account
                 return "Bank account deleted successfully!";
@@ -86,8 +81,8 @@ public class BankAccountService {
                 return "Bank account not found!";
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            exceptionHandlingImplement.handleException(e);
+            exceptionHandling.handleException(e);
+
             return "Error deleting bank account: " + e.getMessage();
         }
     }
@@ -99,14 +94,13 @@ public class BankAccountService {
      * @return the bank account by id
      */
     @Transactional
-
-    public Optional<BankDetails> getBankAccountById(Long accountId) {
+    public Optional<VendorBankDetails> getBankAccountById(Long accountId) {
         try {
             if (accountId == null) {
                 return Optional.empty();
             }
 
-            BankDetails bankDetails = entityManager.find(BankDetails.class, accountId);
+            VendorBankDetails bankDetails = entityManager.find(VendorBankDetails.class, accountId);
             if (bankDetails == null) {
                 return Optional.empty();
             }
@@ -116,8 +110,8 @@ public class BankAccountService {
             }
             return Optional.empty();
         } catch (Exception e) {
-            e.printStackTrace();
-            exceptionHandlingImplement.handleException(e);
+            exceptionHandling.handleException(e);
+
             return Optional.empty();
         }
     }
@@ -125,57 +119,58 @@ public class BankAccountService {
     @Transactional
     public String updateBankAccount(Long accountId, Map<String, Object> params) {
         try {
-            // Fetch the existing account from the database
-            BankDetails existingAccount = entityManager.find(BankDetails.class, accountId);
+            // Fetch the existing bank account from the database
+            VendorBankDetails existingAccount = entityManager.find(VendorBankDetails.class, accountId);
             if (existingAccount == null) {
                 return "Account update failed. Account not found.";
             }
 
-            // Handle account number validation if provided
+            // Check if the required fields (account number and re-entered account number) are present in params
             String accountNumber = (String) params.get("accountNumber");
             String reEnterAccountNumber = (String) params.get("reEnterAccountNumber");
 
-            // Check if account numbers match
+            // Validate if account numbers match
             if (accountNumber != null && reEnterAccountNumber != null && !accountNumber.equals(reEnterAccountNumber)) {
                 return "Account numbers do not match.";
             }
 
-            // If account number is present, check if it already exists
+            // If account number is present, check if it already exists (except for the current account)
             if (accountNumber != null && isAccountNumberExists(accountNumber, accountId)) {
                 return "Account number already exists.";
             }
 
-            // Use reflection to set the fields dynamically
+            // Reflection to set the fields dynamically
             for (Map.Entry<String, Object> entry : params.entrySet()) {
                 String fieldName = entry.getKey();
                 Object value = entry.getValue();
 
                 if (value != null) {
-                    // Construct the setter method name (e.g., setAccountNumber for accountNumber field)
+                    // Create a method name for the setter (e.g., setAccountNumber for accountNumber field)
                     String setterMethodName = "set" + StringUtils.capitalize(fieldName);
                     try {
                         // Find the corresponding setter method for the field and invoke it
-                        Method setterMethod = BankDetails.class.getMethod(setterMethodName, value.getClass());
+                        Method setterMethod = VendorBankDetails.class.getMethod(setterMethodName, value.getClass());
                         setterMethod.invoke(existingAccount, value);
                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                         e.printStackTrace();
-                        return "Account update failed. Error updating field: " + fieldName;
+                        return "Account update failed. Error setting field: " + fieldName;
                     }
                 }
             }
 
-            // Merge the updated account entity
+            // Merge the updated entity into the database
             entityManager.merge(existingAccount);
 
             return "Bank account updated successfully!";
         } catch (Exception e) {
-            exceptionHandlingImplement.handleException(e);
+            exceptionHandling.handleException(e);
             return "Account update failed: " + e.getMessage();
         }
     }
 
 
-    public BankAccountDTO convertToDTO(BankDetails bankDetails) {
+
+    public BankAccountDTO convertToDTO(VendorBankDetails bankDetails) {
         BankAccountDTO dto = new BankAccountDTO();
         dto.setId(bankDetails.getId());
         dto.setCustomerName(bankDetails.getCustomerName());
@@ -196,8 +191,8 @@ public class BankAccountService {
      */
     private boolean isAccountNumberExists(String accountNumber, Long accountId) {
         try {
-            List<BankDetails> duplicateAccounts = entityManager.createQuery(
-                            "SELECT b FROM BankDetails b WHERE b.accountNumber = :accountNumber", BankDetails.class)
+            List<VendorBankDetails> duplicateAccounts = entityManager.createQuery(
+                            "SELECT b FROM VendorBankDetails b WHERE b.accountNumber = :accountNumber", VendorBankDetails.class)
                     .setParameter("accountNumber", accountNumber)
                     .getResultList();
 
@@ -208,11 +203,10 @@ public class BankAccountService {
             return !duplicateAccounts.isEmpty();
         } catch (Exception e) {
             e.printStackTrace();
-            exceptionHandlingImplement.handleException(e);
-
             return false;
         }
     }
+
 
     /**
      * Gets bank accounts by customer id.
@@ -220,17 +214,16 @@ public class BankAccountService {
      * @param customerId the customer id
      * @return the bank accounts by customer id
      */
-    @Transactional
-
     public List<BankAccountDTO> getBankAccountsByCustomerId(Long customerId) {
         try {
-            List<BankDetails> bankDetailsList = entityManager.createQuery(
-                            "SELECT b FROM BankDetails b WHERE b.customer.id = :customerId", BankDetails.class)
+            List<VendorBankDetails> bankDetailsList = entityManager.createQuery(
+                            "SELECT b FROM VendorBankDetails b WHERE b.vendorEntity.service_provider_id = :customerId", VendorBankDetails.class)
                     .setParameter("customerId", customerId)
                     .getResultList();
 
+
             List<BankAccountDTO> bankAccountDTOList = new ArrayList<>();
-            for (BankDetails bankDetails : bankDetailsList) {
+            for (VendorBankDetails bankDetails : bankDetailsList) {
                 BankAccountDTO bankAccountDTO = new BankAccountDTO();
                 bankAccountDTO.setId(bankDetails.getId());
                 bankAccountDTO.setCustomerName(bankDetails.getCustomerName());
@@ -245,8 +238,8 @@ public class BankAccountService {
 
             return bankAccountDTOList;
         } catch (Exception e) {
-            e.printStackTrace();
-            exceptionHandlingImplement.handleException(e);
+            exceptionHandling.handleException(e);
+
             return Collections.emptyList();
         }
     }
