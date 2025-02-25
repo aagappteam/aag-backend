@@ -53,6 +53,9 @@ public class GameService {
     private EntityManager em;
     private ExceptionHandlingService exceptionHandling;
 
+    @Autowired
+    private AagGameRepository aagGameRepository;
+
     private final LeagueRepository leagueRepository;
 
     public GameService(LeagueRepository leagueRepository) {
@@ -146,19 +149,37 @@ public class GameService {
         return query.getResultList();
     }
 
+    public boolean isGameAvailable(String gameName) {
+        // Use the repository to find a game by its name
+        Optional<AagAvailableGames> game = aagGameRepository.findByGameName(gameName);
+        return game.isPresent(); // Return true if the game is found, false otherwise
+    }
+    public boolean isGameAvailableById(Long gameId) {
+        // Use the repository to find a game by its name
+        Optional<AagAvailableGames> game = aagGameRepository.findById(gameId);
+        return game.isPresent(); // Return true if the game is found, false otherwise
+    }
+
     @Transactional
-    public Game publishLudoGame(GameRequest gameRequest, Long vendorId) throws LimitExceededException {
+    public Game publishLudoGame(GameRequest gameRequest, Long vendorId,Long existinggameId) throws LimitExceededException {
         try {
             // Create a new Game entity
             Game game = new Game();
-            game.setName(gameRequest.getName());
+
+            boolean isAvailable = isGameAvailableById(existinggameId);
+
+            if (!isAvailable) {
+                throw new RuntimeException("game is not available");
+            }
+//        check from gamerequestgamename that existing game exists or not for same vendor
+
+//            game.setName(gameRequest.getName());
 
             // Fetch Vendor and Theme Entities
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
             if (vendorEntity == null) {
                 throw new RuntimeException("No records found for vendor");
             }
-
             ThemeEntity theme = em.find(ThemeEntity.class, gameRequest.getThemeId());
             if (theme == null) {
                 throw new RuntimeException("No theme found with the provided ID");
@@ -496,9 +517,9 @@ public class GameService {
             if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
 
 
-                if (gameRequest.getName() != null && !gameRequest.getName().isEmpty()) {
+               /* if (gameRequest.getName() != null && !gameRequest.getName().isEmpty()) {
                     game.setName(gameRequest.getName());
-                }
+                }*/
 
                 // Calculate moves based on the selected fee
 
