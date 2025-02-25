@@ -126,8 +126,8 @@ public class GameController {
     }
 
 
-    @PostMapping("/publishGame/{vendorId}")
-    public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @RequestBody GameRequest gameRequest) {
+    @PostMapping("/publishGame/{vendorId}/{existinggameId}")
+    public ResponseEntity<?> publishGame(@PathVariable Long vendorId,@PathVariable Long existinggameId, @RequestBody GameRequest gameRequest) {
         try {
 
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
@@ -136,7 +136,7 @@ public class GameController {
                 return paymentEntity;
             }
 
-            Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId);
+            Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId,existinggameId);
 
             if (gameRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("Game scheduled successfully", publishedGame, HttpStatus.CREATED);
