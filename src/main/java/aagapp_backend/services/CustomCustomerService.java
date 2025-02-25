@@ -19,15 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomCustomerService {
 
     private EntityManager entityManager;
-    public CustomCustomerService(EntityManager em)
-    {
-        this.entityManager= em;
+
+    public CustomCustomerService(EntityManager em) {
+        this.entityManager = em;
     }
 
 
-
     public Boolean validateInput(CustomCustomer customer) {
-        if ( customer.getMobileNumber().isEmpty() || customer.getMobileNumber() == null || customer.getPassword() == null || customer.getPassword().isEmpty())
+        if (customer.getMobileNumber().isEmpty() || customer.getMobileNumber() == null || customer.getPassword() == null || customer.getPassword().isEmpty())
             return false;
         if (!isValidMobileNumber(customer.getMobileNumber()))
             return false;
@@ -43,6 +42,7 @@ public class CustomCustomerService {
         String mobileNumberPattern = "^\\d{9,13}$";
         return Pattern.compile(mobileNumberPattern).matcher(mobileNumber).matches();
     }
+
     @Transactional
 
     public CustomCustomer findCustomCustomerByPhone(String mobileNumber, String countryCode) {
@@ -75,7 +75,7 @@ public class CustomCustomerService {
 
 
     @Transactional
-    public CustomCustomer findCustomCustomerByPhoneWithOtp(String mobileNumber,String countryCode) {
+    public CustomCustomer findCustomCustomerByPhoneWithOtp(String mobileNumber, String countryCode) {
 
         if (countryCode == null) {
             countryCode = Constant.COUNTRY_CODE;

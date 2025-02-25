@@ -45,8 +45,9 @@ public class CustomCustomer {
     @Nullable
     private String password;
 
-    @Nullable
-    private String profilePic;
+    @Nullable // TODO-;
+    @Column(name = "profile_picture")
+    private String profilePic="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
 
     @Nullable
     @Column(name = "profile_status")

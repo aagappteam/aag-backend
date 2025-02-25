@@ -86,7 +86,7 @@ public class TwilioService {
                 Player player = new Player();
                 player.setPlayerId(customerDetails.getId());
                 player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
-                entityManager.persist(player);
+                entityManager.merge(player);
                 return ResponseEntity.ok(Map.of(
                         "otp", otp,
                         "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber
