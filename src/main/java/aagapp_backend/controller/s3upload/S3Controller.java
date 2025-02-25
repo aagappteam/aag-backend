@@ -1,7 +1,6 @@
 package aagapp_backend.controller.s3upload;
 
 import aagapp_backend.components.Constant;
-import aagapp_backend.components.JwtAuthenticationFilter;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -10,15 +9,11 @@ import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.s3services.S3Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -29,7 +24,7 @@ public class S3Controller {
     private S3Service s3Service;
 
     @Autowired
-    private JwtUtil jwtService;  // Service to extract user details from JWT
+    private JwtUtil jwtService;
 
     @Autowired
     private VendorRepository vendorRepository;
@@ -39,7 +34,7 @@ public class S3Controller {
 
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file,
+    public ResponseEntity<?> uploadFile(@RequestParam("profilePicture") MultipartFile file,
                                         @RequestHeader("Authorization") String token) {
         if (file.isEmpty()) {
             return ResponseService.generateErrorResponse("Please select a file to upload", HttpStatus.BAD_REQUEST);
@@ -139,6 +134,49 @@ public class S3Controller {
 
         } catch (Exception e) {
             return ResponseService.generateErrorResponse("Profile picture deletion failed: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping("/upload-banner")
+    public ResponseEntity<?> uploadFileWithoutAuth(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseService.generateErrorResponse("Please select a file to upload", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            // Generate unique filename using timestamp
+            String fileExtension = "";
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename != null && originalFilename.contains(".")) {
+                fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String key = "banner/" + System.currentTimeMillis() + fileExtension;
+
+            // Upload file to S3
+            s3Service.uploadPhoto(key, file);
+            String fileUrl = s3Service.getFileUrl(key);
+
+            return ResponseService.generateSuccessResponse("File uploaded successfully", fileUrl, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseService.generateErrorResponse("File upload failed: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Delete file from S3 without authorization
+     */
+    @DeleteMapping("/delete-banner")
+    public ResponseEntity<?> deleteFileWithoutAuth(@RequestBody Map<String, Object> formDetails) {
+        try {
+            String fileUrl = (String) formDetails.get("fileUrl");
+            if (fileUrl == null || fileUrl.isEmpty()) {
+                return ResponseService.generateErrorResponse("File URL is required", HttpStatus.BAD_REQUEST);
+            }
+            String key = fileUrl.substring(fileUrl.indexOf("banner/"));
+            s3Service.deleteFile(key);
+
+            return ResponseService.generateSuccessResponse("File deleted successfully", null, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseService.generateErrorResponse("File deletion failed: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
