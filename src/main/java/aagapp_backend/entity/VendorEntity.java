@@ -41,11 +41,15 @@ public class VendorEntity {
 
     @Nullable
     private String first_name;
-    @Nullable
 
+    @Nullable
     private String last_name;
-    @Nullable
 
+    @Nullable
+    @Column(name = "profile_picture")
+    private String profilePic="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
+
+    @Nullable
     private String country_code;
 
 
