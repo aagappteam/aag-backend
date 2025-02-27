@@ -86,6 +86,9 @@ public class VendorEntity {
     @Column(name = "is_private")
     private Boolean isPrivate = false;
 
+
+
+
     @Column(name = "is_paused")
     private Boolean isPaused = false;
 
