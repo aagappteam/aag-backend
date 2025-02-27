@@ -33,7 +33,7 @@ public class ThemeEntity {
 
 
     @ManyToMany(mappedBy = "themes")
-    @JsonBackReference  // Add this annotation here
+    @JsonBackReference
     private List<AagAvailableGames> games;
 
 

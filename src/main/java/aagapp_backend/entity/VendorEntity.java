@@ -121,7 +121,6 @@ public class VendorEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdDate;
 
-
     @CurrentTimestamp
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -132,11 +131,9 @@ public class VendorEntity {
         this.updatedDate = new Date();
     }
 
-
     @JsonManagedReference("submissionentity-vendor")
     @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private VendorSubmissionEntity submissionEntity;
-
 
 }
 

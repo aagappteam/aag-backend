@@ -560,10 +560,10 @@ public class GameService {
         try {
 //            String sql = "SELECT * FROM aag_ludo_game g WHERE g.vendor_id = :vendorId";
 
-            String sql = "SELECT g.id AS game_id, g.name AS game_name, g.scheduled_at, g.status, " +
-                    "v.vendor_name, v.user_profile_pic, g.fee " +
+            String sql = "SELECT g.name AS game_name, g.scheduled_at, g.status, " +
+                    "v.first_name, v.profile_picture, g.fee " +
                     "FROM aag_ludo_game g " +
-                    "JOIN aag_vendor v ON g.vendor_id = v.vendor_id " +
+                    "JOIN vendor_table v ON g.vendor_id = v.service_provider_id " +
                     "WHERE g.vendor_id = :vendorId";
 
             if (status != null && !status.isEmpty()) {
@@ -610,7 +610,7 @@ public class GameService {
 
             return new PageImpl<>(games, pageable, count);
         } catch (Exception e) {
-            throw new RuntimeException("Error retrieving games by vendor ID: " + vendorId, e);
+            throw new RuntimeException("Error retrieving games by vendor ID: " + e.getMessage(), e);
         }
     }
 
