@@ -1,5 +1,6 @@
 package aagapp_backend.entity;
 
+import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -113,6 +114,11 @@ public class VendorEntity {
     @Column(name = "wallet_balance", nullable = false)
     private double walletBalance = 0.0;
 
+    @Column(name = "league_status", nullable = false)
+    @Enumerated(EnumType.STRING)
+
+    private LeagueStatus leagueStatus;
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -129,6 +135,10 @@ public class VendorEntity {
         this.updatedDate = new Date();
     }
 
+    @PrePersist
+    public void prePersist() {
+        this.setLeagueStatus(LeagueStatus.NOT_PAID);
+    }
 
     @JsonManagedReference("submissionentity-vendor")
     @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
