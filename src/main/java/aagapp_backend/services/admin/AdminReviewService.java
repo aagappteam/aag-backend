@@ -63,11 +63,13 @@ public class AdminReviewService {
                 if (isApproved) {
                     String generatedPassword = PasswordGenerator.generatePassword(8);
                     vendorEntity.setPassword(generatedPassword);
+                    vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
                     vendorRepository.save(vendorEntity);
                     sendApprovalEmail(vendorEntity, vendorSubmissionEntity, generatedPassword);
                     vendorSubmissionEntity.setProfileStatus(ProfileStatus.ACTIVE);
                 } else {
-                    vendorRepository.save(vendorEntity); // No change here, just ensure the vendor is saved
+                    vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
+                    vendorRepository.save(vendorEntity);
                     sendRejectionEmail(vendorEntity, vendorSubmissionEntity);
                     vendorSubmissionEntity.setProfileStatus(ProfileStatus.REJECTED);
                 }
