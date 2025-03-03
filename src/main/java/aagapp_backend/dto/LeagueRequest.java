@@ -1,5 +1,6 @@
 package aagapp_backend.dto;
 
+import aagapp_backend.entity.VendorEntity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -17,10 +18,12 @@ public class LeagueRequest {
 
     private String description;
 
-    @NotNull
+    @NotNull(message = "Fee cannot be null")
     private Double fee;
 
     private Integer move;
+
+    private Boolean isChallenge;
 
 
     @NotNull(message = "Theme id cannot be null")
@@ -35,6 +38,8 @@ public class LeagueRequest {
     private Integer maxPlayersPerTeam;
 
     private Integer minPlayersPerTeam;
+
+    private Long opponentVendorId;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime registrationDeadline;

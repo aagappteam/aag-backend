@@ -1,6 +1,7 @@
 package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.ThemeEntity;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.LeagueStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
@@ -46,8 +47,9 @@ public class League {
 
     private Integer move;
 
-    @Column(name = "vendor_id", nullable = false)
-    private Long vendorId;
+    @ManyToOne
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private VendorEntity vendorEntity;
 
     private String shareableLink;
 
@@ -55,7 +57,7 @@ public class League {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    private LeagueStatus status;
+    private LeagueStatus status = LeagueStatus.SCHEDULED;
 
     @Column(name = "league_type", nullable = true)
     private String leagueType;
@@ -72,6 +74,14 @@ public class League {
     @JoinColumn(name = "theme_id", nullable = true)
     private ThemeEntity theme;
 
+    @ManyToMany
+    @JoinTable(
+            name = "league_challenges",
+            joinColumns = @JoinColumn(name = "league_id"),
+            inverseJoinColumns = @JoinColumn(name = "vendor_id")
+    )
+    private List<VendorEntity> challengedVendors;
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -85,6 +95,8 @@ public class League {
     private Integer minPlayersPerTeam;
     private Integer maxPlayersPerTeam;
 
+    private ZonedDateTime challengeTimestamp;
+
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = ZonedDateTime.now();
@@ -92,7 +104,8 @@ public class League {
 
     @PrePersist
     public void prePersist() {
-       if (this.minPlayersPerTeam == null) {
+        this.challengeTimestamp=ZonedDateTime.now();
+        if (this.minPlayersPerTeam == null) {
             this.minPlayersPerTeam = 1; // Default value for minPlayersPerTeam
         }
         if (this.maxPlayersPerTeam == null) {
@@ -105,7 +118,7 @@ public class League {
         if (this.move == null) {
             this.move = 12; // Default value for move if not provided
         }
-    }
 
+    }
 
 }

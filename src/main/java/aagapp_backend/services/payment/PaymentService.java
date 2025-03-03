@@ -3,6 +3,7 @@ package aagapp_backend.services.payment;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
 import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import aagapp_backend.repository.payment.PaymentRepository;
@@ -70,6 +71,7 @@ public class PaymentService {
 
         // Set status to ACTIVE by default
         paymentRequest.setStatus(PaymentStatus.ACTIVE);
+        existingVendor.setLeagueStatus(LeagueStatus.AVAILABLE);
 
         // Set expiry date based on the plan duration
         setPlanExpiry(paymentRequest);
