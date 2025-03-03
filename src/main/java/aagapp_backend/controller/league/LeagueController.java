@@ -98,9 +98,7 @@ public class LeagueController {
     public ResponseEntity<?> publishLeague(@PathVariable Long vendorId, @RequestBody LeagueRequest leagueRequest) {
         try {
             // Validate inputs
-            if (leagueRequest.getName() == null || leagueRequest.getName().isEmpty()) {
-                return responseService.generateErrorResponse("League name is required", HttpStatus.BAD_REQUEST);
-            }
+
             if (leagueRequest.getFee() == null || leagueRequest.getFee() <= 0) {
                 return responseService.generateErrorResponse("Fee must be a positive value", HttpStatus.BAD_REQUEST);
             }
@@ -110,12 +108,7 @@ public class LeagueController {
             if (leagueRequest.getLeagueType() == null || leagueRequest.getLeagueType().isEmpty()) {
                 return responseService.generateErrorResponse("League type is required", HttpStatus.BAD_REQUEST);
             }
-            if (leagueRequest.getMinPlayersPerTeam() == null || leagueRequest.getMinPlayersPerTeam() <= 0) {
-                return responseService.generateErrorResponse("Minimum players per team should be greater than zero", HttpStatus.BAD_REQUEST);
-            }
-            if (leagueRequest.getMaxPlayersPerTeam() == null || leagueRequest.getMaxPlayersPerTeam() <= 0) {
-                return responseService.generateErrorResponse("Maximum players per team should be greater than zero", HttpStatus.BAD_REQUEST);
-            }
+
 
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
             if (paymentEntity.getStatusCode() != HttpStatus.OK) {
