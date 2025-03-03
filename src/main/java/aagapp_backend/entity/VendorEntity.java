@@ -86,9 +86,6 @@ public class VendorEntity {
     @Column(name = "is_private")
     private Boolean isPrivate = false;
 
-
-
-
     @Column(name = "is_paused")
     private Boolean isPaused = false;
 
@@ -100,11 +97,9 @@ public class VendorEntity {
     @Column(name = "referral_code", unique = true)
     private String referralCode;
 
-
     @Nullable
     @Column(name = "referred_count")
     private int referralCount;
-
 
     @Enumerated(EnumType.STRING)
     private VendorLevelPlan vendorLevelPlan = VendorLevelPlan.getDefaultLevel();

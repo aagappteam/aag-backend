@@ -1,6 +1,7 @@
 package aagapp_backend.controller.game;
 
 import aagapp_backend.dto.GameRequest;
+import aagapp_backend.dto.GameVendorDTO;
 import aagapp_backend.dto.JoinRoomRequest;
 import aagapp_backend.dto.LeaveRoomRequest;
 import aagapp_backend.entity.game.Game;
