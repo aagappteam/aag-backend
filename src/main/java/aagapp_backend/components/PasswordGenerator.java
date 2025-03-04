@@ -3,7 +3,7 @@ package aagapp_backend.components;
 import java.security.SecureRandom;
 
 public class PasswordGenerator {
-    private static final String ALPHANUMERIC_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final String ALPHANUMERIC_STRING = Constant.REFERAL_STRING;
     private static final SecureRandom random = new SecureRandom();
 
     public static String generatePassword(int length) {

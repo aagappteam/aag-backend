@@ -390,56 +390,50 @@ public class VendorController {
     @GetMapping("/get-top-invites")
     public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
         try {
-            // Extract the token and fetch the vendor ID
             String jwtToken = token.replace("Bearer ", "");
             Long authorizedVendorId = jwtUtil.extractId(jwtToken);
-
-            // Fetch the authenticated vendor details
             VendorEntity authenticatedVendor = vendorService.getServiceProviderById(authorizedVendorId);
-
-            // Fetch the top invitees/vendors
             List<VendorEntity> topInvities = vendorService.getTopInvitiesVendor();
 
             if (topInvities.isEmpty()) {
                 return ResponseService.generateErrorResponse("No top vendors found", HttpStatus.NOT_FOUND);
             }
 
-            // Prepare the response data
-            List<Map<String, Object>> topInviteesList = new ArrayList<>();
-            int rank = 1;
+            List<Map<String, Object>> responseList = new ArrayList<>();
 
-            // Process each vendor and add to the top_invitees list
+            String referalCode = authenticatedVendor.getReferralCode();
+            Double totalEarnings = authenticatedVendor.getWalletBalance();
+            Integer totalReferrals = authenticatedVendor.getReferralCount();
+
+            // Add the authenticated vendor's details to the response
+            Map<String, Object> vendorDetails = new HashMap<>();
+            vendorDetails.put("referral_code", referalCode);
+            vendorDetails.put("total_earning", totalEarnings);
+            vendorDetails.put("total_referrals", totalReferrals);
+            responseList.add(vendorDetails);
+
+            int rank = 1;
             for (VendorEntity vendor : topInvities) {
                 Map<String, Object> vendorData = new HashMap<>();
-                vendorData.put("name", vendor.getFirst_name() + " " + vendor.getLast_name());
-                vendorData.put("profile", "https://example.com/profiles/" + vendor.getService_provider_id());
-                vendorData.put("image", vendor.getProfilePic() != null ? vendor.getProfilePic() : "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
+                vendorData.put("vendorName", vendor.getFirst_name() + " " + vendor.getLast_name());
+                vendorData.put("profileImage", vendor.getProfilePic());
                 vendorData.put("price", vendor.getWalletBalance());
-                vendorData.put("id", vendor.getService_provider_id());
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
                 vendorData.put("rank", rank++);
-                topInviteesList.add(vendorData);
+                responseList.add(vendorData);
             }
 
-            // Now prepare the main response containing the authenticated vendor details and top invitees
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("referal_code", authenticatedVendor.getReferralCode());
-            responseData.put("total_earning", authenticatedVendor.getWalletBalance());
-            responseData.put("total_referrals", authenticatedVendor.getReferralCount());
-            responseData.put("top_invitees", topInviteesList);
-
-            // Prepare final response structure
+            // Prepare the final response
             Map<String, Object> finalResponse = new HashMap<>();
-            finalResponse.put("message", "Earnings and referral details");
-            finalResponse.put("data", responseData);
+            finalResponse.put("message", "Top vendors fetched successfully!");
+            finalResponse.put("data", responseList);
 
-            // Return the response with status 200 OK
-            return ResponseService.generateSuccessResponse("Data type or list processed accordingly", finalResponse, HttpStatus.OK);
+            return ResponseService.generateSuccessResponse("Top vendors fetched successfully!", finalResponse, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
 
 }
