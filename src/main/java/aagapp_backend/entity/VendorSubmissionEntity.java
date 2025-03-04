@@ -36,7 +36,7 @@ public class VendorSubmissionEntity {
 
     private String planType;
 
-    private Boolean approved = false;
+    private Boolean approved;
 
     private ProfileStatus profileStatus;
 

@@ -1,6 +1,8 @@
 package aagapp_backend.entity;
 
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.game.AagAvailableGames;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -12,6 +14,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "themes")
@@ -25,14 +28,14 @@ public class ThemeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
-    private String name;
-
-    @Column(length = 255)
-    private String description;
-
-    @Column(name = "image_url", length = 255)
+    @Column(name = "image_url")
     private String imageUrl; // URL or path to the theme's image/icon
+
+
+    @ManyToMany(mappedBy = "themes")
+    @JsonBackReference  // Add this annotation here
+    private List<AagAvailableGames> games;
+
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)

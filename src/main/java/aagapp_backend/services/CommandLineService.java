@@ -40,7 +40,7 @@ public class CommandLineService implements CommandLineRunner {
             entityManager.merge(new Role(5, "CUSTOMER", currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
         }
 
-        if (entityManager.createQuery("SELECT COUNT(t) FROM ThemeEntity t", Long.class).getSingleResult() == 0) {
+       /* if (entityManager.createQuery("SELECT COUNT(t) FROM ThemeEntity t", Long.class).getSingleResult() == 0) {
 
             ThemeEntity theme1 = new ThemeEntity();
             theme1.setName("Space Adventure");
@@ -71,7 +71,7 @@ public class CommandLineService implements CommandLineRunner {
             System.out.println("Predefined themes inserted into the database.");
         } else {
             System.out.println("Themes table already populated.");
-        }
+        }*/
 
 /*        if(entityManager.createQuery("SELECT count(e) FROM CustomAdmin e", Long.class).getSingleResult()==0)
         {
@@ -79,9 +79,11 @@ public class CommandLineService implements CommandLineRunner {
             entityManager.merge(new CustomAdmin(2L,1,passwordEncoder.encode("SuperAdmin#1357"),"superadmin","9872548680","+91",0,currentTimestamp,"SUPER_ADMIN"));
         }*/
 
-/*        String alterQuery = "ALTER TABLE service_vendor ALTER COLUMN token TYPE VARCHAR(512)";
+/*        String alterQuery = "ALTER TABLE themes DROP COLUMN name";
         Query query = entityManager.createNativeQuery(alterQuery);
         query.executeUpdate();*/
 
+
     }
+
 }

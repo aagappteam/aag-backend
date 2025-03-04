@@ -1,6 +1,7 @@
 package aagapp_backend.controller.vendor;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
@@ -19,10 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/vendor")
@@ -46,6 +44,9 @@ public class VendorController {
 
     @Autowired
     private VenderService vendorService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
 
     @Transactional
@@ -286,7 +287,7 @@ public class VendorController {
 
     @GetMapping("/getbankdetails/{serviceProviderId}")
     public ResponseEntity<?> getBankAccountsByCustomerId(@PathVariable Long serviceProviderId) {
-        try{
+        try {
             if (serviceProviderId == null) {
                 return ResponseService.generateErrorResponse("Customer Id not specified", HttpStatus.BAD_REQUEST);
             }
@@ -304,12 +305,12 @@ public class VendorController {
 
             return ResponseService.generateSuccessResponse("Bank accounts fetched successfully!", bankAccounts, HttpStatus.OK);
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 
-        }    }
+        }
+    }
 
 
     @PutMapping("/update-bank/{accountId}")
@@ -353,7 +354,6 @@ public class VendorController {
     }
 
 
-
     /**
      * Delete bank account response entity.
      *
@@ -380,11 +380,58 @@ public class VendorController {
 
             return ResponseService.generateSuccessResponse("Bank account deleted successfully!", null, HttpStatus.OK);
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 
+        }
+    }
+
+    @GetMapping("/get-top-invites")
+    public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+            VendorEntity authenticatedVendor = vendorService.getServiceProviderById(authorizedVendorId);
+            List<VendorEntity> topInvities = vendorService.getTopInvitiesVendor();
+
+            if (topInvities.isEmpty()) {
+                return ResponseService.generateErrorResponse("No top vendors found", HttpStatus.NOT_FOUND);
+            }
+
+            List<Map<String, Object>> responseList = new ArrayList<>();
+
+            String referalCode = authenticatedVendor.getReferralCode();
+            Double totalEarnings = authenticatedVendor.getWalletBalance();
+            Integer totalReferrals = authenticatedVendor.getReferralCount();
+
+            // Add the authenticated vendor's details to the response
+            Map<String, Object> vendorDetails = new HashMap<>();
+            vendorDetails.put("referral_code", referalCode);
+            vendorDetails.put("total_earning", totalEarnings);
+            vendorDetails.put("total_referrals", totalReferrals);
+            responseList.add(vendorDetails);
+
+            int rank = 1;
+            for (VendorEntity vendor : topInvities) {
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("vendorName", vendor.getFirst_name() + " " + vendor.getLast_name());
+                vendorData.put("profileImage", vendor.getProfilePic());
+                vendorData.put("price", vendor.getWalletBalance());
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("rank", rank++);
+                responseList.add(vendorData);
+            }
+
+            // Prepare the final response
+            Map<String, Object> finalResponse = new HashMap<>();
+            finalResponse.put("message", "Top vendors fetched successfully!");
+            finalResponse.put("data", responseList);
+
+            return ResponseService.generateSuccessResponse("Top vendors fetched successfully!", finalResponse, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
