@@ -1,6 +1,7 @@
 package aagapp_backend.controller.vendor;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
@@ -43,6 +44,9 @@ public class VendorController {
 
     @Autowired
     private VenderService vendorService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
 
     @Transactional
@@ -384,33 +388,58 @@ public class VendorController {
     }
 
     @GetMapping("/get-top-invites")
-    public ResponseEntity<?> topInvities() {
+    public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
         try {
+            // Extract the token and fetch the vendor ID
+            String jwtToken = token.replace("Bearer ", "");
+            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+
+            // Fetch the authenticated vendor details
+            VendorEntity authenticatedVendor = vendorService.getServiceProviderById(authorizedVendorId);
+
+            // Fetch the top invitees/vendors
             List<VendorEntity> topInvities = vendorService.getTopInvitiesVendor();
 
             if (topInvities.isEmpty()) {
                 return ResponseService.generateErrorResponse("No top vendors found", HttpStatus.NOT_FOUND);
             }
 
-            List<Map<String, Object>> responseList = new ArrayList<>();
-
+            // Prepare the response data
+            List<Map<String, Object>> topInviteesList = new ArrayList<>();
             int rank = 1;
+
+            // Process each vendor and add to the top_invitees list
             for (VendorEntity vendor : topInvities) {
                 Map<String, Object> vendorData = new HashMap<>();
-                vendorData.put("vendorName", vendor.getFirst_name() + " " + vendor.getLast_name());
-                vendorData.put("profileImage", vendor.getProfilePic());
+                vendorData.put("name", vendor.getFirst_name() + " " + vendor.getLast_name());
+                vendorData.put("profile", "https://example.com/profiles/" + vendor.getService_provider_id());
+                vendorData.put("image", vendor.getProfilePic() != null ? vendor.getProfilePic() : "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
                 vendorData.put("price", vendor.getWalletBalance());
-                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("id", vendor.getService_provider_id());
                 vendorData.put("rank", rank++);
-                responseList.add(vendorData);
+                topInviteesList.add(vendorData);
             }
 
-            return ResponseService.generateSuccessResponse("Top vendors fetched successfully!", responseList, HttpStatus.OK);
+            // Now prepare the main response containing the authenticated vendor details and top invitees
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("referal_code", authenticatedVendor.getReferralCode());
+            responseData.put("total_earning", authenticatedVendor.getWalletBalance());
+            responseData.put("total_referrals", authenticatedVendor.getReferralCount());
+            responseData.put("top_invitees", topInviteesList);
+
+            // Prepare final response structure
+            Map<String, Object> finalResponse = new HashMap<>();
+            finalResponse.put("message", "Earnings and referral details");
+            finalResponse.put("data", responseData);
+
+            // Return the response with status 200 OK
+            return ResponseService.generateSuccessResponse("Data type or list processed accordingly", finalResponse, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
 
 }
