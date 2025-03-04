@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,9 @@ public class AdminReviewService {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Transactional
     public Object reviewSubmission(Long id, boolean isApproved) {
         try {
@@ -62,7 +66,7 @@ public class AdminReviewService {
 
                 if (isApproved) {
                     String generatedPassword = PasswordGenerator.generatePassword(8);
-                    vendorEntity.setPassword(generatedPassword);
+                    vendorEntity.setPassword(passwordEncoder.encode(generatedPassword));
                     vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
                     vendorRepository.save(vendorEntity);
                     sendApprovalEmail(vendorEntity, vendorSubmissionEntity, generatedPassword);
