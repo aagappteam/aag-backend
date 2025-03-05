@@ -20,6 +20,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class VenderServiceImpl implements VenderService {
@@ -708,5 +710,13 @@ public class VenderServiceImpl implements VenderService {
         return referralDTOs;
     }
 
+    @Override
+    public List<VendorEntity> getTopInvitiesVendor() {
+        // Fetch all vendors sorted by referral amount in descending order and limit the results to top 3
+        List<VendorEntity> vendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("walletBalance")));
+
+        // Limit the list to top 3 vendors
+        return vendors.stream().limit(3).collect(Collectors.toList());
+    }
 
 }

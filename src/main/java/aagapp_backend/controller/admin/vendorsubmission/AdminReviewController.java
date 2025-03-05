@@ -48,7 +48,7 @@ public class AdminReviewController {
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("An error occurred while processing the approval request.", HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("An error occurred while processing the approval request." +e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

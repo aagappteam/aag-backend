@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -22,5 +23,6 @@ public interface VenderService {
     ResponseEntity<?> sendOtp(String mobileNumber, String countryCode, HttpSession session);
 
     VendorEntity saveOrUpdate(VendorEntity vendorEntity);
+    List<VendorEntity> getTopInvitiesVendor();
 
 }
