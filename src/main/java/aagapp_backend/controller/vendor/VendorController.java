@@ -3,9 +3,13 @@ package aagapp_backend.controller.vendor;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.ticket.Ticket;
+import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
@@ -48,12 +52,16 @@ public class VendorController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private TicketRepository ticketRepository;
+
+    @Autowired
+    private CustomCustomerService customCustomerService;
+
 
     @Transactional
     @PostMapping("create-or-update-password")
-    public ResponseEntity<?> createOrUpdatePassword(
-            @RequestBody Map<String, Object> passwordDetails,
-            @RequestParam long serviceProviderId) {
+    public ResponseEntity<?> createOrUpdatePassword(@RequestBody Map<String, Object> passwordDetails, @RequestParam long serviceProviderId) {
         try {
             String password = (String) passwordDetails.get("password");
             String newPassword = (String) passwordDetails.get("newPassword");
@@ -124,8 +132,7 @@ public class VendorController {
             VendorEntity serviceProviderToBeDeleted = entityManager.find(VendorEntity.class, serviceProviderId);
             if (serviceProviderToBeDeleted == null)
                 return responseService.generateErrorResponse("No record found", HttpStatus.NOT_FOUND);
-            else
-                entityManager.remove(serviceProviderToBeDeleted);
+            else entityManager.remove(serviceProviderToBeDeleted);
             return responseService.generateSuccessResponse("Service Provider Deleted", null, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -154,9 +161,7 @@ public class VendorController {
 
     @Transactional
     @GetMapping("/get-all-vendors")
-    public ResponseEntity<?> getAllServiceProviders(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int limit) {
+    public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int limit) {
         try {
             int startPosition = page * limit;
             Query query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS, VendorEntity.class);
@@ -240,10 +245,9 @@ public class VendorController {
     }
 
     @PostMapping("/add/{serviceProviderId}")
-    public ResponseEntity<?> addBankAccount(
-            @PathVariable Long serviceProviderId,
+    public ResponseEntity<?> addBankAccount(@PathVariable Long serviceProviderId,
 
-            @RequestBody @Valid BankAccountDTO bankAccountDTO) {
+                                            @RequestBody @Valid BankAccountDTO bankAccountDTO) {
 
         try {
             if (serviceProviderId == null) {
@@ -265,16 +269,7 @@ public class VendorController {
             }
             String[] resultParts = result.split("ID: ");
             Long generatedId = Long.parseLong(resultParts[1].trim());
-            BankAccountDTO responseDTO = new BankAccountDTO(
-                    generatedId,
-                    bankAccountDTO.getCustomerName(),
-                    bankAccountDTO.getAccountNumber(),
-                    bankAccountDTO.getReEnterAccountNumber(),
-                    bankAccountDTO.getIfscCode(),
-                    bankAccountDTO.getBankName(),
-                    bankAccountDTO.getBranchName(),
-                    bankAccountDTO.getAccountType()
-            );
+            BankAccountDTO responseDTO = new BankAccountDTO(generatedId, bankAccountDTO.getCustomerName(), bankAccountDTO.getAccountNumber(), bankAccountDTO.getReEnterAccountNumber(), bankAccountDTO.getIfscCode(), bankAccountDTO.getBankName(), bankAccountDTO.getBranchName(), bankAccountDTO.getAccountType());
 
 
             return ResponseService.generateSuccessResponse("Bank account added successfully!", responseDTO, HttpStatus.OK);
@@ -314,9 +309,7 @@ public class VendorController {
 
 
     @PutMapping("/update-bank/{accountId}")
-    public ResponseEntity<?> updateBankAccount(
-            @PathVariable Long accountId,
-            @RequestBody Map<String, Object> params) {
+    public ResponseEntity<?> updateBankAccount(@PathVariable Long accountId, @RequestBody Map<String, Object> params) {
         try {
             if (accountId == null) {
                 return ResponseService.generateErrorResponse("Account ID is required", HttpStatus.BAD_REQUEST);
@@ -396,44 +389,81 @@ public class VendorController {
             List<VendorEntity> topInvities = vendorService.getTopInvitiesVendor();
 
             if (topInvities.isEmpty()) {
-                return ResponseService.generateErrorResponse("No top vendors found", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>(new HashMap<String, Object>() {{
+                    put("status", "OK");
+                    put("data", new HashMap<String, Object>() {{
+                        put("total_earning", 0.0);
+                        put("referral_code", authenticatedVendor.getReferralCode());
+                        put("total_referrals", 0);
+                        put("top_invitees", new ArrayList<>());
+                        put("message", "Top vendors fetched successfully!");
+                    }});
+                    put("message", "Top vendors fetched successfully!");
+                    put("status_code", 200);
+                }}, HttpStatus.OK);
             }
 
-            List<Map<String, Object>> responseList = new ArrayList<>();
-
-            String referalCode = authenticatedVendor.getReferralCode();
-            Double totalEarnings = authenticatedVendor.getWalletBalance();
-            Integer totalReferrals = authenticatedVendor.getReferralCount();
-
-            // Add the authenticated vendor's details to the response
-            Map<String, Object> vendorDetails = new HashMap<>();
-            vendorDetails.put("referral_code", referalCode);
-            vendorDetails.put("total_earning", totalEarnings);
-            vendorDetails.put("total_referrals", totalReferrals);
-            responseList.add(vendorDetails);
-
+            // Prepare the top invitees data
+            List<Map<String, Object>> topInvitees = new ArrayList<>();
             int rank = 1;
             for (VendorEntity vendor : topInvities) {
                 Map<String, Object> vendorData = new HashMap<>();
-                vendorData.put("vendorName", vendor.getFirst_name() + " " + vendor.getLast_name());
-                vendorData.put("profileImage", vendor.getProfilePic());
-                vendorData.put("price", vendor.getWalletBalance());
                 vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("price", vendor.getWalletBalance());
                 vendorData.put("rank", rank++);
-                responseList.add(vendorData);
+                vendorData.put("profileImage", vendor.getProfilePic() != null ? vendor.getProfilePic() : "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
+                vendorData.put("vendorName", vendor.getFirst_name() != null && vendor.getLast_name() != null ? vendor.getFirst_name() + " " + vendor.getLast_name() : null);
+                topInvitees.add(vendorData);
             }
 
             // Prepare the final response
             Map<String, Object> finalResponse = new HashMap<>();
+            finalResponse.put("status", "OK");
+            finalResponse.put("data", new HashMap<String, Object>() {{
+                put("total_earning", authenticatedVendor.getWalletBalance());
+                put("referral_code", authenticatedVendor.getReferralCode());
+                put("total_referrals", authenticatedVendor.getReferralCount());
+                put("top_invitees", topInvitees);
+                put("message", "Top vendors fetched successfully!");
+            }});
             finalResponse.put("message", "Top vendors fetched successfully!");
-            finalResponse.put("data", responseList);
+            finalResponse.put("status_code", 200);
 
-            return ResponseService.generateSuccessResponse("Top vendors fetched successfully!", finalResponse, HttpStatus.OK);
+            // Return the response manually
+            return new ResponseEntity<>(finalResponse, HttpStatus.OK);
         } catch (Exception e) {
+            // Handle exception
             exceptionHandling.handleException(e);
-            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new HashMap<String, Object>() {{
+                put("status", "ERROR");
+                put("message", e.getMessage());
+                put("status_code", 500);
+            }}, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
+    /*@GetMapping("/view/{ticketId}")
+    public ResponseEntity<?> viewTicket(@PathVariable Long ticketId) {
+        try {
+            // Find the ticket by ticketId
+            Optional<Ticket> ticketOptional = ticketRepository.findById(ticketId);
+
+            // If ticket is not found, return an error response
+            if (!ticketOptional.isPresent()) {
+                return responseService.generateErrorResponse("Ticket not found with ID: " + ticketId, HttpStatus.NOT_FOUND);
+            }
+
+            // Return the ticket details
+            Ticket ticket = ticketOptional.get();
+            return responseService.generateSuccessResponse("Ticket details retrieved successfully", ticket, HttpStatus.OK);
+
+        } catch (Exception e) {
+            // Handle exceptions and return an error response
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching ticket details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }*/
 
 
 }

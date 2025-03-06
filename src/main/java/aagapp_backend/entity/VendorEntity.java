@@ -51,6 +51,10 @@ public class VendorEntity {
     private String profilePic="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
 
     @Nullable
+    @Column(name = "banner_picture")
+    private String bannerPicture;
+
+    @Nullable
     private String country_code;
 
 
