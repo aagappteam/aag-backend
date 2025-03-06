@@ -85,7 +85,7 @@ public class JwtUtil {
                     .signWith(getSignInKey(), SignatureAlgorithm.HS256);
 
             if (!isMobile) {
-//                jwtBuilder.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)); // 10 hours
+               jwtBuilder.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)); // 10 hours
             }
 
             return jwtBuilder.compact();

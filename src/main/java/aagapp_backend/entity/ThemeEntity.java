@@ -28,12 +28,15 @@ public class ThemeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "name")
+    private String name;
+
     @Column(name = "image_url")
     private String imageUrl; // URL or path to the theme's image/icon
 
 
     @ManyToMany(mappedBy = "themes")
-    @JsonBackReference  // Add this annotation here
+    @JsonBackReference
     private List<AagAvailableGames> games;
 
 

@@ -39,24 +39,18 @@ public class AagGameService {
         for (int i = 0; i < gameRequestDTO.getThemes().size(); i++) {
             // Get the theme ID and image URL from the request
             ThemeRequestDTO themeRequestDTO = gameRequestDTO.getThemes().get(i);
-            Long themeId = themeRequestDTO.getId();
             String themeImageUrl = themeRequestDTO.getImageUrl();
+            String themename = themeRequestDTO.getName();
 
-            // Check if the theme exists by ID
-            Optional<ThemeEntity> existingTheme = themeRepository.findById(themeId);
-            if (existingTheme.isPresent()) {
-                // If theme exists, update its image URL
-                ThemeEntity theme = existingTheme.get();
-                theme.setImageUrl(themeImageUrl);  // Update the theme's image URL
-                themes.add(theme);  // Add updated theme to the list
-            } else {
+
                 // If theme does not exist, create a new one with the provided image URL
                 ThemeEntity newTheme = new ThemeEntity();
+                newTheme.setName(themename);
                 newTheme.setImageUrl(themeImageUrl);  // Set the image URL from the request
                 // Save the new theme
                 ThemeEntity savedTheme = themeRepository.save(newTheme);
                 themes.add(savedTheme);  // Add the new theme to the list
-            }
+
         }
 
         // Set the themes to the game entity
@@ -98,24 +92,18 @@ public class AagGameService {
         List<ThemeEntity> themes = new ArrayList<>();
 
         for (ThemeRequestDTO themeRequestDTO : gameRequestDTO.getThemes()) {
-            Long themeId = themeRequestDTO.getId();
             String themeImageUrl = themeRequestDTO.getImageUrl();
 
             // Check if the theme exists by ID
-            Optional<ThemeEntity> existingTheme = themeRepository.findById(themeId);
-            if (existingTheme.isPresent()) {
-                // If the theme exists, update its image URL
-                ThemeEntity theme = existingTheme.get();
-                theme.setImageUrl(themeImageUrl);
-                themes.add(theme);
-            } else {
+
                 // If the theme does not exist, create a new theme with the provided image URL
                 ThemeEntity newTheme = new ThemeEntity();
+                newTheme.setName(themeRequestDTO.getName());  // Set the name from the request
                 newTheme.setImageUrl(themeImageUrl);
                 // Save the new theme
                 ThemeEntity savedTheme = themeRepository.save(newTheme);
                 themes.add(savedTheme);
-            }
+
         }
 
         // Set the updated themes to the game entity

@@ -2,6 +2,7 @@ package aagapp_backend.services.gameservice;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.GameRequest;
+import aagapp_backend.dto.GameVendorDTO;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.*;
@@ -39,6 +40,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -173,7 +176,7 @@ public class GameService {
             }
 //        check from gamerequestgamename that existing game exists or not for same vendor
 
-//            game.setName(gameRequest.getName());
+//           game.setName(gameRequest.getName());
 
             // Fetch Vendor and Theme Entities
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
@@ -188,7 +191,7 @@ public class GameService {
             // Set Vendor and Theme to the Game
             game.setVendorEntity(vendorEntity);
             game.setTheme(theme);
-
+            game.setAaggameid(existinggameId);
             // Calculate moves based on the selected fee
 
             game.setFee(gameRequest.getFee());
@@ -554,6 +557,81 @@ public class GameService {
         return ((Long) query.getSingleResult()).intValue();
     }
 
+//    @Transactional
+   /* public Page<GameVendorDTO> findGamesByVendor(Long vendorId, String status, Pageable pageable) {
+        try {
+            String sql = "SELECT g.id AS game_id,  g.scheduled_at, g.created_date, g.updated_date, " +
+                    "g.end_date, g.fee, g.move, g.status, g.shareableLink, " +
+                    "v.first_name, v.last_name, v.profile_picture, " +
+                    "t.id AS theme_id, t.image_url AS theme_image, " +
+                    "g.minPlayersPerTeam, g.maxPlayersPerTeam, " +
+                    "(CASE WHEN g.scheduled_at <= NOW() AND g.end_date >= NOW() THEN TRUE ELSE FALSE END) AS is_live " +
+                    "FROM aag_ludo_game g " +
+                    "JOIN vendor_table v ON g.vendor_id = v.service_provider_id " +
+                    "LEFT JOIN themes t ON g.theme_id = t.id " +
+                    "WHERE g.vendor_id = :vendorId";
+
+
+
+            if (status != null && !status.isEmpty()) {
+                sql += " AND g.status = :status";
+            }
+
+            Query query = em.createNativeQuery(sql);
+            query.setParameter("vendorId", vendorId);
+            if (status != null && !status.isEmpty()) {
+                query.setParameter("status", status);
+            }
+
+            query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<Object[]> results = query.getResultList();
+            List<GameVendorDTO> games = results.stream()
+                    .map(obj -> new GameVendorDTO(
+                            ((Number) obj[0]).longValue(), // Game ID
+                            (String) obj[1], // Game Name
+                            obj[2] != null ? convertToKolkataTime((ZonedDateTime) obj[2]) : null, // Scheduled At
+                            obj[3] != null ? convertToKolkataTime((ZonedDateTime) obj[3]) : null, // Created Date
+                            obj[4] != null ? convertToKolkataTime((ZonedDateTime) obj[4]) : null, // Updated Date
+                            obj[5] != null ? convertToKolkataTime((ZonedDateTime) obj[5]) : null, // End Date
+                            obj[6] != null ? ((Number) obj[6]).doubleValue() : 0.0, // Fee
+                            obj[7] != null ? ((Number) obj[7]).intValue() : 0, // Move
+                            (String) obj[8], // Status
+                            (String) obj[9], // Shareable Link
+                            (String) obj[10], // Vendor First Name
+                            (String) obj[11], // Vendor Last Name
+                            (String) obj[12], // Vendor Profile Picture
+                            (String) obj[13], // Vendor Mobile Number
+                            (String) obj[14], // Vendor Email
+                            obj[15] != null && (Boolean) obj[15], // Vendor is Verified
+                            obj[16] != null ? ((Number) obj[16]).longValue() : null, // Theme ID
+                            (String) obj[17], // Theme Image URL
+                            obj[18] != null ? ((Number) obj[18]).intValue() : 1, // Min Players Per Team
+                            obj[19] != null ? ((Number) obj[19]).intValue() : 2, // Max Players Per Team
+                            obj[20] != null && (Boolean) obj[20] // Is Game Live
+                    )).collect(Collectors.toList());
+
+            // Count total records for pagination
+            String countSql = "SELECT COUNT(*) FROM aag_ludo_game g WHERE g.vendor_id = :vendorId";
+            if (status != null && !status.isEmpty()) {
+                countSql += " AND g.status = :status";
+            }
+
+            Query countQuery = em.createNativeQuery(countSql);
+            countQuery.setParameter("vendorId", vendorId);
+            if (status != null && !status.isEmpty()) {
+                countQuery.setParameter("status", status);
+            }
+
+            Long count = ((Number) countQuery.getSingleResult()).longValue();
+
+            return new PageImpl<>(games, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving games by vendor ID: " + e.getMessage(), e);
+        }
+    }*/
+
 
     @Transactional
     public Page<Game> findGamesByVendor(Long vendorId, String status, Pageable pageable) {
@@ -604,11 +682,12 @@ public class GameService {
 
             return new PageImpl<>(games, pageable, count);
         } catch (Exception e) {
-            throw new RuntimeException("Error retrieving games by vendor ID: " + vendorId, e);
+            throw new RuntimeException("Error retrieving games by vendor ID: " + e, e);
         }
     }
 
-    @Transactional
+
+   @Transactional
     public Page<Game> findGamesScheduledForToday(Long vendorId, Pageable pageable) {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
