@@ -68,6 +68,8 @@ public class AdminReviewService {
                     String generatedPassword = PasswordGenerator.generatePassword(8);
                     vendorEntity.setPassword(passwordEncoder.encode(generatedPassword));
                     vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
+                    vendorEntity.setFirst_name(vendorSubmissionEntity.getFirstName());
+                    vendorEntity.setLast_name(vendorSubmissionEntity.getLastName());
                     vendorRepository.save(vendorEntity);
                     sendApprovalEmail(vendorEntity, vendorSubmissionEntity, generatedPassword);
                     vendorSubmissionEntity.setProfileStatus(ProfileStatus.ACTIVE);

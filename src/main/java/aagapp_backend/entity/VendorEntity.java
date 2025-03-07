@@ -51,6 +51,10 @@ public class VendorEntity {
     private String profilePic="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
 
     @Nullable
+    @Column(name = "banner_picture")
+    private String bannerPicture;
+
+    @Nullable
     private String country_code;
 
 
@@ -98,11 +102,9 @@ public class VendorEntity {
     @Column(name = "referral_code", unique = true)
     private String referralCode;
 
-
     @Nullable
     @Column(name = "referred_count")
     private int referralCount;
-
 
     @Enumerated(EnumType.STRING)
     private VendorLevelPlan vendorLevelPlan = VendorLevelPlan.getDefaultLevel();
@@ -124,7 +126,6 @@ public class VendorEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdDate;
 
-
     @CurrentTimestamp
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -135,6 +136,7 @@ public class VendorEntity {
         this.updatedDate = new Date();
     }
 
+
     @PrePersist
     public void prePersist() {
         this.setLeagueStatus(LeagueStatus.NOT_PAID);
@@ -143,7 +145,6 @@ public class VendorEntity {
     @JsonManagedReference("submissionentity-vendor")
     @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private VendorSubmissionEntity submissionEntity;
-
 
 }
 

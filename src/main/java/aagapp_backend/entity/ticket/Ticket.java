@@ -1,43 +1,55 @@
-package aagapp_backend.entity;
+package aagapp_backend.entity.ticket;
 
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.game.AagAvailableGames;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.CurrentTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.List;
 
 @Entity
-@Table(name = "themes")
+@Table(name = "tickets")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ThemeEntity {
+public class Ticket {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long ticketId;
 
-    @Column(name = "name")
-    private String name;
+    private String subject;
 
-    @Column(name = "image_url")
-    private String imageUrl; // URL or path to the theme's image/icon
+    private String description;
+
+    private String status;
+
+    private String remark;
+
+    private String priority;
+
+    private String type;
 
 
-    @ManyToMany(mappedBy = "themes")
-    @JsonBackReference
-    private List<AagAvailableGames> games;
+    @ManyToOne
+    @JoinColumn(name = "customer_id")
+    private CustomCustomer customer;
+
+    @ManyToOne
+    @JoinColumn(name = "vendor_id")
+    private VendorEntity vendor;
+
+
+    private String role;
+
+    private String email;
 
 
     @CreationTimestamp
@@ -45,10 +57,10 @@ public class ThemeEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdDate;
 
-    @Nullable
+    @CurrentTimestamp
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
 
-}
 
+}

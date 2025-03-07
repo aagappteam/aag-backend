@@ -17,7 +17,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "aag_available_games")
+@Table(name = "aag_available_games",
+        indexes = {
+                @Index(name = "idx_game_id", columnList = "id"),
+                @Index(name = "idx_game_name", columnList = "gameName"),
+                @Index(name = "idx_game_status", columnList = "gameStatus"),
+                @Index(name = "idx_created_date", columnList = "created_date")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,8 +46,8 @@ public class AagAvailableGames {
             joinColumns = @JoinColumn(name = "game_id"),
             inverseJoinColumns = @JoinColumn(name = "theme_id")
     )
-    @JsonManagedReference  // Add this annotation here
-    private List<ThemeEntity> themes; // Will manage the themes side of the relationship
+    @JsonManagedReference
+    private List<ThemeEntity> themes;
 
 
     @Column(nullable = false)

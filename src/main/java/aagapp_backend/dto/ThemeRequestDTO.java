@@ -6,6 +6,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ThemeRequestDTO {
-    private Long id;  // Theme ID
+    private String name;  // Theme name
     private String imageUrl;  // Theme image URL
 }

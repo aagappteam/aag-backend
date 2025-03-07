@@ -78,8 +78,12 @@ public class CommandLineService implements CommandLineRunner {
             entityManager.merge(new CustomAdmin(1L,2,passwordEncoder.encode("Admin#01"),"admin","7740066387","+91",0,currentTimestamp,"SUPER_ADMIN"));
             entityManager.merge(new CustomAdmin(2L,1,passwordEncoder.encode("SuperAdmin#1357"),"superadmin","9872548680","+91",0,currentTimestamp,"SUPER_ADMIN"));
         }*/
+/*
+       String alterQuery = "ALTER TABLE themes DROP COLUMN name";
+        Query query = entityManager.createNativeQuery(alterQuery);
+        query.executeUpdate();*/
 
-/*        String alterQuery = "ALTER TABLE themes DROP COLUMN name";
+/*        String alterQuery = "ALTER TABLE aag_ludo_game DROP COLUMN name";
         Query query = entityManager.createNativeQuery(alterQuery);
         query.executeUpdate();*/
 

@@ -127,7 +127,6 @@ public class OtpEndpoint {
     @Value("${twilio.authToken}")
     private String authToken;
 
-
     @PostMapping("/send-otp")
     public ResponseEntity<?> sendOtp(@RequestBody CustomCustomer customerDetails, HttpSession session) throws UnsupportedEncodingException {
         try {
