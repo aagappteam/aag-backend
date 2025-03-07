@@ -53,7 +53,8 @@ public class VendorSubmissionService {
         }
 
         VendorSubmissionEntity newEntity = new VendorSubmissionEntity();
-        newEntity.setName(submissionEntity.getName());
+        newEntity.setFirstName(submissionEntity.getFirstName());
+        newEntity.setLastName(submissionEntity.getLastName());
         newEntity.setVendorEntity(vendorEntity);
         newEntity.setEmail(submissionEntity.getEmail());
         newEntity.setPlanName(submissionEntity.getPlanName());
