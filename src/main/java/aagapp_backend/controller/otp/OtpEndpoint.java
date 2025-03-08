@@ -267,6 +267,7 @@ public class OtpEndpoint {
                     return responseService.generateErrorResponse(ApiConstants.INVALID_DATA, HttpStatus.UNAUTHORIZED);
                 }
             } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {
+                System.out.println("role " + role + " ");
                 return serviceProviderService.verifyOtp(loginDetails, session, request);
             } else if (roleService.findRoleName(role).equals(Constant.ADMIN) || roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(role).equals(Constant.SUPPORT)) {
                 return adminService.verifyOtpForAdmin(loginDetails, session, request);

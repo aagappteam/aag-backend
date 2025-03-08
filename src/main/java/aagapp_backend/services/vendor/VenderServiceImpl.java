@@ -70,9 +70,25 @@ public class VenderServiceImpl implements VenderService {
     }
 
 
+
     public VendorEntity findServiceProviderByReferralCode(String referralCode) {
-        return vendorRepository.findServiceProviderByReferralCode(referralCode);
+        List<VendorEntity> results = entityManager.createQuery("SELECT v FROM VendorEntity v WHERE v.referralCode = :referralCode", VendorEntity.class)
+                .setParameter("referralCode", referralCode)
+                .getResultList();
+
+        if (results.size() > 1) {
+            throw new IllegalStateException("Multiple service providers found with the same referral code");
+        }
+
+        return results.isEmpty() ? null : results.get(0);
     }
+
+
+/*    public VendorEntity findServiceProviderByReferralCode(String referralCode) {
+        System.out.println("findServiceProviderByReferralCode  " + vendorRepository.findServiceProviderByReferralCode(referralCode));
+
+        return vendorRepository.findServiceProviderByReferralCode(referralCode);
+    }*/
 
     @Autowired
     @Lazy
@@ -480,11 +496,11 @@ public class VenderServiceImpl implements VenderService {
                 return responseService.generateErrorResponse("Invalid Data Provided ", HttpStatus.UNAUTHORIZED);
 
             }
+            System.out.println("existingServiceProvider  " + existingServiceProvider);
 
             String storedOtp = existingServiceProvider.getOtp();
             String ipAddress = request.getRemoteAddr();
             String userAgent = request.getHeader("User-Agent");
-            VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
 
             if (otpEntered == null || otpEntered.trim().isEmpty()) {
@@ -508,7 +524,7 @@ public class VenderServiceImpl implements VenderService {
 //                    VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
 
-                    if (referrer != null) {
+                    /*if (referrer != null) {
                         // Create a VendorReferral entry
                         VendorReferral vendorReferral = new VendorReferral();
                         vendorReferral.setReferrerId(referrer);
@@ -520,6 +536,24 @@ public class VenderServiceImpl implements VenderService {
                         // Update the referrer's referral count
                         referrer.setReferralCount(referrer.getReferralCount() + 1);
                         entityManager.merge(referrer);
+                    }*/
+
+                    if(referralCode!=null){
+                        VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
+                        System.out.println(referrer  + "   referrer");
+                        if (referrer != null) {
+                            // Create a VendorReferral entry
+                            VendorReferral vendorReferral = new VendorReferral();
+                            vendorReferral.setReferrerId(referrer);
+                            vendorReferral.setReferredId(existingServiceProvider);
+
+                            // Persist the VendorReferral entry
+                            entityManager.persist(vendorReferral);
+
+                            // Update the referrer's referral count
+                            referrer.setReferralCount(referrer.getReferralCount() + 1);
+                            entityManager.merge(referrer);
+                        }
                     }
                 }
 
