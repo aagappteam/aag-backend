@@ -20,7 +20,8 @@ public class VendorSubmissionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
+    private String firstName;
+    private String lastName;
 
     @OneToOne
     @JoinColumn(name = "service_provider_id")

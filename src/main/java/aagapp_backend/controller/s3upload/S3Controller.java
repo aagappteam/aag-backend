@@ -138,24 +138,47 @@ public class S3Controller {
     }
 
     @PostMapping("/upload-banner")
-    public ResponseEntity<?> uploadFileWithoutAuth(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadFileWithoutAuth(@RequestParam("bannerPicture") MultipartFile file,@RequestHeader("Authorization") String token) {
         if (file.isEmpty()) {
             return ResponseService.generateErrorResponse("Please select a file to upload", HttpStatus.BAD_REQUEST);
         }
+
         try {
+            // Extract User ID and Role from JWT Token
+            String jwtToken = token.replace("Bearer ", "");
+            Long userId = jwtService.extractId(jwtToken);
+            int role = jwtService.extractRoleId(jwtToken);
+
             // Generate unique filename using timestamp
             String fileExtension = "";
             String originalFilename = file.getOriginalFilename();
+
             if (originalFilename != null && originalFilename.contains(".")) {
                 fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
             }
-            String key = "banner/" + System.currentTimeMillis() + fileExtension;
+
+            String key = "bannerPicture/" + System.currentTimeMillis() + fileExtension;
 
             // Upload file to S3
             s3Service.uploadPhoto(key, file);
             String fileUrl = s3Service.getFileUrl(key);
 
-            return ResponseService.generateSuccessResponse("File uploaded successfully", fileUrl, HttpStatus.OK);
+            // **Update Profile URL based on Role**
+            if (role == Constant.VENDOR_ROLE) { // Role 4 -> VendorEntity
+                Optional<VendorEntity> vendorOptional = vendorRepository.findById(userId);
+                if (vendorOptional.isPresent()) {
+                    VendorEntity vendor = vendorOptional.get();
+                    vendor.setBannerPicture(fileUrl);
+                    vendorRepository.save(vendor);
+                } else {
+                    return ResponseService.generateErrorResponse("Vendor not found", HttpStatus.NOT_FOUND);
+                }
+            }else {
+                return ResponseService.generateErrorResponse("Unauthorized role", HttpStatus.UNAUTHORIZED);
+            }
+
+            return ResponseService.generateSuccessResponse("Your banner image uploaded successfully", fileUrl, HttpStatus.OK);
+
         } catch (Exception e) {
             return ResponseService.generateErrorResponse("File upload failed: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -165,18 +188,39 @@ public class S3Controller {
      * Delete file from S3 without authorization
      */
     @DeleteMapping("/delete-banner")
-    public ResponseEntity<?> deleteFileWithoutAuth(@RequestBody Map<String, Object> formDetails) {
+    public ResponseEntity<?> deleteFileWithoutAuth(@RequestHeader("Authorization") String token) {
         try {
-            String fileUrl = (String) formDetails.get("fileUrl");
-            if (fileUrl == null || fileUrl.isEmpty()) {
-                return ResponseService.generateErrorResponse("File URL is required", HttpStatus.BAD_REQUEST);
-            }
-            String key = fileUrl.substring(fileUrl.indexOf("banner/"));
-            s3Service.deleteFile(key);
 
-            return ResponseService.generateSuccessResponse("File deleted successfully", null, HttpStatus.OK);
+            String jwtToken = token.replace("Bearer ", "");
+            Long userId = jwtService.extractId(jwtToken);
+            int role = jwtService.extractRoleId(jwtToken);
+
+            String fileUrl = null;
+
+
+            if (role == Constant.VENDOR_ROLE) {
+                Optional<VendorEntity> vendorOptional = vendorRepository.findById(userId);
+                if (vendorOptional.isPresent()) {
+                    VendorEntity vendor = vendorOptional.get();
+                    fileUrl = vendor.getBannerPicture();
+                    vendor.setBannerPicture(null);
+                    vendorRepository.save(vendor);
+                } else {
+                    return ResponseService.generateErrorResponse("Vendor not found", HttpStatus.NOT_FOUND);
+                }
+            }else {
+                return ResponseService.generateErrorResponse("Unauthorized role", HttpStatus.UNAUTHORIZED);
+            }
+
+            if (fileUrl != null && !fileUrl.isEmpty()) {
+                String key = fileUrl.substring(fileUrl.indexOf("bannerPicture/"));
+                s3Service.deleteFile(key);
+            }
+
+            return ResponseService.generateSuccessResponse("banner  deleted successfully", null, HttpStatus.OK);
+
         } catch (Exception e) {
-            return ResponseService.generateErrorResponse("File deletion failed: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            return ResponseService.generateErrorResponse("banner picture deletion failed: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
