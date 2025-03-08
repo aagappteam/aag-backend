@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
-    VendorEntity findServiceProviderByReferralCode(String referralCode);
     List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
 //    List<League> findByChallengedVendors_Id(Long vendorId);
 
