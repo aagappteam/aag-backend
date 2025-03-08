@@ -45,7 +45,8 @@ public class AagAvailableGame {
             @RequestParam(value = "size", defaultValue = "10") int size) {
        try{
            List<GameResponseDTO> games = gameService.getAllGames(page, size);
-           return new ResponseEntity<>(games, HttpStatus.OK);
+           return responseService.generateSuccessResponse("All Games fetched successfully", games, HttpStatus.OK);
+
        } catch (Exception e) {
            exceptionHandling.handleException(e);
            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -58,7 +59,8 @@ public class AagAvailableGame {
     public ResponseEntity<?> getGameById(@PathVariable Long gameId) {
         try {
             GameResponseDTO gameResponseDTO = gameService.getGameById(gameId);
-            return new ResponseEntity<>(gameResponseDTO, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Games fetched successfully", gameResponseDTO, HttpStatus.OK);
+
         } catch (GameNotFoundException e) {
             return responseService.generateErrorResponse("Not Found",HttpStatus.NOT_FOUND);
 
@@ -74,7 +76,8 @@ public class AagAvailableGame {
     public ResponseEntity<?> updateGame(@PathVariable Long gameId, @RequestBody GameRequestDTO gameRequestDTO) {
         try {
             GameResponseDTO updatedGame = gameService.updateGame(gameId, gameRequestDTO);
-            return new ResponseEntity<>(updatedGame, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Game Updated successfully",updatedGame,HttpStatus.OK);
+
         } catch (GameNotFoundException e) {
             return responseService.generateErrorResponse("Not Found",HttpStatus.NOT_FOUND);
         }
