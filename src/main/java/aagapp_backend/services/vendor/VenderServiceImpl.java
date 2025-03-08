@@ -84,12 +84,6 @@ public class VenderServiceImpl implements VenderService {
     }
 
 
-/*    public VendorEntity findServiceProviderByReferralCode(String referralCode) {
-        System.out.println("findServiceProviderByReferralCode  " + vendorRepository.findServiceProviderByReferralCode(referralCode));
-
-        return vendorRepository.findServiceProviderByReferralCode(referralCode);
-    }*/
-
     @Autowired
     @Lazy
     public void setReferralService(ReferralService referralService) {
@@ -502,7 +496,6 @@ public class VenderServiceImpl implements VenderService {
             String ipAddress = request.getRemoteAddr();
             String userAgent = request.getHeader("User-Agent");
 
-
             if (otpEntered == null || otpEntered.trim().isEmpty()) {
                 return responseService.generateErrorResponse("OTP cannot be empty", HttpStatus.BAD_REQUEST);
             }
@@ -521,24 +514,7 @@ public class VenderServiceImpl implements VenderService {
                 // After obtaining the referrer using the referral code
                 if (referralCode != null && !referralCode.isEmpty() && existingServiceProvider.getSignedUp() == 0) {
                     // Find the referrer by referral code
-//                    VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
-
-                    /*if (referrer != null) {
-                        // Create a VendorReferral entry
-                        VendorReferral vendorReferral = new VendorReferral();
-                        vendorReferral.setReferrerId(referrer);
-                        vendorReferral.setReferredId(existingServiceProvider);
-
-                        // Persist the VendorReferral entry
-                        entityManager.persist(vendorReferral);
-
-                        // Update the referrer's referral count
-                        referrer.setReferralCount(referrer.getReferralCount() + 1);
-                        entityManager.merge(referrer);
-                    }*/
-
-                    if(referralCode!=null){
                         VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
                         System.out.println(referrer  + "   referrer");
                         if (referrer != null) {
@@ -554,7 +530,7 @@ public class VenderServiceImpl implements VenderService {
                             referrer.setReferralCount(referrer.getReferralCount() + 1);
                             entityManager.merge(referrer);
                         }
-                    }
+
                 }
 
 
