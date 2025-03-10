@@ -246,7 +246,6 @@ public class OtpEndpoint {
                     existingCustomer.setOtp(null);
                     em.persist(existingCustomer);
 
-
                     String existingToken = existingCustomer.getToken();
 
                     if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {

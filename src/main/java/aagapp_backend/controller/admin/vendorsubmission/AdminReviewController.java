@@ -1,16 +1,19 @@
 package aagapp_backend.controller.admin.vendorsubmission;
 
+import aagapp_backend.entity.faqs.FAQs;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.faqs.FAQService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/adminreview")
@@ -20,6 +23,12 @@ public class AdminReviewController {
     private ExceptionHandlingImplement exceptionHandling;
     private ResponseService responseService;
     private TicketRepository ticketRepository;
+    private FAQService faqService;
+
+    @Autowired
+    public void setFAQService(FAQService faqService) {
+        this.faqService = faqService;
+    }
 
     @Autowired
     public void setTicketRepository(TicketRepository ticketRepository) {
@@ -193,6 +202,49 @@ public class AdminReviewController {
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // 2. Create a new FAQ
+    @PostMapping("/createFaqs")
+    public ResponseEntity<?> createFAQ(@RequestBody FAQs faq) {
+        try {
+            FAQs createdFAQ = faqService.createFAQ(faq);
+            return ResponseService.generateSuccessResponse("FAQ created successfully", createdFAQ, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return ResponseService.generateErrorResponse("Error creating FAQ: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // 4. Update an existing FAQ
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateFAQ(@PathVariable Long id, @RequestBody FAQs faqDetails) {
+        try {
+            FAQs updatedFAQ = faqService.updateFAQ(id, faqDetails);
+
+            if (updatedFAQ != null) {
+                return ResponseService.generateSuccessResponse("FAQ updated successfully", updatedFAQ, HttpStatus.OK);
+            } else {
+                return ResponseService.generateErrorResponse("FAQ not found", HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return ResponseService.generateErrorResponse("Error updating FAQ: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // 5. Delete an FAQ by ID
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteFAQ(@PathVariable Long id) {
+        try {
+            boolean isDeleted = faqService.deleteFAQ(id);
+
+            if (isDeleted) {
+                return ResponseService.generateSuccessResponse("FAQ deleted successfully", null, HttpStatus.OK);
+            } else {
+                return ResponseService.generateErrorResponse("FAQ not found", HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return ResponseService.generateErrorResponse("Error deleting FAQ: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
