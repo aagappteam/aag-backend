@@ -93,10 +93,12 @@ public class TicketService {
 
             if (role == Constant.VENDOR_ROLE) {
                 VendorEntity vendor = vendorService.getServiceProviderById(userId);
-                ticket.setVendor(vendor);  // Set the vendor ID if role is vendor
+                ticket.setVendorId(vendor.getService_provider_id());
+                ticket.setEmail(vendor.getPrimary_email());
             } else if (role == Constant.CUSTOMER_ROLE) {
                 CustomCustomer customer = customCustomerService.getCustomerById(userId);
-                ticket.setCustomer(customer);  // Set the customer ID if role is customer
+                ticket.setCustomerId(customer.getId());
+                ticket.setEmail(customer.getEmail());
             }
 
             ticket.setCreatedDate(new Date());
@@ -118,35 +120,48 @@ public class TicketService {
             // Your existing logic...
 
             if ("vendor".equalsIgnoreCase(role)) {
+                // Fetch the vendor using vendorService
                 VendorEntity vendor = vendorService.getServiceProviderById(id);
                 if (vendor == null) {
                     return responseService.generateErrorResponse("Vendor not found", HttpStatus.NOT_FOUND);
                 }
-                List<Ticket> tickets = ticketRepository.findByVendor(vendor);
+
+                // Fetch tickets based on vendorId, using the updated query in the repository
+                List<Ticket> tickets = ticketRepository.findByVendorId(id);
+
                 // Map the tickets to TicketDTO (or a simplified version of the ticket)
                 List<TicketDTO> ticketDTOs = tickets.stream()
                         .map(ticket -> new TicketDTO(ticket)) // Convert to TicketDTO
                         .collect(Collectors.toList());
+
                 return responseService.generateSuccessResponse("Tickets retrieved successfully", ticketDTOs, HttpStatus.OK);
 
             } else if ("customer".equalsIgnoreCase(role)) {
+                // Fetch the customer using customCustomerService
                 CustomCustomer customer = customCustomerService.getCustomerById(id);
                 if (customer == null) {
                     return responseService.generateErrorResponse("Customer not found", HttpStatus.NOT_FOUND);
                 }
-                List<Ticket> tickets = ticketRepository.findByCustomer(customer);
+
+                // Fetch tickets based on customerId, using the updated query in the repository
+                List<Ticket> tickets = ticketRepository.findByCustomerId(id);
+
                 // Map the tickets to TicketDTO
                 List<TicketDTO> ticketDTOs = tickets.stream()
                         .map(ticket -> new TicketDTO(ticket)) // Convert to TicketDTO
                         .collect(Collectors.toList());
+
                 return responseService.generateSuccessResponse("Tickets retrieved successfully", ticketDTOs, HttpStatus.OK);
+
             } else {
                 return responseService.generateErrorResponse("Invalid role", HttpStatus.BAD_REQUEST);
             }
 
         } catch (Exception e) {
+            // Catch any exception and return a generic error response
             return responseService.generateErrorResponse("Error retrieving tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
 }
