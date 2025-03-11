@@ -38,13 +38,10 @@ public class Ticket {
     private String type;
 
 
-    @ManyToOne
-    @JoinColumn(name = "customer_id")
-    private CustomCustomer customer;
+    private Long customerId;
 
-    @ManyToOne
-    @JoinColumn(name = "vendor_id")
-    private VendorEntity vendor;
+
+    private Long vendorId;
 
 
     private String role;
