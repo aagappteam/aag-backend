@@ -216,7 +216,7 @@ public class AdminReviewController {
         }
     }
 
-    // 4. Update an existing FAQ
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateFAQ(@PathVariable Long id, @RequestBody FAQs faqDetails) {
         try {
@@ -232,7 +232,7 @@ public class AdminReviewController {
         }
     }
 
-    // 5. Delete an FAQ by ID
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteFAQ(@PathVariable Long id) {
         try {
@@ -247,4 +247,5 @@ public class AdminReviewController {
             return ResponseService.generateErrorResponse("Error deleting FAQ: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 }

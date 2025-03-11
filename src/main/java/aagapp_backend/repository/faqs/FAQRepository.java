@@ -8,10 +8,12 @@ import java.util.List;
 
 @Repository
 public interface FAQRepository extends JpaRepository<FAQs, Long> {
-    // Custom query method for filtering FAQs by question and answer (using keywords)
     List<FAQs> findByQuestionContainingIgnoreCaseOrAnswerContainingIgnoreCase(String question, String answer);
 
     List<FAQs> findByQuestionContainingIgnoreCase(String questionFilter);
 
     List<FAQs> findByAnswerContainingIgnoreCase(String answerFilter);
+
+//    List<FAQs> findByCategory(String category);
 }
+
