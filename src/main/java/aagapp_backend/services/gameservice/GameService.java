@@ -3,6 +3,7 @@ package aagapp_backend.services.gameservice;
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.dto.GameVendorDTO;
+import aagapp_backend.dto.GetGameResponseDTO;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.*;
@@ -409,7 +410,7 @@ public class GameService {
     }
 
     @Transactional
-    public Page<Game> getAllGames(String status, Long vendorId, Pageable pageable) {
+    public Page<GetGameResponseDTO> getAllGames(String status, Long vendorId, Pageable pageable) {
         try {
             StringBuilder sql = new StringBuilder("SELECT * FROM aag_ludo_game g WHERE 1=1");
 
@@ -434,18 +435,25 @@ public class GameService {
 
             List<Game> games = query.getResultList();
 
-            games.forEach(game -> {
-                if (game.getCreatedDate() != null) {
-                    game.setCreatedDate(convertToKolkataTime(game.getCreatedDate()));
-
-                }
-                if (game.getUpdatedDate() != null) {
-                    game.setUpdatedDate(convertToKolkataTime(game.getUpdatedDate()));
-                }
-                if (game.getScheduledAt() != null) {
-                    game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
-                }
-            });
+            // Map Game entities to GetGameResponseDTO
+            List<GetGameResponseDTO> gameResponseDTOs = games.stream()
+                    .map(game -> new GetGameResponseDTO(
+                            game.getId(),
+                            game.getFee(),
+                            game.getMove(),
+                            game.getStatus(),
+                            game.getShareableLink(),
+                            game.getAaggameid(),
+                            game.getTheme() != null ? game.getTheme().getName() : null,
+                            game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                            game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
+                            game.getEndDate() != null ? game.getEndDate().toString() : null,
+                            game.getMinPlayersPerTeam(),
+                            game.getMaxPlayersPerTeam(),
+                            game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
+                            game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
+                    ))
+                    .collect(Collectors.toList());
 
             String countSql = "SELECT COUNT(*) FROM aag_ludo_game g WHERE 1=1";
             if (status != null && !status.isEmpty()) {
@@ -465,7 +473,7 @@ public class GameService {
 
             Long count = ((Number) countQuery.getSingleResult()).longValue();
 
-            return new PageImpl<>(games, pageable, count);
+            return new PageImpl<>(gameResponseDTOs, pageable, count);
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving games", e);
         }
