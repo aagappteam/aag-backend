@@ -77,7 +77,6 @@ public class GameController {
         }
     }
 
-
     @GetMapping("/get-games-by-vendor/{vendorId}")
     public ResponseEntity<?> getGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(value = "status", required = false) String status) {
         try {
