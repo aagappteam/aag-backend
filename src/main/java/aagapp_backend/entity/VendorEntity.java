@@ -146,6 +146,22 @@ public class VendorEntity {
     @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private VendorSubmissionEntity submissionEntity;
 
+    // Custom getter for first_name
+    public String getFirst_name() {
+        if (isPrivate != null && isPrivate) {
+            return "Anonymous";
+        }
+        return first_name;
+    }
+
+    // Custom getter for last_name
+    public String getLast_name() {
+        if (isPrivate != null && isPrivate) {
+            return "User";
+        }
+        return last_name;
+    }
+
 }
 
 
