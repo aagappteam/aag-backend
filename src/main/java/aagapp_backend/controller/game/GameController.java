@@ -210,4 +210,20 @@ public class GameController {
         }
     }
 
+    @GetMapping("/published/{vendorId}")
+    public ResponseEntity<List<Game>> getAllPublishedGamesByVendorId(@PathVariable Long vendorId) {
+        try {
+            // Call the service method to get all published games for the vendor
+            List<Game> publishedGames = gameService.getAllPublishedGamesByVendorId(vendorId);
+
+            // Return the list of published games with a 200 OK response
+            return ResponseEntity.ok(publishedGames);
+
+        } catch (RuntimeException e) {
+            // If no games are found or some error occurs, return an error response
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+        }
+    }
+
 }

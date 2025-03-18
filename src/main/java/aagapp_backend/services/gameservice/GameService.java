@@ -2,7 +2,6 @@ package aagapp_backend.services.gameservice;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.GameRequest;
-import aagapp_backend.dto.GameVendorDTO;
 import aagapp_backend.dto.GetGameResponseDTO;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
@@ -16,7 +15,6 @@ import aagapp_backend.repository.game.*;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
-import aagapp_backend.services.ludo.PCGService;
 import aagapp_backend.services.payment.PaymentFeatures;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -285,6 +283,31 @@ public class GameService {
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not joined in the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @Transactional
+    public List<Game> getAllPublishedGamesByVendorId(Long vendorId) {
+        try {
+            // Fetch Vendor entity
+            VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
+            if (vendorEntity == null) {
+                throw new RuntimeException("No records found for vendor");
+            }
+
+            // Fetch all published games for the vendor
+            List<Game> games = gameRepository.findByVendorEntityAndStatus(vendorEntity, GameStatus.ACTIVE);
+
+            if (games == null || games.isEmpty()) {
+                throw new RuntimeException("No published games found for the vendor");
+            }
+
+            // Return the list of published games
+            return games;
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error occurred while fetching published games: " + e.getMessage(), e);
         }
     }
 
