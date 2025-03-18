@@ -36,6 +36,7 @@ public class VendorSubmission {
         try {
             VendorSubmissionEntity vendorSubmission = submissionService.getSubmissionById(id);
 
+
             if (vendorSubmission == null) {
                 return ResponseService.generateErrorResponse("No submission found with the provided ID", HttpStatus.NOT_FOUND);
             }

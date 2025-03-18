@@ -3,9 +3,11 @@ package aagapp_backend.controller.payment;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.PaymentDTO;
 import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentService;
+import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,6 +32,9 @@ public class PaymentController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private EntityManager entityManager;
 
     // Create payment with authorization check and input validation
     @PostMapping("/create/{vendorId}")
@@ -101,9 +106,24 @@ public class PaymentController {
             }
 
             // Map to DTO for response
-            List<PaymentDTO> paymentDTOs = payments.stream()
+           /* List<PaymentDTO> paymentDTOs = payments.stream()
                     .map(payment -> new PaymentDTO(payment))
+                    .collect(Collectors.toList());*/
+
+            List<PaymentDTO> paymentDTOs = payments.stream()
+                    .map(payment -> {
+                        // Fetch the PlanEntity using the planId
+                        PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
+
+                        if (planEntity == null) {
+                            throw new RuntimeException("Plan not found with ID: " + payment.getPlanId());
+                        }
+
+                        // Map the PaymentEntity to PaymentDTO, passing the PlanEntity to get the planName
+                        return new PaymentDTO(payment, planEntity);
+                    })
                     .collect(Collectors.toList());
+
 
             return responseService.generateSuccessResponse("Payments retrieved successfully", paymentDTOs, HttpStatus.OK);
 
@@ -145,8 +165,21 @@ public class PaymentController {
             }
 
             // Map to DTO for response
-            List<PaymentDTO> paymentDTOs = transactions.stream()
+           /* List<PaymentDTO> paymentDTOs = transactions.stream()
                     .map(payment -> new PaymentDTO(payment))
+                    .collect(Collectors.toList());*/
+            List<PaymentDTO> paymentDTOs = transactions.stream()
+                    .map(payment -> {
+                        // Fetch the PlanEntity using the planId
+                        PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
+
+                        if (planEntity == null) {
+                            throw new RuntimeException("Plan not found with ID: " + payment.getPlanId());
+                        }
+
+                        // Map the PaymentEntity to PaymentDTO, passing the PlanEntity to get the planName
+                        return new PaymentDTO(payment, planEntity);
+                    })
                     .collect(Collectors.toList());
 
             return responseService.generateSuccessResponse("Transactions retrieved successfully", paymentDTOs, HttpStatus.OK);
@@ -185,8 +218,22 @@ public class PaymentController {
             }
 
             // Map to DTO for response
-            List<PaymentDTO> paymentDTOs = transactions.stream()
+/*            List<PaymentDTO> paymentDTOs = transactions.stream()
                     .map(payment -> new PaymentDTO(payment))
+                    .collect(Collectors.toList());*/
+
+            List<PaymentDTO> paymentDTOs = transactions.stream()
+                    .map(payment -> {
+                        // Fetch the PlanEntity using the planId
+                        PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
+
+                        if (planEntity == null) {
+                            throw new RuntimeException("Plan not found with ID: " + payment.getPlanId());
+                        }
+
+                        // Map the PaymentEntity to PaymentDTO, passing the PlanEntity to get the planName
+                        return new PaymentDTO(payment, planEntity);
+                    })
                     .collect(Collectors.toList());
 
             return responseService.generateSuccessResponse("Transactions retrieved successfully", paymentDTOs, HttpStatus.OK);

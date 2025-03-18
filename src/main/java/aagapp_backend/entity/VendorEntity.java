@@ -1,5 +1,6 @@
 package aagapp_backend.entity;
 
+import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -23,7 +24,13 @@ import java.util.List;
 
 
 @Entity
-@Table(name = "vendor_table")
+@Table(name = "vendor_table", indexes = {
+        @Index(name = "idx_vendor_id", columnList = "service_provider_id"),
+        @Index(name = "idx_vendor_email", columnList = "primary_email"),
+        @Index(name = "idx_vendor_referral_code", columnList = "referral_code"),
+        @Index(name = "idx_vendor_is_active", columnList = "is_active"),
+        @Index(name = "idx_vendor_is_paid", columnList = "is_paid")
+})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -68,6 +75,9 @@ public class VendorEntity {
     @Email(message = "invalid email format")
     @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "Please enter a valid email address.")
     private String primary_email;
+
+    @OneToMany(mappedBy = "vendorEntity", fetch = FetchType.LAZY)
+    private List<PaymentEntity> payments;  // One vendor can have many payments (subscriptions)
 
     @Nullable
     private String password;
