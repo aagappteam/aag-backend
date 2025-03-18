@@ -112,6 +112,9 @@ public class VendorEntity {
     @Column(name = "referral_code", unique = true)
     private String referralCode;
 
+    private Integer dailyLimit;
+    private Integer publishedLimit;
+
     @Nullable
     @Column(name = "referred_count")
     private int referralCount;
@@ -171,6 +174,7 @@ public class VendorEntity {
         }
         return last_name;
     }
+
 
 }
 

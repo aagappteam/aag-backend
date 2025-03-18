@@ -19,9 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/games")
@@ -86,11 +84,6 @@ public class GameController {
     }
 
 
-
-
-
-
-
     @GetMapping("/get-games-by-vendor/{vendorId}")
     public ResponseEntity<?> getGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(value = "status", required = false) String status) {
         try {
@@ -141,7 +134,7 @@ public class GameController {
 
 
     @PostMapping("/publishGame/{vendorId}/{existinggameId}")
-    public ResponseEntity<?> publishGame(@PathVariable Long vendorId,@PathVariable Long existinggameId, @RequestBody GameRequest gameRequest) {
+    public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @PathVariable Long existinggameId, @RequestBody GameRequest gameRequest) {
         try {
 
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
@@ -150,7 +143,7 @@ public class GameController {
                 return paymentEntity;
             }
 
-            Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId,existinggameId);
+            Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId, existinggameId);
 
             if (gameRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("Game scheduled successfully", publishedGame, HttpStatus.CREATED);
@@ -211,19 +204,23 @@ public class GameController {
     }
 
     @GetMapping("/published/{vendorId}")
-    public ResponseEntity<List<Game>> getAllPublishedGamesByVendorId(@PathVariable Long vendorId) {
+    public ResponseEntity<?> getAllPublishedGamesByVendorId(@PathVariable Long vendorId) {
         try {
-            // Call the service method to get all published games for the vendor
-            List<Game> publishedGames = gameService.getAllPublishedGamesByVendorId(vendorId);
+            // Call the service method to get the vendor and published game details
+            VendorGameResponse vendorGameResponse = gameService.getVendorPublishedGames(vendorId);
 
-            // Return the list of published games with a 200 OK response
-            return ResponseEntity.ok(publishedGames);
+            // Prepare the response structure
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", vendorGameResponse);
+
+            return responseService.generateSuccessResponse("Games fetched successfully", response, HttpStatus.OK);
 
         } catch (RuntimeException e) {
-            // If no games are found or some error occurs, return an error response
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching games by vendor: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
 
 }

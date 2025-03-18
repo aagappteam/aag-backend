@@ -3,6 +3,7 @@ package aagapp_backend.services.gameservice;
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.dto.GetGameResponseDTO;
+import aagapp_backend.dto.VendorGameResponse;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.*;
@@ -10,6 +11,7 @@ import aagapp_backend.entity.game.*;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.*;
+import aagapp_backend.repository.aagavailblegames.AagAvailbleGamesRepository;
 import aagapp_backend.repository.game.*;
 
 import aagapp_backend.repository.league.LeagueRepository;
@@ -36,9 +38,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +57,9 @@ public class GameService {
 
     @Autowired
     private AagGameRepository aagGameRepository;
+
+    @Autowired
+    private AagAvailbleGamesRepository aagAvailbleGamesRepository;
 
     private final LeagueRepository leagueRepository;
 
@@ -287,29 +290,63 @@ public class GameService {
     }
 
     @Transactional
-    public List<Game> getAllPublishedGamesByVendorId(Long vendorId) {
+    public VendorGameResponse getVendorPublishedGames(Long vendorId) {
         try {
             // Fetch Vendor entity
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
             if (vendorEntity == null) {
-                throw new RuntimeException("No records found for vendor");
+                throw new RuntimeException("No records found for vendor with ID: " + vendorId);
             }
 
             // Fetch all published games for the vendor
             List<Game> games = gameRepository.findByVendorEntityAndStatus(vendorEntity, GameStatus.ACTIVE);
 
-            if (games == null || games.isEmpty()) {
-                throw new RuntimeException("No published games found for the vendor");
-            }
+            // Fetch all available games (no vendor filter)
+            List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll(); // Fetch all available games
 
-            // Return the list of published games
-            return games;
+            // Prepare the response data
+            VendorGameResponse response = new VendorGameResponse();
+            response.setVendorId(vendorEntity.getService_provider_id());
+            response.setDailyLimit(vendorEntity.getDailyLimit());
+            response.setPublishedLimit(vendorEntity.getPublishedLimit());
+
+            // Map the published games to return relevant details (image, name)
+            List<Map<String, String>> publishedGames = games.stream()
+                    .map(game -> {
+                        Map<String, String> gameMap = new HashMap<>();
+                        gameMap.put("imageUrl", game.getTheme().getImageUrl());
+                        gameMap.put("name", game.getTheme().getName());
+                        return gameMap;
+                    })
+                    .collect(Collectors.toList());
+
+            response.setPublishedGames(publishedGames);
+
+            // Map the available games to return relevant details (image, name)
+            List<Map<String, String>> availableGamesList = availableGames.stream()
+                    .map(game -> {
+                        Map<String, String> gameMap = new HashMap<>();
+                        gameMap.put("gameId", String.valueOf(game.getId()));  // Include gameId
+                        gameMap.put("gameImage", game.getGameImage());         // Include game image URL
+                        gameMap.put("gameName", game.getGameName());           // Include game name
+                        return gameMap;
+                    })
+                    .collect(Collectors.toList());
+
+            // Add available games to the response
+            response.setGames(availableGamesList); // Set available games in the response
+
+            // Return the response
+            return response;
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while fetching published games: " + e.getMessage(), e);
+            throw new RuntimeException("Error occurred while fetching games: " + e.getMessage(), e);
         }
     }
+
+
+
 
 
 
