@@ -113,11 +113,7 @@ public class VendorController {
             if (serviceProviderEntity == null) {
                 return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
             }
-            Map<String, Object> details = new HashMap<>();
-            details.put("status", ApiConstants.STATUS_SUCCESS);
-            details.put("status_code", HttpStatus.OK);
-            details.put("data", serviceProviderEntity);
-            return responseService.generateSuccessResponse("Service provider details are", details, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Service provider details are", serviceProviderEntity, HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
