@@ -1,12 +1,10 @@
 package aagapp_backend.controller.game;
 
-import aagapp_backend.dto.GameRequest;
-import aagapp_backend.dto.GameVendorDTO;
-import aagapp_backend.dto.JoinRoomRequest;
-import aagapp_backend.dto.LeaveRoomRequest;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.repository.game.PlayerRepository;
+import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -21,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -65,17 +64,31 @@ public class GameController {
     }
 
     @GetMapping("/get-all-games")
-    public ResponseEntity<?> getAllGames(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(value = "status", required = false) String status, @RequestParam(value = "vendorId", required = false) Long vendorId) {
+    public ResponseEntity<?> getAllGames(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "vendorId", required = false) Long vendorId) {
+
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<Game> gamesPage = gameService.getAllGames(status, vendorId, pageable);
-            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage, HttpStatus.OK);
+            // Assuming your service returns Page<GetGameResponseDTO>
+            Page<GetGameResponseDTO> games = gameService.getAllGames(status, vendorId, pageable);
 
+            // Extract only the content (list of games) and return it
+            List<GetGameResponseDTO> gameList = games.getContent();
+
+            return responseService.generateSuccessResponse("Games fetched successfully", gameList, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Error fetching games", HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
+
+
+
 
 
     @GetMapping("/get-games-by-vendor/{vendorId}")

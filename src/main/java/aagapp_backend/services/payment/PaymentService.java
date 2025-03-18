@@ -3,6 +3,7 @@ package aagapp_backend.services.payment;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
 import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
@@ -50,9 +51,16 @@ public class PaymentService {
     }
 
 
+//    @todo:_ Need to rework on this according to level and plan details
     @Transactional
     public PaymentEntity createPayment(PaymentEntity paymentRequest, Long vendorId) {
         VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
+
+        Long planId = paymentRequest.getPlanId(); // Get planId from the payment request
+        PlanEntity planEntity = entityManager.find(PlanEntity.class, planId);
+        if (planEntity == null) {
+            throw new RuntimeException("Invalid plan ID: " + planId);
+        }
 
         if (existingVendor == null) {
             throw new RuntimeException("Vendor not found with ID: " + vendorId);
@@ -60,14 +68,20 @@ public class PaymentService {
 
         // Associate the vendor with the payment
         paymentRequest.setVendorEntity(existingVendor);
+        paymentRequest.setPlanId(planEntity.getId());
+        paymentRequest.setAmount(planEntity.getPrice()); // Set the amount based on the plan price
+        if(vendorId != null){
+            VendorLevelPlan level = existingVendor.getVendorLevelPlan();
+            Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
+
+            System.out.println(level.getDailyGameLimit() +" fdvc x   " + dailyGameLimit);
+
+            paymentRequest.setDailyLimit(level.getDailyGameLimit());
+        }
+        paymentRequest.setPlanDuration(planEntity.getPlanVariant());
 
         // Generate a unique transaction ID
         paymentRequest.setTransactionId(UUID.randomUUID().toString());
-
-        /*// Set default daily limit if not provided
-        if (paymentRequest.getDailyLimit() == null) {
-            paymentRequest.setDailyLimit(5);  // Default to 5 if not set
-        }*/
 
         // Set status to ACTIVE by default
         paymentRequest.setStatus(PaymentStatus.ACTIVE);
@@ -98,6 +112,22 @@ public class PaymentService {
         entityManager.persist(existingVendor);
         return paymentRepository.save(paymentRequest);
     }
+
+    private Integer extractDailyGameLimit(List<String> features) {
+        for (String feature : features) {
+            if (feature.toLowerCase().contains("daily game publish limit")) {
+                // Extract the number from the feature string (e.g., "Updated Daily Game Publish Limit: 10")
+                return extractNumberFromString(feature);
+            }
+        }
+        return 0; // Default value if no match found
+    }
+
+    private Integer extractNumberFromString(String text) {
+        String number = text.replaceAll("[^0-9]", ""); // Remove non-numeric characters
+        return number.isEmpty() ? 0 : Integer.parseInt(number);
+    }
+
 
     // Update referrer wallet balance
     private void updateReferrerWallet(VendorEntity referrer, double amount) {

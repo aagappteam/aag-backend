@@ -1,6 +1,7 @@
 package aagapp_backend.dto;
 
 import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.PaymentType;
 import lombok.AllArgsConstructor;
@@ -28,11 +29,11 @@ public class PaymentDTO {
     private Boolean isTest;
 
 
-    public PaymentDTO(PaymentEntity payment) {
+    public PaymentDTO(PaymentEntity payment, PlanEntity planEntity) {
         this.id = payment.getId();
         this.transactionId = payment.getTransactionId();
         this.amount = payment.getAmount();
-        this.planName = payment.getPlanName();
+        this.planName = planEntity != null ? planEntity.getPlanName() : null;  // Get the name from PlanEntity
         this.dailyLimit = payment.getDailyLimit();
         this.status = payment.getStatus();
         this.createdAt = payment.getCreatedAt();

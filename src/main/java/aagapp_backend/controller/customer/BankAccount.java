@@ -22,7 +22,6 @@ import java.util.Optional;
 @RequestMapping("user-bank")
 public class BankAccount {
 
-
     @Autowired
     private BankAccountService bankAccountService;
 
