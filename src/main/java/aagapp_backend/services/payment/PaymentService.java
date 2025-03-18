@@ -62,9 +62,6 @@ public class PaymentService {
             throw new RuntimeException("Invalid plan ID: " + planId);
         }
 
-
-        // Check if the vendor is already in the "suspended" status
-
         if (existingVendor == null) {
             throw new RuntimeException("Vendor not found with ID: " + vendorId);
         }
@@ -75,7 +72,6 @@ public class PaymentService {
         paymentRequest.setAmount(planEntity.getPrice()); // Set the amount based on the plan price
         if(vendorId != null){
             VendorLevelPlan level = existingVendor.getVendorLevelPlan();
-            System.out.println(level.getDailyGameLimit() +" fdvcx");
             Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
 
             System.out.println(level.getDailyGameLimit() +" fdvc x   " + dailyGameLimit);

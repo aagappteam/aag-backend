@@ -98,7 +98,6 @@ public class PlanController {
                 System.out.println(vendor.getPayments() + " frds");
                 if (vendor != null && vendor.getPayments() != null) {
                     List<PaymentEntity> payments = vendor.getPayments();
-                    System.out.println("Total Payments: " + payments.size());
 
                     Optional<PaymentEntity> activePayment = payments
                             .stream()
@@ -109,12 +108,6 @@ public class PlanController {
                             })
                             .findFirst();
 
-                    System.out.println("Active Payment Found: " + activePayment.isPresent());
-
-
-                    System.out.println("Active Payment Found: " + activePayment.isPresent());
-
-                    System.out.println(activePayment.isPresent() + " activePayment.isPresent()");
 
                     if (activePayment.isPresent()) {
                         Long planId = activePayment.get().getPlanId();
