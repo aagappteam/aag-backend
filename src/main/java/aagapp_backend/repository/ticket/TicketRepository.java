@@ -12,11 +12,10 @@ import java.util.List;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findAll();
 
-    // Get tickets by customer ID
-    List<Ticket> findByCustomer(CustomCustomer customer);
+    List<Ticket> findByVendorId(Long vendorId);
 
-    // Get tickets by vendor ID
-    List<Ticket> findByVendor(VendorEntity vendor);
+    // Query to find tickets by customerId
+    List<Ticket> findByCustomerId(Long customerId);
 
     List<Ticket> findByStatus(String status);
 }
