@@ -177,8 +177,11 @@ public class GameService {
                 throw new RuntimeException("game is not available");
             }
 //        check from gamerequestgamename that existing game exists or not for same vendor
+            Optional<AagAvailableGames> gameAvailable= aagGameRepository.findById(existinggameId);
+            game.setImageUrl(gameAvailable.get().getGameImage());
 
 //           game.setName(gameRequest.getName());
+
 
             // Fetch Vendor and Theme Entities
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
@@ -344,10 +347,7 @@ public class GameService {
             throw new RuntimeException("Error occurred while fetching games: " + e.getMessage(), e);
         }
     }
-
-
-
-
+    
 
 
     @Transactional
@@ -504,6 +504,7 @@ public class GameService {
                             game.getStatus(),
                             game.getShareableLink(),
                             game.getAaggameid(),
+                            game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
                             game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
