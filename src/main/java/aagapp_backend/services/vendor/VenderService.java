@@ -25,4 +25,5 @@ public interface VenderService {
     VendorEntity saveOrUpdate(VendorEntity vendorEntity);
     List<VendorEntity> getTopInvitiesVendor();
 
+    Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId);
 }

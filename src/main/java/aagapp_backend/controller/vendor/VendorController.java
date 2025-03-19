@@ -376,7 +376,7 @@ public class VendorController {
         }
     }
 
-    @GetMapping("/get-top-invites")
+   /* @GetMapping("/get-top-invites")
     public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
         try {
             String jwtToken = token.replace("Bearer ", "");
@@ -436,6 +436,74 @@ public class VendorController {
                 put("status_code", 500);
             }}, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+*/
+
+    @GetMapping("/get-top-invites")
+    public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+
+            // Fetch both authenticated vendor and top vendors in one call
+            Map<String, Object> result = vendorService.getTopInvitiesVendorWithAuth(authorizedVendorId);
+
+            VendorEntity authenticatedVendor = (VendorEntity) result.get("authenticatedVendor");
+            List<VendorEntity> topInvities = (List<VendorEntity>) result.get("topInvities");
+
+            // If there are no top invitees, return empty data
+            if (topInvities.isEmpty()) {
+                return createResponse(authenticatedVendor, new ArrayList<>());
+            }
+
+            // Prepare the top invitees data
+            List<Map<String, Object>> topInvitees = new ArrayList<>();
+            int rank = 1;
+            for (VendorEntity vendor : topInvities) {
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("price", vendor.getWalletBalance());
+                vendorData.put("rank", rank++);
+                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic())
+                        .orElse("https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg"));
+                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                        .map(firstName -> firstName + " " + vendor.getLast_name())
+                        .orElse(null));
+
+                topInvitees.add(vendorData);
+            }
+
+            // Prepare the final response
+            return createResponse(authenticatedVendor, topInvitees);
+        } catch (Exception e) {
+            // Handle exception
+            exceptionHandling.handleException(e);
+            return new ResponseEntity<>(Map.of(
+                    "status", "ERROR",
+                    "message", e.getMessage(),
+                    "status_code", 500
+            ), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    private ResponseEntity<?> createResponse(VendorEntity authenticatedVendor, List<Map<String, Object>> topInvitees) {
+        Map<String, Object> data = Map.of(
+                "total_earning", authenticatedVendor.getWalletBalance(),
+                "referral_code", authenticatedVendor.getReferralCode(),
+                "total_referrals", authenticatedVendor.getReferralCount(),
+                "top_invitees", topInvitees,
+                "message", "Top vendors fetched successfully!"
+        );
+
+        Map<String, Object> response = Map.of(
+                "status", "OK",
+                "data", data,
+                "message", "Top vendors fetched successfully!",
+                "status_code", 200
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 

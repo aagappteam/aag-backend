@@ -720,13 +720,48 @@ public class VenderServiceImpl implements VenderService {
         return referralDTOs;
     }
 
-    @Override
+/*    @Override
     public List<VendorEntity> getTopInvitiesVendor() {
         // Fetch all vendors sorted by referral amount in descending order and limit the results to top 3
         List<VendorEntity> vendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("walletBalance")));
 
         // Limit the list to top 3 vendors
         return vendors.stream().limit(3).collect(Collectors.toList());
+    }*/
+
+   @Override
+    public List<VendorEntity> getTopInvitiesVendor() {
+        // Fetch only the top 3 vendors sorted by walletBalance in descending order
+        return vendorRepository.findTop3ByOrderByWalletBalanceDesc();
+    }
+
+   /* public List<VendorEntity> getTopInvitiesVendor() {
+        String query = "SELECT v FROM VendorEntity v " +
+                "LEFT JOIN FETCH v.profilePic " +
+                "LEFT JOIN FETCH v.firstName " +
+                "LEFT JOIN FETCH v.lastName " +
+                "ORDER BY v.walletBalance DESC";
+
+        return entityManager.createQuery(query, VendorEntity.class)
+                .setMaxResults(3)
+                .getResultList();
+    }*/
+
+
+    @Override
+    public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
+        // Fetch the authenticated vendor
+        VendorEntity authenticatedVendor = getServiceProviderById(authorizedVendorId);
+
+        // Fetch top 3 vendors sorted by wallet balance
+        List<VendorEntity> topInvities = vendorRepository.findTop3ByOrderByWalletBalanceDesc();
+
+        // Prepare the result map
+        Map<String, Object> result = new HashMap<>();
+        result.put("authenticatedVendor", authenticatedVendor);
+        result.put("topInvities", topInvities);
+
+        return result;
     }
 
 
