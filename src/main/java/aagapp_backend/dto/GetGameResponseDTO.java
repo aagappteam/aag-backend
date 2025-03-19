@@ -16,6 +16,7 @@ public class GetGameResponseDTO {
     private GameStatus status;
     private String shareableLink;
     private Long aaggameid;
+    private String gameIcon;
 
     private String themeName;
     private String themeImageUrl;
