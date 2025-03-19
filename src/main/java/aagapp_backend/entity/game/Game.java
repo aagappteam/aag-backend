@@ -48,6 +48,11 @@ public class Game {
     @Enumerated(EnumType.STRING)
     private GameStatus status;
 
+    private String name;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
     private String shareableLink;
 
     @Column(name = "aaggameid", nullable = true)
