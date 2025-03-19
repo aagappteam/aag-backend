@@ -750,13 +750,10 @@ public class VenderServiceImpl implements VenderService {
 
     @Override
     public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
-        // Fetch the authenticated vendor
         VendorEntity authenticatedVendor = getServiceProviderById(authorizedVendorId);
 
         // Fetch top 3 vendors sorted by wallet balance
         List<VendorEntity> topInvities = vendorRepository.findTop3ByOrderByWalletBalanceDesc();
-
-        // Prepare the result map
         Map<String, Object> result = new HashMap<>();
         result.put("authenticatedVendor", authenticatedVendor);
         result.put("topInvities", topInvities);

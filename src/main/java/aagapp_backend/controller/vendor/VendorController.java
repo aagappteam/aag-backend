@@ -445,7 +445,7 @@ public class VendorController {
             String jwtToken = token.replace("Bearer ", "");
             Long authorizedVendorId = jwtUtil.extractId(jwtToken);
 
-            // Fetch both authenticated vendor and top vendors in one call
+            // Fetching both authenticated vendor and top vendors in one call
             Map<String, Object> result = vendorService.getTopInvitiesVendorWithAuth(authorizedVendorId);
 
             VendorEntity authenticatedVendor = (VendorEntity) result.get("authenticatedVendor");
@@ -473,10 +473,8 @@ public class VendorController {
                 topInvitees.add(vendorData);
             }
 
-            // Prepare the final response
             return createResponse(authenticatedVendor, topInvitees);
         } catch (Exception e) {
-            // Handle exception
             exceptionHandling.handleException(e);
             return new ResponseEntity<>(Map.of(
                     "status", "ERROR",

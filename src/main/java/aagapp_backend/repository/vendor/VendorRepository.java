@@ -11,7 +11,7 @@ import java.util.List;
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
 
-    @EntityGraph(attributePaths = {"profilePic", "firstName", "lastName"})
+    @EntityGraph(attributePaths = {"profilePic", "first_name", "last_name"})
     List<VendorEntity> findTop3ByOrderByWalletBalanceDesc();
 
 
