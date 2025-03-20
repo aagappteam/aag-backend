@@ -15,19 +15,10 @@ public interface VenderService {
     VendorEntity saveServiceProvider(VendorEntity VendorEntity);
     ResponseEntity<?> updateServiceProvider(Long userId, @RequestBody Map<String, Object> updates) throws Exception;
     VendorEntity getServiceProviderById(Long userId);
-
-
-
     VendorEntity  findServiceProviderByPhone(String mobileNumber, String countryCode);
-
     ResponseEntity<?> loginWithPassword(Map<String, Object> loginDetails, HttpServletRequest request, HttpSession session);
-
     ResponseEntity<?> sendOtp(String mobileNumber, String countryCode, HttpSession session);
-
     VendorEntity saveOrUpdate(VendorEntity vendorEntity);
     List<VendorEntity> getTopInvitiesVendor();
-
-
-
     Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId);
 }
