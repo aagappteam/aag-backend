@@ -13,6 +13,7 @@ import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
+import aagapp_backend.services.vendor.VenderServiceImpl;
 import aagapp_backend.services.vendor.VendorBankAccountService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -36,6 +37,9 @@ public class VendorController {
 
     @Autowired
     private VendorBankAccountService bankAccountService;
+
+    @Autowired
+    private VenderServiceImpl serviceProviderService;
 
     @Autowired
     private EntityManager entityManager;
@@ -113,7 +117,11 @@ public class VendorController {
             if (serviceProviderEntity == null) {
                 return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
             }
-            return responseService.generateSuccessResponse("Service provider details are", serviceProviderEntity, HttpStatus.OK);
+            Map<String, Object> responseBody = serviceProviderService.VendorDetails( serviceProviderEntity).getBody();
+
+
+            return ResponseEntity.ok(responseBody);
+//            return responseService.generateSuccessResponse("Service provider details are", responseBody, HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
@@ -465,7 +473,7 @@ public class VendorController {
                 vendorData.put("price", vendor.getWalletBalance());
                 vendorData.put("rank", rank++);
                 vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic())
-                        .orElse("https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg"));
+                        .orElse(Constant.PROFILE_IMAGE_URL));
                 vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
                         .map(firstName -> firstName + " " + vendor.getLast_name())
                         .orElse(null));

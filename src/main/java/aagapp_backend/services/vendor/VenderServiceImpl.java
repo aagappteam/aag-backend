@@ -398,6 +398,7 @@ public class VenderServiceImpl implements VenderService {
      */
     @Override
     public VendorEntity getServiceProviderById(Long userId) {
+
         return entityManager.find(VendorEntity.class, userId);
     }
 
@@ -452,6 +453,25 @@ public class VenderServiceImpl implements VenderService {
         return ResponseEntity.ok(responseBody);
     }
 
+    public ResponseEntity<Map<String, Object>> VendorDetails(VendorEntity vendorEntity) {
+        Map<String, Object> responseBody = new HashMap<>();
+
+        List<ReferralDTO> sentReferrals = getSentReferrals(vendorEntity.getService_provider_id());
+        ReferralDTO receivedReferral = getReceivedReferral(vendorEntity.getService_provider_id());
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("venderDetails", vendorEntity);
+        data.put("sentReferrals", sentReferrals);
+        data.put("receivedReferral", receivedReferral); // Assuming this is a single referral
+        responseBody.put("status_code", HttpStatus.OK.value());
+        responseBody.put("data", data);
+        responseBody.put("token", vendorEntity.getToken());
+        responseBody.put("message", "Service provider details are");
+        responseBody.put("status", "OK");
+
+        return ResponseEntity.ok(responseBody);
+    }
+
     public VendorEntity findSPbyEmail(String email) {
 
         return entityManager.createQuery(Constant.SP_EMAIL_QUERY, VendorEntity.class)
@@ -490,7 +510,6 @@ public class VenderServiceImpl implements VenderService {
                 return responseService.generateErrorResponse("Invalid Data Provided ", HttpStatus.UNAUTHORIZED);
 
             }
-            System.out.println("existingServiceProvider  " + existingServiceProvider);
 
             String storedOtp = existingServiceProvider.getOtp();
             String ipAddress = request.getRemoteAddr();
@@ -507,6 +526,7 @@ public class VenderServiceImpl implements VenderService {
                     String newReferralCode = referralService.generateVendorReferralCode(existingServiceProvider);
                     existingServiceProvider.setReferralCode(newReferralCode);
                 }
+
 
                 entityManager.merge(existingServiceProvider);
                 String existingToken = existingServiceProvider.getToken();

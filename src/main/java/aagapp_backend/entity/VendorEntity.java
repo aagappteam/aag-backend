@@ -33,7 +33,7 @@ import java.util.List;
         @Index(name = "idx_vendor_mobile_number", columnList = "mobileNumber"),
         @Index(name = "idx_vendor_created_date", columnList = "created_date"),
         @Index(name = "idx_vendor_league_status", columnList = "league_status"),
-        @Index(name = "idx_vendor_is_verified", columnList = "is_verified"),
+        @Index(name = "idx_vendor_is_verified", columnList = "isVerified"),
         @Index(name = "idx_vendor_wallet_balance", columnList = "wallet_balance")
 
 })
