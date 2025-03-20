@@ -13,6 +13,7 @@ import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
+import aagapp_backend.services.vendor.VenderServiceImpl;
 import aagapp_backend.services.vendor.VendorBankAccountService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -36,6 +37,9 @@ public class VendorController {
 
     @Autowired
     private VendorBankAccountService bankAccountService;
+
+    @Autowired
+    private VenderServiceImpl serviceProviderService;
 
     @Autowired
     private EntityManager entityManager;
@@ -113,7 +117,11 @@ public class VendorController {
             if (serviceProviderEntity == null) {
                 return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
             }
-            return responseService.generateSuccessResponse("Service provider details are", serviceProviderEntity, HttpStatus.OK);
+            Map<String, Object> responseBody = serviceProviderService.VendorDetails( serviceProviderEntity).getBody();
+
+
+            return ResponseEntity.ok(responseBody);
+//            return responseService.generateSuccessResponse("Service provider details are", responseBody, HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
@@ -376,7 +384,7 @@ public class VendorController {
         }
     }
 
-    @GetMapping("/get-top-invites")
+   /* @GetMapping("/get-top-invites")
     public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
         try {
             String jwtToken = token.replace("Bearer ", "");
@@ -436,6 +444,72 @@ public class VendorController {
                 put("status_code", 500);
             }}, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+*/
+
+    @GetMapping("/get-top-invites")
+    public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+
+            // Fetching both authenticated vendor and top vendors in one call
+            Map<String, Object> result = vendorService.getTopInvitiesVendorWithAuth(authorizedVendorId);
+
+            VendorEntity authenticatedVendor = (VendorEntity) result.get("authenticatedVendor");
+            List<VendorEntity> topInvities = (List<VendorEntity>) result.get("topInvities");
+
+            // If there are no top invitees, return empty data
+            if (topInvities.isEmpty()) {
+                return createResponse(authenticatedVendor, new ArrayList<>());
+            }
+
+            // Prepare the top invitees data
+            List<Map<String, Object>> topInvitees = new ArrayList<>();
+            int rank = 1;
+            for (VendorEntity vendor : topInvities) {
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("price", vendor.getWalletBalance());
+                vendorData.put("rank", rank++);
+                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic())
+                        .orElse(Constant.PROFILE_IMAGE_URL));
+                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                        .map(firstName -> firstName + " " + vendor.getLast_name())
+                        .orElse(null));
+
+                topInvitees.add(vendorData);
+            }
+
+            return createResponse(authenticatedVendor, topInvitees);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return new ResponseEntity<>(Map.of(
+                    "status", "ERROR",
+                    "message", e.getMessage(),
+                    "status_code", 500
+            ), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    private ResponseEntity<?> createResponse(VendorEntity authenticatedVendor, List<Map<String, Object>> topInvitees) {
+        Map<String, Object> data = Map.of(
+                "total_earning", authenticatedVendor.getWalletBalance(),
+                "referral_code", authenticatedVendor.getReferralCode(),
+                "total_referrals", authenticatedVendor.getReferralCount(),
+                "top_invitees", topInvitees,
+                "message", "Top vendors fetched successfully!"
+        );
+
+        Map<String, Object> response = Map.of(
+                "status", "OK",
+                "data", data,
+                "message", "Top vendors fetched successfully!",
+                "status_code", 200
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 

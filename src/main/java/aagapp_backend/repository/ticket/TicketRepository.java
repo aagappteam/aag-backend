@@ -4,6 +4,8 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.ticket.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,10 +14,19 @@ import java.util.List;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findAll();
 
-    List<Ticket> findByVendorId(Long vendorId);
+//    List<Ticket> findByVendorId(Long vendorId);
 
     // Query to find tickets by customerId
-    List<Ticket> findByCustomerId(Long customerId);
+//    List<Ticket> findByCustomerId(Long customerId);
+
+    @Query("SELECT t FROM Ticket t WHERE t.vendorId = :id ORDER BY t.createdDate DESC")
+    List<Ticket> findByVendorId(@Param("id") Long vendorId);
+
+
+
+    @Query("SELECT t FROM Ticket t WHERE t.customerId = :id ORDER BY t.createdDate DESC")
+    List<Ticket> findByCustomerId(@Param("id") Long customerId);
+
 
     List<Ticket> findByStatus(String status);
 }

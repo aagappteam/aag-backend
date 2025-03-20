@@ -208,6 +208,7 @@ public class OtpEndpoint {
                     return responseService.generateErrorResponse("otp is null ", HttpStatus.BAD_REQUEST);
                 }
 
+
                 CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
 
                 if (existingCustomer == null) {
