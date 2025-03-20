@@ -102,7 +102,7 @@ public class PaymentController {
             // Retrieve payments and check for empty list
             List<PaymentEntity> payments = paymentService.findActivePlansByVendorId(vendorId);
             if (payments.isEmpty()) {
-                return responseService.generateResponse(HttpStatus.NOT_FOUND,"No transactions found for this vendor", null);
+                return responseService.generateResponse(HttpStatus.OK,"No transactions found for this vendor", null);
             }
 
             // Map to DTO for response
@@ -161,7 +161,7 @@ public class PaymentController {
             // Retrieve transactions with pagination and optional reference filter
             List<PaymentEntity> transactions = paymentService.getTransactionsByVendorId(vendorId, page, size, transactionReference);
             if (transactions.isEmpty()) {
-                return responseService.generateResponse(HttpStatus.NOT_FOUND,"No transactions found for this vendor", null);
+                return responseService.generateResponse(HttpStatus.OK,"No transactions found for this vendor", null);
             }
 
             // Map to DTO for response
@@ -214,7 +214,7 @@ public class PaymentController {
             // Retrieve transactions and check for empty list
             List<PaymentEntity> transactions = paymentService.getAllTransactionsByVendorName(vendorName, page, size, transactionReference);
             if (transactions.isEmpty()) {
-                return responseService.generateErrorResponse("No transactions found for this vendor", HttpStatus.NOT_FOUND);
+                return responseService.generateErrorResponse("No transactions found for this vendor", HttpStatus.OK);
             }
 
             // Map to DTO for response

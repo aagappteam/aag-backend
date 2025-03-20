@@ -228,6 +228,8 @@ public class GameService {
             if (gameRequest.getMaxPlayersPerTeam() != null) {
                 game.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
             }
+            vendorEntity.setPublishedLimit(vendorEntity.getPublishedLimit()+1);
+
 
             // Set created and updated timestamps
             game.setCreatedDate(nowInKolkata);

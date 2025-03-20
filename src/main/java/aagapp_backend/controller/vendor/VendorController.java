@@ -26,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/vendor")
@@ -465,7 +466,7 @@ public class VendorController {
             }
 
             // Prepare the top invitees data
-            List<Map<String, Object>> topInvitees = new ArrayList<>();
+/*            List<Map<String, Object>> topInvitees = new ArrayList<>();
             int rank = 1;
             for (VendorEntity vendor : topInvities) {
                 Map<String, Object> vendorData = new HashMap<>();
@@ -479,7 +480,20 @@ public class VendorController {
                         .orElse(null));
 
                 topInvitees.add(vendorData);
-            }
+            }*/
+
+            List<Map<String, Object>> topInvitees = topInvities.stream().map(vendor -> {
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("price", vendor.getWalletBalance());
+                vendorData.put("rank", topInvities.indexOf(vendor) + 1);
+                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                        .map(firstName -> firstName + " " + vendor.getLast_name())
+                        .orElse(null));
+
+                return vendorData;
+            }).collect(Collectors.toList());
 
             return createResponse(authenticatedVendor, topInvitees);
         } catch (Exception e) {
