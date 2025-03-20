@@ -14,7 +14,15 @@ import org.hibernate.annotations.CurrentTimestamp;
 import java.util.Date;
 
 @Entity
-@Table(name = "tickets")
+@Table(name = "tickets", indexes = {
+        @Index(name = "idx_ticket_id", columnList = "ticketId"),
+
+        @Index(name = "idx_customer_id_ticket", columnList = "customerId"),
+        @Index(name = "idx_vendor_id_ticket", columnList = "vendorId"),
+        @Index(name = "idx_role_ticket", columnList = "role"),
+        @Index(name = "idx_status_ticket", columnList = "status"),
+        @Index(name = "idx_created_date_ticket", columnList = "created_date")
+})
 @Getter
 @Setter
 @NoArgsConstructor
