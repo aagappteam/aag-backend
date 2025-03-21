@@ -21,4 +21,5 @@ public class FAQs {
     private String category;
     private String question;
     private String answer;
+    private String createdFor;
 }
