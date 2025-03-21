@@ -80,7 +80,8 @@ public class LeagueController {
             Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId);
 
             if (leaguesPage.isEmpty()) {
-                return responseService.generateErrorResponse(ApiConstants.NO_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+                return responseService.generateResponse(HttpStatus.OK,ApiConstants.NO_RECORDS_FOUND, null);
+
             }
 
             return responseService.generateSuccessResponse("Leagues fetched successfully", leaguesPage, HttpStatus.OK);

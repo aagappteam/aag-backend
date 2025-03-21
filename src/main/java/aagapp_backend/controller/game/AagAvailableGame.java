@@ -7,9 +7,12 @@ import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import java.util.List;
 
 @RestController
@@ -27,6 +30,8 @@ public class AagAvailableGame {
 
     // Create a new game
     @PostMapping("/create")
+    @CacheEvict(value = "gamesCache", allEntries = true) // Clears the cache when a new game is created
+
     public ResponseEntity<?> createGame(@RequestBody GameRequestDTO gameRequestDTO) {
         try {
             GameResponseDTO gameResponseDTO = gameService.createGame(gameRequestDTO);
@@ -40,6 +45,8 @@ public class AagAvailableGame {
 
     // Get all games with pagination (optional)
     @GetMapping("/get-all-games")
+    @Cacheable(value = "gamesCache", key = "#page + '-' + #size") // Caches the response based on page and size
+
     public ResponseEntity<?> getAllGames(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
@@ -56,6 +63,8 @@ public class AagAvailableGame {
 
     // Get a game by ID
     @GetMapping("get-one-game/{gameId}")
+    @Cacheable(value = "gameCache", key = "#gameId") // Caches the response based on the game ID
+
     public ResponseEntity<?> getGameById(@PathVariable Long gameId) {
         try {
             GameResponseDTO gameResponseDTO = gameService.getGameById(gameId);
@@ -73,6 +82,7 @@ public class AagAvailableGame {
 
     // Update a game
     @PutMapping("/update-game/{gameId}")
+    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
     public ResponseEntity<?> updateGame(@PathVariable Long gameId, @RequestBody GameRequestDTO gameRequestDTO) {
         try {
             GameResponseDTO updatedGame = gameService.updateGame(gameId, gameRequestDTO);
@@ -89,6 +99,7 @@ public class AagAvailableGame {
 
     // Delete a game
     @DeleteMapping("/delete-aag-game/{gameId}")
+    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
     public ResponseEntity<?> deleteGame(@PathVariable Long gameId) {
         try {
             gameService.deleteGame(gameId);

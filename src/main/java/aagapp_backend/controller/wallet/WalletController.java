@@ -107,7 +107,8 @@ public class WalletController {
             // Call the wallet service to retrieve the balance
             ResponseEntity<?> wallet = walletService.getBalanceToWallet(customerId);
             if (wallet == null) {
-                return responseService.generateErrorResponse("No wallet found for customer with ID " + customerId, HttpStatus.NOT_FOUND);
+                return responseService.generateResponse(HttpStatus.OK, "No wallet found for the user" ,null);
+
             }
 
             return responseService.generateSuccessResponse("Wallet balance retrieved successfully", wallet.getBody(), HttpStatus.OK);
