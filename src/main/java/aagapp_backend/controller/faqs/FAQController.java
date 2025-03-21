@@ -20,13 +20,14 @@ public class FAQController {
     @Autowired
     private FAQService faqService;
 
-    // 1. Get all FAQs with optional filters for question and answer
-    @GetMapping("/allFaqs")
-    public ResponseEntity<?> getFAQs(@RequestParam(required = false) String questionFilter,
-                                     @RequestParam(required = false) String answerFilter) {
+    // 1. Get all FAQs for user or vendor with optional filters for question and answer
+    @GetMapping("/allFaqs/{createdFor}")
+    public ResponseEntity<?> getFAQsByCreatedFor(@PathVariable String createdFor,
+                                                 @RequestParam(required = false) String questionFilter,
+                                                 @RequestParam(required = false) String answerFilter) {
         try {
-            // Fetch FAQs grouped by category
-            Map<String, List<FAQs>> faqsGroupedByCategory = faqService.getFAQsGroupedByCategory(questionFilter, answerFilter);
+            // Fetch FAQs for the specified createdFor (user or vendor), grouped by category
+            Map<String, List<FAQs>> faqsGroupedByCategory = faqService.getFAQsGroupedByCategoryForCreatedFor(createdFor, questionFilter, answerFilter);
 
             // Build the response format
             List<Map<String, Object>> responseList = new ArrayList<>();
@@ -56,7 +57,6 @@ public class FAQController {
             return ResponseService.generateErrorResponse("Error fetching FAQs: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
-
 
 
 }
