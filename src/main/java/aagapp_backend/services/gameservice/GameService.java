@@ -111,7 +111,7 @@ public class GameService {
 
 
 
-    /*@Scheduled(cron = "0 * * * * *")  // Every minute
+    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
         int pageSize = 1000;
@@ -121,13 +121,14 @@ public class GameService {
             System.out.println("Scheduled task checkAndActivateScheduledGames started  " + vendorIds);
 
             for (Long vendorId : vendorIds) {
-                updateGameStatusToActive(vendorId);
-                updateLeagueStatusToActive(vendorId);
+                updateGameAndLeagueStatuses(vendorId);
+              /*  updateGameStatusToActive(vendorId);
+                updateLeagueStatusToActive(vendorId);*/
 
             }
             page++;
         }
-    }*/
+    }
 
 /*    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
@@ -148,7 +149,7 @@ public class GameService {
         }
     }*/
 
-    @Scheduled(cron = "0 * * * * *")  // Every minute
+   /* @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
         int pageSize = 100;
@@ -165,7 +166,7 @@ public class GameService {
                 for (Long vendorId : vendorIds) {
                     executorService.submit(() -> {
                         try {
-                           /* updateGameAndLeagueStatuses(vendorId);*/
+                           *//* updateGameAndLeagueStatuses(vendorId);*//*
 
                             updateGameStatusToActive(vendorId);
                             updateLeagueStatusToActive(vendorId);
@@ -185,7 +186,7 @@ public class GameService {
             shutdownExecutorService(executorService);
         }
     }
-
+*/
 /*    private void updateAllStatuses(Long vendorId) {
         // Combine your update methods into a single method for efficiency
         updateGameStatusToActive(vendorId);
