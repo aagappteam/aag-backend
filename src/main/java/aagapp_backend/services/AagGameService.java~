@@ -111,11 +111,12 @@ public class AagGameService {
             newPrice.setPriceValue(priceRequestDTO.getPriceValue());
 
             // Associate the PriceEntity with the game (many-to-many relationship)
-            newPrice.getGames().add(newGame);  // Add the game to the price entity
+            newPrice.getGames().add(newGame); // Add the game to the price entity
             prices.add(newPrice); // Add the price to the list
+            PriceEntity price = priceRepository.save(newPrice);
+            prices.add(price); // Add the price to the list
 
-            // Save price after associating with game
-            priceRepository.save(newPrice);  // Save price after associating with game
+            // Don't save price yet; wait until the games are fully associated with the price entity
         }
 
         // Set the prices to the game entity (many-to-many relationship)

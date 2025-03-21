@@ -13,4 +13,7 @@ public class GameRequestDTO {
     private String gameImage;
     private List<ThemeRequestDTO> themes;  // List of themes with id and imageUrl
     private GameStatus gameStatus;
+    private Integer minRange;
+    private Integer maxRange;
+    private List<PriceRequestDTO> prices;
 }

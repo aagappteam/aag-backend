@@ -40,6 +40,7 @@ public class AagAvailableGames {
     @Column(nullable = false)
     private String gameImage;
 
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "game_themes",
@@ -48,6 +49,32 @@ public class AagAvailableGames {
     )
     @JsonManagedReference
     private List<ThemeEntity> themes;
+
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "game_prices",
+            joinColumns = @JoinColumn(name = "game_id"),
+            inverseJoinColumns = @JoinColumn(name = "price_id")
+    )
+    @JsonManagedReference
+    private List<PriceEntity> price;
+
+
+   /* @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "game_prices",
+            joinColumns = @JoinColumn(name = "game_id"),
+            inverseJoinColumns = @JoinColumn(name = "price_id")
+    )
+    @JsonManagedReference
+    private List<PriceEntity> price;*/
+
+    @Column(name = "minRange", nullable = false)
+    private Integer minRange = 2;
+
+    @Column(name = "maxRange", nullable = false)
+    private Integer maxRange = 1024;
 
 
     @Column(nullable = false)

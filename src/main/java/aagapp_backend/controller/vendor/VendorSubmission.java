@@ -31,6 +31,9 @@ public class VendorSubmission {
     @Autowired
     private ExceptionHandlingImplement exceptionHandlingImplement;
 
+    @Autowired
+    private ResponseService responseService;
+
     @GetMapping("/get/{id}")
     public ResponseEntity<?> getVendorSubmissionById(@PathVariable Long id) {
         try {
@@ -38,7 +41,8 @@ public class VendorSubmission {
 
 
             if (vendorSubmission == null) {
-                return ResponseService.generateErrorResponse("No submission found with the provided ID", HttpStatus.NOT_FOUND);
+                return responseService.generateResponse(HttpStatus.OK, "No submission found with the provided ID" ,null);
+
             }
 
             return ResponseService.generateSuccessResponse("Vendor submission fetched successfully", vendorSubmission, HttpStatus.OK);
@@ -84,10 +88,9 @@ public class VendorSubmission {
             List<VendorSubmissionEntity> submissions = submissionService.getSubmissionsByStatus(status);
 
             if (submissions.isEmpty()) {
-                return ResponseService.generateErrorResponse(
-                        "No Data found",
-                        HttpStatus.NOT_FOUND
-                );
+                return responseService.generateResponse(HttpStatus.OK, "No Data found" ,null);
+
+
             }
 
             return ResponseService.generateSuccessResponse(

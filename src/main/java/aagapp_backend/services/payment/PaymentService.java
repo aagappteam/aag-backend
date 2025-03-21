@@ -76,6 +76,7 @@ public class PaymentService {
 
             System.out.println(level.getDailyGameLimit() +" fdvc x   " + dailyGameLimit);
 
+            existingVendor.setDailyLimit(level.getDailyGameLimit());
             paymentRequest.setDailyLimit(level.getDailyGameLimit());
         }
         paymentRequest.setPlanDuration(planEntity.getPlanVariant());

@@ -4,6 +4,7 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.PaymentDTO;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
+import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentService;
@@ -102,7 +103,7 @@ public class PaymentController {
             // Retrieve payments and check for empty list
             List<PaymentEntity> payments = paymentService.findActivePlansByVendorId(vendorId);
             if (payments.isEmpty()) {
-                return responseService.generateResponse(HttpStatus.NOT_FOUND,"No transactions found for this vendor", null);
+                return responseService.generateResponse(HttpStatus.OK,"No transactions found for this vendor", null);
             }
 
             // Map to DTO for response
@@ -161,7 +162,7 @@ public class PaymentController {
             // Retrieve transactions with pagination and optional reference filter
             List<PaymentEntity> transactions = paymentService.getTransactionsByVendorId(vendorId, page, size, transactionReference);
             if (transactions.isEmpty()) {
-                return responseService.generateResponse(HttpStatus.NOT_FOUND,"No transactions found for this vendor", null);
+                return responseService.generateResponse(HttpStatus.OK,"No transactions found for this vendor", null);
             }
 
             // Map to DTO for response
@@ -214,7 +215,8 @@ public class PaymentController {
             // Retrieve transactions and check for empty list
             List<PaymentEntity> transactions = paymentService.getAllTransactionsByVendorName(vendorName, page, size, transactionReference);
             if (transactions.isEmpty()) {
-                return responseService.generateErrorResponse("No transactions found for this vendor", HttpStatus.NOT_FOUND);
+                return responseService.generateResponse(HttpStatus.OK, "No transactions found for this vendor" ,null);
+
             }
 
             // Map to DTO for response
