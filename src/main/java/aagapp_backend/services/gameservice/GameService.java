@@ -121,9 +121,12 @@ public class GameService {
             System.out.println("Scheduled task checkAndActivateScheduledGames started  " + vendorIds);
 
             for (Long vendorId : vendorIds) {
-                updateGameAndLeagueStatuses(vendorId);
-              /*  updateGameStatusToActive(vendorId);
-                updateLeagueStatusToActive(vendorId);*/
+
+
+                updateGameStatusToActive(vendorId);
+                updateLeagueStatusToActive(vendorId);
+               updateExpiredGameStatus(vendorId);
+                updateExpiredLeagueStatus(vendorId);
 
             }
             page++;
@@ -195,64 +198,6 @@ public class GameService {
         updateExpiredLeagueStatus(vendorId);
     }*/
 
-    @Transactional
-    public void updateGameAndLeagueStatuses(Long vendorId) {
-        try {
-            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-
-            // 1. Update for Active Games
-            String updateActiveGamesQuery = "UPDATE Game g SET g.status = :status, g.updatedDate = :updatedDate " +
-                    "WHERE g.vendorEntity.id = :vendorId AND g.scheduledAt <= :nowInKolkata AND g.endDate > :nowInKolkata AND g.status = :statusActive";
-            Query gameQuery = em.createQuery(updateActiveGamesQuery);
-            gameQuery.setParameter("status", GameStatus.ACTIVE);
-            gameQuery.setParameter("updatedDate", nowInKolkata);
-            gameQuery.setParameter("vendorId", vendorId);
-            gameQuery.setParameter("nowInKolkata", nowInKolkata);
-            gameQuery.setParameter("statusActive", GameStatus.SCHEDULED); // Only update scheduled games
-            int gamesUpdated = gameQuery.executeUpdate();
-            System.out.println("Bulk update executed for games. Number of active games updated: " + gamesUpdated);
-
-            // 2. Update for Expired Games
-            String updateExpiredGamesQuery = "UPDATE Game g SET g.status = :status, g.updatedDate = :updatedDate " +
-                    "WHERE g.vendorEntity.id = :vendorId AND g.endDate <= :nowInKolkata AND g.status = :statusActive";
-            Query expiredGameQuery = em.createQuery(updateExpiredGamesQuery);
-            expiredGameQuery.setParameter("status", GameStatus.EXPIRED);
-            expiredGameQuery.setParameter("updatedDate", nowInKolkata);
-            expiredGameQuery.setParameter("vendorId", vendorId);
-            expiredGameQuery.setParameter("nowInKolkata", nowInKolkata);
-            expiredGameQuery.setParameter("statusActive", GameStatus.ACTIVE); // Only update active games
-            int expiredGamesUpdated = expiredGameQuery.executeUpdate();
-            System.out.println("Bulk update executed for expired games. Number of expired games updated: " + expiredGamesUpdated);
-
-            // 3. Update for Active Leagues
-            String updateActiveLeaguesQuery = "UPDATE League l SET l.status = :status, l.updatedDate = :updatedDate " +
-                    "WHERE l.vendorEntity.id = :vendorId AND l.scheduledAt <= :nowInKolkata AND l.endDate > :nowInKolkata AND l.status = :statusActive";
-            Query leagueQuery = em.createQuery(updateActiveLeaguesQuery);
-            leagueQuery.setParameter("status", LeagueStatus.ACTIVE);
-            leagueQuery.setParameter("updatedDate", nowInKolkata);
-            leagueQuery.setParameter("vendorId", vendorId);
-            leagueQuery.setParameter("nowInKolkata", nowInKolkata);
-            leagueQuery.setParameter("statusActive", LeagueStatus.SCHEDULED); // Only update scheduled leagues
-            int leaguesUpdated = leagueQuery.executeUpdate();
-            System.out.println("Bulk update executed for leagues. Number of active leagues updated: " + leaguesUpdated);
-
-            // 4. Update for Expired Leagues
-            String updateExpiredLeaguesQuery = "UPDATE League l SET l.status = :status, l.updatedDate = :updatedDate " +
-                    "WHERE l.vendorEntity.id = :vendorId AND l.endDate <= :nowInKolkata AND l.status = :statusActive";
-            Query expiredLeagueQuery = em.createQuery(updateExpiredLeaguesQuery);
-            expiredLeagueQuery.setParameter("status", LeagueStatus.EXPIRED);
-            expiredLeagueQuery.setParameter("updatedDate", nowInKolkata);
-            expiredLeagueQuery.setParameter("vendorId", vendorId);
-            expiredLeagueQuery.setParameter("nowInKolkata", nowInKolkata);
-            expiredLeagueQuery.setParameter("statusActive", LeagueStatus.ACTIVE); // Only update active leagues
-            int expiredLeaguesUpdated = expiredLeagueQuery.executeUpdate();
-            System.out.println("Bulk update executed for expired leagues. Number of expired leagues updated: " + expiredLeaguesUpdated);
-
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error updating game and league statuses: " + e.getMessage(), e);
-        }
-    }
 
 
     private void shutdownExecutorService(ExecutorService executorService) {
@@ -760,28 +705,31 @@ public class GameService {
     }
 
     @Transactional
-    @Async
     public void updateExpiredGameStatus(Long vendorId) {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT * FROM aag_ludo_game g WHERE g.vendor_id = :vendorId " +
-                    "AND g.scheduled_at <= :nowInKolkata AND g.status = :status";
+            String sql = "SELECT al.id, al.vendor_id, al.status, al.end_date ,al.aaggameid FROM aag_ludo_game al " +
+                    "WHERE al.vendor_id = :vendorId " +
+                    "AND al.status = :status";
+            System.out.println(sql +" sql");
+            String activeStatus = GameStatus.ACTIVE.name();
 
             Query query = em.createNativeQuery(sql, Game.class);
             query.setParameter("vendorId", vendorId);
-            query.setParameter("nowInKolkata", nowInKolkata);
-            query.setParameter("status", GameStatus.ACTIVE); // Only check games that are active
+            query.setParameter("status", activeStatus);
 
+            System.out.println(query +" efdcsxz");
             List<Game> games = query.getResultList();
 
             for (Game game : games) {
+                game.setEndDate(convertToKolkataTime(game.getEndDate()));
+
                 // Ensure we have an end date for the game
                 if (game.getEndDate() != null && game.getEndDate().isBefore(nowInKolkata)) {
                     game.setStatus(GameStatus.EXPIRED); // Change the status to EXPIRED
                     game.setUpdatedDate(nowInKolkata);
                     gameRepository.save(game);
-                    System.out.println("Game ID: " + game.getId() + " status updated to EXPIRED.");
                 }
             }
 
@@ -797,13 +745,15 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT * FROM aag_league l WHERE l.vendor_id = :vendorId " +
+            String sql = "SELECT l.id, l.vendor_id, l.scheduled_at, l.status, l.end_date, l.updated_date " +
+                    "FROM aag_league l WHERE l.vendor_id = :vendorId " +
                     "AND l.scheduled_at <= :nowInKolkata AND l.status = :status";
+            String activeStatus = GameStatus.ACTIVE.name();
 
             Query query = em.createNativeQuery(sql, League.class);
             query.setParameter("vendorId", vendorId);
             query.setParameter("nowInKolkata", nowInKolkata);
-            query.setParameter("status", Constant.ACTIVE); // Only check leagues that are active
+            query.setParameter("status", activeStatus); // Only check leagues that are active
 
             List<League> leagues = query.getResultList();
 
@@ -975,12 +925,14 @@ public class GameService {
             String sql = "SELECT * FROM aag_ludo_game g WHERE g.vendor_id = :vendorId "
                     + "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay "
                     + "AND g.status = :status";
+            String activeStatus = GameStatus.ACTIVE.name();
 
             Query query = em.createNativeQuery(sql, Game.class);
             query.setParameter("vendorId", vendorId);
             query.setParameter("startOfDay", startOfDay);
             query.setParameter("endOfDay", endOfDay);
-            query.setParameter("status", GameStatus.ACTIVE);
+            query.setParameter("status", activeStatus); // Pass the string representation of the enum
+
 
             query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
             query.setMaxResults(pageable.getPageSize());
@@ -1013,15 +965,17 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT l.* FROM aag_league l " +
+            String sql = "SELECT l.id, l.vendor_id, l.scheduled_at, l.status, l.updated_date " +
+                    "FROM aag_league l " +
                     "WHERE l.vendor_id = :vendorId " +
-                    "AND l.status = :scheduledStatus " +
-                    "AND l.status != :activeStatus";
+                    "AND l.status = :scheduledStatus";
 
             Query query = em.createNativeQuery(sql, League.class);
             query.setParameter("vendorId", vendorId);
             query.setParameter("scheduledStatus", Constant.SCHEDULED);
+/*
             query.setParameter("activeStatus", Constant.ACTIVE);
+*/
 
             List<League> leagues = query.getResultList();
 
@@ -1050,14 +1004,16 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT * FROM aag_ludo_game g WHERE g.vendor_id = :vendorId " +
+            String sql = "SELECT g.id, g.vendor_id, g.scheduled_at, g.status, g.updated_date  ,g.aaggameid " +
+                    "FROM aag_ludo_game g WHERE g.vendor_id = :vendorId " +
                     "AND g.scheduled_at <= :nowInKolkata AND g.status = :status";
 
+            String activeStatus = GameStatus.SCHEDULED.name();
 
             Query query = em.createNativeQuery(sql, Game.class);
             query.setParameter("vendorId", vendorId);
             query.setParameter("nowInKolkata", nowInKolkata);
-            query.setParameter("status", "SCHEDULED");
+            query.setParameter("status", activeStatus);
 
             List<Game> games = query.getResultList();
 
