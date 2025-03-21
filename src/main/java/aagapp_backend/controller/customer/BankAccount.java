@@ -28,6 +28,9 @@ public class BankAccount {
     @Autowired
     private ExceptionHandlingImplement exceptionHandling;
 
+    @Autowired
+    private ResponseService responseService;
+
     /**
      * The Entity manager.
      */
@@ -107,7 +110,7 @@ public class BankAccount {
             List<BankAccountDTO> bankAccounts = bankAccountService.getBankAccountsByCustomerId(customerId);
 
             if (bankAccounts.isEmpty()) {
-                return ResponseService.generateErrorResponse("No bank accounts found for this customer", HttpStatus.NOT_FOUND);
+                return responseService.generateResponse(HttpStatus.OK,"No bank accounts found for this customer", null);
             }
 
             return ResponseService.generateSuccessResponse("Bank accounts fetched successfully!", bankAccounts, HttpStatus.OK);

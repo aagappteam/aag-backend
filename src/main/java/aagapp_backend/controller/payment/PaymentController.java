@@ -4,6 +4,7 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.PaymentDTO;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
+import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentService;
@@ -214,7 +215,8 @@ public class PaymentController {
             // Retrieve transactions and check for empty list
             List<PaymentEntity> transactions = paymentService.getAllTransactionsByVendorName(vendorName, page, size, transactionReference);
             if (transactions.isEmpty()) {
-                return responseService.generateErrorResponse("No transactions found for this vendor", HttpStatus.OK);
+                return responseService.generateResponse(HttpStatus.OK, "No transactions found for this vendor" ,null);
+
             }
 
             // Map to DTO for response
