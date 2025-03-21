@@ -83,6 +83,11 @@ public class PaymentService {
 
         // Generate a unique transaction ID
         paymentRequest.setTransactionId(UUID.randomUUID().toString());
+        paymentRequest.setFromUser(existingVendor.getFirst_name());
+        paymentRequest.setToUser("Aag App");
+        String invoiceUrl = generateInvoiceUrl(paymentRequest.getTransactionId());
+        paymentRequest.setDownloadInvoice(invoiceUrl);
+
 
         // Set status to ACTIVE by default
         paymentRequest.setStatus(PaymentStatus.ACTIVE);
@@ -113,6 +118,15 @@ public class PaymentService {
         entityManager.persist(existingVendor);
         return paymentRepository.save(paymentRequest);
     }
+
+    private String generateInvoiceUrl(String transactionId) {
+        // You can replace this with the actual base URL for your invoice storage
+        String baseUrl = "https://example.com/invoices/";
+
+        // Generate the invoice URL using the transactionId or paymentRequest ID
+        return baseUrl + "invoice_" + transactionId + ".pdf"; // The filename pattern could be adjusted as needed
+    }
+
 
     private Integer extractDailyGameLimit(List<String> features) {
         for (String feature : features) {
