@@ -73,6 +73,15 @@ public class PaymentEntity {
     @Column(name = "is_test", nullable = false)
     private Boolean isTest = false;
 
+    @Column(name = "from_User")
+    private String fromUser;
+
+    @Column(name = "to_User")
+    private String toUser;
+
+    @Column(name = "download_invoice")
+    private String downloadInvoice;
+
 /*    @ManyToOne
     @JoinColumn(name = "plan_id", referencedColumnName = "id")
     @JsonBackReference
