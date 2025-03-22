@@ -16,27 +16,32 @@ public class FAQService {
     @Autowired
     private FAQRepository faqRepository;
 
-    // Get FAQs grouped by category
-    public Map<String, List<FAQs>> getFAQsGroupedByCategory(String questionFilter, String answerFilter) {
+    // Method to get FAQs by 'createdFor' (User or Vendor) with optional filters for question and answer
+    public Map<String, List<FAQs>> getFAQsGroupedByCategoryForCreatedFor(String createdFor,
+                                                                         String questionFilter,
+                                                                         String answerFilter) {
         try {
             List<FAQs> faqs;
 
+            // If both filters are provided, fetch based on createdFor and the filters
             if (questionFilter != null && answerFilter != null) {
-                faqs = faqRepository.findByQuestionContainingIgnoreCaseOrAnswerContainingIgnoreCase(questionFilter, answerFilter);
+                faqs = faqRepository.findByCreatedForIgnoreCaseAndQuestionContainingIgnoreCaseOrAnswerContainingIgnoreCase(
+                        createdFor, questionFilter, answerFilter);
             } else if (questionFilter != null) {
-                faqs = faqRepository.findByQuestionContainingIgnoreCase(questionFilter);
+                faqs = faqRepository.findByCreatedForIgnoreCaseAndQuestionContainingIgnoreCase(createdFor, questionFilter);
             } else if (answerFilter != null) {
-                faqs = faqRepository.findByAnswerContainingIgnoreCase(answerFilter);
+                faqs = faqRepository.findByCreatedForIgnoreCaseAndAnswerContainingIgnoreCase(createdFor, answerFilter);
             } else {
-                faqs = faqRepository.findAll();
+                faqs = faqRepository.findByCreatedForIgnoreCase(createdFor);
             }
 
             // Group FAQs by category
             return faqs.stream().collect(Collectors.groupingBy(FAQs::getCategory));
         } catch (Exception e) {
-            throw new RuntimeException("Error retrieving FAQs: " + e.getMessage());
+            throw new RuntimeException("Error retrieving FAQs for " + createdFor + ": " + e.getMessage());
         }
     }
+
 
     // Create a new FAQ
     public FAQs createFAQ(FAQs faq) {

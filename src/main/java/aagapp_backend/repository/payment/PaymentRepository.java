@@ -41,5 +41,7 @@ public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
     // Custom method to count the number of payments for a given vendor
     long countByVendorEntity(VendorEntity vendor);
 
+    PaymentEntity findByTransactionId(String transactionId);
+
 
 }

@@ -8,12 +8,19 @@ import java.util.List;
 
 @Repository
 public interface FAQRepository extends JpaRepository<FAQs, Long> {
-    List<FAQs> findByQuestionContainingIgnoreCaseOrAnswerContainingIgnoreCase(String question, String answer);
 
-    List<FAQs> findByQuestionContainingIgnoreCase(String questionFilter);
+    // Find FAQs by createdFor and filter question and answer
+    List<FAQs> findByCreatedForIgnoreCaseAndQuestionContainingIgnoreCaseOrAnswerContainingIgnoreCase(
+            String createdFor, String question, String answer);
 
-    List<FAQs> findByAnswerContainingIgnoreCase(String answerFilter);
+    // Find FAQs by createdFor and filter question
+    List<FAQs> findByCreatedForIgnoreCaseAndQuestionContainingIgnoreCase(String createdFor, String question);
 
-//    List<FAQs> findByCategory(String category);
+    // Find FAQs by createdFor and filter answer
+    List<FAQs> findByCreatedForIgnoreCaseAndAnswerContainingIgnoreCase(String createdFor, String answer);
+
+    // Find FAQs by createdFor
+    List<FAQs> findByCreatedForIgnoreCase(String createdFor);
 }
+
 

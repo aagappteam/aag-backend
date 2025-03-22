@@ -13,6 +13,10 @@ import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
 import aagapp_backend.services.NotificationService;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
@@ -20,9 +24,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mail.MailException;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +54,9 @@ public class PaymentService {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private JavaMailSender mailSender;
 
 
     public List<PaymentEntity> findActivePlansByVendorId(Long vendorId) {
@@ -92,6 +103,11 @@ public class PaymentService {
 
         // Generate a unique transaction ID
         paymentRequest.setTransactionId(UUID.randomUUID().toString());
+        paymentRequest.setFromUser(existingVendor.getFirst_name());
+        paymentRequest.setToUser("Aag App");
+        String invoiceUrl = generateInvoiceUrl(paymentRequest.getTransactionId());
+        paymentRequest.setDownloadInvoice(invoiceUrl);
+
 
         // Set status to ACTIVE by default
         paymentRequest.setStatus(PaymentStatus.ACTIVE);
@@ -137,6 +153,15 @@ public class PaymentService {
 
         return paymentRepository.save(paymentRequest);
     }
+
+    private String generateInvoiceUrl(String transactionId) {
+        // You can replace this with the actual base URL for your invoice storage
+        String baseUrl = "https://example.com/invoices/";
+
+        // Generate the invoice URL using the transactionId or paymentRequest ID
+        return baseUrl + "invoice_" + transactionId + ".pdf"; // The filename pattern could be adjusted as needed
+    }
+
 
     private Integer extractDailyGameLimit(List<String> features) {
         for (String feature : features) {
@@ -279,5 +304,45 @@ public class PaymentService {
 
         // Calculate the commission based on the payment amount
         return paymentAmount * commissionPercentage;
+    }
+
+
+    public void sendEmail(String recipientEmail, String invoiceUrl) throws MessagingException {
+        // Create the MimeMessage for the email
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
+
+        try {
+            // Set the "From" address (your company or no-reply email)
+            helper.setFrom("aagappteam@gmail.com", "AAG App Team");
+
+            // Set the recipient email address
+            helper.setTo(recipientEmail);
+
+            // Set the subject of the email
+            helper.setSubject("Your Payment Invoice");
+
+            // Construct the email body text, including the invoice URL
+            String emailBody = "Dear Vendor,\n\n" +
+                    "Thank you for your payment. You can download your invoice from the following link:\n\n" +
+                    invoiceUrl + "\n\n" +
+                    "Best regards,\n" +
+                    "AAG App Team\n\n" +
+                    "Please ensure to keep this information secure.";
+
+            // Set the email body
+            helper.setText(emailBody);
+
+            // Send the email
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            // Handle any messaging errors (e.g., invalid addresses or issues with the email)
+            throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
+        } catch (MailException e) {
+            // Handle other mail-related exceptions (e.g., connection issues with SMTP server)
+            throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

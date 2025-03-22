@@ -246,11 +246,8 @@ public class GameController {
             // Call the service method to get the vendor and published game details
             VendorGameResponse vendorGameResponse = gameService.getVendorPublishedGames(vendorId);
 
-            // Prepare the response structure
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", vendorGameResponse);
-
-            return responseService.generateSuccessResponse("Games fetched successfully", response, HttpStatus.OK);
+            // Directly pass the vendorGameResponse to generateSuccessResponse
+            return responseService.generateSuccessResponse("Games fetched successfully", vendorGameResponse, HttpStatus.OK);
 
         } catch (RuntimeException e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
