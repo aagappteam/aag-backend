@@ -39,6 +39,7 @@ public class WalletService {
             // Retrieve the customer by ID
             CustomCustomer customer = customCustomerService.getCustomerById(customerId);
             if (customer == null) {
+
                 throw new IllegalStateException("Customer not found for the given ID: " + customerId);
             }
 

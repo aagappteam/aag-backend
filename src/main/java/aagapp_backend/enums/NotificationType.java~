@@ -1,0 +1,14 @@
+package aagapp_backend.enums;
+
+public enum NotificationType {
+    WALLET_CREDIT,
+    WALLET_DEBIT,
+    GAME_PUBLISHED,
+    TOURNAMENT_PUBLISHED,
+    PAYMENT_SUCCESS,
+    PAYMENT_FAILED,
+    PLAN_EXPIRED,    GAME_SCHEDULED,
+    SCHEDULED_LEAGUE, 
+    PUBLISHED_LEAGUE,
+    OPPONENT_CHALLENGED
+}

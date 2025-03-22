@@ -1,10 +1,18 @@
 package aagapp_backend.controller.wallet;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.AddBalanceRequest;
+import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.NotificationType;
+import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.services.wallet.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,6 +38,15 @@ public class WalletController {
     @Autowired
     private ExceptionHandlingService exceptionHandling;
 
+    @Autowired
+    private CustomCustomerService customCustomerService;
+
+    @Autowired
+    private VenderService vendorService;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
     // Endpoint to add balance to the wallet
     @PostMapping("/addBalance")
     public ResponseEntity<?> addBalance(@RequestBody AddBalanceRequest addBalanceRequest, @RequestHeader(value = "Authorization") String authorization) {
@@ -42,8 +59,12 @@ public class WalletController {
             String token = authorization.substring(7);
             Long customerId = addBalanceRequest.getCustomerId();
 
+
             // Extract user ID from the token and validate it
             Long userId = jwtUtil.extractId(token);
+//            get Role from token
+            Integer role = jwtUtil.extractRoleId(token);
+
             if (userId == null) {
                 return responseService.generateErrorResponse("Invalid or expired token", HttpStatus.UNAUTHORIZED);
             }
@@ -63,6 +84,27 @@ public class WalletController {
 
             // Call the wallet service to add balance to the wallet
             Wallet updatedWallet = walletService.addBalanceToWallet(customerId, amount, isTest);
+
+
+            // Now create a single notification for the vendor
+            Notification notification = new Notification();
+            notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
+
+            if (role == Constant.VENDOR_ROLE) {
+                VendorEntity vendor = vendorService.getServiceProviderById(userId);
+                notification.setVendorId(vendor.getService_provider_id());
+            } else if (role == Constant.CUSTOMER_ROLE) {
+                CustomCustomer customer = customCustomerService.getCustomerById(userId);
+                notification.setCustomerId(customer.getId());
+            }
+/*
+            notification.setType(NotificationType.WALLET_CREDIT);  // Example NotificationType for a successful payment
+*/
+            notification.setDescription("Wallet balance added"); // Example NotificationType for a successful
+            notification.setAmount((double) amount);
+            notification.setDetails(amount + "added to Wallet"); // Example NotificationType for a successful
+
+            notificationRepository.save(notification);
 
             // Return success response
             return responseService.generateSuccessResponse("Balance added successfully", updatedWallet, HttpStatus.OK);
@@ -128,6 +170,7 @@ public class WalletController {
 
             String token = authorization.substring(7);
             Long customerId = addBalanceRequest.getCustomerId();
+            Integer role = jwtUtil.extractRoleId(token);
 
             // Validate JWT Token
             Long userId = jwtUtil.extractId(token);
@@ -157,6 +200,26 @@ public class WalletController {
             // Call the wallet service to deduct the amount
             ResponseEntity<?> updatedWallet = walletService.deductAmountFromWallet(customerId, amount);
 
+
+            // Now create a single notification for the vendor
+            Notification notification = new Notification();
+            notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
+
+            if (role == Constant.VENDOR_ROLE) {
+                VendorEntity vendor = vendorService.getServiceProviderById(userId);
+                notification.setVendorId(vendor.getService_provider_id());
+            } else if (role == Constant.CUSTOMER_ROLE) {
+                CustomCustomer customer = customCustomerService.getCustomerById(userId);
+                notification.setCustomerId(customer.getId());
+            }
+/*
+            notification.setType(NotificationType.WALLET_DEBIT);  // Example NotificationType for a successful payment
+*/
+            notification.setDescription("Wallet balance deducted"); // Example NotificationType for a successful
+            notification.setAmount((double) amount);
+            notification.setDetails(amount + "debited from Wallet"); // Example NotificationType for a successful
+
+            notificationRepository.save(notification);
             return responseService.generateSuccessResponse("Balance deducted successfully", updatedWallet, HttpStatus.OK);
 
         } catch (Exception e) {

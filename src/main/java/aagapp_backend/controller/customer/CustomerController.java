@@ -13,6 +13,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -51,10 +54,18 @@ public class CustomerController {
     @GetMapping("/get-all-customers")
     public ResponseEntity<?> getAllCustomers(
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) Long customerId
+    ) {
         try {
 
             int startPosition = offset * limit;
+            if(customerId!=null) {
+                CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, customerId);
+
+                return ResponseService.generateSuccessResponse("Customer details : ", customCustomer, HttpStatus.OK);
+
+            }
             TypedQuery<CustomCustomer> query = entityManager.createQuery(Constant.GET_ALL_CUSTOMERS, CustomCustomer.class);
             query.setFirstResult(startPosition);
             query.setMaxResults(limit);
@@ -74,6 +85,7 @@ public class CustomerController {
 
     @Transactional
     @PostMapping("create-or-update-password")
+    @CacheEvict(value = "customerDetailsCache", key = "#userId")
     public ResponseEntity<?> createOrUpdatePassword(@RequestBody Map<String, Object> passwordDetails, @RequestParam long userId) {
         try {
 
@@ -106,14 +118,18 @@ public class CustomerController {
         }
     }
 
+    @CacheEvict(value = "customerDetailsCache", key = "#userId")
     @Transactional
-    @PatchMapping("update/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, Object> userdetails) throws Exception {
+    @PatchMapping("update/{userId}")
+    public ResponseEntity<?> updateUser(@PathVariable Long userId, @RequestBody Map<String, Object> userdetails) throws Exception {
         try {
-            CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, id);
+            CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, userId);
             if (customCustomer == null)
                 return ResponseService.generateErrorResponse("User with provided Id not found", HttpStatus.NOT_FOUND);
-            return customCustomerService.updateCustomer(id, userdetails);
+
+            customCustomerService.updateCustomer(userId, userdetails);
+            return responseService.generateSuccessResponse("User Details Updated", userdetails, HttpStatus.OK);
+
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -122,18 +138,18 @@ public class CustomerController {
         }
     }
 
-    @GetMapping("/get-user/{id}")
+    @Cacheable(value = "customerDetailsCache", key = "#userId")
+    @Transactional
+    @GetMapping("/get/{userId}")
     public ResponseEntity<?> getUserById(@PathVariable Long userId) {
         try {
-            CustomCustomer customCustomer = customCustomerService.readCustomerById(userId);
-            if (customCustomer == null) {
-                return responseService.generateErrorResponse("User not found " + userId, HttpStatus.BAD_REQUEST);
+            if(userId!=null) {
+                CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, userId);
+
+                return ResponseService.generateSuccessResponse("Customer details : ", customCustomer, HttpStatus.OK);
+
             }
-            Map<String, Object> details = new HashMap<>();
-            details.put("status", ApiConstants.STATUS_SUCCESS);
-            details.put("status_code", HttpStatus.OK);
-            details.put("data", customCustomer);
-            return responseService.generateSuccessResponse("Service provider details are", details, HttpStatus.OK);
+            return ResponseService.generateErrorResponse("User with provided Id not found", HttpStatus.NOT_FOUND);
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
@@ -141,6 +157,7 @@ public class CustomerController {
         }
     }
 
+    @CacheEvict(value = "customerDetailsCache", key = "#userId")
     @Transactional
     @DeleteMapping("delete/{id}")
     public ResponseEntity<?> deleteCustomer(@PathVariable Long userId) {

@@ -2,15 +2,21 @@ package aagapp_backend.services.payment;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.NotificationType;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
+import aagapp_backend.services.NotificationService;
+
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
@@ -43,6 +49,11 @@ public class PaymentService {
 
     @Autowired
     private VendorReferralRepository vendorReferralRepository;
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     private JavaMailSender mailSender;
@@ -125,6 +136,21 @@ public class PaymentService {
         // Save and return the newly created payment
         existingVendor.setIsPaid(true);
         entityManager.persist(existingVendor);
+
+
+        // Now create a single notification for the vendor
+        Notification notification = new Notification();
+        notification.setVendorId(existingVendor.getService_provider_id());  // Set the vendor ID
+        notification.setRole("Vendor");  // The role is "Vendor"
+/*
+        notification.setType(NotificationType.PAYMENT_SUCCESS);  // Example NotificationType for a successful payment
+*/
+        notification.setDescription("Plan purchased successfully"); // Example NotificationType for a successful
+        notification.setAmount(paymentRequest.getAmount());
+        notification.setDetails("Your payment of " + paymentRequest.getAmount() + " has been processed. Plan: " + planEntity.getPlanName());
+
+        notificationRepository.save(notification);
+
         return paymentRepository.save(paymentRequest);
     }
 
