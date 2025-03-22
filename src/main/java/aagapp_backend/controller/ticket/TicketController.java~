@@ -50,6 +50,6 @@ public class TicketController {
     public ResponseEntity<?> getTicketsByRoleAndId(@PathVariable String role, @PathVariable Long id) {
         return ticketService.getTicketsByRoleAndId(role, id);
     }
-
+    
 
 }

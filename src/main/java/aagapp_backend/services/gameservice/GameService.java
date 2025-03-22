@@ -314,7 +314,7 @@ public class GameService {
             if (gameRequest.getMaxPlayersPerTeam() != null) {
                 game.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
             }
-            vendorEntity.setPublishedLimit(vendorEntity.getPublishedLimit()+1);
+            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
 
             // Set created and updated timestamps
@@ -399,7 +399,11 @@ public class GameService {
             VendorGameResponse response = new VendorGameResponse();
             response.setVendorId(vendorEntity.getService_provider_id());
             response.setDailyLimit(vendorEntity.getDailyLimit());
+            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()));
+
+/*
             response.setPublishedLimit(vendorEntity.getPublishedLimit());
+*/
 
             // Map the published games to return relevant details (image, name)
             List<Map<String, String>> publishedGames = games.stream()

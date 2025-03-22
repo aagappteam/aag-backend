@@ -2,13 +2,21 @@ package aagapp_backend.services.payment;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.NotificationType;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
+import aagapp_backend.services.NotificationService;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
@@ -16,9 +24,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mail.MailException;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +49,14 @@ public class PaymentService {
 
     @Autowired
     private VendorReferralRepository vendorReferralRepository;
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private JavaMailSender mailSender;
 
 
     public List<PaymentEntity> findActivePlansByVendorId(Long vendorId) {
@@ -116,6 +136,21 @@ public class PaymentService {
         // Save and return the newly created payment
         existingVendor.setIsPaid(true);
         entityManager.persist(existingVendor);
+
+
+        // Now create a single notification for the vendor
+        Notification notification = new Notification();
+        notification.setVendorId(existingVendor.getService_provider_id());  // Set the vendor ID
+        notification.setRole("Vendor");  // The role is "Vendor"
+/*
+        notification.setType(NotificationType.PAYMENT_SUCCESS);  // Example NotificationType for a successful payment
+*/
+        notification.setDescription("Plan purchased successfully"); // Example NotificationType for a successful
+        notification.setAmount(paymentRequest.getAmount());
+        notification.setDetails("Your payment of " + paymentRequest.getAmount() + " has been processed. Plan: " + planEntity.getPlanName());
+
+        notificationRepository.save(notification);
+
         return paymentRepository.save(paymentRequest);
     }
 
@@ -269,5 +304,45 @@ public class PaymentService {
 
         // Calculate the commission based on the payment amount
         return paymentAmount * commissionPercentage;
+    }
+
+
+    public void sendEmail(String recipientEmail, String invoiceUrl) throws MessagingException {
+        // Create the MimeMessage for the email
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
+
+        try {
+            // Set the "From" address (your company or no-reply email)
+            helper.setFrom("aagappteam@gmail.com", "AAG App Team");
+
+            // Set the recipient email address
+            helper.setTo(recipientEmail);
+
+            // Set the subject of the email
+            helper.setSubject("Your Payment Invoice");
+
+            // Construct the email body text, including the invoice URL
+            String emailBody = "Dear Vendor,\n\n" +
+                    "Thank you for your payment. You can download your invoice from the following link:\n\n" +
+                    invoiceUrl + "\n\n" +
+                    "Best regards,\n" +
+                    "AAG App Team\n\n" +
+                    "Please ensure to keep this information secure.";
+
+            // Set the email body
+            helper.setText(emailBody);
+
+            // Send the email
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            // Handle any messaging errors (e.g., invalid addresses or issues with the email)
+            throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
+        } catch (MailException e) {
+            // Handle other mail-related exceptions (e.g., connection issues with SMTP server)
+            throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

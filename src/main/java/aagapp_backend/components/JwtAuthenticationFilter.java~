@@ -218,17 +218,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             respondWithUnauthorized(response, "Token is expired");
             return true;
         }
-       /* if (authenticateByRole(id, jwt, ipAddress, userAgent, response,request)) {
+        if (authenticateByRole(id, jwt, ipAddress, userAgent, response,request)) {
             return false;
         }
-        return true;*/
+        return true;
 
 
-        CustomCustomer customCustomer = null;
+/*        CustomCustomer customCustomer = null;
         VendorEntity serviceProvider = null;
-        CustomAdmin cusomAdmin = null;
+        CustomAdmin cusomAdmin = null;*/
 
-        if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+/*        if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleUser)) {
                 customCustomer = customCustomerService.readCustomerById(id);
                 if (customCustomer != null && jwtUtil.validateToken(jwt, ipAddress, userAgent)) {
@@ -270,8 +270,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 respondWithUnauthorized(response, "Invalid data provided for this user");
                 return true;
             }
-        }
+        }*/
+/*
         return false;
+*/
     }
 
     private void respondWithUnauthorized(HttpServletResponse response, String message) throws IOException {
