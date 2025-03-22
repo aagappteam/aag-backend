@@ -4,15 +4,18 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.PaymentDTO;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
+import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentService;
+import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,6 +39,9 @@ public class PaymentController {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     // Create payment with authorization check and input validation
     @PostMapping("/create/{vendorId}")
@@ -245,4 +251,46 @@ public class PaymentController {
             return responseService.generateErrorResponse("An error occurred while fetching transactions: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @PostMapping("/send-invoice-email")
+    public ResponseEntity<?> sendInvoiceByEmail(@RequestParam String transactionId) {
+        try {
+            // Find the payment using the transaction ID
+            PaymentEntity paymentEntity = paymentRepository.findByTransactionId(transactionId);
+
+            // If payment is not found, return a bad request response
+            if (paymentEntity == null) {
+                return responseService.generateErrorResponse("Payment or transaction not found.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Retrieve the invoice URL from the payment
+            String invoiceUrl = paymentEntity.getDownloadInvoice();
+
+            // If no invoice URL is available, return an error
+            if (invoiceUrl == null || invoiceUrl.isEmpty()) {
+                return responseService.generateErrorResponse("Invoice link is not available.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Send the invoice URL to the vendor's email
+            try {
+                // Assuming paymentEntity.getVendorEntity().getPrimary_email() returns the vendor's email
+                paymentService.sendEmail(paymentEntity.getVendorEntity().getPrimary_email(), invoiceUrl);
+            } catch (MessagingException e) {
+                // Catch and handle any email sending exceptions
+                return responseService.generateErrorResponse("An error occurred while sending the invoice: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            // Using generateSuccessResponse for a successful response
+            return responseService.generateSuccessResponse("Invoice link sent on " + paymentEntity.getVendorEntity().getPrimary_email() + " successfully.", null, HttpStatus.OK);
+
+        } catch (Exception e) {
+            // Catch any unexpected exceptions
+            return responseService.generateErrorResponse("An unexpected error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+
+
 }
