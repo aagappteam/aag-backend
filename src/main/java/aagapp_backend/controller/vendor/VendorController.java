@@ -116,7 +116,6 @@ public class VendorController {
         try {
             VendorEntity serviceProviderEntity = vendorService.getServiceProviderById(serviceProviderId);
             if (serviceProviderEntity == null) {
-
                 return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
             }
             Map<String, Object> responseBody = serviceProviderService.VendorDetails( serviceProviderEntity).getBody();

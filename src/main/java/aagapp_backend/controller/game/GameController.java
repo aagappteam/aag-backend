@@ -1,7 +1,13 @@
 package aagapp_backend.controller.game;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.dto.*;
+import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.enums.NotificationType;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.services.ApiConstants;
@@ -30,6 +36,12 @@ public class GameController {
     private PaymentFeatures paymentFeatures;
     private PlayerRepository playerRepository;
     private GameRoomRepository gameRoomRepository;
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    public void setNotificationRepository(@Lazy NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
+    }
 
     @Autowired
     public void setGameService(@Lazy GameService gameService) {
@@ -144,6 +156,31 @@ public class GameController {
             }
 
             Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId, existinggameId);
+
+
+            // Now create a single notification for the vendor
+            Notification notification = new Notification();
+            notification.setRole("Vendor");
+
+            notification.setVendorId(vendorId);
+            if (gameRequest.getScheduledAt() != null) {
+/*
+                notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
+*/
+                notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
+                notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
+            }else{
+/*
+                notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
+*/
+                notification.setDescription("Published Game"); // Example NotificationType for a successful
+                notification.setDetails("Game has been Published"); // Example NotificationType for a successful
+            }
+
+            System.out.println(notification  + " fdcx");
+
+
+            notificationRepository.save(notification);
 
             if (gameRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("Game scheduled successfully", publishedGame, HttpStatus.CREATED);

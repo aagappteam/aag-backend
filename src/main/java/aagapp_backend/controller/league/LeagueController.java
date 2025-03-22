@@ -3,7 +3,10 @@ package aagapp_backend.controller.league;
 import aagapp_backend.dto.LeagueRequest;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.NotificationType;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
@@ -36,6 +39,12 @@ public class LeagueController {
     private PaymentFeatures paymentFeatures;
     private VendorRepository vendorRepository;
     private LeagueRepository leagueRepository;
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    public void setNotificationRepository(@Lazy NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
+    }
 
     @Autowired
     public void setLeagueRepository(@Lazy LeagueRepository leagueRepository) {
@@ -119,6 +128,19 @@ public class LeagueController {
             // Publish the league
             League publishedLeague = leagueService.publishLeague(leagueRequest, vendorId);
             String successMessage = (leagueRequest.getScheduledAt() != null) ? "League scheduled successfully" : "League published successfully";
+            String description = (leagueRequest.getScheduledAt() != null) ? "Scheduled League" : "Published League";
+            NotificationType Type = (leagueRequest.getScheduledAt() != null) ? NotificationType.SCHEDULED_LEAGUE: NotificationType.PUBLISHED_LEAGUE;
+            Notification notification = new Notification();
+            notification.setVendorId(vendorId);  // Set the vendor ID
+            notification.setRole("Vendor");  // The role is "Vendor"
+/*
+            notification.setType(Type);  // Example NotificationType for a successful payment
+*/
+            notification.setDescription(description); // Example NotificationType for a successful
+
+            notification.setDetails(successMessage);
+
+            notificationRepository.save(notification);
 
             return responseService.generateSuccessResponse(successMessage, publishedLeague, HttpStatus.CREATED);
         } catch (LimitExceededException e) {
