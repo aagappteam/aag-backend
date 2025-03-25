@@ -307,7 +307,7 @@ public class PaymentService {
     }
 
 
-    public void sendEmail(String recipientEmail, String invoiceUrl) throws MessagingException {
+    public void sendEmail(PaymentEntity paymentEntity, String invoiceUrl) throws MessagingException {
         // Create the MimeMessage for the email
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
@@ -317,13 +317,13 @@ public class PaymentService {
             helper.setFrom("aagappteam@gmail.com", "AAG App Team");
 
             // Set the recipient email address
-            helper.setTo(recipientEmail);
+            helper.setTo(paymentEntity.getVendorEntity().getPrimary_email());
 
             // Set the subject of the email
             helper.setSubject("Your Payment Invoice");
 
             // Construct the email body text, including the invoice URL
-            String emailBody = "Dear Vendor,\n\n" +
+            String emailBody = "Dear "+paymentEntity.getVendorEntity().getFirst_name()+" "+paymentEntity.getVendorEntity().getLast_name()+"\n\n" +
                     "Thank you for your payment. You can download your invoice from the following link:\n\n" +
                     invoiceUrl + "\n\n" +
                     "Best regards,\n" +
