@@ -110,8 +110,7 @@ public class GameService {
     }
 
 
-
-    @Scheduled(cron = "0 * * * * *")  // Every minute
+/*    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
         int pageSize = 1000;
@@ -131,7 +130,7 @@ public class GameService {
             }
             page++;
         }
-    }
+    }*/
 
 /*    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
@@ -286,6 +285,11 @@ public class GameService {
             // Calculate moves based on the selected fee
 
             game.setFee(gameRequest.getFee());
+            if(gameRequest.getFee()>10){
+                game.setMove(Constant.TENMOVES);
+            } else{
+                game.setMove(Constant.SIXTEENMOVES);
+            }
             if(gameRequest.getMove()!= null){
                 game.setMove(gameRequest.getMove());
             }
@@ -300,11 +304,11 @@ public class GameService {
                 }
                 game.setStatus(GameStatus.SCHEDULED);
                 game.setScheduledAt(scheduledInKolkata);
-                game.setEndDate(scheduledInKolkata.plusHours(4));
+                game.setEndDate(scheduledInKolkata.plusMinutes(15));
             } else {
                 game.setStatus(GameStatus.ACTIVE);
-                game.setScheduledAt(nowInKolkata.plusMinutes(15));
-                game.setEndDate(nowInKolkata.plusHours(4));
+                game.setScheduledAt(nowInKolkata);
+                game.setEndDate(nowInKolkata.plusMinutes(15));
             }
 
             // Set the minimum and maximum players
@@ -688,8 +692,10 @@ public class GameService {
                 // Calculate moves based on the selected fee
 
                 game.setFee(gameRequest.getFee());
-                if(gameRequest.getMove()!= null){
-                    game.setMove(gameRequest.getMove());
+                if(gameRequest.getFee()>10){
+                    game.setMove(Constant.TENMOVES);
+                } else{
+                    game.setMove(Constant.SIXTEENMOVES);
                 }
                 ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
@@ -919,8 +925,8 @@ public class GameService {
     }
 
 
-   @Transactional
-    public Page<Game> findGamesScheduledForToday(Long vendorId, Pageable pageable) {
+    @Transactional
+    public Page<GetGameResponseDTO> findGamesScheduledForToday(Long vendorId, Pageable pageable) {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             ZonedDateTime startOfDay = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
@@ -943,15 +949,38 @@ public class GameService {
 
             List<Game> games = query.getResultList();
 
+
+
             games.forEach(game -> {
                 game.setCreatedDate(convertToKolkataTime(game.getCreatedDate()));
                 game.setUpdatedDate(convertToKolkataTime(game.getUpdatedDate()));
                 game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
+
             });
 
-            long count = games.size();
+            List<GetGameResponseDTO> gameResponseDTOs = games.stream()
+                    .map(game -> new GetGameResponseDTO(
+                            game.getId(),
+                            game.getFee(),
+                            game.getMove(),
+                            game.getStatus(),
+                            game.getShareableLink(),
+                            game.getAaggameid(),
+                            game.getImageUrl(),
+                            game.getTheme() != null ? game.getTheme().getName() : null,
+                            game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                            game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
+                            game.getEndDate() != null ? game.getEndDate().toString() : null,
+                            game.getMinPlayersPerTeam(),
+                            game.getMaxPlayersPerTeam(),
+                            game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
+                            game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
+                    ))
+                    .collect(Collectors.toList());
 
-            return new PageImpl<>(games, pageable, count);
+            long count = games.size();
+            return new PageImpl<>(gameResponseDTOs, pageable, count);
+//            return new PageImpl<>(games, pageable, count);
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving active games scheduled for today by vendor ID: " + vendorId, e);
         }
@@ -1037,6 +1066,19 @@ public class GameService {
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error updating game statuses: " + e.getMessage(), e);
+        }
+    }
+
+    public ResponseEntity<?> getRoomById(Long roomId) {
+        try {
+            GameRoom gameRoom = gameRoomRepository.findById(roomId).orElse(null);
+            if (gameRoom == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(gameRoom);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error retrieving game room by ID: " + roomId, e);
         }
     }
 
