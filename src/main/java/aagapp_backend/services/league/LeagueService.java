@@ -89,7 +89,7 @@ public class LeagueService {
                 league.setEndDate(scheduledAtInKolkata.plusHours(4));
             } else {
                 ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-                league.setScheduledAt(nowInKolkata.plusMinutes(15));
+                league.setScheduledAt(nowInKolkata);
                 league.setEndDate(nowInKolkata.plusHours(4));
                 league.setStatus(LeagueStatus.ACTIVE);
             }

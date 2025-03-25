@@ -20,7 +20,11 @@ import java.time.LocalDateTime;
         @Index(name = "idx_vendor_payment", columnList = "service_provider_id"),
         @Index(name = "idx_payment_status", columnList = "status"),
         @Index(name = "idx_payment_created_at", columnList = "created_at"),
-        @Index(name = "idx_payment_expiry_at", columnList = "expiry_at")
+        @Index(name = "idx_payment_expiry_at", columnList = "expiry_at"),
+        @Index(name = "idx_payment_plan_id", columnList = "plan_id"),
+        @Index(name = "idx_payment_transaction_date", columnList = "transaction_date"),
+        @Index(name = "idx_payment_plan_id_status", columnList = "plan_id, status"),  // Composite index for frequently queried columns
+        @Index(name = "idx_payment_transaction_id", columnList = "transaction_id")  // Index on transaction_id for faster lookups by transaction_id
 })
 @Getter
 @Setter

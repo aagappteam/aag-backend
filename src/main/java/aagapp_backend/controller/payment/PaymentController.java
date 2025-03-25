@@ -112,11 +112,6 @@ public class PaymentController {
                 return responseService.generateResponse(HttpStatus.OK,"No transactions found for this vendor", null);
             }
 
-            // Map to DTO for response
-           /* List<PaymentDTO> paymentDTOs = payments.stream()
-                    .map(payment -> new PaymentDTO(payment))
-                    .collect(Collectors.toList());*/
-
             List<PaymentDTO> paymentDTOs = payments.stream()
                     .map(payment -> {
                         // Fetch the PlanEntity using the planId
@@ -150,20 +145,6 @@ public class PaymentController {
             @RequestHeader(value = "Authorization") String authorization) {
 
         try {
-            // Validate Authorization header
-            if (authorization == null || !authorization.startsWith("Bearer ")) {
-                return responseService.generateErrorResponse("Invalid or missing Authorization header", HttpStatus.BAD_REQUEST);
-            }
-            String token = authorization.substring(7);
-            Long venderId = jwtUtil.extractId(token);
-
-            if (venderId == null) {
-                return responseService.generateErrorResponse("Invalid or expired token", HttpStatus.UNAUTHORIZED);
-            }
-
-            if (!venderId.equals(vendorId)) {
-                return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
-            }
 
             // Retrieve transactions with pagination and optional reference filter
             List<PaymentEntity> transactions = paymentService.getTransactionsByVendorId(vendorId, page, size, transactionReference);
@@ -171,10 +152,6 @@ public class PaymentController {
                 return responseService.generateResponse(HttpStatus.OK,"No transactions found for this vendor", null);
             }
 
-            // Map to DTO for response
-           /* List<PaymentDTO> paymentDTOs = transactions.stream()
-                    .map(payment -> new PaymentDTO(payment))
-                    .collect(Collectors.toList());*/
             List<PaymentDTO> paymentDTOs = transactions.stream()
                     .map(payment -> {
                         // Fetch the PlanEntity using the planId

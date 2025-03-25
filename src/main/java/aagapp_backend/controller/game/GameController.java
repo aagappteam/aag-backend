@@ -116,9 +116,31 @@ public class GameController {
             return responseService.generateErrorResponse("Error fetching games by vendor : " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
     @GetMapping("/get-active-games-by-vendor/{vendorId}")
+    public ResponseEntity<?> getActiveGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        try {
+            if (page < 0) {
+                throw new IllegalArgumentException("Page number cannot be negative");
+            }
+            if (size <= 0 || size > 100) {
+                throw new IllegalArgumentException("Size must be between 1 and 100");
+            }
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            // Call the updated service method
+            Page<GetGameResponseDTO> gamesPage = gameService.findGamesScheduledForToday(vendorId, pageable);
+
+            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching games by vendor : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+/*    @GetMapping("/get-active-games-by-vendor/{vendorId}")
     public ResponseEntity<?> getActiveGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         try {
             if (page < 0) {
@@ -142,7 +164,7 @@ public class GameController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching games by vendor: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
 
     @PostMapping("/publishGame/{vendorId}/{existinggameId}")
@@ -238,6 +260,18 @@ public class GameController {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+//    get room by id
+    @GetMapping("/room/{roomId}")
+    public ResponseEntity<?> getRoomById(@PathVariable Long roomId) {
+        try {
+            return gameService.getRoomById(roomId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
     }
 
     @GetMapping("/published/{vendorId}")
