@@ -110,8 +110,7 @@ public class GameService {
     }
 
 
-
-    @Scheduled(cron = "0 * * * * *")  // Every minute
+/*    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
         int pageSize = 100;
@@ -129,7 +128,7 @@ public class GameService {
             }
             page++;
         }
-    }
+    }*/
 
 /*    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
@@ -288,7 +287,9 @@ public class GameService {
                 game.setMove(Constant.TENMOVES);
             } else{
                 game.setMove(Constant.SIXTEENMOVES);
+
             }
+
            /* if(gameRequest.getMove()!= null){
                 game.setMove(gameRequest.getMove());
             }*/
@@ -689,8 +690,10 @@ public class GameService {
                 // Calculate moves based on the selected fee
 
                 game.setFee(gameRequest.getFee());
-                if(gameRequest.getMove()!= null){
-                    game.setMove(gameRequest.getMove());
+                if(gameRequest.getFee()>10){
+                    game.setMove(Constant.TENMOVES);
+                } else{
+                    game.setMove(Constant.SIXTEENMOVES);
                 }
                 ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
@@ -920,9 +923,9 @@ public class GameService {
         }
     }
 
+    @Transactional
+    public Page<GetGameResponseDTO> findGamesScheduledForToday(Long vendorId, Pageable pageable) {
 
-   @Transactional
-   public Page<GetGameResponseDTO> findGamesScheduledForToday(Long vendorId, Pageable pageable) {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             ZonedDateTime startOfDay = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
@@ -1077,5 +1080,7 @@ public class GameService {
             throw new RuntimeException("Error retrieving game room by ID: " + roomId, e);
         }
     }
+
+
 }
 

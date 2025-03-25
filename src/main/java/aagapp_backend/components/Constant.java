@@ -17,7 +17,8 @@ public class Constant {
     public static final Integer SIXTEENMOVES =16;
 
     public static String COUNTRY_CODE = "+91";
-
+    public static final Integer TENMOVES =10;
+    public static final Integer SIXTEENMOVES =16;
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
     public static String ID_QUERY = "SELECT c FROM CustomCustomer c WHERE c.customer_id = :customer_id";

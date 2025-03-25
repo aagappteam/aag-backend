@@ -262,9 +262,11 @@ public class GameController {
         }
     }
 
-
+<<<<<<< HEAD
+//    get room by id
+=======
     //    get room by id
-
+>>>>>>> fd0ed51b1c5fb58ee05e3c9df0e4c9c293b2cb15
     @GetMapping("/room/{roomId}")
     public ResponseEntity<?> getRoomById(@PathVariable Long roomId) {
         try {
