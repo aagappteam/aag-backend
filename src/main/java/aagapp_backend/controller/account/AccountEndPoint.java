@@ -298,7 +298,7 @@ public class AccountEndPoint {
                         String userAgent = request.getHeader("User-Agent");
 
                         if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
-                            return ResponseEntity.ok(new OtpEndpoint.ApiResponse(existingToken, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in"));
+                            return responseService.generateSuccessResponse("User has been logged in", existingCustomer, HttpStatus.OK);
 
                         } else {
 
@@ -306,8 +306,7 @@ public class AccountEndPoint {
                             existingCustomer.setToken(token);
                             em.persist(existingCustomer);
                             session.setAttribute(tokenKey, token);
-                            return ResponseEntity.ok(new OtpEndpoint.ApiResponse(token, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in"));
-                        }
+                            return responseService.generateSuccessResponse("User has been logged in", existingCustomer, HttpStatus.OK);                        }
 
                     } else {
                         return responseService.generateErrorResponse("Incorrect Password", HttpStatus.UNAUTHORIZED);

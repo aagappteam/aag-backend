@@ -467,7 +467,8 @@ public class GameService {
     }
 
     private void leftPlayerFromRoom(GameRoom gameRoom, Player player) {
-        gameRoom.getCurrentPlayers().remove(player);
+        player.setGameRoom(null);
+        player.setHasWon(false);
         player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
         playerRepository.save(player);
     }
