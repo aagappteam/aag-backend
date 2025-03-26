@@ -389,8 +389,10 @@ public class GameService {
                 throw new RuntimeException("No records found for vendor with ID: " + vendorId);
             }
 
+            ZonedDateTime now = ZonedDateTime.now();
+            ZonedDateTime startTime = now.minusHours(24);
             // Fetch all published games for the vendor
-            List<Game> games = gameRepository.findByVendorEntityAndStatus(vendorEntity, GameStatus.ACTIVE);
+            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtWithin24Hours(vendorEntity, startTime, now);
 
             // Fetch all available games (no vendor filter)
             List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll(); // Fetch all available games
