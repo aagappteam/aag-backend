@@ -64,6 +64,7 @@ public class AdminReviewService {
 
                 VendorEntity vendorEntity = vendorSubmissionEntity.getVendorEntity();
 
+
                 if (isApproved) {
                     String generatedPassword = PasswordGenerator.generatePassword(8);
                     vendorEntity.setPassword(passwordEncoder.encode(generatedPassword));
