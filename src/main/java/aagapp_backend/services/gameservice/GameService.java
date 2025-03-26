@@ -304,11 +304,11 @@ public class GameService {
                 }
                 game.setStatus(GameStatus.SCHEDULED);
                 game.setScheduledAt(scheduledInKolkata);
-                game.setEndDate(scheduledInKolkata.plusMinutes(15));
+                game.setEndDate(scheduledInKolkata.plusHours(4));
             } else {
                 game.setStatus(GameStatus.ACTIVE);
-                game.setScheduledAt(nowInKolkata);
-                game.setEndDate(nowInKolkata.plusMinutes(15));
+                game.setScheduledAt(nowInKolkata.plusMinutes(15));
+                game.setEndDate(nowInKolkata.plusHours(4));
             }
 
             // Set the minimum and maximum players
