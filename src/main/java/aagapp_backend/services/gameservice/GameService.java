@@ -1,9 +1,7 @@
 package aagapp_backend.services.gameservice;
 
 import aagapp_backend.components.Constant;
-import aagapp_backend.dto.GameRequest;
-import aagapp_backend.dto.GetGameResponseDTO;
-import aagapp_backend.dto.VendorGameResponse;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.*;
@@ -1082,5 +1080,21 @@ public class GameService {
     }
 
 
+/*    public PlayerScore getWinner(List<PlayerScore> playerScores, PostGameRequest postGameRequest) {
+        Game game = getGameById(postGameRequest.getGameId());
+        PlayerScore winner = null;
+
+        for (PlayerScore playerScore : playerScores) {
+            if (winner == null || playerScore.getScore() > winner.getScore()) {
+                winner = playerScore;
+            }
+        }
+
+        if (winner != null) {
+            winner.setPrize(game.getPrice());
+        }
+
+        return winner;
+    }*/
 }
 
