@@ -425,15 +425,6 @@ public class VenderServiceImpl implements VenderService {
     }
 
 
-    public List<VendorEntity> getAllSp(int page, int limit) {
-        int startPosition = page * limit;
-        TypedQuery<VendorEntity> query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS, VendorEntity.class);
-        query.setFirstResult(startPosition);
-        query.setMaxResults(limit);
-        List<VendorEntity> results = query.getResultList();
-        return results;
-    }
-
     public List<VendorEntity> findServiceProviderListByUsername(String username) {
         username = username + "%";
         return entityManager.createQuery(Constant.SP_USERNAME_QUERY, VendorEntity.class)

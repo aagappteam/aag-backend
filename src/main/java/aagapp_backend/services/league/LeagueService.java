@@ -76,8 +76,8 @@ public class LeagueService {
                 league.setChallengedVendors(challengedVendors);
             }
 
-            league.setStatus(LeagueStatus.SCHEDULED);
-            league.setScheduledAt(ZonedDateTime.now().plusMinutes(20));
+/*            league.setStatus(LeagueStatus.SCHEDULED);
+            league.setScheduledAt(ZonedDateTime.now().plusMinutes(20));*/
 
             // Scheduled date validation
             if (leagueRequest.getScheduledAt() != null) {
@@ -86,12 +86,17 @@ public class LeagueService {
                     throw new IllegalArgumentException("The league must be scheduled at least 4 hours in advance.");
                 }
                 league.setScheduledAt(scheduledAtInKolkata);
+                league.setStatus(LeagueStatus.SCHEDULED);
                 league.setEndDate(scheduledAtInKolkata.plusHours(4));
             } else {
                 ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-                league.setScheduledAt(nowInKolkata);
+                league.setScheduledAt(nowInKolkata.plusMinutes(15));
                 league.setEndDate(nowInKolkata.plusHours(4));
+/*
                 league.setStatus(LeagueStatus.ACTIVE);
+*/
+                league.setStatus(LeagueStatus.SCHEDULED);
+
             }
 
             // Set registration deadline if provided

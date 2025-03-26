@@ -87,8 +87,9 @@ public class GameController {
 
             // Extract only the content (list of games) and return it
             List<GetGameResponseDTO> gameList = games.getContent();
+            long totalCount = games.getTotalElements();
 
-            return responseService.generateSuccessResponse("Games fetched successfully", gameList, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithCount("Games fetched successfully", gameList, totalCount, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -199,7 +200,6 @@ public class GameController {
                 notification.setDetails("Game has been Published"); // Example NotificationType for a successful
             }
 
-            System.out.println(notification  + " fdcx");
 
 
             notificationRepository.save(notification);

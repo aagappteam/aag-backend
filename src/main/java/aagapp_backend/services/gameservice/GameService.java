@@ -108,7 +108,7 @@ public class GameService {
     }
 
 
-/*    @Scheduled(cron = "0 * * * * *")  // Every minute
+    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
         int pageSize = 100;
@@ -126,7 +126,7 @@ public class GameService {
             }
             page++;
         }
-    }*/
+    }
 
 /*    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
@@ -302,11 +302,15 @@ public class GameService {
                 }
                 game.setStatus(GameStatus.SCHEDULED);
                 game.setScheduledAt(scheduledInKolkata);
-                game.setEndDate(scheduledInKolkata.plusMinutes(15));
+                game.setEndDate(scheduledInKolkata.plusHours(4));
             } else {
+/*
                 game.setStatus(GameStatus.ACTIVE);
-                game.setScheduledAt(nowInKolkata);
-                game.setEndDate(nowInKolkata.plusMinutes(15));
+*/
+                game.setStatus(GameStatus.SCHEDULED);
+
+                game.setScheduledAt(nowInKolkata.plusMinutes(15));
+                game.setEndDate(nowInKolkata.plusHours(4));
             }
 
             // Set the minimum and maximum players
@@ -391,8 +395,10 @@ public class GameService {
                 throw new RuntimeException("No records found for vendor with ID: " + vendorId);
             }
 
+            ZonedDateTime now = ZonedDateTime.now();
+            ZonedDateTime startTime = now.minusHours(24);
             // Fetch all published games for the vendor
-            List<Game> games = gameRepository.findByVendorEntityAndStatus(vendorEntity, GameStatus.ACTIVE);
+            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtWithin24Hours(vendorEntity, startTime, now);
 
             // Fetch all available games (no vendor filter)
             List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll(); // Fetch all available games
@@ -401,7 +407,9 @@ public class GameService {
             VendorGameResponse response = new VendorGameResponse();
             response.setVendorId(vendorEntity.getService_provider_id());
             response.setDailyLimit(vendorEntity.getDailyLimit());
-            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()));
+            int dailyUsage = countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
+            vendorEntity.setPublishedLimit(dailyUsage);
+            response.setPublishedLimit(dailyUsage);
 
 /*
             response.setPublishedLimit(vendorEntity.getPublishedLimit());
@@ -465,7 +473,8 @@ public class GameService {
     }
 
     private void leftPlayerFromRoom(GameRoom gameRoom, Player player) {
-        gameRoom.getCurrentPlayers().remove(player);
+        player.setGameRoom(null);
+        player.setHasWon(false);
         player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
         playerRepository.save(player);
     }

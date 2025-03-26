@@ -242,6 +242,7 @@ public class OtpEndpoint {
                 if (otpEntered.equals(storedOtp)) {
                     if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                         existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
+//                        sendonboardingmail()
                     }
 
                     existingCustomer.setOtp(null);
@@ -250,17 +251,14 @@ public class OtpEndpoint {
                     String existingToken = existingCustomer.getToken();
 
                     if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
-                        ApiResponse response = new ApiResponse(existingToken, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in");
-                        return ResponseEntity.ok(response);
+                        return responseService.generateSuccessResponse("User has been logged in", existingCustomer, HttpStatus.OK);
 
                     } else {
                         String newToken = jwtUtil.generateToken(existingCustomer.getId(), role, ipAddress, userAgent);
                         session.setAttribute(tokenKey, newToken);
                         existingCustomer.setToken(newToken);
                         em.persist(existingCustomer);
-
-                        ApiResponse response = new ApiResponse(newToken, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in");
-                        return ResponseEntity.ok(response);
+                        return responseService.generateSuccessResponse("User has been logged in", existingCustomer, HttpStatus.OK);
 
                     }
                 } else {

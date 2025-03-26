@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -36,6 +37,17 @@ public class ResponseService {
         errorResponse.setStatus(status);
         return new ResponseEntity<>(errorResponse,status);
     }
+
+    public static ResponseEntity<?> generateSuccessResponseWithCount(String message, List<?> data, Long count, HttpStatus status) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", message);
+        response.put("data", data);
+        response.put("totalCount", count);
+        response.put("status", status);
+        response.put("status_code", status.value());
+        return new ResponseEntity<>(response, status);
+    }
+
 
 
     public  ResponseEntity<Object> generateResponse(HttpStatus httpStatus,String msg,Object responseBody)

@@ -251,7 +251,7 @@ public class PaymentController {
             // Send the invoice URL to the vendor's email
             try {
                 // Assuming paymentEntity.getVendorEntity().getPrimary_email() returns the vendor's email
-                paymentService.sendEmail(paymentEntity.getVendorEntity().getPrimary_email(), invoiceUrl);
+                paymentService.sendEmail(paymentEntity, invoiceUrl);
             } catch (MessagingException e) {
                 // Catch and handle any email sending exceptions
                 return responseService.generateErrorResponse("An error occurred while sending the invoice: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

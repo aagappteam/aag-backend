@@ -119,6 +119,7 @@ public class VendorEntity {
     private String referralCode;
 
     private Integer dailyLimit;
+
     private Integer publishedLimit;
 
     @Nullable
