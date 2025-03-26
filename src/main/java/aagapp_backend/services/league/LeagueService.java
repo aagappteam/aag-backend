@@ -92,7 +92,11 @@ public class LeagueService {
                 ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
                 league.setScheduledAt(nowInKolkata.plusMinutes(15));
                 league.setEndDate(nowInKolkata.plusHours(4));
+/*
                 league.setStatus(LeagueStatus.ACTIVE);
+*/
+                league.setStatus(LeagueStatus.SCHEDULED);
+
             }
 
             // Set registration deadline if provided
