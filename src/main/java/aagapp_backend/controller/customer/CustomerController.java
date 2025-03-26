@@ -10,6 +10,7 @@ import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,37 +52,55 @@ public class CustomerController {
     @Autowired
     private CustomCustomerService customCustomerService;
 
+    @Transactional
     @GetMapping("/get-all-customers")
     public ResponseEntity<?> getAllCustomers(
-            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) Long customerId
     ) {
         try {
+            int startPosition = page * limit;
 
-            int startPosition = offset * limit;
-            if(customerId!=null) {
+            // If customerId is provided, fetch details for that specific customer
+            if (customerId != null) {
                 CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, customerId);
-
-                return ResponseService.generateSuccessResponse("Customer details : ", customCustomer, HttpStatus.OK);
-
+                if (customCustomer == null) {
+                    return ResponseService.generateErrorResponse("Customer not found", HttpStatus.NOT_FOUND);
+                }
+                return ResponseService.generateSuccessResponse("Customer details fetched successfully", customCustomer, HttpStatus.OK);
             }
-            TypedQuery<CustomCustomer> query = entityManager.createQuery(Constant.GET_ALL_CUSTOMERS, CustomCustomer.class);
+
+            // Create base query for fetching all customers
+            StringBuilder queryString = new StringBuilder(Constant.GET_ALL_CUSTOMERS);
+
+            // Create the query for counting rows
+            StringBuilder countQueryString = new StringBuilder("SELECT COUNT(c) FROM CustomCustomer c");
+
+            // Execute the count query to get the total number of matching customers
+            Query countQuery = entityManager.createQuery(countQueryString.toString());
+            Long totalCount = (Long) countQuery.getSingleResult();
+
+            // Create the query for fetching customers
+            Query query = entityManager.createQuery(queryString.toString(), CustomCustomer.class);
+
             query.setFirstResult(startPosition);
             query.setMaxResults(limit);
-            List<CustomCustomer> results = new ArrayList<>();
-            for (CustomCustomer customer : query.getResultList()) {
-                CustomCustomer customerToadd = customCustomerService.readCustomerById(customer.getId());
-                results.add(customerToadd);
-            }
-            return ResponseService.generateSuccessResponse("List of customers : ", results, HttpStatus.OK);
+
+            // Execute the query and get the list of customers
+            List<CustomCustomer> results = query.getResultList();
+
+            // Return the response including the list of customers and the total count
+            return ResponseService.generateSuccessResponseWithCount("List of customers", results, totalCount, HttpStatus.OK);
+
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return ResponseService.generateErrorResponse("Some issue in customers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            return ResponseService.generateErrorResponse("Some issue in fetching customers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
 
     @Transactional
     @PostMapping("create-or-update-password")

@@ -166,16 +166,59 @@ public class VendorController {
 
     @Transactional
     @GetMapping("/get-all-vendors")
-    public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int limit) {
+    public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int limit,
+                                                    @RequestParam(value = "status", required = false) String status,
+                                                    @RequestParam(value = "vendorId", required = false) Long vendorId) {
         try {
             int startPosition = page * limit;
-            Query query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS, VendorEntity.class);
+
+            if (vendorId != null) {
+                VendorEntity serviceProvider = entityManager.find(VendorEntity.class, vendorId);
+                if (serviceProvider == null) {
+                    return ResponseService.generateErrorResponse("Service provider does not found", HttpStatus.NOT_FOUND);
+                }
+                return ResponseService.generateSuccessResponse("Service provider details fetched successfully", serviceProvider, HttpStatus.OK);
+            }
+
+            // Create base query for fetching all vendors
+            StringBuilder queryString = new StringBuilder(Constant.GET_ALL_SERVICE_PROVIDERS);
+
+            // If status is provided, add status filtering to the query
+          /*  if (status != null && !status.isEmpty()) {
+                queryString.append(" WHERE v.status = :status");
+            }*/
+
+            // Create the query for counting rows
+            StringBuilder countQueryString = new StringBuilder("SELECT COUNT(v) FROM VendorEntity v");
+
+            // If status is provided, add status filtering to the count query
+           /* if (status != null && !status.isEmpty()) {
+                countQueryString.append(" WHERE v.status = :status");
+            }*/
+
+            // Execute the count query to get the total number of matching vendors
+            Query countQuery = entityManager.createQuery(countQueryString.toString());
+            if (status != null && !status.isEmpty()) {
+                countQuery.setParameter("status", status);
+            }
+            Long totalCount = (Long) countQuery.getSingleResult();
+
+            // Create the query for fetching vendors
+            Query query = entityManager.createQuery(queryString.toString(), VendorEntity.class);
+
+            // Set parameter for status if provided
+            if (status != null && !status.isEmpty()) {
+                query.setParameter("status", status);
+            }
+
             query.setFirstResult(startPosition);
             query.setMaxResults(limit);
 
+            // Execute the query and get the list of vendors
             List<VendorEntity> results = query.getResultList();
 
-            return ResponseService.generateSuccessResponse("List of vendors: ", results, HttpStatus.OK);
+            // Return the response including the list of vendors and the total count
+            return ResponseService.generateSuccessResponseWithCount("List of vendors", results, totalCount, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -183,6 +226,7 @@ public class VendorController {
             return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
 
     @Transactional
     @GetMapping("/get-all-details/{serviceProviderId}")
