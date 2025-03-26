@@ -128,7 +128,7 @@ public class CustomerController {
                 return ResponseService.generateErrorResponse("User with provided Id not found", HttpStatus.NOT_FOUND);
 
             customCustomerService.updateCustomer(userId, userdetails);
-            return responseService.generateSuccessResponse("User Details Updated", userdetails, HttpStatus.OK);
+            return responseService.generateSuccessResponse("User Details Updated", customCustomer, HttpStatus.OK);
 
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
