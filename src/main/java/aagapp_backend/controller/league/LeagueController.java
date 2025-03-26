@@ -222,7 +222,7 @@ public class LeagueController {
 //    }
 
 
-    @PostMapping("/acceptChallenge/{leagueId}/{vendorId}")
+    @PostMapping("/acceptChallenge/{leagueId}/{vendorId}/{leagueName}")
     public ResponseEntity<?> acceptChallenge(@PathVariable Long leagueId, @PathVariable Long vendorId, @PathVariable String leagueName) {
         try {
             // Retrieve the league
@@ -255,7 +255,7 @@ public class LeagueController {
 
             // Change the status to LIVE
             league.setStatus(LeagueStatus.LIVE);
-            league.setChallengingVendorTeamName(leagueName);
+            league.setOpponentVendorTeamName(leagueName);
             league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
             // Save the league status
