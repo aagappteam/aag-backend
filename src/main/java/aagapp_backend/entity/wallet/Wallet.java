@@ -1,10 +1,13 @@
 package aagapp_backend.entity.wallet;
 
 import aagapp_backend.entity.CustomCustomer;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import io.micrometer.common.lang.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,9 +24,15 @@ public class Wallet {
     @Column(name = "wallet_id")
     private Long walletId;
 
-    @OneToOne
-    @JoinColumn(name = "customerId", nullable = false)
+
+    @ManyToOne
+    @JoinColumn(name = "customerId", referencedColumnName = "customerId", nullable = false)
+    @JsonBackReference
     private CustomCustomer customCustomer;
+
+    @Nullable
+    @Column(name = "bonus_balance")
+    private BigDecimal bonusBalance = BigDecimal.ZERO;
 
     @Column(name = "unplayed_balance", nullable = false)
     private float unplayedBalance;

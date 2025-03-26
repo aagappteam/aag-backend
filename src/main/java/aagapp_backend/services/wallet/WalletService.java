@@ -2,6 +2,7 @@ package aagapp_backend.services.wallet;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
@@ -23,6 +24,9 @@ public class WalletService {
     private ResponseService responseService;
 
     @Autowired
+    private CustomCustomerRepository customCustomerRepository;
+
+    @Autowired
     public WalletService(WalletRepository walletRepository,
                          CustomCustomerService customCustomerService,
                          ExceptionHandlingService exceptionHandlingService,
@@ -36,32 +40,19 @@ public class WalletService {
 
     public Wallet addBalanceToWallet(Long customerId, float amountToAdd, boolean isTest) {
         try {
+
             // Retrieve the customer by ID
             CustomCustomer customer = customCustomerService.getCustomerById(customerId);
-            if (customer == null) {
 
+            if (customer == null) {
                 throw new IllegalStateException("Customer not found for the given ID: " + customerId);
             }
 
-
             // Retrieve the wallet associated with the customer
             Wallet wallet = walletRepository.findByCustomCustomer(customer);
-            if (wallet == null) {
-                // If wallet doesn't exist, create a new one
-                wallet = new Wallet();
-                wallet.setCustomCustomer(customer);
-                wallet.setUnplayedBalance(0); // Initial balance
-            }
-            if (isTest) {
-                //implement this logic according to realtime wallet
-                //TODO: implement
+            if(isTest){
                 wallet.setIsTest(true);
-                System.out.println("wallet created  successfully for test wallet " + customer);
-            } else {
-                //TODO: implement
-                System.out.println("wallet created successfully for test wallet ");
             }
-
             // Add the balance to the wallet
             wallet.setUnplayedBalance(wallet.getUnplayedBalance() + amountToAdd);
 
@@ -94,7 +85,7 @@ public class WalletService {
 
             Map<String, Object> balanceData = new HashMap<>();
             balanceData.put("unplayedBalance", wallet.getUnplayedBalance());
-            balanceData.put("bonusBalance", customer.getBonusBalance());
+            balanceData.put("bonusBalance", wallet.getBonusBalance());
             balanceData.put("winningAmount", wallet.getWinningAmount());
 
             // Return the wallet balance
@@ -106,7 +97,7 @@ public class WalletService {
         }
     }
 
-    public ResponseEntity<?> deductAmountFromWallet(Long customerId, Float deducedAmount) {
+    public Object deductAmountFromWallet(Long customerId, Float deducedAmount) {
         try {
             // Retrieve the customer by ID
             CustomCustomer customer = customCustomerService.getCustomerById(customerId);
@@ -122,20 +113,21 @@ public class WalletService {
             }
 
             // Validate balance before deduction
-            if (deducedAmount > wallet.getUnplayedBalance()) {
-                return responseService.generateErrorResponse("Insufficient balance in the wallet", HttpStatus.BAD_REQUEST);
-            }
+            /*if (deducedAmount > wallet.getUnplayedBalance()) {
+                return responseService.generateErrorResponse("Insufficient balance in the wallet ", HttpStatus.BAD_REQUEST);
+            }*/
 
-            // Apply concurrency control (e.g., optimistic locking) or transaction management here if needed
+            // Apply concurrency control (e.g., optimistic locking) or t ransaction management here if needed
 
             // Deduct the balance from the wallet
             wallet.setUnplayedBalance(wallet.getUnplayedBalance() - deducedAmount);
 
             // Save the updated wallet
             walletRepository.save(wallet);
+            return wallet.getUnplayedBalance();
 
             // Return the updated wallet balance
-            return responseService.generateSuccessResponse("Wallet amount deducted", Float.toString(wallet.getUnplayedBalance()), HttpStatus.OK);
+//            return responseService.generateSuccessResponse("Wallet amount deducted", Float.toString(wallet.getUnplayedBalance()), HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while deducting balance from wallet", e);
