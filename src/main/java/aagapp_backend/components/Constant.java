@@ -115,8 +115,8 @@ public class Constant {
     public static final String PRODUCTTITLENOTGIVEN = "Product MetaTitle not Given";
     public static final int MAX_REQUEST_SIZE = 100;
     public static final int MAX_NESTED_KEY_SIZE = 100;
-    public static final String GET_ALL_SERVICE_PROVIDERS = "Select s from VendorEntity s";
-    public static final String GET_ALL_CUSTOMERS = "Select c from CustomCustomer c";
+    public static final String GET_ALL_SERVICE_PROVIDERS = "Select s from VendorEntity s ORDER BY s.createdDate ASC";
+    public static final String GET_ALL_CUSTOMERS = "Select c from CustomCustomer c ORDER BY c.createdDate ASC";
 
     public static final String GET_ALL_TICKET_STATE = "SELECT c FROM CustomTicketState c";
     public static final String GET_TICKET_STATE_BY_TICKET_STATE_ID = "SELECT c FROM CustomTicketState c WHERE c.ticketStateId = :ticketStateId";

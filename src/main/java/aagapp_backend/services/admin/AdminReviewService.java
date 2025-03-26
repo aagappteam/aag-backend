@@ -70,21 +70,26 @@ public class AdminReviewService {
                     vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
                     vendorEntity.setFirst_name(vendorSubmissionEntity.getFirstName());
                     vendorEntity.setLast_name(vendorSubmissionEntity.getLastName());
-                    vendorRepository.save(vendorEntity);
+                    vendorEntity.setIsVerified(1);
+
+                    entitymanager.merge(vendorEntity);
                     sendApprovalEmail(vendorEntity, vendorSubmissionEntity, generatedPassword);
                     vendorSubmissionEntity.setProfileStatus(ProfileStatus.ACTIVE);
+
                 } else {
                     vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
-                    vendorRepository.save(vendorEntity);
+                    vendorEntity.setFirst_name(vendorSubmissionEntity.getFirstName());
+                    vendorEntity.setLast_name(vendorSubmissionEntity.getLastName());
+                    vendorEntity.setIsVerified(0);
+
+                    entitymanager.merge(vendorEntity);
                     sendRejectionEmail(vendorEntity, vendorSubmissionEntity);
                     vendorSubmissionEntity.setProfileStatus(ProfileStatus.REJECTED);
                 }
 
                 vendorSubmissionEntity.setApproved(isApproved);
-                submissionRepository.save(vendorSubmissionEntity);
+                entitymanager.merge(vendorSubmissionEntity);
 
-                vendorEntity.setIsVerified(1);
-                vendorRepository.save(vendorEntity);
 
                 return new SubmissionResponse(isApproved ? "The submission has been successfully approved." : "The submission has been successfully rejected.", vendorSubmissionEntity);
             }
