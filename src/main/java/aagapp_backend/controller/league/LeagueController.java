@@ -118,6 +118,9 @@ public class LeagueController {
             if (leagueRequest.getLeagueType() == null || leagueRequest.getLeagueType().isEmpty()) {
                 return responseService.generateErrorResponse("League type is required", HttpStatus.BAD_REQUEST);
             }
+            if(leagueRequest.getChallengingVendorTeamName() == null || leagueRequest.getChallengingVendorTeamName().isEmpty()) {
+                return responseService.generateErrorResponse("Challenging Vendor Team Name is required", HttpStatus.BAD_REQUEST);
+            }
 
 
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
@@ -220,16 +223,17 @@ public class LeagueController {
 
 
     @PostMapping("/acceptChallenge/{leagueId}/{vendorId}")
-    public ResponseEntity<?> acceptChallenge(@PathVariable Long leagueId, @PathVariable Long vendorId) {
+    public ResponseEntity<?> acceptChallenge(@PathVariable Long leagueId, @PathVariable Long vendorId, @PathVariable String leagueName) {
         try {
             // Retrieve the league
             League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new RuntimeException("League not found"));
 
             // Check if the league has been challenged and if the vendor is the one challenged
-            if (league.getChallengedVendors() == null || !league.getChallengedVendors().stream().anyMatch(v -> v.getService_provider_id().equals(vendorId))) {
+            if (league.getOpponentVendorId() == null || !league.getOpponentVendorId().equals(vendorId)) {
                 return responseService.generateErrorResponse("This vendor was not challenged", HttpStatus.BAD_REQUEST);
             }
+
 
             // Ensure the league is still in the "scheduled" state and within the 10-minute challenge window
             if (league.getStatus() != LeagueStatus.SCHEDULED) {
@@ -251,6 +255,7 @@ public class LeagueController {
 
             // Change the status to LIVE
             league.setStatus(LeagueStatus.LIVE);
+            league.setChallengingVendorTeamName(leagueName);
             league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
             // Save the league status
@@ -272,8 +277,7 @@ public class LeagueController {
                     .orElseThrow(() -> new RuntimeException("League not found"));
 
             // Check if the vendor is part of the challenged vendors
-            if (league.getChallengedVendors() == null ||
-                    !league.getChallengedVendors().stream().anyMatch(v -> v.getService_provider_id().equals(vendorId))) {
+            if (league.getOpponentVendorId() == null || !league.getOpponentVendorId().equals(vendorId)) {
                 return responseService.generateErrorResponse("This vendor was not challenged", HttpStatus.BAD_REQUEST);
             }
 

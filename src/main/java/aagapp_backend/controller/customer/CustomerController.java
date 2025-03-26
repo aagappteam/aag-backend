@@ -3,28 +3,23 @@ package aagapp_backend.controller.customer;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomCustomer;
-import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
-import aagapp_backend.services.vendor.VenderService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/customer")
@@ -50,6 +45,9 @@ public class CustomerController {
 
     @Autowired
     private CustomCustomerService customCustomerService;
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
 
     @GetMapping("/get-all-customers")
     public ResponseEntity<?> getAllCustomers(
@@ -144,7 +142,7 @@ public class CustomerController {
     public ResponseEntity<?> getUserById(@PathVariable Long userId) {
         try {
             if(userId!=null) {
-                CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, userId);
+                Optional<CustomCustomer> customCustomer = customCustomerRepository.findById(userId);
 
                 return ResponseService.generateSuccessResponse("Customer details : ", customCustomer, HttpStatus.OK);
 

@@ -13,8 +13,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
-import java.util.Date;
-import java.util.List;
 
 @Entity
 @Table(
@@ -42,14 +40,20 @@ public class League {
     @Column(nullable = false)
     private String name;
 
+    private String challengingVendorTeamName;
+
+    private String opponentVendorTeamName;
+
     @Column(nullable = false)
     private Double fee;
 
     private Integer move;
 
-    @ManyToOne
+    /*@ManyToOne
     @JoinColumn(name = "vendor_id", nullable = false)
-    private VendorEntity vendorEntity;
+    private VendorEntity vendorEntity;*/
+
+
 
     private String shareableLink;
 
@@ -57,7 +61,7 @@ public class League {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    private LeagueStatus status = LeagueStatus.SCHEDULED;
+    private LeagueStatus status = LeagueStatus.PENDING;
 
     @Column(name = "league_type", nullable = true)
     private String leagueType;
@@ -74,13 +78,20 @@ public class League {
     @JoinColumn(name = "theme_id", nullable = true)
     private ThemeEntity theme;
 
-    @ManyToMany
+    /*@ManyToMany
     @JoinTable(
             name = "league_challenges",
             joinColumns = @JoinColumn(name = "league_id"),
             inverseJoinColumns = @JoinColumn(name = "vendor_id")
-    )
-    private List<VendorEntity> challengedVendors;
+    )*/
+
+    @Column(name = "challenging_vendor_id")
+    private Long challengingVendorId;
+
+    @Column(name = "opponent_vendor_id")
+    private Long opponentVendorId;
+
+
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)

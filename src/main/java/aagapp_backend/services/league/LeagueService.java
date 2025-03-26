@@ -9,8 +9,6 @@ import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,10 +45,12 @@ public class LeagueService {
             league.setLeagueType(leagueRequest.getLeagueType());
             league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
             league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
+            league.setChallengingVendorTeamName(leagueRequest.getChallengingVendorTeamName());
+            league.setStatus(LeagueStatus.PENDING);
 
-            VendorEntity vendor = vendorRepository.findById(vendorId)
-                    .orElseThrow(() -> new RuntimeException("Vendor not found"));
-            league.setVendorEntity(vendor);
+            Long vendor = vendorRepository.findById(vendorId)
+                    .orElseThrow(() -> new RuntimeException("Vendor not found")).getService_provider_id();
+            league.setChallengingVendorId(vendor);
 
             // Ensure a vendor cannot challenge themselves
             if (leagueRequest.getOpponentVendorId() != null && leagueRequest.getOpponentVendorId().equals(vendorId)) {
@@ -65,16 +65,21 @@ public class LeagueService {
 
             // Handle challenge scenario
             if (leagueRequest.getIsChallenge()) {
-                List<VendorEntity> challengedVendors = new ArrayList<>();
+                Long challengedVendorId = null;
+
                 if (leagueRequest.getOpponentVendorId() == null) {
-                    challengedVendors.add(getRandomAvailableVendor(vendorId));
+                    VendorEntity randomVendor = getRandomAvailableVendor(vendorId);
+                    challengedVendorId = randomVendor.getService_provider_id(); // Store only the vendor ID
                 } else {
                     VendorEntity opponentVendor = vendorRepository.findById(leagueRequest.getOpponentVendorId())
                             .orElseThrow(() -> new RuntimeException("Opponent vendor not found"));
-                    challengedVendors.add(opponentVendor);
+                    challengedVendorId = opponentVendor.getService_provider_id(); // Store only the vendor ID
                 }
-                league.setChallengedVendors(challengedVendors);
+
+                league.setOpponentVendorId(challengedVendorId); // Set only the vendor ID
             }
+
+
 
             league.setStatus(LeagueStatus.SCHEDULED);
             league.setScheduledAt(ZonedDateTime.now().plusMinutes(20));
@@ -221,13 +226,13 @@ public class LeagueService {
     public Page<League> getAllLeagues(Pageable pageable, String status, Long vendorId) {
         try {
             // Check if 'status' and 'vendorId' are provided and build a query accordingly
-           if (status != null && vendorId != null) {
+           /*if (status != null && vendorId != null) {
                 return leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
-            } else if (status != null) {
+            } else*/ if (status != null) {
                 return leagueRepository.findByStatus(status, pageable);
-            } else if (vendorId != null) {
+            } /*else if (vendorId != null) {
                 return leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
-            } else {
+            }*/ else {
                 return leagueRepository.findAll(pageable); // Return all leagues with pagination if no filters
             }
         } catch (Exception e) {
@@ -285,12 +290,12 @@ public class LeagueService {
 
             for (League league : scheduledLeagues) {
                 // If the 10-minute window has passed since the challenge was scheduled
-                if (ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).isAfter(league.getCreatedDate().plusMinutes(10))) {
+                if (ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).isAfter(league.getCreatedDate().plusMinutes(1))) {
                     // Reject the challenge if it's expired
                     league.setStatus(LeagueStatus.REJECTED);
                     league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
                     leagueRepository.save(league);
-
+                    leagueRepository.delete(league);
                 }
             }
         } catch (Exception e) {

@@ -18,6 +18,8 @@ public class LeagueRequest {
 
     private String description;
 
+    private String challengingVendorTeamName;
+
     @NotNull(message = "Fee cannot be null")
     private Double fee;
 
