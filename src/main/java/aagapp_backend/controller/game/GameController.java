@@ -199,7 +199,6 @@ public class GameController {
                 notification.setDetails("Game has been Published"); // Example NotificationType for a successful
             }
 
-            System.out.println(notification  + " fdcx");
 
 
             notificationRepository.save(notification);

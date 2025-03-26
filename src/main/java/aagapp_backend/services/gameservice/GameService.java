@@ -110,7 +110,7 @@ public class GameService {
     }
 
 
-/*    @Scheduled(cron = "0 * * * * *")  // Every minute
+    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
         int pageSize = 1000;
@@ -130,7 +130,7 @@ public class GameService {
             }
             page++;
         }
-    }*/
+    }
 
 /*    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
