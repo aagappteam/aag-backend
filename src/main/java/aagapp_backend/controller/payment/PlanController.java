@@ -68,6 +68,35 @@ public class PlanController {
             return ResponseService.generateErrorResponse("Error fetching plans: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @PutMapping("/update/{planId}")
+    public ResponseEntity<?> updatePlan(@PathVariable Long planId, @RequestBody PlanEntity planEntity) {
+        try {
+            // Fetch the existing plan by ID
+            PlanEntity existingPlan = planService.getPlanById(planId);
+
+            if (existingPlan == null) {
+                return ResponseService.generateErrorResponse("Plan with ID " + planId + " not found", HttpStatus.NOT_FOUND);
+            }
+
+            // Update the fields of the existing plan with the new data from the request body
+            existingPlan.setPlanName(planEntity.getPlanName());
+            existingPlan.setPlanVariant(planEntity.getPlanVariant());
+            existingPlan.setFollowersRequirement(planEntity.getFollowersRequirement());
+            existingPlan.setPrice(planEntity.getPrice());
+            existingPlan.setSubtitle(planEntity.getSubtitle());
+            existingPlan.setFeatures(planEntity.getFeatures());
+
+            // Save the updated plan
+            PlanEntity updatedPlan = planService.updatePlan(existingPlan);
+
+            return ResponseService.generateSuccessResponse("Plan updated successfully!", updatedPlan, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Error updating plan: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     @GetMapping("get-plansbyvendorid")
     public ResponseEntity<?> getAllPlansByVendorId(
             @RequestParam(required = false) String planVariant,
