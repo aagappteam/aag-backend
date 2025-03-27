@@ -2,7 +2,9 @@ package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.ChallengeStatus;
 import aagapp_backend.enums.LeagueStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -37,34 +39,38 @@ public class League {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String name;
 
-    private String challengingVendorTeamName;
-
-    private String opponentVendorTeamName;
-
-    @Column(nullable = false)
+    @Column(name = "fee", nullable = false)
     private Double fee;
 
+    @Column(name = "move", nullable = false)
     private Integer move;
 
-    /*@ManyToOne
+    @Enumerated(EnumType.STRING)
+    private LeagueStatus status;
+
+    private String leagueUrl;
+
+
+    @Column(name = "aaggameid", nullable = true)
+    private Long aagGameId;
+
+
+    @ManyToOne
     @JoinColumn(name = "vendor_id", nullable = false)
-    private VendorEntity vendorEntity;*/
+    @JsonBackReference
+    private VendorEntity vendorEntity;
 
+    @ManyToOne
+    @JoinColumn(name = "theme_id", nullable = true)
+    private ThemeEntity theme;
 
+    private Integer minPlayersPerTeam;
+    private Integer maxPlayersPerTeam;
 
     private String shareableLink;
 
-    @Column(nullable = true)
-    private String description;
-
-    @Enumerated(EnumType.STRING)
-    private LeagueStatus status = LeagueStatus.PENDING;
-
-    @Column(name = "league_type", nullable = true)
-    private String leagueType;
 
     @Column(name = "scheduled_at", nullable = true)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -74,19 +80,6 @@ public class League {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime endDate;
 
-    @ManyToOne
-    @JoinColumn(name = "theme_id", nullable = true)
-    private ThemeEntity theme;
-
-    /*@ManyToMany
-    @JoinTable(
-            name = "league_challenges",
-            joinColumns = @JoinColumn(name = "league_id"),
-            inverseJoinColumns = @JoinColumn(name = "vendor_id")
-    )*/
-
-    @Column(name = "challenging_vendor_id")
-    private Long challengingVendorId;
 
     @Column(name = "opponent_vendor_id")
     private Long opponentVendorId;
@@ -103,10 +96,7 @@ public class League {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime updatedDate;
 
-    private Integer minPlayersPerTeam;
-    private Integer maxPlayersPerTeam;
-
-    private ZonedDateTime challengeTimestamp;
+//    private ZonedDateTime challengeTimestamp;
 
     @PreUpdate
     public void preUpdate() {
@@ -115,7 +105,7 @@ public class League {
 
     @PrePersist
     public void prePersist() {
-        this.challengeTimestamp=ZonedDateTime.now();
+//        this.challengeTimestamp=ZonedDateTime.now();
         if (this.minPlayersPerTeam == null) {
             this.minPlayersPerTeam = 1; // Default value for minPlayersPerTeam
         }

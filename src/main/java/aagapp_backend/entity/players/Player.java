@@ -2,6 +2,7 @@ package aagapp_backend.entity.players;
 
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.game.Token;
+import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.enums.PlayerStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -23,7 +24,6 @@ public class Player {
     @Column(name = "player_id")
     private Long playerId;
 
-
     private String name;
 
     @NotNull(message = "Status cannot be null")
@@ -37,6 +37,11 @@ public class Player {
     @JoinColumn(name = "game_room_id")
     @JsonBackReference(value = "gameRoomReference")
     private GameRoom gameRoom;
+
+    @ManyToOne
+    @JoinColumn(name = "league_room_id")
+    private LeagueRoom leagueRoom;
+
 
     private String color; // Red, Blue, Green, Yellow
 

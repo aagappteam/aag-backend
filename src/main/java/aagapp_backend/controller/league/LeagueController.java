@@ -1,15 +1,20 @@
 package aagapp_backend.controller.league;
 
+import aagapp_backend.dto.GameRequest;
 import aagapp_backend.dto.LeagueRequest;
+import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.NotificationType;
+import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -34,12 +39,24 @@ import java.util.NoSuchElementException;
 public class LeagueController {
 
     private LeagueService leagueService;
+    private GameService gameService;
     private ExceptionHandlingImplement exceptionHandling;
     private ResponseService responseService;
     private PaymentFeatures paymentFeatures;
     private VendorRepository vendorRepository;
     private LeagueRepository leagueRepository;
     private NotificationRepository notificationRepository;
+    private ChallangeRepository challangeRepository;
+
+    @Autowired
+    public void setChallangeRepository(@Lazy ChallangeRepository challangeRepository){
+        this.challangeRepository = challangeRepository;
+    }
+
+    @Autowired
+    public void setGameService(@Lazy GameService gameService) {
+        this.gameService = gameService;
+    }
 
     @Autowired
     public void setNotificationRepository(@Lazy NotificationRepository notificationRepository) {
@@ -104,56 +121,100 @@ public class LeagueController {
     }
 
 
-    @PostMapping("/publishLeague/{vendorId}")
-    public ResponseEntity<?> publishLeague(@PathVariable Long vendorId, @RequestBody LeagueRequest leagueRequest) {
+    // Create Challenge API
+    @PostMapping("/createChallenge")
+    public ResponseEntity<?> createChallenge(@RequestBody LeagueRequest leagueRequest, @RequestParam Long vendorId) {
         try {
-            // Validate inputs
-
-            if (leagueRequest.getFee() == null || leagueRequest.getFee() <= 0) {
-                return responseService.generateErrorResponse("Fee must be a positive value", HttpStatus.BAD_REQUEST);
-            }
-            if (leagueRequest.getThemeId() == null) {
-                return responseService.generateErrorResponse("Theme ID is required", HttpStatus.BAD_REQUEST);
-            }
-            if (leagueRequest.getLeagueType() == null || leagueRequest.getLeagueType().isEmpty()) {
-                return responseService.generateErrorResponse("League type is required", HttpStatus.BAD_REQUEST);
-            }
-            if(leagueRequest.getChallengingVendorTeamName() == null || leagueRequest.getChallengingVendorTeamName().isEmpty()) {
-                return responseService.generateErrorResponse("Challenging Vendor Team Name is required", HttpStatus.BAD_REQUEST);
-            }
-
-
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
             if (paymentEntity.getStatusCode() != HttpStatus.OK) {
                 return paymentEntity;
             }
+            Challenge challenge= leagueService.createChallenge(leagueRequest, vendorId);
+            return responseService.generateSuccessResponse("Challenge created successfully. Awaiting opponent's response.",challenge, HttpStatus.OK);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error creating challenge: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-            // Publish the league
-            League publishedLeague = leagueService.publishLeague(leagueRequest, vendorId);
-            String successMessage = (leagueRequest.getScheduledAt() != null) ? "League scheduled successfully" : "League published successfully";
-            String description = (leagueRequest.getScheduledAt() != null) ? "Scheduled League" : "Published League";
-            NotificationType Type = (leagueRequest.getScheduledAt() != null) ? NotificationType.SCHEDULED_LEAGUE: NotificationType.PUBLISHED_LEAGUE;
+
+    // Reject Challenge API
+    @PostMapping("/rejectChallenge/{challengeId}")
+    public ResponseEntity<?> rejectChallenge(@PathVariable Long challengeId, @RequestParam Long vendorId) {
+        try {
+            leagueService.rejectChallenge(challengeId, vendorId);
+            return responseService.generateSuccessResponse("Challenge rejected successfully.","reject", HttpStatus.OK);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error rejecting challenge: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @PostMapping("/publishLeague/{vendorId}/{challengeId}")
+    public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @PathVariable Long challengeId) {
+        try {
+
+            Challenge challenge = challangeRepository.findById(challengeId)
+                    .orElseThrow(() -> new RuntimeException("This Challange is  not found"));
+            if(vendorId != challenge.getOpponentVendorId()) {
+                return responseService.generateErrorResponse("You are not the opponent of this challenge.", HttpStatus.UNAUTHORIZED);
+            }
+
+            if (challenge.getChallengeStatus() != Challenge.ChallengeStatus.PENDING) {
+                throw new IllegalArgumentException("The challenge is no longer pending.");
+            }
+
+            ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
+
+            if (paymentEntity.getStatusCode() != HttpStatus.OK) {
+                return paymentEntity;
+            }
+
+            League publishedLeague = leagueService.publishLeague(challenge, vendorId);
+
+
+            // Now create a single notification for the vendor
             Notification notification = new Notification();
-            notification.setVendorId(vendorId);  // Set the vendor ID
-            notification.setRole("Vendor");  // The role is "Vendor"
-/*
-            notification.setType(Type);  // Example NotificationType for a successful payment
-*/
-            notification.setDescription(description); // Example NotificationType for a successful
+            notification.setRole("Vendor");
 
-            notification.setDetails(successMessage);
+            notification.setVendorId(vendorId);
+            if (challenge.getScheduledAt() != null) {
+/*
+                notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
+*/
+                notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
+                notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
+            }else{
+/*
+                notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
+*/
+                notification.setDescription("Published Game"); // Example NotificationType for a successful
+                notification.setDetails("Game has been Published"); // Example NotificationType for a successful
+            }
+
+//            System.out.println(notification  + " fdcx");
+
 
             notificationRepository.save(notification);
 
-            return responseService.generateSuccessResponse(successMessage, publishedLeague, HttpStatus.CREATED);
+            if (challenge.getScheduledAt() != null) {
+                return responseService.generateSuccessResponse("Game scheduled successfully", publishedLeague, HttpStatus.CREATED);
+            } else {
+                return responseService.generateSuccessResponse("Game published successfully", publishedLeague, HttpStatus.CREATED);
+            }
         } catch (LimitExceededException e) {
-            return responseService.generateErrorResponse("Exceeded maximum allowed leagues", HttpStatus.TOO_MANY_REQUESTS);
+            return responseService.generateErrorResponse("Exceeded maximum allowed games ", HttpStatus.TOO_MANY_REQUESTS);
+
         } catch (NoSuchElementException e) {
-            return responseService.generateErrorResponse("Required entity not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
+            return responseService.generateErrorResponse("Required entity not found " + e.getMessage(), HttpStatus.NOT_FOUND);
+
         } catch (IllegalArgumentException e) {
-            return responseService.generateErrorResponse("Invalid league data: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+
+            return responseService.generateErrorResponse("Invalid game data " + e.getMessage(), HttpStatus.BAD_REQUEST);
+
         } catch (Exception e) {
-            return responseService.generateErrorResponse("Error publishing league: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error publishing game" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -222,7 +283,7 @@ public class LeagueController {
 //    }
 
 
-    @PostMapping("/acceptChallenge/{leagueId}/{vendorId}/{leagueName}")
+    /*@PostMapping("/acceptChallenge/{leagueId}/{vendorId}/{leagueName}")
     public ResponseEntity<?> acceptChallenge(@PathVariable Long leagueId, @PathVariable Long vendorId, @PathVariable String leagueName) {
         try {
             // Retrieve the league
@@ -255,7 +316,7 @@ public class LeagueController {
 
             // Change the status to LIVE
             league.setStatus(LeagueStatus.LIVE);
-            league.setOpponentVendorTeamName(leagueName);
+//            league.setOpponentVendorTeamName(leagueName);
             league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
             // Save the league status
@@ -306,7 +367,7 @@ public class LeagueController {
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error rejecting challenge: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     @GetMapping("/get-vendors-with-available-leagues")
     public ResponseEntity<?> getVendorsWithAvailableLeagues() {

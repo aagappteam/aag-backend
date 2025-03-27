@@ -1,21 +1,33 @@
-package aagapp_backend.dto;
+package aagapp_backend.entity;
 
-import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.ChallengeStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.ZonedDateTime;
-import java.util.List;
 
+@Entity
 @Getter
 @Setter
-public class LeagueRequest {
+public class Challenge {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long vendorId;
 
     private Long opponentVendorId;
-    private Long themeId;
+
+    @Enumerated(EnumType.STRING)
+    private ChallengeStatus challengeStatus;
+
     private Long existinggameId;
+
+    private Long themeId;
 
     private Integer minPlayersPerTeam;
     private Integer maxPlayersPerTeam;
@@ -28,6 +40,9 @@ public class LeagueRequest {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime endDate;
+
+    public enum ChallengeStatus {
+        PENDING, ACCEPTED, REJECTED
+    }
 }

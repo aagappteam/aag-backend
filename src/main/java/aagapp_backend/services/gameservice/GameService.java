@@ -403,7 +403,6 @@ public class GameService {
             response.setVendorId(vendorEntity.getService_provider_id());
             response.setDailyLimit(vendorEntity.getDailyLimit());
             int dailyUsage = countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
-            System.out.println(dailyUsage);
             vendorEntity.setPublishedLimit(dailyUsage);
             response.setPublishedLimit(dailyUsage);
 
