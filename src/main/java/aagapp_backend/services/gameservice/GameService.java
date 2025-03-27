@@ -389,8 +389,11 @@ public class GameService {
                 throw new RuntimeException("No records found for vendor with ID: " + vendorId);
             }
 
+            ZonedDateTime now = ZonedDateTime.now();
+            // Get the time 24 hours later
+            ZonedDateTime endTime = now.plusHours(24);
             // Fetch all published games for the vendor
-            List<Game> games = gameRepository.findByVendorEntityAndStatus(vendorEntity, GameStatus.ACTIVE);
+            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtWithin24Hours(vendorEntity, now, endTime);
 
             // Fetch all available games (no vendor filter)
             List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll(); // Fetch all available games
@@ -399,7 +402,10 @@ public class GameService {
             VendorGameResponse response = new VendorGameResponse();
             response.setVendorId(vendorEntity.getService_provider_id());
             response.setDailyLimit(vendorEntity.getDailyLimit());
-            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()));
+            int dailyUsage = countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
+            System.out.println(dailyUsage);
+            vendorEntity.setPublishedLimit(dailyUsage);
+            response.setPublishedLimit(dailyUsage);
 
 /*
             response.setPublishedLimit(vendorEntity.getPublishedLimit());

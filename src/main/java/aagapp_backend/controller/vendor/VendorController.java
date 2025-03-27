@@ -241,8 +241,13 @@ public class VendorController {
             vendorEntity.setIsPaused(isPaused);
             vendorEntity.setPauseReason(pauseReason);
 
-            return responseService.generateSuccessResponse("your account has been paused ", pauseReason, HttpStatus.OK);
-
+            // If the account is paused
+            if (isPaused) {
+                return responseService.generateSuccessResponse("Your account has been paused.", "isPaused "+isPaused, HttpStatus.OK);
+            } else {
+                // If the account is unpaused
+                return responseService.generateSuccessResponse("Your account has been unpaused.", "isPaused "+isPaused, HttpStatus.OK);
+            }
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error updating pause duration: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
