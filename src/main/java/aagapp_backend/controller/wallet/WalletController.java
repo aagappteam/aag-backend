@@ -119,8 +119,8 @@ public class WalletController {
 
 
     // Method to handle the POST request to get balance
-    @PostMapping("/getBalance")
-    public ResponseEntity<?> getBalance(@RequestBody Map<String, Long> requestParams, @RequestHeader(value = "Authorization") String authorization) {
+    @GetMapping("/getBalance/{customerId}")
+    public ResponseEntity<?> getBalance(@PathVariable("customerId") Long customerId, @RequestHeader(value = "Authorization") String authorization) {
         try {
             // Validate Authorization header
             if (authorization == null || !authorization.startsWith("Bearer ")) {
@@ -128,7 +128,6 @@ public class WalletController {
             }
 
             String token = authorization.substring(7);
-            Long customerId = requestParams.get("customerId");
 
             // Validate customerId
             if (customerId == null) {
@@ -152,10 +151,8 @@ public class WalletController {
                 return responseService.generateResponse(HttpStatus.OK, "No wallet found for the user" ,null);
 
             }
-
-            return responseService.generateSuccessResponse("Wallet balance retrieved successfully", wallet.getBody(), HttpStatus.OK);
+            return wallet;
         } catch (Exception e) {
-//            logger.error("Error occurred while retrieving balance for customer", e);
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error retrieving balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -198,7 +195,7 @@ public class WalletController {
             }
 
             // Call the wallet service to deduct the amount
-            ResponseEntity<?> updatedWallet = walletService.deductAmountFromWallet(customerId, amount);
+            Wallet updatedWallet = walletService.deductAmountFromWallet(customerId, amount);
 
 
             // Now create a single notification for the vendor
@@ -261,7 +258,7 @@ public class WalletController {
                 return responseService.generateErrorResponse("Amount is too small", HttpStatus.BAD_REQUEST);
             }
             // Call the wallet service to withdraw the amount
-            ResponseEntity<?> updatedWallet = walletService.withdrawalAmountFromWallet(customerId, amount);
+            Wallet updatedWallet = walletService.withdrawalAmountFromWallet(customerId, amount);
 
             return responseService.generateSuccessResponse("Balance withdrawn successfully", updatedWallet, HttpStatus.OK);
         }catch (Exception e) {
