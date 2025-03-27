@@ -279,7 +279,6 @@ public class GameService {
             game.setTheme(theme);
             game.setAaggameid(existinggameId);
             // Calculate moves based on the selected fee
-
             game.setFee(gameRequest.getFee());
             if(gameRequest.getFee()>10){
                 game.setMove(Constant.TENMOVES);
