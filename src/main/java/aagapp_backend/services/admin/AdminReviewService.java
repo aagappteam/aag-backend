@@ -68,9 +68,9 @@ public class AdminReviewService {
                 if (isApproved) {
                     String generatedPassword = PasswordGenerator.generatePassword(8);
                     vendorEntity.setPassword(passwordEncoder.encode(generatedPassword));
-                    vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
+                  /*  vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
                     vendorEntity.setFirst_name(vendorSubmissionEntity.getFirstName());
-                    vendorEntity.setLast_name(vendorSubmissionEntity.getLastName());
+                    vendorEntity.setLast_name(vendorSubmissionEntity.getLastName());*/
                     vendorEntity.setIsVerified(1);
 
                     entitymanager.merge(vendorEntity);
@@ -78,9 +78,9 @@ public class AdminReviewService {
                     vendorSubmissionEntity.setProfileStatus(ProfileStatus.ACTIVE);
 
                 } else {
-                    vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
+/*                    vendorEntity.setPrimary_email(vendorSubmissionEntity.getEmail());
                     vendorEntity.setFirst_name(vendorSubmissionEntity.getFirstName());
-                    vendorEntity.setLast_name(vendorSubmissionEntity.getLastName());
+                    vendorEntity.setLast_name(vendorSubmissionEntity.getLastName());*/
                     vendorEntity.setIsVerified(0);
 
                     entitymanager.merge(vendorEntity);
@@ -135,6 +135,7 @@ public class AdminReviewService {
             exceptionHandlingImplement.handleException(e);
         }
     }
+
 
 
     private void sendRejectionEmail(VendorEntity vendorEntity, VendorSubmissionEntity vendorSubmissionEntity) throws MessagingException {

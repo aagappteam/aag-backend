@@ -181,5 +181,6 @@ public class Constant {
     public static Integer TOKEN_SIZE = 2;
 
     public static String PROFILE_IMAGE_URL = "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
+    public static final String ONBOARDING_EMAIL_SUBJECT = "Welcome to AAg Application - Profile Verification in Progress";
 
 }

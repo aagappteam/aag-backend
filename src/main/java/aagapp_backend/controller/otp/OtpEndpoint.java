@@ -242,7 +242,9 @@ public class OtpEndpoint {
                 if (otpEntered.equals(storedOtp)) {
                     if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                         existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
-//                        sendonboardingmail()
+/*
+                        sendOnboardingEmail(existingCustomer.getEmail(), existingCustomer.getName(), existingCustomer.getLastName());
+*/
                     }
 
                     existingCustomer.setOtp(null);

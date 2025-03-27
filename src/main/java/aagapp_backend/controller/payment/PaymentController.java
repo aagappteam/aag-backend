@@ -262,6 +262,7 @@ public class PaymentController {
 
         } catch (Exception e) {
             // Catch any unexpected exceptions
+            exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An unexpected error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
