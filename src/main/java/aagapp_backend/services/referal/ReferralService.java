@@ -74,7 +74,7 @@ public class ReferralService {
 
                 // Update referral count and bonus balance
                 referrer.setReferralCount(referrer.getReferralCount() + 1);
-                referrerWallet.setBonusBalance(referrerWallet.getBonusBalance().add(BigDecimal.valueOf(Constant.USER_REFERAL_BALANCE)));
+                referrer.setBonusBalance(referrer.getBonusBalance().add(BigDecimal.valueOf(Constant.USER_REFERAL_BALANCE)));
 
                 // Save the updated referrer (this will also save the wallet if it's changed)
                 customCustomerRepository.save(referrer);

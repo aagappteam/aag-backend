@@ -65,6 +65,10 @@ public class CustomCustomer {
     @Column(name = "referred_count")
     private int referralCount;
 
+    @Nullable
+    @Column(name = "bonus_balance")
+    private BigDecimal bonusBalance = BigDecimal.ZERO;
+
 
     @OneToOne(mappedBy = "customCustomer")
     @JsonIgnore

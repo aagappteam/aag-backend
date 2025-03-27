@@ -25,15 +25,11 @@ public class Wallet {
     @Column(name = "wallet_id")
     private Long walletId;
 
-
     @ManyToOne
     @JoinColumn(name = "customerId", referencedColumnName = "customerId", nullable = false)
     @JsonBackReference
     private CustomCustomer customCustomer;
 
-    @Nullable
-    @Column(name = "bonus_balance")
-    private BigDecimal bonusBalance = BigDecimal.ZERO;
 
     @Column(name = "unplayed_balance", nullable = false)
     private Float unplayedBalance;
