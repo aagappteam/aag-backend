@@ -3,7 +3,9 @@ package aagapp_backend.services.referal;
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
+import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,9 @@ public class ReferralService {
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandling;
+
+    @Autowired
+    private WalletRepository walletRepository;
 
     public String generateReferralCode(CustomCustomer customerId) {
         try {
@@ -63,13 +68,21 @@ public class ReferralService {
         try {
             CustomCustomer referrer = customCustomerService.findCustomCustomerByReferralCode(referredCode);
             if (referrer != null) {
+
+                // Check if referrer's wallet exists
+                Wallet referrerWallet = walletRepository.findByCustomCustomer(referrer);
+
+                // Update referral count and bonus balance
                 referrer.setReferralCount(referrer.getReferralCount() + 1);
                 referrer.setBonusBalance(referrer.getBonusBalance().add(BigDecimal.valueOf(Constant.USER_REFERAL_BALANCE)));
+
+                // Save the updated referrer (this will also save the wallet if it's changed)
                 customCustomerRepository.save(referrer);
             }
         } catch (Exception e) {
             exceptionHandling.handleException(e);
         }
     }
+
 }
 

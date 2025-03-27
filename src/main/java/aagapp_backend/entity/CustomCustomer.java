@@ -1,8 +1,11 @@
 package aagapp_backend.entity;
 
 import aagapp_backend.entity.devices.UserDevice;
+import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.ProfileStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -66,9 +69,12 @@ public class CustomCustomer {
     @Column(name = "bonus_balance")
     private BigDecimal bonusBalance = BigDecimal.ZERO;
 
-    @Nullable
-    @Column(name = "wallet_balance")
-    private BigDecimal walletBalance = BigDecimal.ZERO;
+
+    @OneToOne(mappedBy = "customCustomer")
+    @JsonIgnore
+    @JsonManagedReference
+    private Wallet wallet;
+
 
     @NotNull(message = "Mobile number is required")
     @Column(name = "mobile_number", unique = true)
