@@ -65,18 +65,12 @@ public class CustomCustomer {
     @Column(name = "referred_count")
     private int referralCount;
 
-   /* @Nullable
-    @Column(name = "bonus_balance")
-    private BigDecimal bonusBalance = BigDecimal.ZERO;*/
 
     @OneToOne(mappedBy = "customCustomer")
     @JsonIgnore
     @JsonManagedReference
     private Wallet wallet;
 
-    /*@Nullable
-    @Column(name = "wallet_balance")
-    private BigDecimal walletBalance = BigDecimal.ZERO;*/
 
     @NotNull(message = "Mobile number is required")
     @Column(name = "mobile_number", unique = true)

@@ -195,7 +195,7 @@ public class WalletController {
             }
 
             // Call the wallet service to deduct the amount
-            float updatedWallet = walletService.deductAmountFromWallet(customerId, amount);
+            Wallet updatedWallet = walletService.deductAmountFromWallet(customerId, amount);
 
 
             // Now create a single notification for the vendor

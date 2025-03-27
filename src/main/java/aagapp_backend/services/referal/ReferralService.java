@@ -71,18 +71,6 @@ public class ReferralService {
 
                 // Check if referrer's wallet exists
                 Wallet referrerWallet = walletRepository.findByCustomCustomer(referrer);
-                /*if (referrerWallet == null) {
-                    // Create a new wallet for the referrer if it doesn't exist
-                    referrerWallet = new Wallet();
-                    referrerWallet.setCustomCustomer(referrer);
-                    referrerWallet.setUnplayedBalance(0);  // Set default value
-                    referrerWallet.setWinningAmount(0);  // Set default value
-                    referrerWallet.setBonusBalance(BigDecimal.ZERO);  // Set default value
-                    referrerWallet.setIsTest(false);  // Set default value (assuming it's not a test account)
-
-                    // Save the wallet
-                    walletRepository.save(referrerWallet);  // Make sure you have a walletRepository
-                }*/
 
                 // Update referral count and bonus balance
                 referrer.setReferralCount(referrer.getReferralCount() + 1);

@@ -13,9 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Service
 public class WalletService {
 
@@ -91,7 +88,7 @@ public class WalletService {
     }
 
     @Transactional
-    public float deductAmountFromWallet(Long customerId, Float deducedAmount) {
+    public Wallet deductAmountFromWallet(Long customerId, Float deducedAmount) {
         try {
             // Retrieve the customer by ID
             CustomCustomer customer = customCustomerService.getCustomerById(customerId);
@@ -116,7 +113,7 @@ public class WalletService {
             walletRepository.save(wallet);
 
             // Return the updated balance
-            return wallet.getUnplayedBalance();
+            return wallet;
 
         } catch (Exception e) {
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
