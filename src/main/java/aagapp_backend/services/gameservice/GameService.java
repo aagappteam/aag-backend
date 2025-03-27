@@ -398,9 +398,10 @@ public class GameService {
             }
 
             ZonedDateTime now = ZonedDateTime.now();
-            ZonedDateTime startTime = now.minusHours(24);
+            // Get the time 24 hours later
+            ZonedDateTime endTime = now.plusHours(24);
             // Fetch all published games for the vendor
-            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtWithin24Hours(vendorEntity, startTime, now);
+            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtWithin24Hours(vendorEntity, now, endTime);
 
             // Fetch all available games (no vendor filter)
             List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll(); // Fetch all available games
