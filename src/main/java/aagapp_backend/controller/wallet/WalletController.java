@@ -195,7 +195,7 @@ public class WalletController {
             }
 
             // Call the wallet service to deduct the amount
-            float updatedWallet = (float) walletService.deductAmountFromWallet(customerId, amount);
+            float updatedWallet = walletService.deductAmountFromWallet(customerId, amount);
 
 
             // Now create a single notification for the vendor
@@ -258,7 +258,7 @@ public class WalletController {
                 return responseService.generateErrorResponse("Amount is too small", HttpStatus.BAD_REQUEST);
             }
             // Call the wallet service to withdraw the amount
-            ResponseEntity<?> updatedWallet = walletService.withdrawalAmountFromWallet(customerId, amount);
+            Wallet updatedWallet = walletService.withdrawalAmountFromWallet(customerId, amount);
 
             return responseService.generateSuccessResponse("Balance withdrawn successfully", updatedWallet, HttpStatus.OK);
         }catch (Exception e) {

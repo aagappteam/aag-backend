@@ -71,7 +71,7 @@ public class ReferralService {
 
                 // Check if referrer's wallet exists
                 Wallet referrerWallet = walletRepository.findByCustomCustomer(referrer);
-                if (referrerWallet == null) {
+                /*if (referrerWallet == null) {
                     // Create a new wallet for the referrer if it doesn't exist
                     referrerWallet = new Wallet();
                     referrerWallet.setCustomCustomer(referrer);
@@ -82,7 +82,7 @@ public class ReferralService {
 
                     // Save the wallet
                     walletRepository.save(referrerWallet);  // Make sure you have a walletRepository
-                }
+                }*/
 
                 // Update referral count and bonus balance
                 referrer.setReferralCount(referrer.getReferralCount() + 1);

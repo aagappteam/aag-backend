@@ -6,6 +6,7 @@ import io.micrometer.common.lang.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,10 +36,10 @@ public class Wallet {
     private BigDecimal bonusBalance = BigDecimal.ZERO;
 
     @Column(name = "unplayed_balance", nullable = false)
-    private float unplayedBalance;
+    private Float unplayedBalance;
 
     @Column(name = "winning_amount", nullable = false)
-    private float winningAmount;
+    private Float winningAmount;
 
     @Column(name = "is_test", nullable = false)
     private Boolean isTest = false;

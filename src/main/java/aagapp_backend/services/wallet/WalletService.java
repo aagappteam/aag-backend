@@ -7,6 +7,7 @@ import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,7 +62,6 @@ public class WalletService {
 
             return wallet;
         } catch (Exception e) {
-            // Log the error for debugging purposes
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while adding balance to wallet", e);
         }
@@ -83,21 +83,15 @@ public class WalletService {
                 return responseService.generateErrorResponse("No wallet found for the customer with ID: " + customerId, HttpStatus.NOT_FOUND);
             }
 
-            Map<String, Object> balanceData = new HashMap<>();
-            balanceData.put("unplayedBalance", wallet.getUnplayedBalance());
-            balanceData.put("bonusBalance", wallet.getBonusBalance());
-            balanceData.put("winningAmount", wallet.getWinningAmount());
-
-            // Return the wallet balance
-            return responseService.generateSuccessResponse("Wallet balance retrieved successfully", balanceData, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Wallet balance retrieved successfully", wallet, HttpStatus.OK);
         } catch (Exception e) {
-//            logger.error("Error occurred while retrieving wallet balance for customer ID: " + customerId, e);
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error occurred while retrieving wallet balance", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public Object deductAmountFromWallet(Long customerId, Float deducedAmount) {
+    @Transactional
+    public float deductAmountFromWallet(Long customerId, Float deducedAmount) {
         try {
             // Retrieve the customer by ID
             CustomCustomer customer = customCustomerService.getCustomerById(customerId);
@@ -105,38 +99,35 @@ public class WalletService {
                 throw new RuntimeException("Customer not found for the given ID: " + customerId);
             }
 
-
             // Retrieve the wallet associated with the customer
             Wallet wallet = walletRepository.findByCustomCustomer(customer);
             if (wallet == null) {
                 throw new RuntimeException("No wallet found for the customer");
             }
 
-            // Validate balance before deduction
-            /*if (deducedAmount > wallet.getUnplayedBalance()) {
-                return responseService.generateErrorResponse("Insufficient balance in the wallet ", HttpStatus.BAD_REQUEST);
-            }*/
-
-            // Apply concurrency control (e.g., optimistic locking) or t ransaction management here if needed
+            if (deducedAmount > wallet.getUnplayedBalance()) {
+                throw new RuntimeException("Insufficient balance in the wallet");
+            }
 
             // Deduct the balance from the wallet
             wallet.setUnplayedBalance(wallet.getUnplayedBalance() - deducedAmount);
 
             // Save the updated wallet
             walletRepository.save(wallet);
+
+            // Return the updated balance
             return wallet.getUnplayedBalance();
 
-            // Return the updated wallet balance
-//            return responseService.generateSuccessResponse("Wallet amount deducted", Float.toString(wallet.getUnplayedBalance()), HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while deducting balance from wallet", e);
         }
     }
 
-    public ResponseEntity<?> withdrawalAmountFromWallet(Long customerId, Float withdrawBalance) {
+
+    @Transactional
+    public Wallet withdrawalAmountFromWallet(Long customerId, Float withdrawBalance) {
         try {
-            // Retrieve the customer by ID
             CustomCustomer customer = customCustomerService.getCustomerById(customerId);
             if (customer == null) {
                 throw new RuntimeException("Customer not found for the given ID: " + customerId);
@@ -148,12 +139,9 @@ public class WalletService {
                 throw new RuntimeException("No wallet found for the customer");
             }
 
-            // Validate balance before withdrawal
             if (withdrawBalance > wallet.getWinningAmount()) {
-                return responseService.generateErrorResponse("Insufficient balance in the wallet", HttpStatus.BAD_REQUEST);
+                throw new RuntimeException("Insufficient balance in the wallet");
             }
-
-            // Apply concurrency control (e.g., optimistic locking) or transaction management here if needed
 
             // Withdraw the balance from the wallet
             wallet.setWinningAmount(wallet.getWinningAmount() - withdrawBalance);
@@ -161,8 +149,7 @@ public class WalletService {
             // Save the updated wallet
             walletRepository.save(wallet);
 
-            // Return the updated wallet balance
-            return responseService.generateSuccessResponse("Wallet amount withdrawn", Float.toString(wallet.getUnplayedBalance()), HttpStatus.OK);
+            return wallet;
         } catch (Exception e) {
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while withdrawing balance from wallet", e);
