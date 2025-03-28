@@ -1,8 +1,6 @@
 package aagapp_backend.controller.league;
 
-import aagapp_backend.dto.GameRequest;
-import aagapp_backend.dto.LeagueRequest;
-import aagapp_backend.dto.VendorDTO;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
@@ -41,7 +39,7 @@ import java.util.stream.Collectors;
 public class LeagueController {
 
     private LeagueService leagueService;
-    private GameService gameService;
+//    private GameService gameService;
     private ExceptionHandlingImplement exceptionHandling;
     private ResponseService responseService;
     private PaymentFeatures paymentFeatures;
@@ -55,10 +53,6 @@ public class LeagueController {
         this.challangeRepository = challangeRepository;
     }
 
-    @Autowired
-    public void setGameService(@Lazy GameService gameService) {
-        this.gameService = gameService;
-    }
 
     @Autowired
     public void setNotificationRepository(@Lazy NotificationRepository notificationRepository) {
@@ -240,6 +234,27 @@ public class LeagueController {
             return responseService.generateSuccessResponse("Vendors with available leagues fetched successfully", vendorDTOs, HttpStatus.OK);
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error fetching vendors with available leagues", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @PostMapping("/joinLeague")
+    public ResponseEntity<?> joinGameRoom(@RequestBody JoinLeagueRequest joinLeagueRequest) {
+        try {
+            return leagueService.joinRoom(joinLeagueRequest.getPlayerId(), joinLeagueRequest.getLeagueId());
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in joining game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/leftLeague")
+    public ResponseEntity<?> leaveGameRoom(@RequestBody JoinLeagueRequest leaveRoomRequest) {
+        try {
+            return leagueService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId());
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

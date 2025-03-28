@@ -6,18 +6,17 @@ import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
-import aagapp_backend.entity.game.Game;
-import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueRoom;
+import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.*;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.game.AagGameRepository;
-import aagapp_backend.repository.game.GameRepository;
-import aagapp_backend.repository.game.GameRoomRepository;
+import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -26,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -53,17 +53,19 @@ public class LeagueService {
     @Autowired
     private VendorRepository vendorRepository;
 
-    @Autowired
-    private GameRepository gameRepository;
 
     @Autowired
     private AagGameRepository aagGameRepository;
 
-    @Autowired
-    private GameRoomRepository gameRoomRepository;
 
     @Autowired
     private ChallangeRepository challangeRepository;
+
+    @Autowired
+    private PlayerRepository playerRepository;
+
+    @Autowired
+    private ResponseService responseService;
 
     @Transactional
     public Challenge createChallenge(LeagueRequest leagueRequest, Long vendorId) {
@@ -144,95 +146,6 @@ public class LeagueService {
         }
     }
 
-
-
-    /*// Publish a new league
-    public League publishLeague(LeagueRequest leagueRequest, Long vendorId) {
-        try {
-            League league = new League();
-            league.setName(leagueRequest.getName());
-            league.setDescription(leagueRequest.getDescription());
-            league.setFee(leagueRequest.getFee());
-            league.setLeagueType(leagueRequest.getLeagueType());
-            league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
-            league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
-            league.setChallengingVendorTeamName(leagueRequest.getChallengingVendorTeamName());
-            league.setStatus(LeagueStatus.PENDING);
-
-            Long vendor = vendorRepository.findById(vendorId)
-                    .orElseThrow(() -> new RuntimeException("Vendor not found")).getService_provider_id();
-            league.setChallengingVendorId(vendor);
-
-            // Ensure a vendor cannot challenge themselves
-            if (leagueRequest.getOpponentVendorId() != null && leagueRequest.getOpponentVendorId().equals(vendorId)) {
-                throw new IllegalArgumentException("A vendor cannot challenge themselves");
-            }
-
-            ThemeEntity theme = em.find(ThemeEntity.class, leagueRequest.getThemeId());
-            if (theme == null) {
-                throw new RuntimeException("No theme found with the provided ID");
-            }
-            league.setTheme(theme);
-
-            // Handle challenge scenario
-            if (leagueRequest.getIsChallenge()) {
-                Long challengedVendorId = null;
-
-                if (leagueRequest.getOpponentVendorId() == null) {
-                    VendorEntity randomVendor = getRandomAvailableVendor(vendorId);
-                    challengedVendorId = randomVendor.getService_provider_id(); // Store only the vendor ID
-                } else {
-                    VendorEntity opponentVendor = vendorRepository.findById(leagueRequest.getOpponentVendorId())
-                            .orElseThrow(() -> new RuntimeException("Opponent vendor not found"));
-                    challengedVendorId = opponentVendor.getService_provider_id(); // Store only the vendor ID
-                }
-
-                league.setOpponentVendorId(challengedVendorId); // Set only the vendor ID
-            }
-
-
-
-            league.setStatus(LeagueStatus.SCHEDULED);
-            league.setScheduledAt(ZonedDateTime.now().plusMinutes(20));
-
-            // Scheduled date validation
-            if (leagueRequest.getScheduledAt() != null) {
-                ZonedDateTime scheduledAtInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-                if (scheduledAtInKolkata.isBefore(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusHours(4))) {
-                    throw new IllegalArgumentException("The league must be scheduled at least 4 hours in advance.");
-                }
-                league.setScheduledAt(scheduledAtInKolkata);
-                league.setEndDate(scheduledAtInKolkata.plusHours(4));
-            } else {
-                ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-                league.setScheduledAt(nowInKolkata.plusMinutes(15));
-                league.setEndDate(nowInKolkata.plusHours(4));
-                league.setStatus(LeagueStatus.ACTIVE);
-            }
-
-            // Set registration deadline if provided
-            if (leagueRequest.getRegistrationDeadline() != null) {
-                league.setEndDate(leagueRequest.getRegistrationDeadline().withZoneSameInstant(ZoneId.of("Asia/Kolkata")));
-            }
-
-            league.setCreatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
-            league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
-
-            League savedLeague = leagueRepository.save(league);
-
-            // Generate shareable link if necessary
-            String shareableLink = generateShareableLink(savedLeague.getId());
-            savedLeague.setShareableLink(shareableLink);
-
-            return savedLeague;
-        } catch (IllegalArgumentException e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new IllegalArgumentException("Invalid league schedule: " + e.getMessage());
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while publishing the league: " + e.getMessage(), e);
-        }
-    }*/
 
 
     @Transactional
@@ -337,15 +250,15 @@ public class LeagueService {
         return newRoom;
     }
 
-    // Generate a unique room code
+    /*// Generate a unique room code
     private String generateRoomCode() {
         String roomCode;
         do {
             roomCode = RandomStringUtils.randomAlphanumeric(6);
-        } while (gameRoomRepository.findByRoomCode(roomCode) != null);
+        } while (leagueRoomRepository.findByRoomCode(roomCode) != null);
         return roomCode;
     }
-
+*/
     public boolean isGameAvailableById(Long gameId) {
         // Use the repository to find a game by its name
         Optional<AagAvailableGames> game = aagGameRepository.findById(gameId);
@@ -374,7 +287,7 @@ public class LeagueService {
     public Page<League> getAllLeagues(Pageable pageable, LeagueStatus status, Long vendorId) {
         try {
             // Check if 'status' and 'vendorId' are provided and build a query accordingly
-           if (status != null && vendorId != null) {
+            if (status != null && vendorId != null) {
                 return leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
             } else
             if (status != null) {
@@ -411,6 +324,122 @@ public class LeagueService {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while auto-rejecting expired challenges " + e.getMessage());
         }
+    }
+
+    @Transactional
+    public ResponseEntity<?> joinRoom(Long playerId, Long leagueId) {
+        try {
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+
+            League game = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+
+
+            if (player.getLeagueRoom() != null) {
+                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            LeagueRoom leagueRoom = findAvailableGameRoom(game);
+
+            // 4. Attempt to add the player to the room
+            boolean playerJoined = addPlayerToRoom(leagueRoom, player);
+            if (!playerJoined) {
+                return responseService.generateErrorResponse("Room is Already full with this id: " + leagueRoom.getRoomCode(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            // 5. If the room is full, change status to ONGOING and create a new room
+            if (leagueRoom.getCurrentPlayers().size() == leagueRoom.getMaxPlayers()) {
+                leagueRoom.setStatus(LeagueRoomStatus.ONGOING);
+                leagueRoomRepository.save(leagueRoom);
+                LeagueRoom newRoom = createNewEmptyRoom(game);
+                leagueRoomRepository.save(newRoom); // Save the new room
+            }
+
+            player.setPlayerStatus(PlayerStatus.PLAYING);
+            playerRepository.save(player);
+
+            return responseService.generateSuccessResponse("Player join in the Game Room ", leagueRoom.getRoomCode(), HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Player can not joined in the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @Transactional
+    public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
+        try{
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+
+            LeagueRoom leagueRoom = findAvailableGameRoom(league);
+
+            if (player.getLeagueRoom() == null) {
+                return responseService.generateErrorResponse("Player is not in league with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            player.setLeagueRoom(null);
+            player.setHasWon(false);
+            player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
+            player.setLeagueRoom(null);
+            playerRepository.save(player);
+
+            return responseService.generateSuccessResponse("Player left the Game Room ", leagueRoom.getRoomCode(), HttpStatus.OK);
+        } catch (Exception e){
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+
+    }
+
+    public LeagueRoom findAvailableGameRoom(League league) {
+        // Find a game room that has available space and matches the specified game
+        List<LeagueRoom> availableRooms = leagueRoomRepository.findByGameAndStatus(league, LeagueRoomStatus.INITIALIZED);
+        // Loop through the available rooms and return the first one with space
+        for (LeagueRoom room : availableRooms) {
+            if (room.getCurrentPlayers().size() < room.getMaxPlayers()) {
+                return room;
+            }
+        }
+
+        // If no available room is found, return null or create a new room
+        LeagueRoom newRoom = createNewEmptyRoom(league);
+        leagueRoomRepository.save(newRoom); // Save the new room
+        return newRoom;
+    }
+
+
+    public boolean addPlayerToRoom(LeagueRoom leagueRoom, Player player) {
+        // Check if the game room has space for the player
+        if (leagueRoom.getCurrentPlayers().size() < leagueRoom.getMaxPlayers()) {
+            leagueRoom.getCurrentPlayers().add(player);
+
+            player.setLeagueRoom(leagueRoom);
+
+            player.setPlayerStatus(PlayerStatus.PLAYING);
+
+            leagueRoomRepository.save(leagueRoom);
+            playerRepository.save(player);
+
+            // Return true as the player was successfully added
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // Generate a unique room code
+    private String generateRoomCode() {
+        String roomCode;
+        do {
+            roomCode = RandomStringUtils.randomAlphanumeric(6);
+        } while (leagueRoomRepository.findByRoomCode(roomCode) != null);
+        return roomCode;
     }
 
 

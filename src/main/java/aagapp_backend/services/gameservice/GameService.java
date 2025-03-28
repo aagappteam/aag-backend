@@ -393,10 +393,12 @@ public class GameService {
             ZonedDateTime startTime = nowInKolkata.minusHours(24).withZoneSameInstant(ZoneId.of("UTC"));
             ZonedDateTime endTime = nowInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
 
-            // Now query the repository
+// Now query the repository
             List<Game> games = gameRepository.findByVendorEntityAndScheduledAtWithin24Hours(vendorEntity, startTime, endTime);
 
-            List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll();
+//            List<Game> games = gameRepository.findAll();
+                    // Fetch all available games (no vendor filter)
+            List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll(); // Fetch all available games
 
             // Prepare the response data
             VendorGameResponse response = new VendorGameResponse();
