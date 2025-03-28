@@ -19,6 +19,10 @@ import java.time.LocalDateTime;
 @Table(name = "payments", indexes = {
         @Index(name = "idx_vendor_payment", columnList = "service_provider_id"),
         @Index(name = "idx_payment_status", columnList = "status"),
+<<<<<<< HEAD
+        @Index(name = "idx_payment_created_at", columnList = "created_at"),
+=======
+>>>>>>> fd0ed51b1c5fb58ee05e3c9df0e4c9c293b2cb15
         @Index(name = "idx_payment_expiry_at", columnList = "expiry_at"),
         @Index(name = "idx_payment_plan_id", columnList = "plan_id"),
         @Index(name = "idx_payment_transaction_date", columnList = "transaction_date"),

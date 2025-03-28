@@ -41,4 +41,10 @@ public class PlanService {
         return planRepository.findByPlanVariant(planVariant);
     }
 
+    public PlanEntity updatePlan(PlanEntity planEntity) {
+        if (planEntity == null || planEntity.getId() == null) {
+            throw new IllegalArgumentException("Invalid PlanEntity or Plan ID");
+        }
+        return planRepository.save(planEntity);
+    }
 }

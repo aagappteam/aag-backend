@@ -87,8 +87,9 @@ public class GameController {
 
             // Extract only the content (list of games) and return it
             List<GetGameResponseDTO> gameList = games.getContent();
+            long totalCount = games.getTotalElements();
 
-            return responseService.generateSuccessResponse("Games fetched successfully", gameList, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithCount("Games fetched successfully", gameList, totalCount, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -116,9 +117,31 @@ public class GameController {
             return responseService.generateErrorResponse("Error fetching games by vendor : " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
     @GetMapping("/get-active-games-by-vendor/{vendorId}")
+    public ResponseEntity<?> getActiveGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        try {
+            if (page < 0) {
+                throw new IllegalArgumentException("Page number cannot be negative");
+            }
+            if (size <= 0 || size > 100) {
+                throw new IllegalArgumentException("Size must be between 1 and 100");
+            }
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            // Call the updated service method
+            Page<GetGameResponseDTO> gamesPage = gameService.findGamesScheduledForToday(vendorId, pageable);
+
+            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching games by vendor : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+/*    @GetMapping("/get-active-games-by-vendor/{vendorId}")
     public ResponseEntity<?> getActiveGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         try {
             if (page < 0) {
@@ -142,7 +165,7 @@ public class GameController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching games by vendor: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
 
     @PostMapping("/publishGame/{vendorId}/{existinggameId}")
@@ -177,7 +200,6 @@ public class GameController {
                 notification.setDetails("Game has been Published"); // Example NotificationType for a successful
             }
 
-            System.out.println(notification  + " fdcx");
 
 
             notificationRepository.save(notification);
@@ -240,6 +262,20 @@ public class GameController {
         }
     }
 
+
+    //    get room by id
+
+    @GetMapping("/room/{roomId}")
+    public ResponseEntity<?> getRoomById(@PathVariable Long roomId) {
+        try {
+            return gameService.getRoomById(roomId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+
     @GetMapping("/published/{vendorId}")
     public ResponseEntity<?> getAllPublishedGamesByVendorId(@PathVariable Long vendorId) {
         try {
@@ -254,6 +290,24 @@ public class GameController {
             return responseService.generateErrorResponse("Error fetching games by vendor: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    // Endpoint to handle game completion and winner calculation
+   /* @PostMapping("/game-completed")
+    public Map<String, Object> gameCompleted(@RequestBody PostGameRequest postGameRequest) {
+
+        // Fetch game details using gameId (e.g., prize for the game)
+
+        // Calculate the winner based on player scores
+        PlayerScore winner = gameService.getWinner(postGameRequest.getPlayers(), postGameRequest);
+
+        // Prepare the response
+        Map<String, Object> response = new HashMap<>();
+        response.put("winner", winner);
+        response.put("players", postGameRequest.getPlayers());
+        response.put("roomId", postGameRequest.getRoomId());
+
+        return response;
+    }*/
 
 
 

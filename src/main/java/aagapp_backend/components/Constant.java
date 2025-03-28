@@ -13,8 +13,10 @@ public class Constant {
     public static final String REFERRAL_CODE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.referralCode = :referralCode";
     public static final float USER_REFERAL_BALANCE = 50.0f;
     public static final String REFERAL_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    public static String COUNTRY_CODE = "+91";
+    public static final Integer TENMOVES =10;
+    public static final Integer SIXTEENMOVES =16;
 
+    public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
     public static String ID_QUERY = "SELECT c FROM CustomCustomer c WHERE c.customer_id = :customer_id";
@@ -114,8 +116,8 @@ public class Constant {
     public static final String PRODUCTTITLENOTGIVEN = "Product MetaTitle not Given";
     public static final int MAX_REQUEST_SIZE = 100;
     public static final int MAX_NESTED_KEY_SIZE = 100;
-    public static final String GET_ALL_SERVICE_PROVIDERS = "Select s from VendorEntity s";
-    public static final String GET_ALL_CUSTOMERS = "Select c from CustomCustomer c";
+    public static final String GET_ALL_SERVICE_PROVIDERS = "Select s from VendorEntity s ORDER BY s.createdDate ASC";
+    public static final String GET_ALL_CUSTOMERS = "Select c from CustomCustomer c ORDER BY c.createdDate ASC";
 
     public static final String GET_ALL_TICKET_STATE = "SELECT c FROM CustomTicketState c";
     public static final String GET_TICKET_STATE_BY_TICKET_STATE_ID = "SELECT c FROM CustomTicketState c WHERE c.ticketStateId = :ticketStateId";
@@ -179,5 +181,6 @@ public class Constant {
     public static Integer TOKEN_SIZE = 2;
 
     public static String PROFILE_IMAGE_URL = "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
+    public static final String ONBOARDING_EMAIL_SUBJECT = "Welcome to AAg Application - Profile Verification in Progress";
 
 }
