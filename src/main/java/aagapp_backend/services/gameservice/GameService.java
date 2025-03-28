@@ -389,14 +389,14 @@ public class GameService {
                 throw new RuntimeException("No records found for vendor with ID: " + vendorId);
             }
 
-            ZonedDateTime now = ZonedDateTime.now();
-            // Get the time 24 hours later
-            ZonedDateTime endTime = now.plusHours(24);
-            // Fetch all published games for the vendor
-            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtWithin24Hours(vendorEntity, now, endTime);
+            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime startTime = nowInKolkata.minusHours(24).withZoneSameInstant(ZoneId.of("UTC"));
+            ZonedDateTime endTime = nowInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
 
-            // Fetch all available games (no vendor filter)
-            List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll(); // Fetch all available games
+            // Now query the repository
+            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtWithin24Hours(vendorEntity, startTime, endTime);
+
+            List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll();
 
             // Prepare the response data
             VendorGameResponse response = new VendorGameResponse();

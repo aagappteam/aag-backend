@@ -42,6 +42,16 @@ public class Challenge {
 
     private ZonedDateTime endDate;
 
+    @Column(updatable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        // Set createdAt to the current timestamp before the entity is persisted
+        this.createdAt = ZonedDateTime.now();
+    }
+
     public enum ChallengeStatus {
         PENDING, ACCEPTED, REJECTED
     }
