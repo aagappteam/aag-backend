@@ -738,7 +738,6 @@ public class VenderServiceImpl implements VenderService {
         return referralDTOs;
     }
 
-/*
     @Override
     public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
         VendorEntity authenticatedVendor = getServiceProviderById(authorizedVendorId);
@@ -751,7 +750,6 @@ public class VenderServiceImpl implements VenderService {
 
         return result;
     }
-*/
 
 
 
@@ -762,6 +760,7 @@ public class VenderServiceImpl implements VenderService {
     }
 
 
+/*
 @Override
 public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
     // Fetch top 3 vendors sorted by rank (from cache)
@@ -788,6 +787,7 @@ public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId)
 
     return result;
 }
+*/
 
 
 

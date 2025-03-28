@@ -520,134 +520,47 @@ public class VendorController {
             }}, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }*/
+@GetMapping("/get-top-invites")
+public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
+    try {
+        String jwtToken = token.replace("Bearer ", "");
+        Long authorizedVendorId = jwtUtil.extractId(jwtToken);
 
-    /*@GetMapping("/get-top-invites")
-    public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
-        try {
-            long start = System.currentTimeMillis();
+        // Fetching both authenticated vendor and top vendors in one call
+        Map<String, Object> result = vendorService.getTopInvitiesVendorWithAuth(authorizedVendorId);
 
-            String jwtToken = token.replace("Bearer ", "");
-            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+        VendorEntity authenticatedVendor = (VendorEntity) result.get("authenticatedVendor");
+        List<VendorEntity> topInvities = (List<VendorEntity>) result.get("topInvities");
 
-            // Fetching both authenticated vendor and top vendors in one call
-            Map<String, Object> result = vendorService.getTopInvitiesVendorWithAuth(authorizedVendorId);
-            long resultQueryTime = System.currentTimeMillis();
-            System.out.println("DB Query Execution Time: " + (resultQueryTime - start) + " ms");
-            VendorEntity serviceProvider = vendorRepository.findById(authorizedVendorId)
-                    .orElseThrow(() -> new RuntimeException("Vendor not found"));
-            List<TopVendorCache> topInvities = (List<TopVendorCache>) result.get("topInvities");
-            long dbQueryTime = System.currentTimeMillis();
-            System.out.println("DB Query Execution Time: " + (dbQueryTime - start) + " ms");
-
-            Map<String, Object> data = Map.of(
-                    "total_earning", serviceProvider.getWalletBalance(),
-                    "referral_code", serviceProvider.getReferralCode(),
-                    "total_referrals", serviceProvider.getReferralCount(),
-                    "top_invitees", topInvities,
-                    "message", "Top vendors fetched successfully!"
-            );
-            long responseTime = System.currentTimeMillis();
-            System.out.println("Total API Execution Time: " + (responseTime - start) + " ms");
-            return responseService.generateResponse(HttpStatus.OK,"Top vendors fetched successfully! ", data);
-
-
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return new ResponseEntity<>(Map.of(
-                    "status", "ERROR",
-                    "message", e.getMessage(),
-                    "status_code", 500
-            ), HttpStatus.INTERNAL_SERVER_ERROR);
+        // If there are no top invitees, return empty data
+        if (topInvities.isEmpty()) {
+            return createResponse(authenticatedVendor, new ArrayList<>());
         }
-    }*/
 
-    @GetMapping("/get-top-invites")
-    public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
-        try {
-            long start = System.currentTimeMillis();
+        // Prepare the top invitees data
+        List<Map<String, Object>> topInvitees = topInvities.stream().map(vendor -> {
+            Map<String, Object> vendorData = new HashMap<>();
+            vendorData.put("service_provider_id", vendor.getService_provider_id());
+            vendorData.put("price", vendor.getWalletBalance());
+            vendorData.put("rank", topInvities.indexOf(vendor) + 1);
+            vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+            vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                    .map(firstName -> firstName + " " + vendor.getLast_name())
+                    .orElse(null));
 
-            // Step 1: Extract Token
-            String jwtToken = token.replace("Bearer ", "");
-            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
-            long tokenExtractionTime = System.currentTimeMillis();
-            System.out.println("Token Extraction Time: " + (tokenExtractionTime - start) + " ms");
+            return vendorData;
+        }).collect(Collectors.toList());
 
-            // Step 2: Fetch Vendor Data & Top Vendors
-            Map<String, Object> result = vendorService.getTopInvitiesVendorWithAuth(authorizedVendorId);
-            VendorEntity serviceProvider = vendorRepository.findById(authorizedVendorId)
-                    .orElseThrow(() -> new RuntimeException("Vendor not found"));
-            List<TopVendorCache> topInvities = (List<TopVendorCache>) result.get("topInvities");
-            long dbQueryTime = System.currentTimeMillis();
-            System.out.println("DB Query Execution Time: " + (dbQueryTime - tokenExtractionTime) + " ms");
-
-            // Step 3: Prepare Response Data
-            Map<String, Object> data = Map.of(
-                    "total_earning", serviceProvider.getWalletBalance(),
-                    "referral_code", serviceProvider.getReferralCode(),
-                    "total_referrals", serviceProvider.getReferralCount(),
-                    "top_invitees", topInvities,
-                    "message", "Top vendors fetched successfully!"
-            );
-            long responseTime = System.currentTimeMillis();
-            System.out.println("Response Preparation Time: " + (responseTime - dbQueryTime) + " ms");
-
-            System.out.println("Total API Execution Time: " + (responseTime - start) + " ms");
-            return responseService.generateResponse(HttpStatus.OK, "Top vendors fetched successfully!", data);
-
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return new ResponseEntity<>(Map.of(
-                    "status", "ERROR",
-                    "message", e.getMessage(),
-                    "status_code", 500
-            ), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return createResponse(authenticatedVendor, topInvitees);
+    } catch (Exception e) {
+        exceptionHandling.handleException(e);
+        return new ResponseEntity<>(Map.of(
+                "status", "ERROR",
+                "message", e.getMessage(),
+                "status_code", 500
+        ), HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-
-/*    @GetMapping("/get-top-invites")
-    public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
-        try {
-            String jwtToken = token.replace("Bearer ", "");
-            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
-
-            // Fetching both authenticated vendor and top vendors in one call
-            Map<String, Object> result = vendorService.getTopInvitiesVendorWithAuth(authorizedVendorId);
-
-            VendorEntity authenticatedVendor = (VendorEntity) result.get("authenticatedVendor");
-            List<VendorEntity> topInvities = (List<VendorEntity>) result.get("topInvities");
-
-            // If there are no top invitees, return empty data
-            if (topInvities.isEmpty()) {
-                return createResponse(authenticatedVendor, new ArrayList<>());
-            }
-
-            // Prepare the top invitees data
-            List<Map<String, Object>> topInvitees = topInvities.stream().map(vendor -> {
-                Map<String, Object> vendorData = new HashMap<>();
-                vendorData.put("service_provider_id", vendor.getService_provider_id());
-                vendorData.put("price", vendor.getWalletBalance());
-                vendorData.put("rank", topInvities.indexOf(vendor) + 1);
-                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
-                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
-                        .map(firstName -> firstName + " " + vendor.getLast_name())
-                        .orElse(null));
-
-                return vendorData;
-            }).collect(Collectors.toList());
-
-            return createResponse(authenticatedVendor, topInvitees);
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return new ResponseEntity<>(Map.of(
-                    "status", "ERROR",
-                    "message", e.getMessage(),
-                    "status_code", 500
-            ), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
-
-
+}
 
     private ResponseEntity<?> createResponse(VendorEntity authenticatedVendor, List<Map<String, Object>> topInvitees) {
         Map<String, Object> data = Map.of(

@@ -31,7 +31,7 @@ public class EmailService {
                 .replace("{lastName}", customerLastName);
 
         try {
-            sendEmail(to, "Onboarding Email", messageBody);
+            sendEmail(to, Constant.ONBOARDING_EMAIL_SUBJECT, messageBody);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending onboarding email: " + e.getMessage(), e);
         }
