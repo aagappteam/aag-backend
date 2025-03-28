@@ -1,9 +1,6 @@
 package aagapp_backend.entity.league;
 
-import aagapp_backend.entity.game.Game;
-import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.players.Player;
-import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.enums.LeagueRoomStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -18,11 +15,23 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "ludo_league_rooms")
+@Table(
+        name = "ludo_league_rooms",
+        indexes = {
+                @Index(name = "idx_room_code", columnList = "room_code"),
+                @Index(name = "idx_game_type", columnList = "game_type"),
+                @Index(name = "idx_status", columnList = "status"),
+                @Index(name = "idx_game_id", columnList = "game_id"),
+                @Index(name = "idx_current_player_id", columnList = "current_player_id"),
+                @Index(name = "idx_created_at", columnList = "created_at"),
+                @Index(name = "idx_game_id_status", columnList = "game_id, status")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 public class LeagueRoom {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

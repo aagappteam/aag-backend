@@ -26,7 +26,9 @@ import java.time.ZonedDateTime;
                 @Index(name = "idx_end_date_league", columnList = "end_date"),
                 @Index(name = "idx_created_date_league", columnList = "created_date"),
                 @Index(name = "idx_vendor_id_status_league", columnList = "vendor_id, status"),
-                @Index(name = "idx_scheduled_at_status_league", columnList = "scheduled_at, status")
+                @Index(name = "idx_scheduled_at_status_league", columnList = "scheduled_at, status"),
+                @Index(name = "idx_opponent_vendor_id", columnList = "opponent_vendor_id"),
+                @Index(name = "idx_updated_date_league", columnList = "updated_date")
         }
 )
 @Getter
@@ -52,10 +54,8 @@ public class League {
 
     private String leagueUrl;
 
-
     @Column(name = "aaggameid", nullable = true)
     private Long aagGameId;
-
 
     @ManyToOne
     @JoinColumn(name = "vendor_id", nullable = false)
@@ -71,7 +71,6 @@ public class League {
 
     private String shareableLink;
 
-
     @Column(name = "scheduled_at", nullable = true)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime scheduledAt;
@@ -80,11 +79,8 @@ public class League {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime endDate;
 
-
     @Column(name = "opponent_vendor_id")
     private Long opponentVendorId;
-
-
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
@@ -96,8 +92,6 @@ public class League {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime updatedDate;
 
-//    private ZonedDateTime challengeTimestamp;
-
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = ZonedDateTime.now();
@@ -105,7 +99,6 @@ public class League {
 
     @PrePersist
     public void prePersist() {
-//        this.challengeTimestamp=ZonedDateTime.now();
         if (this.minPlayersPerTeam == null) {
             this.minPlayersPerTeam = 1; // Default value for minPlayersPerTeam
         }
@@ -121,5 +114,4 @@ public class League {
         }
 
     }
-
 }

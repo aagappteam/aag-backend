@@ -9,9 +9,17 @@ import lombok.Setter;
 
 import java.time.ZonedDateTime;
 
+
 @Entity
 @Getter
 @Setter
+@Table(
+        indexes = {
+                @Index(name = "idx_vendorId", columnList = "vendorId"),
+                @Index(name = "idx_challengeStatus", columnList = "challengeStatus"),
+                @Index(name = "idx_scheduledAt", columnList = "scheduledAt")
+        }
+)
 public class Challenge {
 
     @Id
