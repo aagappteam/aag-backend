@@ -76,7 +76,8 @@ public class VendorSubmission {
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(e);
             return ResponseService.generateErrorResponse(
-                    "Invalid submission. Please check your details.",
+                    "Invalid submission. Please check your details. "                    + e.getMessage()
+                    ,
                     HttpStatus.BAD_REQUEST
             );
         }

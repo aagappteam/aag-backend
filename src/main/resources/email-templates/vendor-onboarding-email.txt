@@ -1,0 +1,26 @@
+Dear {firstName} {lastName},
+
+Thank you for installing the AAg application! We are excited to have you on board.
+
+Profile Verification
+As you have installed our application, our team is currently verifying your profile. This is a standard process to ensure the security and integrity of our platform. Please note that this may take some time, and we appreciate your patience.
+
+Next Steps
+Once your profile is verified, our team will send you a separate email with a profile approval notification. After receiving this email, you will be required to make a payment to activate your account and start using the application.
+
+Payment and Activation
+To complete the onboarding process, please follow these steps:
+
+Wait for the profile approval email from our team.
+
+Click on the payment link provided in the email to make the necessary payment.
+
+Once the payment is successful, your account will be activated, and you can start using the AAg application.
+
+Support
+If you have any questions or concerns during the onboarding process, please don't hesitate to reach out to our support team at [support email]. We are here to help and want to ensure a smooth onboarding experience for you.
+
+Thank you for choosing the AAg application. We look forward to helping you achieve your goals!
+
+Best regards,
+AAg Team

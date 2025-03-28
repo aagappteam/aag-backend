@@ -251,6 +251,9 @@ public class OtpEndpoint {
                 if (otpEntered.equals(storedOtp)) {
                     if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                         existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
+/*
+                        sendOnboardingEmail(existingCustomer.getEmail(), existingCustomer.getName(), existingCustomer.getLastName());
+*/
                     }
                     Wallet referrerWallet = walletRepository.findByCustomCustomer(existingCustomer);
                     if (referrerWallet == null) {

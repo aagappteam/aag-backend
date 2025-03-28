@@ -31,10 +31,10 @@ import java.util.List;
         @Index(name = "idx_vendor_is_active", columnList = "is_active"),
         @Index(name = "idx_vendor_is_paid", columnList = "is_paid"),
         @Index(name = "idx_vendor_mobile_number", columnList = "mobileNumber"),
-        @Index(name = "idx_vendor_created_date", columnList = "created_date"),
         @Index(name = "idx_vendor_league_status", columnList = "league_status"),
         @Index(name = "idx_vendor_is_verified", columnList = "isVerified"),
-        @Index(name = "idx_vendor_wallet_balance", columnList = "wallet_balance")
+        @Index(name = "idx_vendor_wallet_balance", columnList = "wallet_balance"),
+        @Index(name = "idx_vendor_wallet_active_league", columnList = "wallet_balance, service_provider_id, profile_picture ,first_name ,last_name")
 
 })
 @AllArgsConstructor
