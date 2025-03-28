@@ -262,7 +262,9 @@ public class GameController {
         }
     }
 
+
     //    get room by id
+
     @GetMapping("/room/{roomId}")
     public ResponseEntity<?> getRoomById(@PathVariable Long roomId) {
         try {
@@ -288,6 +290,24 @@ public class GameController {
             return responseService.generateErrorResponse("Error fetching games by vendor: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    // Endpoint to handle game completion and winner calculation
+   /* @PostMapping("/game-completed")
+    public Map<String, Object> gameCompleted(@RequestBody PostGameRequest postGameRequest) {
+
+        // Fetch game details using gameId (e.g., prize for the game)
+
+        // Calculate the winner based on player scores
+        PlayerScore winner = gameService.getWinner(postGameRequest.getPlayers(), postGameRequest);
+
+        // Prepare the response
+        Map<String, Object> response = new HashMap<>();
+        response.put("winner", winner);
+        response.put("players", postGameRequest.getPlayers());
+        response.put("roomId", postGameRequest.getRoomId());
+
+        return response;
+    }*/
 
 
 

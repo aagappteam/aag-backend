@@ -1,9 +1,7 @@
 package aagapp_backend.services.gameservice;
 
 import aagapp_backend.components.Constant;
-import aagapp_backend.dto.GameRequest;
-import aagapp_backend.dto.GetGameResponseDTO;
-import aagapp_backend.dto.VendorGameResponse;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.*;
@@ -113,18 +111,16 @@ public class GameService {
     @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
-        int pageSize = 1000;
+        int pageSize = 100;
         List<Long> vendorIds;
         while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
 
-            System.out.println("Scheduled task checkAndActivateScheduledGames started  " + vendorIds);
 
             for (Long vendorId : vendorIds) {
 
-
                 updateGameStatusToActive(vendorId);
                 updateLeagueStatusToActive(vendorId);
-               updateExpiredGameStatus(vendorId);
+                updateExpiredGameStatus(vendorId);
                 updateExpiredLeagueStatus(vendorId);
 
             }
@@ -283,16 +279,17 @@ public class GameService {
             game.setTheme(theme);
             game.setAaggameid(existinggameId);
             // Calculate moves based on the selected fee
-
             game.setFee(gameRequest.getFee());
             if(gameRequest.getFee()>10){
                 game.setMove(Constant.TENMOVES);
             } else{
                 game.setMove(Constant.SIXTEENMOVES);
+
             }
-            if(gameRequest.getMove()!= null){
+
+           /* if(gameRequest.getMove()!= null){
                 game.setMove(gameRequest.getMove());
-            }
+            }*/
 
 
             // Get current time in Kolkata timezone
@@ -669,8 +666,6 @@ public class GameService {
     @Transactional
     public ResponseEntity<?> updateGame(Long vendorId, Long gameId, GameRequest gameRequest) {
 
-        System.out.println("Game ID: " + gameId + " Vendor ID: " + vendorId);
-
         String jpql = "SELECT g FROM Game g WHERE g.id = :gameId AND g.vendorEntity.id = :vendorId";
         TypedQuery<Game> query = em.createQuery(jpql, Game.class);
         query.setParameter("gameId", gameId);
@@ -730,17 +725,15 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT al.id, al.vendor_id, al.status, al.end_date ,al.aaggameid FROM aag_ludo_game al " +
+            String sql = "SELECT * FROM aag_ludo_game al " +
                     "WHERE al.vendor_id = :vendorId " +
                     "AND al.status = :status";
-            System.out.println(sql +" sql");
             String activeStatus = GameStatus.ACTIVE.name();
 
             Query query = em.createNativeQuery(sql, Game.class);
             query.setParameter("vendorId", vendorId);
             query.setParameter("status", activeStatus);
 
-            System.out.println(query +" efdcsxz");
             List<Game> games = query.getResultList();
 
             for (Game game : games) {
@@ -766,7 +759,7 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT l.id, l.vendor_id, l.scheduled_at, l.status, l.end_date, l.updated_date " +
+            String sql = "SELECT * " +
                     "FROM aag_league l WHERE l.vendor_id = :vendorId " +
                     "AND l.scheduled_at <= :nowInKolkata AND l.status = :status";
             String activeStatus = GameStatus.ACTIVE.name();
@@ -914,6 +907,9 @@ public class GameService {
                 if (game.getScheduledAt() != null) {
                     game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
                 }
+                if(game.getEndDate() != null) {
+                    game.setEndDate(convertToKolkataTime(game.getEndDate()));
+                }
             });
 
             String countSql = "SELECT COUNT(*) FROM aag_ludo_game g WHERE g.vendor_id = :vendorId";
@@ -935,9 +931,9 @@ public class GameService {
         }
     }
 
-
     @Transactional
     public Page<GetGameResponseDTO> findGamesScheduledForToday(Long vendorId, Pageable pageable) {
+
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             ZonedDateTime startOfDay = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
@@ -1009,7 +1005,7 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT l.id, l.vendor_id, l.scheduled_at, l.status, l.updated_date " +
+            String sql = "SELECT * " +
                     "FROM aag_league l " +
                     "WHERE l.vendor_id = :vendorId " +
                     "AND l.status = :scheduledStatus";
@@ -1048,7 +1044,7 @@ public class GameService {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT g.id, g.vendor_id, g.scheduled_at, g.status, g.updated_date  ,g.aaggameid " +
+            String sql = "SELECT * " +
                     "FROM aag_ludo_game g WHERE g.vendor_id = :vendorId " +
                     "AND g.scheduled_at <= :nowInKolkata AND g.status = :status";
 
@@ -1093,5 +1089,22 @@ public class GameService {
         }
     }
 
+
+/*    public PlayerScore getWinner(List<PlayerScore> playerScores, PostGameRequest postGameRequest) {
+        Game game = getGameById(postGameRequest.getGameId());
+        PlayerScore winner = null;
+
+        for (PlayerScore playerScore : playerScores) {
+            if (winner == null || playerScore.getScore() > winner.getScore()) {
+                winner = playerScore;
+            }
+        }
+
+        if (winner != null) {
+            winner.setPrize(game.getPrice());
+        }
+
+        return winner;
+    }*/
 }
 

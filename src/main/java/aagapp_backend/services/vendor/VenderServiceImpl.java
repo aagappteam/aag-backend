@@ -4,8 +4,11 @@ import aagapp_backend.components.CommonData;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.ReferralDTO;
+import aagapp_backend.dto.VendorTopInviteeProjection;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.entity.cache.TopVendorCache;
+import aagapp_backend.repository.TopVendorCacheRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.*;
@@ -19,6 +22,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -51,12 +55,15 @@ public class VenderServiceImpl implements VenderService {
     private JwtUtil jwtUtil;
     private ResponseService responseService;
     private TwilioService twilioService;
+
     private DeviceMange deviceMange;
     private ReferralService referralService;
     private VendorReferralRepository vendorReferralRepository;
 
     @Autowired
     private VendorRepository vendorRepository;
+    @Autowired
+    private TopVendorCacheRepository topVendorCacheRepository;
 
     @Autowired
     public void setVendorReferralRepository(VendorReferralRepository vendorReferralRepository) {
@@ -731,34 +738,6 @@ public class VenderServiceImpl implements VenderService {
         return referralDTOs;
     }
 
-/*    @Override
-    public List<VendorEntity> getTopInvitiesVendor() {
-        // Fetch all vendors sorted by referral amount in descending order and limit the results to top 3
-        List<VendorEntity> vendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("walletBalance")));
-
-        // Limit the list to top 3 vendors
-        return vendors.stream().limit(3).collect(Collectors.toList());
-    }*/
-
-   @Override
-    public List<VendorEntity> getTopInvitiesVendor() {
-        // Fetch only the top 3 vendors sorted by walletBalance in descending order
-        return vendorRepository.findTop3ByOrderByWalletBalanceDesc();
-    }
-
-   /* public List<VendorEntity> getTopInvitiesVendor() {
-        String query = "SELECT v FROM VendorEntity v " +
-                "LEFT JOIN FETCH v.profilePic " +
-                "LEFT JOIN FETCH v.firstName " +
-                "LEFT JOIN FETCH v.lastName " +
-                "ORDER BY v.walletBalance DESC";
-
-        return entityManager.createQuery(query, VendorEntity.class)
-                .setMaxResults(3)
-                .getResultList();
-    }*/
-
-
     @Override
     public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
         VendorEntity authenticatedVendor = getServiceProviderById(authorizedVendorId);
@@ -772,6 +751,50 @@ public class VenderServiceImpl implements VenderService {
         return result;
     }
 
+
+
+    @Override
+    public List<VendorEntity> getTopInvitiesVendor() {
+        // Fetch only the top 3 vendors sorted by walletBalance in descending order
+        return vendorRepository.findTop3ByOrderByWalletBalanceDesc();
+    }
+
+
+/*
+@Override
+public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
+    // Fetch top 3 vendors sorted by rank (from cache)
+    List<TopVendorCache> topVendorsFromCache = topVendorCacheRepository.findTop3ByOrderByRankAsc();
+
+    // Convert the list of TopVendorCache into a list of Maps
+    List<Map<String, Object>> topVendorsData = new ArrayList<>();
+    for (TopVendorCache topVendor : topVendorsFromCache) {
+        Map<String, Object> vendorData = new HashMap<>();
+        vendorData.put("id", topVendor.getId());
+        vendorData.put("serviceProviderId", topVendor.getServiceProviderId());
+        vendorData.put("price", topVendor.getPrice());
+        vendorData.put("rank", topVendor.getRank());
+        vendorData.put("profileImage", Optional.ofNullable(topVendor.getProfileImage()).orElse(Constant.PROFILE_IMAGE_URL));
+        vendorData.put("vendorName", topVendor.getVendorName() != null ? topVendor.getVendorName() : null);
+        vendorData.put("updatedAt", topVendor.getUpdatedAt());
+        topVendorsData.add(vendorData);
+    }
+
+
+    // Return the data
+    Map<String, Object> result = new HashMap<>();
+    result.put("topInvities", topVendorsData);
+
+    return result;
+}
+*/
+
+
+
+    @Override
+    public Map<String, Object> getDashboardData(String token) {
+        return null;
+    }
 
 
 }

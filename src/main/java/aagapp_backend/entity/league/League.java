@@ -95,8 +95,8 @@ public class League {
     private Integer minPlayersPerTeam;
     private Integer maxPlayersPerTeam;
 
-    private ZonedDateTime challengeTimestamp;
-
+  /*  private ZonedDateTime challengeTimestamp;
+*/
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = ZonedDateTime.now();
@@ -104,7 +104,9 @@ public class League {
 
     @PrePersist
     public void prePersist() {
+/*
         this.challengeTimestamp=ZonedDateTime.now();
+*/
         if (this.minPlayersPerTeam == null) {
             this.minPlayersPerTeam = 1; // Default value for minPlayersPerTeam
         }

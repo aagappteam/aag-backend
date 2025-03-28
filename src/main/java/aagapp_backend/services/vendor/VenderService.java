@@ -1,5 +1,6 @@
 package aagapp_backend.services.vendor;
 
+import aagapp_backend.dto.VendorTopInviteeProjection;
 import aagapp_backend.entity.VendorEntity;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -21,4 +22,6 @@ public interface VenderService {
     VendorEntity saveOrUpdate(VendorEntity vendorEntity);
     List<VendorEntity> getTopInvitiesVendor();
     Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId);
+
+    Map<String, Object> getDashboardData(String token);
 }

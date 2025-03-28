@@ -35,6 +35,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class PaymentService {
@@ -85,6 +87,8 @@ public class PaymentService {
         if (existingVendor == null) {
             throw new RuntimeException("Vendor not found with ID: " + vendorId);
         }
+       /* List<String> planFeatures = planEntity.getFeatures();
+        Integer dailyGameLimit = extractDailyGameLimitByPlan(planFeatures); // Implement logic for extracting game limit*/
 
         // Associate the vendor with the payment
         paymentRequest.setVendorEntity(existingVendor);
@@ -93,12 +97,24 @@ public class PaymentService {
         if(vendorId != null){
             VendorLevelPlan level = existingVendor.getVendorLevelPlan();
             Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
+            existingVendor.setDailyLimit(dailyGameLimit);
 
-            System.out.println(level.getDailyGameLimit() +" fdvc x   " + dailyGameLimit);
-
+/*
             existingVendor.setDailyLimit(level.getDailyGameLimit());
-            paymentRequest.setDailyLimit(level.getDailyGameLimit());
+*/
+            paymentRequest.setDailyLimit(dailyGameLimit);
         }
+
+//        @todo need to check theme limit and daily limit
+       /* VendorLevelPlan currentLevel = existingVendor.getVendorLevelPlan();
+
+        // Get the new plan level (for example, upgrading to PRO_C)
+        VendorLevelPlan newLevel = getVendorLevelFromPlan(planEntity); // Implement this logic based on the selected plan
+
+        if (newLevel != currentLevel) {
+            // Vendor is changing levels, so update daily game limit and theme limit
+            updateVendorLevel(existingVendor, newLevel, planEntity);
+        }*/
         paymentRequest.setPlanDuration(planEntity.getPlanVariant());
 
         // Generate a unique transaction ID
@@ -152,6 +168,76 @@ public class PaymentService {
         notificationRepository.save(notification);
 
         return paymentRepository.save(paymentRequest);
+    }
+
+    // Helper method to update the vendor's level and associated features
+    private void updateVendorLevel(VendorEntity existingVendor, VendorLevelPlan newLevel, PlanEntity planEntity) {
+        // Set the vendor's level to the new level
+        existingVendor.setVendorLevelPlan(newLevel);
+
+        // Update the daily game limit and themes based on the new level
+        existingVendor.setDailyLimit(newLevel.getDailyGameLimit()); // Set new daily limit
+//        existingVendor.setThemeCount(newLevel.getThemeCount()); // Set new theme count
+
+        // Additionally, you can update the feature slots, user counter, etc., if needed
+//        existingVendor.setFeatureSlots(newLevel.getFeatureSlots());
+
+        // Update the payment request's daily limit as well (if you want to associate this to the payment)
+//        paymentRequest.setDailyLimit(newLevel.getDailyGameLimit());
+
+        // Apply any other changes based on the level, if necessary
+    }
+
+    private VendorLevelPlan getVendorLevelFromPlan(PlanEntity planEntity) {
+        // Map plan to vendor level, assuming you can determine this from the plan features or name
+        String planName = planEntity.getPlanName();
+        switch (planName) {
+            case "STANDARD_A":
+                return VendorLevelPlan.STANDARD_A;
+            case "STANDARD_B":
+                return VendorLevelPlan.STANDARD_B;
+            case "STANDARD_C":
+                return VendorLevelPlan.STANDARD_C;
+            case "STANDARD_D":
+                return VendorLevelPlan.STANDARD_D;
+            case "STANDARD_E":
+                return VendorLevelPlan.STANDARD_E;
+            case "PRO_A":
+                return VendorLevelPlan.PRO_A;
+            case "PRO_B":
+                return VendorLevelPlan.PRO_B;
+            case "PRO_C":
+                return VendorLevelPlan.PRO_C;
+            case "PRO_D":
+                return VendorLevelPlan.PRO_D;
+            case "PRO_E":
+                return VendorLevelPlan.PRO_E;
+            case "ELITE_A":
+                return VendorLevelPlan.ELITE_A;
+            case "ELITE_B":
+                return VendorLevelPlan.ELITE_B;
+            case "ELITE_C":
+                return VendorLevelPlan.ELITE_C;
+            case "ELITE_D":
+                return VendorLevelPlan.ELITE_D;
+            case "ELITE_E":
+                return VendorLevelPlan.ELITE_E;
+            default:
+                throw new RuntimeException("Unknown plan type: " + planName);
+        }
+    }
+
+    private Integer extractDailyGameLimitByPlan(List<String> features) {
+        Pattern pattern = Pattern.compile("Upto (\\d+) Games per Day");
+
+        for (String feature : features) {
+            Matcher matcher = pattern.matcher(feature);
+            if (matcher.find()) {
+                return Integer.parseInt(matcher.group(1));
+            }
+        }
+        // Default case
+        return 0;  // No limit set
     }
 
     private String generateInvoiceUrl(String transactionId) {
