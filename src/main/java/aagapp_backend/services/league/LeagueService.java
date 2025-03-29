@@ -1,23 +1,36 @@
 package aagapp_backend.services.league;
 
+import aagapp_backend.dto.GameRequest;
 import aagapp_backend.dto.LeagueRequest;
+import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.league.League;
-import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.entity.league.LeagueRoom;
+import aagapp_backend.entity.players.Player;
+import aagapp_backend.enums.*;
+import aagapp_backend.repository.ChallangeRepository;
+import aagapp_backend.repository.game.AagGameRepository;
+import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueRepository;
+import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import javax.naming.LimitExceededException;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -29,6 +42,9 @@ public class LeagueService {
     private LeagueRepository leagueRepository;
 
     @Autowired
+    private LeagueRoomRepository leagueRoomRepository;
+
+    @Autowired
     private ExceptionHandlingService exceptionHandling;
 
     @Autowired
@@ -37,90 +53,216 @@ public class LeagueService {
     @Autowired
     private VendorRepository vendorRepository;
 
-    // Publish a new league
-    public League publishLeague(LeagueRequest leagueRequest, Long vendorId) {
+
+    @Autowired
+    private AagGameRepository aagGameRepository;
+
+
+    @Autowired
+    private ChallangeRepository challangeRepository;
+
+    @Autowired
+    private PlayerRepository playerRepository;
+
+    @Autowired
+    private ResponseService responseService;
+
+    @Transactional
+    public Challenge createChallenge(LeagueRequest leagueRequest, Long vendorId) {
         try {
-            League league = new League();
-            league.setName(leagueRequest.getName());
-            league.setDescription(leagueRequest.getDescription());
-            league.setFee(leagueRequest.getFee());
-            league.setLeagueType(leagueRequest.getLeagueType());
-            league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
-            league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
 
-            VendorEntity vendor = vendorRepository.findById(vendorId)
-                    .orElseThrow(() -> new RuntimeException("Vendor not found"));
-            league.setVendorEntity(vendor);
+            if (leagueRequest.getOpponentVendorId() != null) {
+                // Check if the opponent vendor exists
+                VendorEntity opponentVendor = vendorRepository.findById(leagueRequest.getOpponentVendorId())
+                        .orElseThrow(() -> new RuntimeException("Opponent Vendor not found"));
 
-            // Ensure a vendor cannot challenge themselves
+                // Check if the opponent vendor's league status is available
+                if (opponentVendor.getLeagueStatus() != LeagueStatus.AVAILABLE) {
+                    throw new RuntimeException("The opponent vendor's league status is not available.");
+                }
+            }
+
+
             if (leagueRequest.getOpponentVendorId() != null && leagueRequest.getOpponentVendorId().equals(vendorId)) {
                 throw new IllegalArgumentException("A vendor cannot challenge themselves");
             }
+
+            Challenge challenge = new Challenge();
+            if (leagueRequest.getOpponentVendorId() == null) {
+                challenge.setOpponentVendorId(getRandomAvailableVendor(vendorId).getService_provider_id());
+            }else{
+                challenge.setOpponentVendorId(leagueRequest.getOpponentVendorId());
+            }
+
+            // Create the challenge entity
+            challenge.setVendorId(vendorId);
+            challenge.setExistinggameId(leagueRequest.getExistinggameId());
+            challenge.setChallengeStatus(Challenge.ChallengeStatus.PENDING); // Initially set the status to PENDING
+            challenge.setMove(leagueRequest.getMove());
+            challenge.setFee(leagueRequest.getFee());
+            challenge.setThemeId(leagueRequest.getThemeId());
+            challenge.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
+            challenge.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
+            challenge.setScheduledAt(leagueRequest.getScheduledAt());
+            challenge.setEndDate(leagueRequest.getEndDate());
+
+            // Save the challenge in the database
+            challangeRepository.save(challenge);
+
+            return challenge;
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error creating challenge: " + e.getMessage(), e);
+        }
+    }
+
+
+
+    @Transactional
+    public void rejectChallenge(Long challengeId, Long vendorId) {
+        try {
+            // Fetch the challenge
+            Challenge challenge = challangeRepository.findById(challengeId)
+                    .orElseThrow(() -> new RuntimeException("Challenge not found"));
+
+            // Check if the opponent is the correct vendor and challenge is pending
+            if (!challenge.getOpponentVendorId().equals(vendorId)) {
+                throw new IllegalArgumentException("You are not the opponent for this challenge.");
+            }
+
+            if (challenge.getChallengeStatus() != Challenge.ChallengeStatus.PENDING) {
+                throw new IllegalArgumentException("The challenge is no longer pending.");
+            }
+
+
+            // Set the challenge status to REJECTED
+            challenge.setChallengeStatus(Challenge.ChallengeStatus.REJECTED);
+            challangeRepository.save(challenge);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error rejecting challenge: " + e.getMessage(), e);
+        }
+    }
+
+
+
+    @Transactional
+    public League publishLeague(Challenge leagueRequest, Long vendorId) throws LimitExceededException {
+        try {
+
+            VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
+            VendorEntity opponentVendor = em.find(VendorEntity.class, leagueRequest.getVendorId());
+            // Create a new Game entity
+            League league = new League();
+
+            boolean isAvailable = isGameAvailableById(leagueRequest.getExistinggameId());
+
+            if (!isAvailable) {
+                throw new RuntimeException("game is not available");
+            }
+            Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(leagueRequest.getExistinggameId());
+            league.setLeagueUrl(gameAvailable.get().getGameImage());
 
             ThemeEntity theme = em.find(ThemeEntity.class, leagueRequest.getThemeId());
             if (theme == null) {
                 throw new RuntimeException("No theme found with the provided ID");
             }
+
+            // Set Vendor and Theme to the Game
+            league.setName(opponentVendor.getFirst_name() +"v/s" +vendorEntity.getFirst_name());
+            league.setVendorEntity(vendorEntity);
             league.setTheme(theme);
+            league.setAagGameId(leagueRequest.getExistinggameId());
+            league.setOpponentVendorId(leagueRequest.getOpponentVendorId());
+            // Calculate moves based on the selected fee
+            league.setFee(leagueRequest.getFee());
 
-            // Handle challenge scenario
-            if (leagueRequest.getIsChallenge()) {
-                List<VendorEntity> challengedVendors = new ArrayList<>();
-                if (leagueRequest.getOpponentVendorId() == null) {
-                    challengedVendors.add(getRandomAvailableVendor(vendorId));
-                } else {
-                    VendorEntity opponentVendor = vendorRepository.findById(leagueRequest.getOpponentVendorId())
-                            .orElseThrow(() -> new RuntimeException("Opponent vendor not found"));
-                    challengedVendors.add(opponentVendor);
-                }
-                league.setChallengedVendors(challengedVendors);
+            if (leagueRequest.getMove() != null) {
+                league.setMove(leagueRequest.getMove());
             }
 
-/*            league.setStatus(LeagueStatus.SCHEDULED);
-            league.setScheduledAt(ZonedDateTime.now().plusMinutes(20));*/
 
-            // Scheduled date validation
+            // Get current time in Kolkata timezone
+            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             if (leagueRequest.getScheduledAt() != null) {
-                ZonedDateTime scheduledAtInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-                if (scheduledAtInKolkata.isBefore(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusHours(4))) {
-                    throw new IllegalArgumentException("The league must be scheduled at least 4 hours in advance.");
+                ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
+                    throw new IllegalArgumentException("The game must be scheduled at least 4 hours in advance.");
                 }
-                league.setScheduledAt(scheduledAtInKolkata);
                 league.setStatus(LeagueStatus.SCHEDULED);
-                league.setEndDate(scheduledAtInKolkata.plusHours(4));
+                league.setScheduledAt(scheduledInKolkata);
+                league.setEndDate(leagueRequest.getEndDate());
             } else {
-                ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-                league.setScheduledAt(nowInKolkata.plusMinutes(15));
-                league.setEndDate(nowInKolkata.plusHours(4));
-/*
                 league.setStatus(LeagueStatus.ACTIVE);
-*/
-                league.setStatus(LeagueStatus.SCHEDULED);
-
+                league.setScheduledAt(nowInKolkata.plusMinutes(15));
+                league.setEndDate(leagueRequest.getEndDate());
             }
 
-            // Set registration deadline if provided
-            if (leagueRequest.getRegistrationDeadline() != null) {
-                league.setEndDate(leagueRequest.getRegistrationDeadline().withZoneSameInstant(ZoneId.of("Asia/Kolkata")));
+            // Set the minimum and maximum players
+            if (leagueRequest.getMinPlayersPerTeam() != null) {
+                league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
             }
+            if (leagueRequest.getMaxPlayersPerTeam() != null) {
+                league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
+            }
+            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
-            league.setCreatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
-            league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
+            // Set created and updated timestamps
+            league.setCreatedDate(nowInKolkata);
+            league.setUpdatedDate(nowInKolkata);
+
+            // Save the game to get the game ID
             League savedLeague = leagueRepository.save(league);
 
-            // Generate shareable link if necessary
+            // Create the first GameRoom (initialized, 2 players max)
+            LeagueRoom leagueRoom = createNewEmptyRoom(savedLeague);
+
+            leagueRequest.setChallengeStatus(Challenge.ChallengeStatus.ACCEPTED);
+
+            // Save the game room
+            leagueRoomRepository.save(leagueRoom);
+
+            // Generate a shareable link for the game
             String shareableLink = generateShareableLink(savedLeague.getId());
             savedLeague.setShareableLink(shareableLink);
 
-            return savedLeague;
-        } catch (IllegalArgumentException e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new IllegalArgumentException("Invalid league schedule: " + e.getMessage());
+            // Return the saved game with the shareable link
+            return leagueRepository.save(savedLeague);
+
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while publishing the league: " + e.getMessage(), e);
+            throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
         }
+    }
+
+    // Create a new empty room for a game
+    private LeagueRoom createNewEmptyRoom(League league) {
+        LeagueRoom newRoom = new LeagueRoom();
+        newRoom.setMaxPlayers(league.getMaxPlayersPerTeam());
+        newRoom.setCurrentPlayers(new ArrayList<>());
+        newRoom.setStatus(LeagueRoomStatus.INITIALIZED);
+        newRoom.setCreatedAt(LocalDateTime.now());
+        newRoom.setRoomCode(generateRoomCode());
+        newRoom.setGame(league);
+        return newRoom;
+    }
+
+    /*// Generate a unique room code
+    private String generateRoomCode() {
+        String roomCode;
+        do {
+            roomCode = RandomStringUtils.randomAlphanumeric(6);
+        } while (leagueRoomRepository.findByRoomCode(roomCode) != null);
+        return roomCode;
+    }
+*/
+    public boolean isGameAvailableById(Long gameId) {
+        // Use the repository to find a game by its name
+        Optional<AagAvailableGames> game = aagGameRepository.findById(gameId);
+        return game.isPresent(); // Return true if the game is found, false otherwise
     }
 
     private VendorEntity getRandomAvailableVendor(Long excludeVendorId) {
@@ -129,7 +271,7 @@ public class LeagueService {
         availableVendors.removeIf(vendor -> vendor.getService_provider_id().equals(excludeVendorId));
 
         if (availableVendors.isEmpty()) {
-            throw new RuntimeException("No available vendors found.");
+            throw new RuntimeException("No available vendors found Right Now.");
         }
 
         // Return a random vendor from the remaining list
@@ -137,103 +279,23 @@ public class LeagueService {
     }
 
 
-
     private String generateShareableLink(Long gameId) {
         return "https://example.com/leagues/" + gameId;
     }
 
 
-    /*public League updateLeague(Long vendorId, Long leagueId, LeagueRequest leagueRequest) {
-
-        String jpql = "SELECT l FROM League l WHERE l.id = :leagueId AND l.vendorEntity.id = :vendorId";
-        TypedQuery<League> query = em.createQuery(jpql, League.class);
-        query.setParameter("leagueId", leagueId);
-        query.setParameter("vendorId", vendorId);
-
-        League league = query.getResultList().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("League ID: " + leagueId + " does not belong to Vendor ID: " + vendorId));
-
-        if (league.getStatus() == LeagueStatus.EXPIRED) {
-            throw new IllegalStateException("League ID: " + league.getId() + " has been expired and cannot be updated.");
-        } else if (league.getStatus() == LeagueStatus.ACTIVE) {
-            throw new IllegalStateException("League ID: " + league.getId() + " is already active and cannot be updated.");
-        }
-
-        if (leagueRequest.getName() != null && !leagueRequest.getName().isEmpty()) {
-            league.setName(leagueRequest.getName());
-        }
-        ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-        ZonedDateTime scheduledAtInKolkata = league.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-
-
-        if (scheduledAtInKolkata != null) {
-            ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
-
-            if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
-
-                // Calculate moves based on the selected fee
-
-                league.setFee(leagueRequest.getFee());
-                if (leagueRequest.getMove() != null) {
-                    league.setMove(leagueRequest.getMove());
-                }
-
-
-                ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-
-                league.setScheduledAt(scheduledInKolkata);
-                league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
-                league.setEndDate(scheduledInKolkata.plusHours(4));
-
-                return em.merge(league);
-            } else {
-                throw new IllegalStateException("Game ID: " + league.getId() + " cannot be updated on the scheduled date or after.");
-
-            }
-        } else {
-            throw new IllegalStateException("Game ID: " + league.getId() + " does not have a scheduled time.");
-        }
-
-
-    }
-
-    public Page<League> findLeaguesByVendorAndStatus(Long vendorId, String status, Pageable pageable) {
-        try {
-            LeagueStatus leagueStatus = LeagueStatus.valueOf(status.toUpperCase());
-
-            Page<League> leagues = leagueRepository.findLeaguesByVendorIdAndStatus(vendorId, leagueStatus, pageable);
-
-            // Return an empty page if no leagues are found
-            return leagues.isEmpty() ? Page.empty() : leagues;
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error retrieving leagues by vendor ID: " + vendorId, e);
-        }
-    }*/
-
-//    public Page<League> getLeagueByVendorIdAndLeagueId(Long vendorId, Long leagueId, Pageable pageable) {
-//        try {
-//            Page<League> leagues = leagueRepository.findByVendorIdAndId(vendorId, leagueId, pageable);
-//
-//            return leagues.isEmpty() ? Page.empty() : leagues;
-//        } catch (Exception e) {
-//            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-//            throw new RuntimeException("Error occurred while retrieving the league: " + e.getMessage(), e);
-//        }
-//    }
-
-    public Page<League> getAllLeagues(Pageable pageable, String status, Long vendorId) {
+    public Page<League> getAllLeagues(Pageable pageable, LeagueStatus status, Long vendorId) {
         try {
             // Check if 'status' and 'vendorId' are provided and build a query accordingly
-           if (status != null && vendorId != null) {
+            if (status != null && vendorId != null) {
                 return leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
-            } else if (status != null) {
+            } else
+            if (status != null) {
                 return leagueRepository.findByStatus(status, pageable);
             } else if (vendorId != null) {
                 return leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
             } else {
-                return leagueRepository.findAll(pageable); // Return all leagues with pagination if no filters
+                return leagueRepository.findAll(pageable);
             }
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -242,66 +304,142 @@ public class LeagueService {
     }
 
 
-
-    public List<League> getAllLiveLeagues() {
-        try {
-            // Fetch all leagues with status LIVE
-            List<League> liveLeagues = leagueRepository.findByStatus(LeagueStatus.LIVE);
-
-            if (liveLeagues.isEmpty()) {
-                throw new RuntimeException("No live leagues found.");
-            }
-
-            return liveLeagues;
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error fetching live leagues: " + e.getMessage(), e);
-        }
-    }
-
-
-    /*public void deleteLeague(Long vendorId, Long leagueId) {
-        try {
-            Optional<League> leagueOptional = leagueRepository.findById(leagueId);
-            if (leagueOptional.isPresent()) {
-                League league = leagueOptional.get();
-
-                if (league.getVendorEntity().getService_provider_id().equals(vendorId)) {
-                    leagueRepository.deleteById(leagueId);
-                } else {
-                    throw new IllegalArgumentException("League with ID " + leagueId + " does not belong to the vendor with ID " + vendorId);
-                }
-            } else {
-                throw new NoSuchElementException("League with ID " + leagueId + " not found");
-            }
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while deleting the league: " + e.getMessage(), e);
-        }
-    }*/
-
-
     // Scheduled task to auto reject expired challenges after 10 minutes
-    @Scheduled(cron = "0 * * * * *")  // Runs every minute
+    @Scheduled(cron = "0 * * * * *")
     public void autoRejectExpiredChallenges() {
         try {
             // Find all leagues in the "SCHEDULED" state
-            List<League> scheduledLeagues = leagueRepository.findByStatus(LeagueStatus.SCHEDULED);
+            List<Challenge> challenges = challangeRepository.findByChallengeStatus(ChallengeStatus.PENDING);
 
-            for (League league : scheduledLeagues) {
+            for (Challenge challenge : challenges) {
                 // If the 10-minute window has passed since the challenge was scheduled
-                if (ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).isAfter(league.getCreatedDate().plusMinutes(10))) {
+                if (ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).isAfter(challenge.getCreatedAt().plusMinutes(1))) {
                     // Reject the challenge if it's expired
-                    league.setStatus(LeagueStatus.REJECTED);
-                    league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
-                    leagueRepository.save(league);
+                    challenge.setChallengeStatus(Challenge.ChallengeStatus.REJECTED);
+                    challangeRepository.save(challenge);
 
                 }
             }
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while auto-rejecting expired challenges "+ e.getMessage());
+            throw new RuntimeException("Error occurred while auto-rejecting expired challenges " + e.getMessage());
         }
+    }
+
+    @Transactional
+    public ResponseEntity<?> joinRoom(Long playerId, Long leagueId) {
+        try {
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+
+            League game = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+
+
+            if (player.getLeagueRoom() != null) {
+                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            LeagueRoom leagueRoom = findAvailableGameRoom(game);
+
+            // 4. Attempt to add the player to the room
+            boolean playerJoined = addPlayerToRoom(leagueRoom, player);
+            if (!playerJoined) {
+                return responseService.generateErrorResponse("Room is Already full with this id: " + leagueRoom.getRoomCode(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            // 5. If the room is full, change status to ONGOING and create a new room
+            if (leagueRoom.getCurrentPlayers().size() == leagueRoom.getMaxPlayers()) {
+                leagueRoom.setStatus(LeagueRoomStatus.ONGOING);
+                leagueRoomRepository.save(leagueRoom);
+                LeagueRoom newRoom = createNewEmptyRoom(game);
+                leagueRoomRepository.save(newRoom); // Save the new room
+            }
+
+            player.setPlayerStatus(PlayerStatus.PLAYING);
+            playerRepository.save(player);
+
+            return responseService.generateSuccessResponse("Player join in the Game Room ", leagueRoom.getRoomCode(), HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Player can not joined in the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @Transactional
+    public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
+        try{
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+
+            LeagueRoom leagueRoom = findAvailableGameRoom(league);
+
+            if (player.getLeagueRoom() == null) {
+                return responseService.generateErrorResponse("Player is not in league with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            player.setLeagueRoom(null);
+            player.setHasWon(false);
+            player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
+            player.setLeagueRoom(null);
+            playerRepository.save(player);
+
+            return responseService.generateSuccessResponse("Player left the Game Room ", leagueRoom.getRoomCode(), HttpStatus.OK);
+        } catch (Exception e){
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+
+    }
+
+    public LeagueRoom findAvailableGameRoom(League league) {
+        // Find a game room that has available space and matches the specified game
+        List<LeagueRoom> availableRooms = leagueRoomRepository.findByGameAndStatus(league, LeagueRoomStatus.INITIALIZED);
+        // Loop through the available rooms and return the first one with space
+        for (LeagueRoom room : availableRooms) {
+            if (room.getCurrentPlayers().size() < room.getMaxPlayers()) {
+                return room;
+            }
+        }
+
+        // If no available room is found, return null or create a new room
+        LeagueRoom newRoom = createNewEmptyRoom(league);
+        leagueRoomRepository.save(newRoom); // Save the new room
+        return newRoom;
+    }
+
+
+    public boolean addPlayerToRoom(LeagueRoom leagueRoom, Player player) {
+        // Check if the game room has space for the player
+        if (leagueRoom.getCurrentPlayers().size() < leagueRoom.getMaxPlayers()) {
+            leagueRoom.getCurrentPlayers().add(player);
+
+            player.setLeagueRoom(leagueRoom);
+
+            player.setPlayerStatus(PlayerStatus.PLAYING);
+
+            leagueRoomRepository.save(leagueRoom);
+            playerRepository.save(player);
+
+            // Return true as the player was successfully added
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // Generate a unique room code
+    private String generateRoomCode() {
+        String roomCode;
+        do {
+            roomCode = RandomStringUtils.randomAlphanumeric(6);
+        } while (leagueRoomRepository.findByRoomCode(roomCode) != null);
+        return roomCode;
     }
 
 
