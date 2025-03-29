@@ -36,9 +36,7 @@ public class Game {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String name;
-
+//    private String name;
 
     // Fee and Move columns
     @Column(name = "fee", nullable = false)
@@ -50,7 +48,15 @@ public class Game {
     @Enumerated(EnumType.STRING)
     private GameStatus status;
 
+    private String name;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
     private String shareableLink;
+
+    @Column(name = "aaggameid", nullable = true)
+    private Long aaggameid;
 
     @ManyToOne
     @JoinColumn(name = "vendor_id", nullable = false)

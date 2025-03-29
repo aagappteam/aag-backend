@@ -3,13 +3,19 @@ package aagapp_backend.controller.payment;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.PaymentDTO;
 import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.entity.payment.PlanEntity;
+import aagapp_backend.repository.payment.PaymentRepository;
+import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentService;
+import jakarta.mail.MessagingException;
+import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +36,12 @@ public class PaymentController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     // Create payment with authorization check and input validation
     @PostMapping("/create/{vendorId}")
@@ -97,13 +109,23 @@ public class PaymentController {
             // Retrieve payments and check for empty list
             List<PaymentEntity> payments = paymentService.findActivePlansByVendorId(vendorId);
             if (payments.isEmpty()) {
-                return responseService.generateErrorResponse("No payments found for this vendor", HttpStatus.NOT_FOUND);
+                return responseService.generateResponse(HttpStatus.OK,"No transactions found for this vendor", null);
             }
 
-            // Map to DTO for response
             List<PaymentDTO> paymentDTOs = payments.stream()
-                    .map(payment -> new PaymentDTO(payment))
+                    .map(payment -> {
+                        // Fetch the PlanEntity using the planId
+                        PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
+
+                        if (planEntity == null) {
+                            throw new RuntimeException("Plan not found with ID: " + payment.getPlanId());
+                        }
+
+                        // Map the PaymentEntity to PaymentDTO, passing the PlanEntity to get the planName
+                        return new PaymentDTO(payment, planEntity);
+                    })
                     .collect(Collectors.toList());
+
 
             return responseService.generateSuccessResponse("Payments retrieved successfully", paymentDTOs, HttpStatus.OK);
 
@@ -123,30 +145,25 @@ public class PaymentController {
             @RequestHeader(value = "Authorization") String authorization) {
 
         try {
-            // Validate Authorization header
-            if (authorization == null || !authorization.startsWith("Bearer ")) {
-                return responseService.generateErrorResponse("Invalid or missing Authorization header", HttpStatus.BAD_REQUEST);
-            }
-            String token = authorization.substring(7);
-            Long venderId = jwtUtil.extractId(token);
-
-            if (venderId == null) {
-                return responseService.generateErrorResponse("Invalid or expired token", HttpStatus.UNAUTHORIZED);
-            }
-
-            if (!venderId.equals(vendorId)) {
-                return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
-            }
 
             // Retrieve transactions with pagination and optional reference filter
             List<PaymentEntity> transactions = paymentService.getTransactionsByVendorId(vendorId, page, size, transactionReference);
             if (transactions.isEmpty()) {
-                return responseService.generateErrorResponse("No transactions found for this vendor", HttpStatus.NOT_FOUND);
+                return responseService.generateResponse(HttpStatus.OK,"No transactions found for this vendor", null);
             }
 
-            // Map to DTO for response
             List<PaymentDTO> paymentDTOs = transactions.stream()
-                    .map(payment -> new PaymentDTO(payment))
+                    .map(payment -> {
+                        // Fetch the PlanEntity using the planId
+                        PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
+
+                        if (planEntity == null) {
+                            throw new RuntimeException("Plan not found with ID: " + payment.getPlanId());
+                        }
+
+                        // Map the PaymentEntity to PaymentDTO, passing the PlanEntity to get the planName
+                        return new PaymentDTO(payment, planEntity);
+                    })
                     .collect(Collectors.toList());
 
             return responseService.generateSuccessResponse("Transactions retrieved successfully", paymentDTOs, HttpStatus.OK);
@@ -181,12 +198,27 @@ public class PaymentController {
             // Retrieve transactions and check for empty list
             List<PaymentEntity> transactions = paymentService.getAllTransactionsByVendorName(vendorName, page, size, transactionReference);
             if (transactions.isEmpty()) {
-                return responseService.generateErrorResponse("No transactions found for this vendor", HttpStatus.NOT_FOUND);
+                return responseService.generateResponse(HttpStatus.OK, "No transactions found for this vendor" ,null);
+
             }
 
             // Map to DTO for response
-            List<PaymentDTO> paymentDTOs = transactions.stream()
+/*            List<PaymentDTO> paymentDTOs = transactions.stream()
                     .map(payment -> new PaymentDTO(payment))
+                    .collect(Collectors.toList());*/
+
+            List<PaymentDTO> paymentDTOs = transactions.stream()
+                    .map(payment -> {
+                        // Fetch the PlanEntity using the planId
+                        PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
+
+                        if (planEntity == null) {
+                            throw new RuntimeException("Plan not found with ID: " + payment.getPlanId());
+                        }
+
+                        // Map the PaymentEntity to PaymentDTO, passing the PlanEntity to get the planName
+                        return new PaymentDTO(payment, planEntity);
+                    })
                     .collect(Collectors.toList());
 
             return responseService.generateSuccessResponse("Transactions retrieved successfully", paymentDTOs, HttpStatus.OK);
@@ -196,4 +228,47 @@ public class PaymentController {
             return responseService.generateErrorResponse("An error occurred while fetching transactions: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @PostMapping("/send-invoice-email")
+    public ResponseEntity<?> sendInvoiceByEmail(@RequestParam String transactionId) {
+        try {
+            // Find the payment using the transaction ID
+            PaymentEntity paymentEntity = paymentRepository.findByTransactionId(transactionId);
+
+            // If payment is not found, return a bad request response
+            if (paymentEntity == null) {
+                return responseService.generateErrorResponse("Payment or transaction not found.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Retrieve the invoice URL from the payment
+            String invoiceUrl = paymentEntity.getDownloadInvoice();
+
+            // If no invoice URL is available, return an error
+            if (invoiceUrl == null || invoiceUrl.isEmpty()) {
+                return responseService.generateErrorResponse("Invoice link is not available.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Send the invoice URL to the vendor's email
+            try {
+                // Assuming paymentEntity.getVendorEntity().getPrimary_email() returns the vendor's email
+                paymentService.sendEmail(paymentEntity, invoiceUrl);
+            } catch (MessagingException e) {
+                // Catch and handle any email sending exceptions
+                return responseService.generateErrorResponse("An error occurred while sending the invoice: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            // Using generateSuccessResponse for a successful response
+            return responseService.generateSuccessResponse("Invoice link sent on " + paymentEntity.getVendorEntity().getPrimary_email() + " successfully.", null, HttpStatus.OK);
+
+        } catch (Exception e) {
+            // Catch any unexpected exceptions
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("An unexpected error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+
+
 }

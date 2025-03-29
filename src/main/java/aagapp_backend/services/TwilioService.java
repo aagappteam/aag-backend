@@ -8,6 +8,7 @@ import aagapp_backend.enums.PlayerStatus;
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderServiceImpl;
+import com.twilio.rest.verify.v2.service.Verification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,9 @@ public class TwilioService {
 
     @Value("${twilio.phoneNumber}")
     private String twilioPhoneNumber;
+
+    @Value("${service.provider.sid}")
+    private String serviceProviderSid;
 
     private CustomCustomerService customCustomerService;
     private EntityManager entityManager;
@@ -86,7 +90,7 @@ public class TwilioService {
                 Player player = new Player();
                 player.setPlayerId(customerDetails.getId());
                 player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
-                entityManager.persist(player);
+                entityManager.merge(player);
                 return ResponseEntity.ok(Map.of(
                         "otp", otp,
                         "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber
@@ -140,19 +144,22 @@ public class TwilioService {
         }
     }
 
-    public String sendOtp(String countryCode, String mobileNumber, String otp) {
+    /*public String sendOtp(String countryCode, String mobileNumber, String otp) {
 
         Twilio.init(accountSid, authToken);
         String completeMobileNumber = countryCode + mobileNumber;
 
-        String messageBody = "Your OTP is: " + otp;
+        String messageBody = "Your OTP for AAG app is: " + otp + ". Please use this code to verify your identity. It will expire in 1 minute. - AAG Team";
 
         try {
             Message message = Message.creator(
                     new PhoneNumber(completeMobileNumber),
-                    new PhoneNumber(twilioPhoneNumber),
+                    serviceProviderSid,
                     messageBody
             ).create();
+
+
+
 
             System.out.println("OTP sent successfully to " + completeMobileNumber);
         } catch (Exception e) {
@@ -160,7 +167,7 @@ public class TwilioService {
         }
 
         return otp;
-    }
+    }*/
 
     @Transactional
     public ResponseEntity<?> sendOtpToMobileVendor(String mobileNumber, String countryCode) {
@@ -171,7 +178,7 @@ public class TwilioService {
 
         try {
             String otp = generateOTP();
-//            this.sendOtp(countryCode,mobileNumber,otp);
+//           this.sendOtp(countryCode,mobileNumber,otp);
 
             VendorEntity existingServiceProvider = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
 

@@ -9,23 +9,41 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface LeagueRepository extends JpaRepository<League, Long> {
 
 
-    @Query("SELECT v FROM VendorEntity v WHERE v.service_provider_id = :vendorId")
-    Optional<VendorEntity> findVendorById(@Param("vendorId") Long vendorId);
+//    @Query("SELECT v FROM VendorEntity v WHERE v.service_provider_id = :vendorId")
+//    Optional<VendorEntity> findVendorById(@Param("vendorId") Long vendorId);
 
-    Page<League> findByStatus(String status, Pageable pageable);
+//    Page<League> findByStatus(String status, Pageable pageable);
+//
+//    Page<League> findByVendorId(Long vendorId, Pageable pageable);
+//    Page<League> findByStatusAndVendorId(String status, Long vendorId, Pageable pageable);
+//    Page<League> findLeaguesByVendorIdAndStatus(Long vendorId, LeagueStatus status, Pageable pageable);
+//
+//    Page<League> findByVendorIdAndId(Long vendorId, Long leagueId, Pageable pageable);
 
-    Page<League> findByVendorId(Long vendorId, Pageable pageable);
-    Page<League> findByStatusAndVendorId(String status, Long vendorId, Pageable pageable);
-    Page<League> findLeaguesByVendorIdAndStatus(Long vendorId, LeagueStatus status, Pageable pageable);
+//    Page<League> findAll(Pageable pageable);
 
-    Page<League> findByVendorIdAndId(Long vendorId, Long leagueId, Pageable pageable);
+    List<League> findByStatus(LeagueStatus leagueStatus);
+
+    @Query("SELECT l FROM League l WHERE l.status = :status AND (" +
+            "l.vendorEntity.service_provider_id = :vendorId OR l.opponentVendorId = :vendorId)")
+    Page<League> findLeaguesByStatusAndVendorId(@Param("status") LeagueStatus status,
+                                                @Param("vendorId") Long vendorId,
+                                                Pageable pageable);
+
+
+    // Find leagues by status with pagination
+    Page<League> findByStatus(LeagueStatus status, Pageable pageable);
+
+    // Find leagues by vendorId with pagination
+    @Query("SELECT l FROM League l WHERE l.vendorEntity.service_provider_id = :serviceProviderId")
+    Page<League> findByVendorServiceProviderId(@Param("serviceProviderId") Long serviceProviderId, Pageable pageable);
 
     Page<League> findAll(Pageable pageable);
-
 }

@@ -5,16 +5,20 @@ import aagapp_backend.entity.VendorSubmissionEntity;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.url.UrlVerificationService;
+import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import aagapp_backend.services.vendor.VendorSubmissionService;
+import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/url")
@@ -32,12 +36,18 @@ public class UrlValidationController {
     @Autowired
     private ExceptionHandlingImplement exceptionHandlingImplement;
 
+    @Autowired
+    private EntityManager entityManager;
+
+
+
     @GetMapping("/validate")
     public ResponseEntity<?> validateUrl(@RequestParam String url, @RequestParam String platform) {
         try {
             boolean isValid = urlVerificationService.isUrlValid(url, platform);
 
             if (isValid) {
+
                 return ResponseService.generateSuccessResponse(
                         "The URL is valid for the given platform.",
                         new HashMap<String, String>() {{
@@ -66,42 +76,49 @@ public class UrlValidationController {
     }
 
 
-    @PostMapping("/submit/{id}")
-    public ResponseEntity<?> submitVendorDetails(@RequestBody @Valid VendorSubmissionEntity vendorSubmissionEntity,@PathVariable Long id) {
+
+    @Transactional
+    @PostMapping("/validate-and-save/{serviceProviderId}")
+    public ResponseEntity<?> validateAndSave(@PathVariable Long serviceProviderId, @RequestBody VendorSubmissionEntity request) {
         try {
-
-            VendorEntity vendorEntity = venderService.getServiceProviderById(id);
-
-            if(vendorEntity==null){
-                return ResponseService.generateErrorResponse("No Data not found for this vendor ", HttpStatus.NOT_FOUND);
+            // Validate all social media URLs
+            for (Map.Entry<String, String> entry : request.getSocialMediaUrls().entrySet()) {
+                boolean isValid = urlVerificationService.isUrlValid(entry.getValue(), entry.getKey());
+                if (!isValid) {
+                    return ResponseService.generateErrorResponse(
+                            "Invalid URL for platform: " + entry.getKey(),
+                            HttpStatus.BAD_REQUEST
+                    );
+                }
             }
 
-            VendorSubmissionEntity submittedEntity = submissionService.submitDetails(vendorSubmissionEntity,vendorEntity);
+            // Check if VendorSubmissionEntity exists for the given serviceProviderId (vendorId)
+            VendorSubmissionEntity existingSubmission = submissionService.getVendorSubmissionByServiceProviderId(serviceProviderId);
 
-            if (submittedEntity != null) {
-                return ResponseService.generateSuccessResponse(
-                        "Submission successful. Awaiting admin verification.",
-                        submittedEntity,
-                        HttpStatus.OK
-                );
+            if (existingSubmission != null) {
+                existingSubmission.setSocialMediaUrls(request.getSocialMediaUrls());
+                // Save the updated entity
+               entityManager.merge(existingSubmission);
+
+                return ResponseService.generateSuccessResponse("Submission updated successfully!", existingSubmission, HttpStatus.OK);
+            } else {
+                // If no submission exists, create a new one and save it
+                VendorSubmissionEntity newEntity = new VendorSubmissionEntity();
+                newEntity.setSocialMediaUrls(request.getSocialMediaUrls());
+                 entityManager.persist(newEntity);
+
+
+                return ResponseService.generateSuccessResponse("Submission saved successfully!", existingSubmission, HttpStatus.OK);
             }
-
-
-            return ResponseService.generateErrorResponse(
-                    "Invalid submission. Please check your details.",
-                    HttpStatus.BAD_REQUEST
-            );
 
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(e);
-            return ResponseService.generateErrorResponse(
-                    "Invalid submission. Please check your details.",
-                    HttpStatus.BAD_REQUEST
-            );
+            return ResponseService.generateErrorResponse("Error processing request", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @GetMapping("/status")
+
+   /* @GetMapping("/status")
     public ResponseEntity<?> getSubmissionsByStatus(@RequestParam(required = false, defaultValue = "all") String status) {
         try {
             List<VendorSubmissionEntity> submissions = submissionService.getSubmissionsByStatus(status);
@@ -125,5 +142,5 @@ public class UrlValidationController {
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
-    }
+    }*/
 }

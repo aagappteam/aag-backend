@@ -9,7 +9,9 @@ import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.devices.UserDevice;
+import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.ProfileStatus;
+import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.*;
 import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.devicemange.DeviceMange;
@@ -34,6 +36,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +59,12 @@ public class OtpEndpoint {
     private String accountSid;
     private ReferralService referralService;
     private DeviceMange deviceMange;
+    private WalletRepository walletRepository;
+
+    @Autowired
+    public void setWalletRepository(WalletRepository walletRepository) {
+        this.walletRepository = walletRepository;
+    }
 
     @Autowired
     public void setDeviceMange(DeviceMange deviceMange) {
@@ -126,7 +135,6 @@ public class OtpEndpoint {
 
     @Value("${twilio.authToken}")
     private String authToken;
-
 
     @PostMapping("/send-otp")
     public ResponseEntity<?> sendOtp(@RequestBody CustomCustomer customerDetails, HttpSession session) throws UnsupportedEncodingException {
@@ -209,6 +217,7 @@ public class OtpEndpoint {
                     return responseService.generateErrorResponse("otp is null ", HttpStatus.BAD_REQUEST);
                 }
 
+
                 CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
 
                 if (existingCustomer == null) {
@@ -242,26 +251,39 @@ public class OtpEndpoint {
                 if (otpEntered.equals(storedOtp)) {
                     if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                         existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
+/*
+                        sendOnboardingEmail(existingCustomer.getEmail(), existingCustomer.getName(), existingCustomer.getLastName());
+*/
                     }
+                    Wallet referrerWallet = walletRepository.findByCustomCustomer(existingCustomer);
+                    if (referrerWallet == null) {
+                        // Create a new wallet for the referrer if it doesn't exist
+                        referrerWallet = new Wallet();
+                        referrerWallet.setCustomCustomer(existingCustomer);
+                        referrerWallet.setUnplayedBalance(0F);  // Set default value
+                        referrerWallet.setWinningAmount(0F);  // Set default value
+                        existingCustomer.setBonusBalance(BigDecimal.ZERO);  // Set default value
+                        referrerWallet.setIsTest(false);  // Set default value (assuming it's not a test account)
+
+                        // Save the wallet
+                        walletRepository.save(referrerWallet);  // Make sure you have a walletRepository
+                    }
+
 
                     existingCustomer.setOtp(null);
                     em.persist(existingCustomer);
 
-
                     String existingToken = existingCustomer.getToken();
 
                     if (existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
-                        ApiResponse response = new ApiResponse(existingToken, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in");
-                        return ResponseEntity.ok(response);
+                        return responseService.generateSuccessResponse("User has been logged in", existingCustomer, HttpStatus.OK);
 
                     } else {
                         String newToken = jwtUtil.generateToken(existingCustomer.getId(), role, ipAddress, userAgent);
                         session.setAttribute(tokenKey, newToken);
                         existingCustomer.setToken(newToken);
                         em.persist(existingCustomer);
-
-                        ApiResponse response = new ApiResponse(newToken, customer, HttpStatus.OK.value(), HttpStatus.OK.name(), "User has been logged in");
-                        return ResponseEntity.ok(response);
+                        return responseService.generateSuccessResponse("User has been logged in", existingCustomer, HttpStatus.OK);
 
                     }
                 } else {
@@ -302,7 +324,7 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
             }
 
-            Twilio.init(accountSid, authToken);
+          /*  Twilio.init(accountSid, authToken);*/
             String otp = twilioService.generateOTP();
 
             VendorEntity existingServiceProvider = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);

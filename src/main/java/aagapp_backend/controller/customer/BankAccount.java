@@ -22,12 +22,14 @@ import java.util.Optional;
 @RequestMapping("user-bank")
 public class BankAccount {
 
-
     @Autowired
     private BankAccountService bankAccountService;
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandling;
+
+    @Autowired
+    private ResponseService responseService;
 
     /**
      * The Entity manager.
@@ -108,7 +110,7 @@ public class BankAccount {
             List<BankAccountDTO> bankAccounts = bankAccountService.getBankAccountsByCustomerId(customerId);
 
             if (bankAccounts.isEmpty()) {
-                return ResponseService.generateErrorResponse("No bank accounts found for this customer", HttpStatus.NOT_FOUND);
+                return responseService.generateResponse(HttpStatus.OK,"No bank accounts found for this customer", null);
             }
 
             return ResponseService.generateSuccessResponse("Bank accounts fetched successfully!", bankAccounts, HttpStatus.OK);
@@ -188,7 +190,7 @@ public class BankAccount {
                 return ResponseService.generateErrorResponse("Failed to delete bank account", HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
-            return ResponseService.generateSuccessResponse("Bank account deleted successfully!", null, HttpStatus.NO_CONTENT);
+            return ResponseService.generateSuccessResponse("Bank account deleted successfully!", null, HttpStatus.OK);
 
         }
         catch (Exception e) {

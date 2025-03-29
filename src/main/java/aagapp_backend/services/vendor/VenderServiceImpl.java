@@ -4,8 +4,11 @@ import aagapp_backend.components.CommonData;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.ReferralDTO;
+import aagapp_backend.dto.VendorTopInviteeProjection;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.entity.cache.TopVendorCache;
+import aagapp_backend.repository.TopVendorCacheRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.*;
@@ -19,7 +22,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -39,6 +44,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class VenderServiceImpl implements VenderService {
@@ -49,12 +55,15 @@ public class VenderServiceImpl implements VenderService {
     private JwtUtil jwtUtil;
     private ResponseService responseService;
     private TwilioService twilioService;
+
     private DeviceMange deviceMange;
     private ReferralService referralService;
     private VendorReferralRepository vendorReferralRepository;
 
     @Autowired
     private VendorRepository vendorRepository;
+    @Autowired
+    private TopVendorCacheRepository topVendorCacheRepository;
 
     @Autowired
     public void setVendorReferralRepository(VendorReferralRepository vendorReferralRepository) {
@@ -68,9 +77,19 @@ public class VenderServiceImpl implements VenderService {
     }
 
 
+
     public VendorEntity findServiceProviderByReferralCode(String referralCode) {
-        return vendorRepository.findServiceProviderByReferralCode(referralCode);
+        List<VendorEntity> results = entityManager.createQuery("SELECT v FROM VendorEntity v WHERE v.referralCode = :referralCode", VendorEntity.class)
+                .setParameter("referralCode", referralCode)
+                .getResultList();
+
+        if (results.size() > 1) {
+            throw new IllegalStateException("Multiple service providers found with the same referral code");
+        }
+
+        return results.isEmpty() ? null : results.get(0);
     }
+
 
     @Autowired
     @Lazy
@@ -386,6 +405,7 @@ public class VenderServiceImpl implements VenderService {
      */
     @Override
     public VendorEntity getServiceProviderById(Long userId) {
+
         return entityManager.find(VendorEntity.class, userId);
     }
 
@@ -404,15 +424,6 @@ public class VenderServiceImpl implements VenderService {
                 .orElse(null);
     }
 
-
-    public List<VendorEntity> getAllSp(int page, int limit) {
-        int startPosition = page * limit;
-        TypedQuery<VendorEntity> query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS, VendorEntity.class);
-        query.setFirstResult(startPosition);
-        query.setMaxResults(limit);
-        List<VendorEntity> results = query.getResultList();
-        return results;
-    }
 
     public List<VendorEntity> findServiceProviderListByUsername(String username) {
         username = username + "%";
@@ -435,6 +446,25 @@ public class VenderServiceImpl implements VenderService {
         responseBody.put("data", data);
         responseBody.put("token", token);
         responseBody.put("message", "User has been logged in");
+        responseBody.put("status", "OK");
+
+        return ResponseEntity.ok(responseBody);
+    }
+
+    public ResponseEntity<Map<String, Object>> VendorDetails(VendorEntity vendorEntity) {
+        Map<String, Object> responseBody = new HashMap<>();
+
+        List<ReferralDTO> sentReferrals = getSentReferrals(vendorEntity.getService_provider_id());
+        ReferralDTO receivedReferral = getReceivedReferral(vendorEntity.getService_provider_id());
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("venderDetails", vendorEntity);
+        data.put("sentReferrals", sentReferrals);
+        data.put("receivedReferral", receivedReferral); // Assuming this is a single referral
+        responseBody.put("status_code", HttpStatus.OK.value());
+        responseBody.put("data", data);
+        responseBody.put("token", vendorEntity.getToken());
+        responseBody.put("message", "Service provider details are");
         responseBody.put("status", "OK");
 
         return ResponseEntity.ok(responseBody);
@@ -482,8 +512,6 @@ public class VenderServiceImpl implements VenderService {
             String storedOtp = existingServiceProvider.getOtp();
             String ipAddress = request.getRemoteAddr();
             String userAgent = request.getHeader("User-Agent");
-            VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
-
 
             if (otpEntered == null || otpEntered.trim().isEmpty()) {
                 return responseService.generateErrorResponse("OTP cannot be empty", HttpStatus.BAD_REQUEST);
@@ -497,28 +525,30 @@ public class VenderServiceImpl implements VenderService {
                     existingServiceProvider.setReferralCode(newReferralCode);
                 }
 
+
                 entityManager.merge(existingServiceProvider);
                 String existingToken = existingServiceProvider.getToken();
 
                 // After obtaining the referrer using the referral code
                 if (referralCode != null && !referralCode.isEmpty() && existingServiceProvider.getSignedUp() == 0) {
                     // Find the referrer by referral code
-//                    VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
 
+                        VendorEntity referrer = findServiceProviderByReferralCode(referralCode);
+                        System.out.println(referrer  + "   referrer");
+                        if (referrer != null) {
+                            // Create a VendorReferral entry
+                            VendorReferral vendorReferral = new VendorReferral();
+                            vendorReferral.setReferrerId(referrer);
+                            vendorReferral.setReferredId(existingServiceProvider);
 
-                    if (referrer != null) {
-                        // Create a VendorReferral entry
-                        VendorReferral vendorReferral = new VendorReferral();
-                        vendorReferral.setReferrerId(referrer);
-                        vendorReferral.setReferredId(existingServiceProvider);
+                            // Persist the VendorReferral entry
+                            entityManager.persist(vendorReferral);
 
-                        // Persist the VendorReferral entry
-                        entityManager.persist(vendorReferral);
+                            // Update the referrer's referral count
+                            referrer.setReferralCount(referrer.getReferralCount() + 1);
+                            entityManager.merge(referrer);
+                        }
 
-                        // Update the referrer's referral count
-                        referrer.setReferralCount(referrer.getReferralCount() + 1);
-                        entityManager.merge(referrer);
-                    }
                 }
 
 
@@ -706,6 +736,66 @@ public class VenderServiceImpl implements VenderService {
         }
 
         return referralDTOs;
+    }
+
+    @Override
+    public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
+        VendorEntity authenticatedVendor = getServiceProviderById(authorizedVendorId);
+
+        // Fetch top 3 vendors sorted by wallet balance
+        List<VendorEntity> topInvities = vendorRepository.findTop3ByOrderByWalletBalanceDesc();
+        Map<String, Object> result = new HashMap<>();
+        result.put("authenticatedVendor", authenticatedVendor);
+        result.put("topInvities", topInvities);
+
+        return result;
+    }
+
+
+
+    @Override
+    public List<VendorEntity> getTopInvitiesVendor() {
+        // Fetch only the top 3 vendors sorted by walletBalance in descending order
+        return vendorRepository.findTop3ByOrderByWalletBalanceDesc();
+    }
+
+
+/*
+@Override
+public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
+    // Fetch top 3 vendors sorted by rank (from cache)
+    List<TopVendorCache> topVendorsFromCache = topVendorCacheRepository.findTop3ByOrderByRankAsc();
+
+    // Convert the list of TopVendorCache into a list of Maps
+    List<Map<String, Object>> topVendorsData = new ArrayList<>();
+    for (TopVendorCache topVendor : topVendorsFromCache) {
+        Map<String, Object> vendorData = new HashMap<>();
+        vendorData.put("id", topVendor.getId());
+        vendorData.put("serviceProviderId", topVendor.getServiceProviderId());
+        vendorData.put("price", topVendor.getPrice());
+        vendorData.put("rank", topVendor.getRank());
+        vendorData.put("profileImage", Optional.ofNullable(topVendor.getProfileImage()).orElse(Constant.PROFILE_IMAGE_URL));
+        vendorData.put("vendorName", topVendor.getVendorName() != null ? topVendor.getVendorName() : null);
+        vendorData.put("updatedAt", topVendor.getUpdatedAt());
+        topVendorsData.add(vendorData);
+    }
+
+
+    // Return the data
+    Map<String, Object> result = new HashMap<>();
+    result.put("topInvities", topVendorsData);
+
+    return result;
+}
+*/
+
+
+
+    @Override
+    public Map<String, Object> getDashboardData(String token) {
+
+
+        return null;
     }
 
 

@@ -2,11 +2,21 @@ package aagapp_backend.services.payment;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.entity.payment.PlanEntity;
+import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.NotificationType;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
+import aagapp_backend.services.NotificationService;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
@@ -14,13 +24,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mail.MailException;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class PaymentService {
@@ -35,6 +51,14 @@ public class PaymentService {
 
     @Autowired
     private VendorReferralRepository vendorReferralRepository;
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private JavaMailSender mailSender;
 
 
     public List<PaymentEntity> findActivePlansByVendorId(Long vendorId) {
@@ -49,27 +73,61 @@ public class PaymentService {
     }
 
 
+//    @todo:_ Need to rework on this according to level and plan details
     @Transactional
     public PaymentEntity createPayment(PaymentEntity paymentRequest, Long vendorId) {
         VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
 
+        Long planId = paymentRequest.getPlanId(); // Get planId from the payment request
+        PlanEntity planEntity = entityManager.find(PlanEntity.class, planId);
+        if (planEntity == null) {
+            throw new RuntimeException("Invalid plan ID: " + planId);
+        }
+
         if (existingVendor == null) {
             throw new RuntimeException("Vendor not found with ID: " + vendorId);
         }
+       /* List<String> planFeatures = planEntity.getFeatures();
+        Integer dailyGameLimit = extractDailyGameLimitByPlan(planFeatures); // Implement logic for extracting game limit*/
 
         // Associate the vendor with the payment
         paymentRequest.setVendorEntity(existingVendor);
+        paymentRequest.setPlanId(planEntity.getId());
+        paymentRequest.setAmount(planEntity.getPrice()); // Set the amount based on the plan price
+        if(vendorId != null){
+            VendorLevelPlan level = existingVendor.getVendorLevelPlan();
+            Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
+            existingVendor.setDailyLimit(dailyGameLimit);
+
+/*
+            existingVendor.setDailyLimit(level.getDailyGameLimit());
+*/
+            paymentRequest.setDailyLimit(dailyGameLimit);
+        }
+
+//        @todo need to check theme limit and daily limit
+       /* VendorLevelPlan currentLevel = existingVendor.getVendorLevelPlan();
+
+        // Get the new plan level (for example, upgrading to PRO_C)
+        VendorLevelPlan newLevel = getVendorLevelFromPlan(planEntity); // Implement this logic based on the selected plan
+
+        if (newLevel != currentLevel) {
+            // Vendor is changing levels, so update daily game limit and theme limit
+            updateVendorLevel(existingVendor, newLevel, planEntity);
+        }*/
+        paymentRequest.setPlanDuration(planEntity.getPlanVariant());
 
         // Generate a unique transaction ID
         paymentRequest.setTransactionId(UUID.randomUUID().toString());
+        paymentRequest.setFromUser(existingVendor.getFirst_name());
+        paymentRequest.setToUser("Aag App");
+        String invoiceUrl = generateInvoiceUrl(paymentRequest.getTransactionId());
+        paymentRequest.setDownloadInvoice(invoiceUrl);
 
-        /*// Set default daily limit if not provided
-        if (paymentRequest.getDailyLimit() == null) {
-            paymentRequest.setDailyLimit(5);  // Default to 5 if not set
-        }*/
 
         // Set status to ACTIVE by default
         paymentRequest.setStatus(PaymentStatus.ACTIVE);
+        existingVendor.setLeagueStatus(LeagueStatus.AVAILABLE);
 
         // Set expiry date based on the plan duration
         setPlanExpiry(paymentRequest);
@@ -94,8 +152,118 @@ public class PaymentService {
         // Save and return the newly created payment
         existingVendor.setIsPaid(true);
         entityManager.persist(existingVendor);
+
+
+        // Now create a single notification for the vendor
+        Notification notification = new Notification();
+        notification.setVendorId(existingVendor.getService_provider_id());  // Set the vendor ID
+        notification.setRole("Vendor");  // The role is "Vendor"
+/*
+        notification.setType(NotificationType.PAYMENT_SUCCESS);  // Example NotificationType for a successful payment
+*/
+        notification.setDescription("Plan purchased successfully"); // Example NotificationType for a successful
+        notification.setAmount(paymentRequest.getAmount());
+        notification.setDetails("Your payment of " + paymentRequest.getAmount() + " has been processed. Plan: " + planEntity.getPlanName());
+
+        notificationRepository.save(notification);
+
         return paymentRepository.save(paymentRequest);
     }
+
+    // Helper method to update the vendor's level and associated features
+    private void updateVendorLevel(VendorEntity existingVendor, VendorLevelPlan newLevel, PlanEntity planEntity) {
+        // Set the vendor's level to the new level
+        existingVendor.setVendorLevelPlan(newLevel);
+
+        // Update the daily game limit and themes based on the new level
+        existingVendor.setDailyLimit(newLevel.getDailyGameLimit()); // Set new daily limit
+//        existingVendor.setThemeCount(newLevel.getThemeCount()); // Set new theme count
+
+        // Additionally, you can update the feature slots, user counter, etc., if needed
+//        existingVendor.setFeatureSlots(newLevel.getFeatureSlots());
+
+        // Update the payment request's daily limit as well (if you want to associate this to the payment)
+//        paymentRequest.setDailyLimit(newLevel.getDailyGameLimit());
+
+        // Apply any other changes based on the level, if necessary
+    }
+
+    private VendorLevelPlan getVendorLevelFromPlan(PlanEntity planEntity) {
+        // Map plan to vendor level, assuming you can determine this from the plan features or name
+        String planName = planEntity.getPlanName();
+        switch (planName) {
+            case "STANDARD_A":
+                return VendorLevelPlan.STANDARD_A;
+            case "STANDARD_B":
+                return VendorLevelPlan.STANDARD_B;
+            case "STANDARD_C":
+                return VendorLevelPlan.STANDARD_C;
+            case "STANDARD_D":
+                return VendorLevelPlan.STANDARD_D;
+            case "STANDARD_E":
+                return VendorLevelPlan.STANDARD_E;
+            case "PRO_A":
+                return VendorLevelPlan.PRO_A;
+            case "PRO_B":
+                return VendorLevelPlan.PRO_B;
+            case "PRO_C":
+                return VendorLevelPlan.PRO_C;
+            case "PRO_D":
+                return VendorLevelPlan.PRO_D;
+            case "PRO_E":
+                return VendorLevelPlan.PRO_E;
+            case "ELITE_A":
+                return VendorLevelPlan.ELITE_A;
+            case "ELITE_B":
+                return VendorLevelPlan.ELITE_B;
+            case "ELITE_C":
+                return VendorLevelPlan.ELITE_C;
+            case "ELITE_D":
+                return VendorLevelPlan.ELITE_D;
+            case "ELITE_E":
+                return VendorLevelPlan.ELITE_E;
+            default:
+                throw new RuntimeException("Unknown plan type: " + planName);
+        }
+    }
+
+    private Integer extractDailyGameLimitByPlan(List<String> features) {
+        Pattern pattern = Pattern.compile("Upto (\\d+) Games per Day");
+
+        for (String feature : features) {
+            Matcher matcher = pattern.matcher(feature);
+            if (matcher.find()) {
+                return Integer.parseInt(matcher.group(1));
+            }
+        }
+        // Default case
+        return 0;  // No limit set
+    }
+
+    private String generateInvoiceUrl(String transactionId) {
+        // You can replace this with the actual base URL for your invoice storage
+        String baseUrl = "https://example.com/invoices/";
+
+        // Generate the invoice URL using the transactionId or paymentRequest ID
+        return baseUrl + "invoice_" + transactionId + ".pdf"; // The filename pattern could be adjusted as needed
+    }
+
+
+    private Integer extractDailyGameLimit(List<String> features) {
+        for (String feature : features) {
+            if (feature.toLowerCase().contains("daily game publish limit")) {
+                // Extract the number from the feature string (e.g., "Updated Daily Game Publish Limit: 10")
+                return extractNumberFromString(feature);
+            }
+        }
+        return 0; // Default value if no match found
+    }
+
+    private Integer extractNumberFromString(String text) {
+        String number = text.replaceAll("[^0-9]", ""); // Remove non-numeric characters
+        return number.isEmpty() ? 0 : Integer.parseInt(number);
+    }
+
 
     // Update referrer wallet balance
     private void updateReferrerWallet(VendorEntity referrer, double amount) {
@@ -222,5 +390,45 @@ public class PaymentService {
 
         // Calculate the commission based on the payment amount
         return paymentAmount * commissionPercentage;
+    }
+
+
+    public void sendEmail(PaymentEntity paymentEntity, String invoiceUrl) throws MessagingException {
+        // Create the MimeMessage for the email
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
+
+        try {
+            // Set the "From" address (your company or no-reply email)
+            helper.setFrom("aagappteam@gmail.com", "AAG App Team");
+
+            // Set the recipient email address
+            helper.setTo(paymentEntity.getVendorEntity().getPrimary_email());
+
+            // Set the subject of the email
+            helper.setSubject("Your Payment Invoice");
+
+            // Construct the email body text, including the invoice URL
+            String emailBody = "Dear "+paymentEntity.getVendorEntity().getFirst_name()+" "+paymentEntity.getVendorEntity().getLast_name()+"\n\n" +
+                    "Thank you for your payment. You can download your invoice from the following link:\n\n" +
+                    invoiceUrl + "\n\n" +
+                    "Best regards,\n" +
+                    "AAG App Team\n\n" +
+                    "Please ensure to keep this information secure.";
+
+            // Set the email body
+            helper.setText(emailBody);
+
+            // Send the email
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            // Handle any messaging errors (e.g., invalid addresses or issues with the email)
+            throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
+        } catch (MailException e) {
+            // Handle other mail-related exceptions (e.g., connection issues with SMTP server)
+            throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

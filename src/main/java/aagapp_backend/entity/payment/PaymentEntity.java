@@ -3,6 +3,7 @@ package aagapp_backend.entity.payment;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.PaymentType;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -18,7 +19,11 @@ import java.time.LocalDateTime;
 @Table(name = "payments", indexes = {
         @Index(name = "idx_vendor_payment", columnList = "service_provider_id"),
         @Index(name = "idx_payment_status", columnList = "status"),
-        @Index(name = "idx_payment_plan", columnList = "plan_name")
+        @Index(name = "idx_payment_expiry_at", columnList = "expiry_at"),
+        @Index(name = "idx_payment_plan_id", columnList = "plan_id"),
+        @Index(name = "idx_payment_transaction_date", columnList = "transaction_date"),
+        @Index(name = "idx_payment_plan_id_status", columnList = "plan_id, status"),  // Composite index for frequently queried columns
+        @Index(name = "idx_payment_transaction_id", columnList = "transaction_id")  // Index on transaction_id for faster lookups by transaction_id
 })
 @Getter
 @Setter
@@ -32,6 +37,7 @@ public class PaymentEntity {
 
     @ManyToOne
     @JoinColumn(name = "service_provider_id", nullable = false)
+    @JsonBackReference
     private VendorEntity vendorEntity;
 
     @Column(name = "transaction_id", unique = true, nullable = false)
@@ -42,9 +48,9 @@ public class PaymentEntity {
     @Column(name = "amount", nullable = false)
     private Double amount;
 
-    @NotNull(message = "Plan name is required.")
-    @Column(name = "plan_name", nullable = false)
-    private String planName;
+
+    @Column(name = "plan_id", nullable = false)  // Ensure this column name matches the one in your database
+    private Long planId;
 
     @Column(name = "daily_limit", nullable = false)
     private Integer dailyLimit = 5;
@@ -69,6 +75,20 @@ public class PaymentEntity {
 
     @Column(name = "is_test", nullable = false)
     private Boolean isTest = false;
+
+    @Column(name = "from_User")
+    private String fromUser;
+
+    @Column(name = "to_User")
+    private String toUser;
+
+    @Column(name = "download_invoice")
+    private String downloadInvoice;
+
+/*    @ManyToOne
+    @JoinColumn(name = "plan_id", referencedColumnName = "id")
+    @JsonBackReference
+    private PlanEntity plan;*/
 
     @Column(name = "gateway_response")
     private String gatewayResponse;

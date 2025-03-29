@@ -84,9 +84,9 @@ public class JwtUtil {
                     .setIssuedAt(new Date())
                     .signWith(getSignInKey(), SignatureAlgorithm.HS256);
 
-            if (!isMobile) {
-//                jwtBuilder.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)); // 10 hours
-            }
+            /*if (!isMobile) {
+               jwtBuilder.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)); // 10 hours
+            }*/
 
             return jwtBuilder.compact();
 
@@ -203,11 +203,18 @@ public class JwtUtil {
                 return false;
             }
             int role=extractRoleId(token);
+            String roleName = roleService.findRoleName(role); // Get the role name from the role ID
+
+            System.out.println(roleName + " " + role);
             CustomCustomer existingCustomer=null;
             VendorEntity existingServiceProvider=null;
             CustomAdmin existingAdmin=null;
+            System.out.println(roleName + " " + id);
+
             if(roleService.findRoleName(role).equals(Constant.roleUser)){
-                existingCustomer = customCustomerService.readCustomerById(id);
+
+
+                    existingCustomer = customCustomerService.readCustomerById(id);
                 if (existingCustomer == null) {
                     return false;
                 }

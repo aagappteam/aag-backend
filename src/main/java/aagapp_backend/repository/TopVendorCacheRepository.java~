@@ -1,0 +1,4 @@
+package aagapp_backend.repository;
+
+public class TopVendorCacheRepository {
+}

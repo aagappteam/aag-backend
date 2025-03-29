@@ -1,28 +1,36 @@
 package aagapp_backend.controller.vendor;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.cache.TopVendorCache;
+import aagapp_backend.entity.ticket.Ticket;
+import aagapp_backend.repository.ticket.TicketRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
+import aagapp_backend.services.vendor.VenderServiceImpl;
 import aagapp_backend.services.vendor.VendorBankAccountService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @RestController
 @RequestMapping("/vendor")
@@ -36,6 +44,9 @@ public class VendorController {
     private VendorBankAccountService bankAccountService;
 
     @Autowired
+    private VenderServiceImpl serviceProviderService;
+
+    @Autowired
     private EntityManager entityManager;
 
     @Autowired
@@ -47,12 +58,42 @@ public class VendorController {
     @Autowired
     private VenderService vendorService;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private TicketRepository ticketRepository;
+
+    @Autowired
+    private CustomCustomerService customCustomerService;
+
+    @Autowired
+    private VendorRepository vendorRepository;
+
+
+//    Vendor Dashboard api
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<?> getDashboardData(@RequestHeader("Authorization") String token) {
+       try{
+           if (token == null ||!token.startsWith("Bearer ")) {
+               return responseService.generateErrorResponse("Invalid or missing Authorization header", HttpStatus.BAD_REQUEST);
+           }
+
+
+           Map<String, Object> responseBody =  serviceProviderService.getDashboardData(token);
+
+           return responseService.generateSuccessResponse("Dashboard data fetched successfully", responseBody, HttpStatus.CREATED);
+       }catch (Exception e) {
+           exceptionHandling.handleException(e);
+           return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);}//catch
+
+    }
+
 
     @Transactional
     @PostMapping("create-or-update-password")
-    public ResponseEntity<?> createOrUpdatePassword(
-            @RequestBody Map<String, Object> passwordDetails,
-            @RequestParam long serviceProviderId) {
+    public ResponseEntity<?> createOrUpdatePassword(@RequestBody Map<String, Object> passwordDetails, @RequestParam long serviceProviderId) {
         try {
             String password = (String) passwordDetails.get("password");
             String newPassword = (String) passwordDetails.get("newPassword");
@@ -104,11 +145,11 @@ public class VendorController {
             if (serviceProviderEntity == null) {
                 return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
             }
-            Map<String, Object> details = new HashMap<>();
-            details.put("status", ApiConstants.STATUS_SUCCESS);
-            details.put("status_code", HttpStatus.OK);
-            details.put("data", serviceProviderEntity);
-            return responseService.generateSuccessResponse("Service provider details are", details, HttpStatus.OK);
+            Map<String, Object> responseBody = serviceProviderService.VendorDetails( serviceProviderEntity).getBody();
+
+
+            return ResponseEntity.ok(responseBody);
+//            return responseService.generateSuccessResponse("Service provider details are", responseBody, HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
@@ -123,8 +164,7 @@ public class VendorController {
             VendorEntity serviceProviderToBeDeleted = entityManager.find(VendorEntity.class, serviceProviderId);
             if (serviceProviderToBeDeleted == null)
                 return responseService.generateErrorResponse("No record found", HttpStatus.NOT_FOUND);
-            else
-                entityManager.remove(serviceProviderToBeDeleted);
+            else entityManager.remove(serviceProviderToBeDeleted);
             return responseService.generateSuccessResponse("Service Provider Deleted", null, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -153,18 +193,59 @@ public class VendorController {
 
     @Transactional
     @GetMapping("/get-all-vendors")
-    public ResponseEntity<?> getAllServiceProviders(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int limit) {
+    public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int limit,
+                                                    @RequestParam(value = "status", required = false) String status,
+                                                    @RequestParam(value = "vendorId", required = false) Long vendorId) {
         try {
             int startPosition = page * limit;
-            Query query = entityManager.createQuery(Constant.GET_ALL_SERVICE_PROVIDERS, VendorEntity.class);
+
+            if (vendorId != null) {
+                VendorEntity serviceProvider = entityManager.find(VendorEntity.class, vendorId);
+                if (serviceProvider == null) {
+                    return ResponseService.generateErrorResponse("Service provider does not found", HttpStatus.NOT_FOUND);
+                }
+                return ResponseService.generateSuccessResponse("Service provider details fetched successfully", serviceProvider, HttpStatus.OK);
+            }
+
+            // Create base query for fetching all vendors
+            StringBuilder queryString = new StringBuilder(Constant.GET_ALL_SERVICE_PROVIDERS);
+
+            // If status is provided, add status filtering to the query
+          /*  if (status != null && !status.isEmpty()) {
+                queryString.append(" WHERE v.status = :status");
+            }*/
+
+            // Create the query for counting rows
+            StringBuilder countQueryString = new StringBuilder("SELECT COUNT(v) FROM VendorEntity v");
+
+            // If status is provided, add status filtering to the count query
+           /* if (status != null && !status.isEmpty()) {
+                countQueryString.append(" WHERE v.status = :status");
+            }*/
+
+            // Execute the count query to get the total number of matching vendors
+            Query countQuery = entityManager.createQuery(countQueryString.toString());
+            if (status != null && !status.isEmpty()) {
+                countQuery.setParameter("status", status);
+            }
+            Long totalCount = (Long) countQuery.getSingleResult();
+
+            // Create the query for fetching vendors
+            Query query = entityManager.createQuery(queryString.toString(), VendorEntity.class);
+
+            // Set parameter for status if provided
+            if (status != null && !status.isEmpty()) {
+                query.setParameter("status", status);
+            }
+
             query.setFirstResult(startPosition);
             query.setMaxResults(limit);
 
+            // Execute the query and get the list of vendors
             List<VendorEntity> results = query.getResultList();
 
-            return ResponseService.generateSuccessResponse("List of vendors: ", results, HttpStatus.OK);
+            // Return the response including the list of vendors and the total count
+            return ResponseService.generateSuccessResponseWithCount("List of vendors", results, totalCount, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -172,6 +253,7 @@ public class VendorController {
             return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
 
     @Transactional
     @GetMapping("/get-all-details/{serviceProviderId}")
@@ -230,8 +312,13 @@ public class VendorController {
             vendorEntity.setIsPaused(isPaused);
             vendorEntity.setPauseReason(pauseReason);
 
-            return responseService.generateSuccessResponse("your account has been paused ", pauseReason, HttpStatus.OK);
-
+            // If the account is paused
+            if (isPaused) {
+                return responseService.generateSuccessResponse("Your account has been paused.", "isPaused "+isPaused, HttpStatus.OK);
+            } else {
+                // If the account is unpaused
+                return responseService.generateSuccessResponse("Your account has been unpaused.", "isPaused "+isPaused, HttpStatus.OK);
+            }
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error updating pause duration: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -239,10 +326,9 @@ public class VendorController {
     }
 
     @PostMapping("/add/{serviceProviderId}")
-    public ResponseEntity<?> addBankAccount(
-            @PathVariable Long serviceProviderId,
+    public ResponseEntity<?> addBankAccount(@PathVariable Long serviceProviderId,
 
-            @RequestBody @Valid BankAccountDTO bankAccountDTO) {
+                                            @RequestBody @Valid BankAccountDTO bankAccountDTO) {
 
         try {
             if (serviceProviderId == null) {
@@ -264,16 +350,7 @@ public class VendorController {
             }
             String[] resultParts = result.split("ID: ");
             Long generatedId = Long.parseLong(resultParts[1].trim());
-            BankAccountDTO responseDTO = new BankAccountDTO(
-                    generatedId,
-                    bankAccountDTO.getCustomerName(),
-                    bankAccountDTO.getAccountNumber(),
-                    bankAccountDTO.getReEnterAccountNumber(),
-                    bankAccountDTO.getIfscCode(),
-                    bankAccountDTO.getBankName(),
-                    bankAccountDTO.getBranchName(),
-                    bankAccountDTO.getAccountType()
-            );
+            BankAccountDTO responseDTO = new BankAccountDTO(generatedId, bankAccountDTO.getCustomerName(), bankAccountDTO.getAccountNumber(), bankAccountDTO.getReEnterAccountNumber(), bankAccountDTO.getIfscCode(), bankAccountDTO.getBankName(), bankAccountDTO.getBranchName(), bankAccountDTO.getAccountType());
 
 
             return ResponseService.generateSuccessResponse("Bank account added successfully!", responseDTO, HttpStatus.OK);
@@ -286,7 +363,7 @@ public class VendorController {
 
     @GetMapping("/getbankdetails/{serviceProviderId}")
     public ResponseEntity<?> getBankAccountsByCustomerId(@PathVariable Long serviceProviderId) {
-        try{
+        try {
             if (serviceProviderId == null) {
                 return ResponseService.generateErrorResponse("Customer Id not specified", HttpStatus.BAD_REQUEST);
             }
@@ -304,18 +381,16 @@ public class VendorController {
 
             return ResponseService.generateSuccessResponse("Bank accounts fetched successfully!", bankAccounts, HttpStatus.OK);
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 
-        }    }
+        }
+    }
 
 
     @PutMapping("/update-bank/{accountId}")
-    public ResponseEntity<?> updateBankAccount(
-            @PathVariable Long accountId,
-            @RequestBody Map<String, Object> params) {
+    public ResponseEntity<?> updateBankAccount(@PathVariable Long accountId, @RequestBody Map<String, Object> params) {
         try {
             if (accountId == null) {
                 return ResponseService.generateErrorResponse("Account ID is required", HttpStatus.BAD_REQUEST);
@@ -353,7 +428,6 @@ public class VendorController {
     }
 
 
-
     /**
      * Delete bank account response entity.
      *
@@ -380,13 +454,74 @@ public class VendorController {
 
             return ResponseService.generateSuccessResponse("Bank account deleted successfully!", null, HttpStatus.OK);
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 
         }
     }
+
+@GetMapping("/get-top-invites")
+public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
+    try {
+        String jwtToken = token.replace("Bearer ", "");
+        Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+
+        // Fetching both authenticated vendor and top vendors in one call
+        Map<String, Object> result = vendorService.getTopInvitiesVendorWithAuth(authorizedVendorId);
+
+        VendorEntity authenticatedVendor = (VendorEntity) result.get("authenticatedVendor");
+        List<VendorEntity> topInvities = (List<VendorEntity>) result.get("topInvities");
+
+        // If there are no top invitees, return empty data
+        if (topInvities.isEmpty()) {
+            return createResponse(authenticatedVendor, new ArrayList<>());
+        }
+
+        // Prepare the top invitees data
+        List<Map<String, Object>> topInvitees = topInvities.stream().map(vendor -> {
+            Map<String, Object> vendorData = new HashMap<>();
+            vendorData.put("service_provider_id", vendor.getService_provider_id());
+            vendorData.put("price", vendor.getWalletBalance());
+            vendorData.put("rank", topInvities.indexOf(vendor) + 1);
+            vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+            vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                    .map(firstName -> firstName + " " + vendor.getLast_name())
+                    .orElse(null));
+
+            return vendorData;
+        }).collect(Collectors.toList());
+
+        return createResponse(authenticatedVendor, topInvitees);
+    } catch (Exception e) {
+        exceptionHandling.handleException(e);
+        return new ResponseEntity<>(Map.of(
+                "status", "ERROR",
+                "message", e.getMessage(),
+                "status_code", 500
+        ), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+
+    private ResponseEntity<?> createResponse(VendorEntity authenticatedVendor, List<Map<String, Object>> topInvitees) {
+        Map<String, Object> data = Map.of(
+                "total_earning", authenticatedVendor.getWalletBalance(),
+                "referral_code", authenticatedVendor.getReferralCode(),
+                "total_referrals", authenticatedVendor.getReferralCount(),
+                "top_invitees", topInvitees,
+                "message", "Top vendors fetched successfully!"
+        );
+
+        Map<String, Object> response = Map.of(
+                "status", "OK",
+                "data", data,
+                "message", "Top vendors fetched successfully!",
+                "status_code", 200
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
 
 
 }
