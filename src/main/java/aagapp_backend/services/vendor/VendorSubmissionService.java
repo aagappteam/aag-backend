@@ -15,7 +15,9 @@ import jakarta.persistence.NonUniqueResultException;
 import jakarta.persistence.TypedQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -110,16 +112,20 @@ public class VendorSubmissionService {
     }*/
 
     public Page<VendorSubmissionEntity> getSubmissionsByStatus(String status, Pageable pageable) {
+        // Sort by id in descending order to get the most recently created submissions first
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Order.desc("id")));
+
         switch (status.toLowerCase()) {
             case "approved":
-                return submissionRepository.findByApprovedTrue(pageable);  // Only approved submissions
+                return submissionRepository.findByApprovedTrue(sortedPageable);  // Only approved submissions, sorted by ID
             case "pending":
-                return submissionRepository.findByApprovedFalse(pageable); // Only not approved submissions
+                return submissionRepository.findByApprovedFalse(sortedPageable); // Only not approved submissions, sorted by ID
             case "all":
             default:
-                return submissionRepository.findAll(pageable);  // All submissions
+                return submissionRepository.findAll(sortedPageable);  // All submissions, sorted by ID
         }
     }
+
 
 
     public VendorSubmissionEntity getVendorSubmissionByServiceProviderId(Long serviceProviderId) {

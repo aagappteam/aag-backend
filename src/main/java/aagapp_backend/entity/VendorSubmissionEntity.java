@@ -11,7 +11,11 @@ import lombok.Setter;
 import java.util.Map;
 
 @Entity
-@Table(name = "vendor_submission_details")
+@Table(name = "vendor_submission_details", indexes = {
+        @Index(name = "idx_approved", columnList = "approved"),
+        @Index(name = "idx_profile_status", columnList = "profile_status"),
+        @Index(name = "idx_created_at", columnList = "created_at")
+})
 @Getter
 @Setter
 @AllArgsConstructor
@@ -27,10 +31,6 @@ public class VendorSubmissionEntity {
     @JoinColumn(name = "service_provider_id")
     @JsonBackReference("submissionentity-vendor")
     private VendorEntity vendorEntity;
-
-/*
-    private String mobileNumber;
-*/
 
 
     @Email(message = "invalid email format")
@@ -56,26 +56,6 @@ public class VendorSubmissionEntity {
             approved = false;
         }
 
-        // Ensure any other fields that should default to false or empty are handled
-        if (firstName == null) {
-            firstName = "Unknown";
-        }
-
-        if (lastName == null) {
-            lastName = "Unknown";
-        }
-
-        if (planName == null) {
-            planName = "Not Assigned";
-        }
-
-        if (planType == null) {
-            planType = "Not Assigned";
-        }
-
-        if (profileStatus == null) {
-            profileStatus = ProfileStatus.PENDING; // assuming you want a default status
-        }
     }
 
     public String getMobileNumber() {

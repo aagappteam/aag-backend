@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -93,10 +94,8 @@ public class VendorSubmission {
             @RequestParam(defaultValue = "10") int size     // Default size is 10
     ) {
         try {
-            // Create Pageable object
-            Pageable pageable = PageRequest.of(page, size);
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
 
-            // Get submissions with pagination
             Page<VendorSubmissionEntity> submissionsPage = submissionService.getSubmissionsByStatus(status, pageable);
 
             if (submissionsPage.isEmpty()) {
@@ -108,9 +107,7 @@ public class VendorSubmission {
                     "List of submissions based on status: " + status,
                     submissionsPage.getContent(),  // Get the content of the page
                     submissionsPage.getTotalElements(),  // Total elements in the database
-
                     HttpStatus.OK
-
             );
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(e);

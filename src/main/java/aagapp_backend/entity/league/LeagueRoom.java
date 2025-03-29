@@ -20,12 +20,12 @@ import java.util.Set;
         indexes = {
                 @Index(name = "idx_room_code", columnList = "room_code"),
                 @Index(name = "idx_status", columnList = "status"),
+/*
                 @Index(name = "idx_game_id_league", columnList = "game_id"),
+*/
                 @Index(name = "idx_current_player_id", columnList = "current_player_id"),
                 @Index(name = "idx_created_at_league", columnList = "created_at"),
-/*
                 @Index(name = "idx_game_id_status", columnList = "game_id, status")
-*/
         }
 )
 @Getter
