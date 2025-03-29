@@ -2,6 +2,7 @@ package aagapp_backend.services.vendor;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorSubmissionEntity;
+import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.repository.admin.VendorSubmissionRepository;
 import aagapp_backend.services.EmailService;
 import aagapp_backend.services.admin.AdminReviewService;
