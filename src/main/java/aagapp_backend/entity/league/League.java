@@ -2,7 +2,9 @@ package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.ChallengeStatus;
 import aagapp_backend.enums.LeagueStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -13,8 +15,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
-import java.util.Date;
-import java.util.List;
 
 @Entity
 @Table(
@@ -26,7 +26,9 @@ import java.util.List;
                 @Index(name = "idx_end_date_league", columnList = "end_date"),
                 @Index(name = "idx_created_date_league", columnList = "created_date"),
                 @Index(name = "idx_vendor_id_status_league", columnList = "vendor_id, status"),
-                @Index(name = "idx_scheduled_at_status_league", columnList = "scheduled_at, status")
+                @Index(name = "idx_scheduled_at_status_league", columnList = "scheduled_at, status"),
+                @Index(name = "idx_opponent_vendor_id", columnList = "opponent_vendor_id"),
+                @Index(name = "idx_updated_date_league", columnList = "updated_date")
         }
 )
 @Getter
@@ -39,28 +41,35 @@ public class League {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "fee", nullable = false)
     private Double fee;
 
+    @Column(name = "move", nullable = false)
     private Integer move;
+
+    @Enumerated(EnumType.STRING)
+    private LeagueStatus status;
+
+    private String leagueUrl;
+
+    @Column(name = "aaggameid", nullable = true)
+    private Long aagGameId;
 
     @ManyToOne
     @JoinColumn(name = "vendor_id", nullable = false)
+    @JsonBackReference
     private VendorEntity vendorEntity;
 
+    @ManyToOne
+    @JoinColumn(name = "theme_id", nullable = true)
+    private ThemeEntity theme;
+
+    private Integer minPlayersPerTeam;
+    private Integer maxPlayersPerTeam;
+
     private String shareableLink;
-
-    @Column(nullable = true)
-    private String description;
-
-    @Enumerated(EnumType.STRING)
-    private LeagueStatus status = LeagueStatus.SCHEDULED;
-
-    @Column(name = "league_type", nullable = true)
-    private String leagueType;
 
     @Column(name = "scheduled_at", nullable = true)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -70,17 +79,8 @@ public class League {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime endDate;
 
-    @ManyToOne
-    @JoinColumn(name = "theme_id", nullable = true)
-    private ThemeEntity theme;
-
-    @ManyToMany
-    @JoinTable(
-            name = "league_challenges",
-            joinColumns = @JoinColumn(name = "league_id"),
-            inverseJoinColumns = @JoinColumn(name = "vendor_id")
-    )
-    private List<VendorEntity> challengedVendors;
+    @Column(name = "opponent_vendor_id")
+    private Long opponentVendorId;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
@@ -92,11 +92,6 @@ public class League {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime updatedDate;
 
-    private Integer minPlayersPerTeam;
-    private Integer maxPlayersPerTeam;
-
-  /*  private ZonedDateTime challengeTimestamp;
-*/
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = ZonedDateTime.now();
@@ -104,9 +99,6 @@ public class League {
 
     @PrePersist
     public void prePersist() {
-/*
-        this.challengeTimestamp=ZonedDateTime.now();
-*/
         if (this.minPlayersPerTeam == null) {
             this.minPlayersPerTeam = 1; // Default value for minPlayersPerTeam
         }
@@ -122,5 +114,4 @@ public class League {
         }
 
     }
-
 }

@@ -2,6 +2,7 @@ package aagapp_backend.entity.players;
 
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.game.Token;
+import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.enums.PlayerStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -14,7 +15,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "players")
+@Table(
+        name = "players",
+        indexes = {
+                @Index(name = "idx_player_status", columnList = "player_status"),
+                @Index(name = "idx_game_room_id", columnList = "game_room_id"),
+                @Index(name = "idx_league_room_id", columnList = "league_room_id"),
+                @Index(name = "idx_color", columnList = "color"),
+                @Index(name = "idx_is_current_turn", columnList = "is_current_turn"),
+                @Index(name = "idx_created_at", columnList = "created_at"),
+                @Index(name = "idx_game_room_id_player_status", columnList = "game_room_id, player_status")
+        }
+)
 @Getter
 @Setter
 public class Player {
@@ -22,7 +34,6 @@ public class Player {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "player_id")
     private Long playerId;
-
 
     private String name;
 
@@ -37,6 +48,10 @@ public class Player {
     @JoinColumn(name = "game_room_id")
     @JsonBackReference(value = "gameRoomReference")
     private GameRoom gameRoom;
+
+    @ManyToOne
+    @JoinColumn(name = "league_room_id")
+    private LeagueRoom leagueRoom;
 
     private String color; // Red, Blue, Green, Yellow
 
@@ -77,8 +92,4 @@ public class Player {
     public void updateScore(int points) {
         this.score += points;
     }
-
-
-
-
 }

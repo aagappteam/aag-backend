@@ -16,10 +16,6 @@ import java.util.List;
 @Setter
 public class GameRequest {
 
-/*    @NotNull
-    private String name;*/
-
-
     private Long themeId;
 
     private Integer minPlayersPerTeam;
