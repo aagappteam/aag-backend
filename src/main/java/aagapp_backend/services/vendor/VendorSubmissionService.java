@@ -2,6 +2,7 @@ package aagapp_backend.services.vendor;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorSubmissionEntity;
+import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.repository.admin.VendorSubmissionRepository;
 import aagapp_backend.services.EmailService;
 import aagapp_backend.services.admin.AdminReviewService;
@@ -119,7 +120,7 @@ public class VendorSubmissionService {
             case "approved":
                 return submissionRepository.findByApprovedTrue(sortedPageable);  // Only approved submissions, sorted by ID
             case "pending":
-                return submissionRepository.findByApprovedFalse(sortedPageable); // Only not approved submissions, sorted by ID
+                return submissionRepository.findByApprovedFalseAndProfileStatusNot(sortedPageable, ProfileStatus.REJECTED);
             case "all":
             default:
                 return submissionRepository.findAll(sortedPageable);  // All submissions, sorted by ID

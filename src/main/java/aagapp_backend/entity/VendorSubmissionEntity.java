@@ -14,6 +14,7 @@ import java.util.Map;
 @Table(name = "vendor_submission_details", indexes = {
         @Index(name = "idx_approved", columnList = "approved"),
         @Index(name = "idx_profile_status", columnList = "profile_status")
+
 })
 @Getter
 @Setter

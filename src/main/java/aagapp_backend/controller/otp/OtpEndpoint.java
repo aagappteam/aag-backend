@@ -302,6 +302,57 @@ public class OtpEndpoint {
         }
     }
 
+    @PostMapping("/refresh-token/{id}")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, Object> loginDetails, HttpSession session, HttpServletRequest request) {
+        String mobileNumber = (String) loginDetails.get("mobileNumber");
+        Integer role = (Integer) loginDetails.get("role");
+        String countryCode = (String) loginDetails.get("countryCode");
+
+        String ipAddress = request.getRemoteAddr();
+
+        String userAgent = request.getHeader("User-Agent");
+
+        if (roleService.findRoleName(role).equals(Constant.roleUser)) {
+            CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
+
+            if (existingCustomer == null) {
+                return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+            }
+
+            String newToken = jwtUtil.generateToken(existingCustomer.getId(), role, ipAddress, userAgent);
+            existingCustomer.setToken(newToken);
+            em.persist(existingCustomer);
+            return responseService.generateSuccessResponse("User has been logged in", existingCustomer, HttpStatus.OK);
+        } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {
+
+            VendorEntity vendorEntity = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);
+            if (vendorEntity == null) {
+                return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+            }
+
+            String newToken = jwtUtil.generateToken(vendorEntity.getService_provider_id(), role, ipAddress, userAgent);
+            vendorEntity.setToken(newToken);
+            em.persist(vendorEntity);
+            return responseService.generateSuccessResponse("User has been logged in", vendorEntity, HttpStatus.OK);
+
+    }  else if (roleService.findRoleName(role).equals(Constant.ADMIN) || roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(role).equals(Constant.SUPPORT)) {
+            CustomAdmin customAdmin = adminService.findAdminByPhone(mobileNumber, countryCode);
+            if (customAdmin == null) {
+                return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+            }
+
+            String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), role, ipAddress, userAgent);
+            customAdmin.setToken(newToken);
+            em.persist(customAdmin);
+            return responseService.generateSuccessResponse("Admin has been logged in", customAdmin, HttpStatus.OK);
+
+
+    } else {
+        return responseService.generateErrorResponse(ApiConstants.INVALID_ROLE, HttpStatus.BAD_REQUEST);
+    }
+
+    }
+
 
     @Transactional
     @PostMapping("/vendor-signup")
