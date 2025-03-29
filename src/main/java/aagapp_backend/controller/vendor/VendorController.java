@@ -461,65 +461,6 @@ public class VendorController {
         }
     }
 
-/*    @GetMapping("/get-top-invites")
-    public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
-        try {
-            String jwtToken = token.replace("Bearer ", "");
-            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
-            VendorEntity authenticatedVendor = vendorService.getServiceProviderById(authorizedVendorId);
-            List<VendorEntity> topInvities = vendorService.getTopInvitiesVendor();
-
-            if (topInvities.isEmpty()) {
-                return new ResponseEntity<>(new HashMap<String, Object>() {{
-                    put("status", "OK");
-                    put("data", new HashMap<String, Object>() {{
-                        put("total_earning", 0.0);
-                        put("referral_code", authenticatedVendor.getReferralCode());
-                        put("total_referrals", 0);
-                        put("top_invitees", new ArrayList<>());
-                    }});
-                    put("message", "Top vendors fetched successfully!");
-                    put("status_code", 200);
-                }}, HttpStatus.OK);
-            }
-
-            // Prepare the top invitees data
-            List<Map<String, Object>> topInvitees = new ArrayList<>();
-            int rank = 1;
-            for (VendorEntity vendor : topInvities) {
-                Map<String, Object> vendorData = new HashMap<>();
-                vendorData.put("service_provider_id", vendor.getService_provider_id());
-                vendorData.put("price", vendor.getWalletBalance());
-                vendorData.put("rank", rank++);
-                vendorData.put("profileImage", vendor.getProfilePic() != null ? vendor.getProfilePic() : "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
-                vendorData.put("vendorName", vendor.getFirst_name() != null && vendor.getLast_name() != null ? vendor.getFirst_name() + " " + vendor.getLast_name() : null);
-                topInvitees.add(vendorData);
-            }
-
-            // Prepare the final response
-            Map<String, Object> finalResponse = new HashMap<>();
-            finalResponse.put("status", "OK");
-            finalResponse.put("data", new HashMap<String, Object>() {{
-                put("total_earning", authenticatedVendor.getWalletBalance());
-                put("referral_code", authenticatedVendor.getReferralCode());
-                put("total_referrals", authenticatedVendor.getReferralCount());
-                put("top_invitees", topInvitees);
-            }});
-            finalResponse.put("message", "Top vendors fetched successfully!");
-            finalResponse.put("status_code", 200);
-
-            // Return the response manually
-            return new ResponseEntity<>(finalResponse, HttpStatus.OK);
-        } catch (Exception e) {
-            // Handle exception
-            exceptionHandling.handleException(e);
-            return new ResponseEntity<>(new HashMap<String, Object>() {{
-                put("status", "ERROR");
-                put("message", e.getMessage());
-                put("status_code", 500);
-            }}, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
 @GetMapping("/get-top-invites")
 public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token) {
     try {
@@ -581,28 +522,6 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-
-    /*@GetMapping("/view/{ticketId}")
-    public ResponseEntity<?> viewTicket(@PathVariable Long ticketId) {
-        try {
-            // Find the ticket by ticketId
-            Optional<Ticket> ticketOptional = ticketRepository.findById(ticketId);
-
-            // If ticket is not found, return an error response
-            if (!ticketOptional.isPresent()) {
-                return responseService.generateErrorResponse("Ticket not found with ID: " + ticketId, HttpStatus.NOT_FOUND);
-            }
-
-            // Return the ticket details
-            Ticket ticket = ticketOptional.get();
-            return responseService.generateSuccessResponse("Ticket details retrieved successfully", ticket, HttpStatus.OK);
-
-        } catch (Exception e) {
-            // Handle exceptions and return an error response
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Error fetching ticket details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
 
 
 }

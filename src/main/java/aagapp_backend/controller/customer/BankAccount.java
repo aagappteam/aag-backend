@@ -190,7 +190,7 @@ public class BankAccount {
                 return ResponseService.generateErrorResponse("Failed to delete bank account", HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
-            return ResponseService.generateSuccessResponse("Bank account deleted successfully!", null, HttpStatus.NO_CONTENT);
+            return ResponseService.generateSuccessResponse("Bank account deleted successfully!", null, HttpStatus.OK);
 
         }
         catch (Exception e) {
