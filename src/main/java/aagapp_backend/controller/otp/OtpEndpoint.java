@@ -324,7 +324,7 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
             }
 
-            Twilio.init(accountSid, authToken);
+          /*  Twilio.init(accountSid, authToken);*/
             String otp = twilioService.generateOTP();
 
             VendorEntity existingServiceProvider = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);

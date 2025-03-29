@@ -118,7 +118,7 @@ public class UrlValidationController {
     }
 
 
-    @GetMapping("/status")
+   /* @GetMapping("/status")
     public ResponseEntity<?> getSubmissionsByStatus(@RequestParam(required = false, defaultValue = "all") String status) {
         try {
             List<VendorSubmissionEntity> submissions = submissionService.getSubmissionsByStatus(status);
@@ -142,5 +142,5 @@ public class UrlValidationController {
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
-    }
+    }*/
 }

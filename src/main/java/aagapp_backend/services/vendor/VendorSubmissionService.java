@@ -14,6 +14,8 @@ import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
 import jakarta.persistence.TypedQuery;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -95,8 +97,7 @@ public class VendorSubmissionService {
 //            emailService.sendOnboardingEmail(vendorEntity.getPrimary_email(), vendorEntity.getFirst_name(), vendorEntity.getLast_name());
     }
 
-    public List<VendorSubmissionEntity> getSubmissionsByStatus(String status) {
-        System.out.println("Fetching submissions with status: " + status);
+/*    public Page<VendorSubmissionEntity> getSubmissionsByStatus(String status, Pageable pageable) {
         List<VendorSubmissionEntity> result;
         if ("pending".equalsIgnoreCase(status)) {
             result = submissionRepository.findByApprovedFalse();
@@ -105,8 +106,19 @@ public class VendorSubmissionService {
         } else {
             result = submissionRepository.findAll();
         }
-        System.out.println("Found " + result.size() + " submissions");
         return result;
+    }*/
+
+    public Page<VendorSubmissionEntity> getSubmissionsByStatus(String status, Pageable pageable) {
+        switch (status.toLowerCase()) {
+            case "approved":
+                return submissionRepository.findByApprovedTrue(pageable);  // Only approved submissions
+            case "pending":
+                return submissionRepository.findByApprovedFalse(pageable); // Only not approved submissions
+            case "all":
+            default:
+                return submissionRepository.findAll(pageable);  // All submissions
+        }
     }
 
 
