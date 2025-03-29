@@ -13,8 +13,7 @@ import java.util.Map;
 @Entity
 @Table(name = "vendor_submission_details", indexes = {
         @Index(name = "idx_approved", columnList = "approved"),
-        @Index(name = "idx_profile_status", columnList = "profile_status"),
-        @Index(name = "idx_created_at", columnList = "created_at")
+        @Index(name = "idx_profile_status", columnList = "profile_status")
 })
 @Getter
 @Setter
