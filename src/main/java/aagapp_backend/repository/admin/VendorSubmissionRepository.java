@@ -11,7 +11,10 @@ import java.util.List;
 @Repository
 public interface VendorSubmissionRepository extends JpaRepository<VendorSubmissionEntity, Long> {
     // Get submissions where approved is false
+/*
     Page<VendorSubmissionEntity> findByApprovedFalse(Pageable pageable);
+*/
+    Page<VendorSubmissionEntity> findByApprovedFalseAndProfileStatusNot(Pageable pageable, String profileStatus);
 
     // Get submissions where approved is true
     Page<VendorSubmissionEntity> findByApprovedTrue(Pageable pageable);

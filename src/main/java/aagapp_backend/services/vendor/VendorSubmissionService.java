@@ -119,7 +119,7 @@ public class VendorSubmissionService {
             case "approved":
                 return submissionRepository.findByApprovedTrue(sortedPageable);  // Only approved submissions, sorted by ID
             case "pending":
-                return submissionRepository.findByApprovedFalse(sortedPageable); // Only not approved submissions, sorted by ID
+                return submissionRepository.findByApprovedFalseAndProfileStatusNot(sortedPageable, "REJECTED"); // Not approved and not rejected
             case "all":
             default:
                 return submissionRepository.findAll(sortedPageable);  // All submissions, sorted by ID
