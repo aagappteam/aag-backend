@@ -1,6 +1,6 @@
 package aagapp_backend.services.league;
 
-import aagapp_backend.dto.GameRequest;
+import aagapp_backend.components.Constant;
 import aagapp_backend.dto.LeagueRequest;
 import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.ThemeEntity;
@@ -98,8 +98,14 @@ public class LeagueService {
             challenge.setVendorId(vendorId);
             challenge.setExistinggameId(leagueRequest.getExistinggameId());
             challenge.setChallengeStatus(Challenge.ChallengeStatus.PENDING); // Initially set the status to PENDING
-            challenge.setMove(leagueRequest.getMove());
             challenge.setFee(leagueRequest.getFee());
+            if(leagueRequest.getFee()>10){
+                challenge.setMove(Constant.TENMOVES);
+            } else{
+                challenge.setMove(Constant.SIXTEENMOVES);
+
+            }
+//            challenge.setFee(leagueRequest.getFee());
             challenge.setThemeId(leagueRequest.getThemeId());
             challenge.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
             challenge.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
@@ -303,17 +309,44 @@ public class LeagueService {
         }
     }
 
+    public Page<League> getAllActiveLeaguesByVendor(Pageable pageable, Long vendorId) {
+        try {
+            // Check if 'status' and 'vendorId' are provided and build a query accordingly
+            LeagueStatus status= LeagueStatus.ACTIVE;
+            if (status != null && vendorId != null) {
+                return leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
+            }else {
+                return leagueRepository.findAll(pageable);
+            }
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
+        }
+    }
 
+
+    public Page<League> getAllLeaguesByVendorId(Pageable pageable, Long vendorId) {
+        try {
+            if (vendorId != null) {
+                return leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
+            } else {
+                return leagueRepository.findAll(pageable);
+            }
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
+        }
+    }
     // Scheduled task to auto reject expired challenges after 10 minutes
     @Scheduled(cron = "0 * * * * *")
     public void autoRejectExpiredChallenges() {
         try {
             // Find all leagues in the "SCHEDULED" state
-            List<Challenge> challenges = challangeRepository.findByChallengeStatus(ChallengeStatus.PENDING);
+            List<Challenge> challenges = challangeRepository.findByChallengeStatus(Challenge.ChallengeStatus.PENDING);
 
             for (Challenge challenge : challenges) {
                 // If the 10-minute window has passed since the challenge was scheduled
-                if (ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).isAfter(challenge.getCreatedAt().plusMinutes(1))) {
+                if (ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).isAfter(challenge.getCreatedAt().plusMinutes(10))) {
                     // Reject the challenge if it's expired
                     challenge.setChallengeStatus(Challenge.ChallengeStatus.REJECTED);
                     challangeRepository.save(challenge);
