@@ -106,7 +106,60 @@ public class LeagueController {
 
             }
 
-            return responseService.generateSuccessResponse("Leagues fetched successfully", leaguesPage, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Leagues fetched successfully", leaguesPage.getContent(), HttpStatus.OK);
+
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse("League not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching leagues", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/get-all-active-leagues/{vendorId}")
+    public ResponseEntity<?> getAllActiveLeaguesByVendor(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+//            @RequestParam(value = "status", required = false) LeagueStatus status,
+            @PathVariable(value = "vendorId", required = false) Long vendorId
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+
+            Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(pageable, vendorId);
+
+            if (leaguesPage.isEmpty()) {
+                return responseService.generateResponse(HttpStatus.OK,ApiConstants.NO_RECORDS_FOUND, null);
+
+            }
+
+            return responseService.generateSuccessResponse("Leagues fetched successfully", leaguesPage.getContent(), HttpStatus.OK);
+
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse("League not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching leagues", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/get-all-leagues/{vendorId}")
+    public ResponseEntity<?> getAllLeaguesByVendorId(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @PathVariable(value = "vendorId", required = false) Long vendorId
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+
+            Page<League> leaguesPage = leagueService.getAllLeaguesByVendorId(pageable, vendorId);
+
+            if (leaguesPage.isEmpty()) {
+                return responseService.generateResponse(HttpStatus.OK,ApiConstants.NO_RECORDS_FOUND, null);
+
+            }
+
+            return responseService.generateSuccessResponse("Leagues fetched successfully", leaguesPage.getContent(), HttpStatus.OK);
 
         } catch (NoSuchElementException e) {
             return responseService.generateErrorResponse("League not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
