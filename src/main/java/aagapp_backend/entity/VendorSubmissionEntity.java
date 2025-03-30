@@ -11,7 +11,11 @@ import lombok.Setter;
 import java.util.Map;
 
 @Entity
-@Table(name = "vendor_submission_details")
+@Table(name = "vendor_submission_details", indexes = {
+        @Index(name = "idx_approved", columnList = "approved"),
+        @Index(name = "idx_profile_status", columnList = "profile_status")
+
+})
 @Getter
 @Setter
 @AllArgsConstructor
@@ -43,5 +47,19 @@ public class VendorSubmissionEntity {
 
     @ElementCollection
     private Map<String, String> socialMediaUrls;
+
+    @PrePersist
+    @PreUpdate
+    public void ensureApproved() {
+        // Ensure approved is never null
+        if (approved == null) {
+            approved = false;
+        }
+
+    }
+
+    public String getMobileNumber() {
+        return vendorEntity != null ? vendorEntity.getMobileNumber() : null;
+    }
 
 }

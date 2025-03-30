@@ -2,6 +2,7 @@ package aagapp_backend.services.vendor;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorSubmissionEntity;
+import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.repository.admin.VendorSubmissionRepository;
 import aagapp_backend.services.EmailService;
 import aagapp_backend.services.admin.AdminReviewService;
@@ -14,6 +15,10 @@ import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
 import jakarta.persistence.TypedQuery;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -95,8 +100,7 @@ public class VendorSubmissionService {
 //            emailService.sendOnboardingEmail(vendorEntity.getPrimary_email(), vendorEntity.getFirst_name(), vendorEntity.getLast_name());
     }
 
-    public List<VendorSubmissionEntity> getSubmissionsByStatus(String status) {
-        System.out.println("Fetching submissions with status: " + status);
+/*    public Page<VendorSubmissionEntity> getSubmissionsByStatus(String status, Pageable pageable) {
         List<VendorSubmissionEntity> result;
         if ("pending".equalsIgnoreCase(status)) {
             result = submissionRepository.findByApprovedFalse();
@@ -105,9 +109,24 @@ public class VendorSubmissionService {
         } else {
             result = submissionRepository.findAll();
         }
-        System.out.println("Found " + result.size() + " submissions");
         return result;
+    }*/
+
+    public Page<VendorSubmissionEntity> getSubmissionsByStatus(String status, Pageable pageable) {
+        // Sort by id in descending order to get the most recently created submissions first
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Order.desc("id")));
+
+        switch (status.toLowerCase()) {
+            case "approved":
+                return submissionRepository.findByApprovedTrue(sortedPageable);  // Only approved submissions, sorted by ID
+            case "pending":
+                return submissionRepository.findByApprovedFalseAndProfileStatusNot(sortedPageable, ProfileStatus.REJECTED);
+            case "all":
+            default:
+                return submissionRepository.findAll(sortedPageable);  // All submissions, sorted by ID
+        }
     }
+
 
 
     public VendorSubmissionEntity getVendorSubmissionByServiceProviderId(Long serviceProviderId) {
