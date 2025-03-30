@@ -1,8 +1,13 @@
 package aagapp_backend.entity.tournament;
+
 import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.TournamentStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.micrometer.common.lang.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,6 +15,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.CurrentTimestamp;
 
+import java.time.ZonedDateTime;
 import java.util.Date;
 
 @Entity
@@ -28,9 +34,33 @@ public class Tournament {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private Long vendorId;
     private String name;
+    private Double totalPrizePool;
+    @ManyToOne
+    @JoinColumn(name = "theme_id", nullable = true)
+    private ThemeEntity theme;
+    private Long existinggameId;
+    private String gameUrl;
     private int participants;
+    @NotNull
     private int entryFee;
-    private double totalPrizePool;
-    private String status; // Ongoing, Completed
+    @Nullable
+    private int move;
+
+    private TournamentStatus status;
+
+    private String shareableLink;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime scheduledAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    @CreationTimestamp
+    private ZonedDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = ZonedDateTime.now();
+    }
 }
