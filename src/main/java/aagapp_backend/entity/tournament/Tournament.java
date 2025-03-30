@@ -21,10 +21,12 @@ import java.util.Date;
 @Entity
 @Table(name = "tournament", indexes = {
         @Index(name = "idx_name", columnList = "name"),
-
-        @Index(name = "idx_participants_tournament", columnList = "participants"),
-        @Index(name = "idx_entryFee_tournament", columnList = "entryFee"),
-        @Index(name = "idx_status_tournament", columnList = "status"),
+        @Index(name = "idx_theme_id", columnList = "theme_id"),
+        @Index(name = "idx_existinggame_id", columnList = "existinggameId"),
+        @Index(name = "idx_participants", columnList = "participants"),
+        @Index(name = "idx_entry_fee", columnList = "entryFee"),
+        @Index(name = "idx_scheduled_at", columnList = "scheduledAt"),
+        @Index(name = "idx_shareable_link", columnList = "shareableLink"),
 })
 @Getter
 @Setter
@@ -34,22 +36,26 @@ public class Tournament {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private Long vendorId;
     private String name;
     private Double totalPrizePool;
+
     @ManyToOne
     @JoinColumn(name = "theme_id", nullable = true)
     private ThemeEntity theme;
+
     private Long existinggameId;
     private String gameUrl;
     private int participants;
+
     @NotNull
     private int entryFee;
+
     @Nullable
     private int move;
 
     private TournamentStatus status;
-
     private String shareableLink;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
