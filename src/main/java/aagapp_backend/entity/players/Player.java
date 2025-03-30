@@ -23,7 +23,9 @@ import java.util.List;
                 @Index(name = "idx_league_room_id", columnList = "league_room_id"),
                 @Index(name = "idx_color", columnList = "color"),
                 @Index(name = "idx_is_current_turn", columnList = "is_current_turn"),
+/*
                 @Index(name = "idx_created_at", columnList = "created_at"),
+*/
                 @Index(name = "idx_game_room_id_player_status", columnList = "game_room_id, player_status")
         }
 )

@@ -43,6 +43,7 @@ public class VendorSubmissionEntity {
 
     private Boolean approved;
 
+    @Column(name = "profile_status")
     private ProfileStatus profileStatus;
 
     @ElementCollection
