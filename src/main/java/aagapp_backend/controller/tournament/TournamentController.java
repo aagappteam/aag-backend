@@ -1,11 +1,20 @@
-/*
 package aagapp_backend.controller.tournament;
 
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.dto.GetGameResponseDTO;
+import aagapp_backend.dto.TournamentRequest;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.enums.NotificationType;
+import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.payment.PaymentFeatures;
+import aagapp_backend.services.tournamnetservice.TournamentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,23 +29,47 @@ import java.util.NoSuchElementException;
 @RestController
 @RequestMapping("/tournament")
 public class TournamentController {
-    @GetMapping("/get-all-games")
+
+    private ResponseService responseService;
+    private ExceptionHandlingImplement exceptionHandling;
+    private PaymentFeatures paymentFeatures;
+    private TournamentService tournamentService;
+
+    @Autowired
+    public void setTournamentService(TournamentService tournamentService) {
+        this.tournamentService = tournamentService;
+    }
+
+    @Autowired
+    public void setResponseService(ResponseService responseService) {
+        this.responseService = responseService;
+    }
+    @Autowired
+    public void setExceptionHandling(ExceptionHandlingImplement exceptionHandling) {
+        this.exceptionHandling = exceptionHandling;
+    }
+    @Autowired
+    public void setPaymentFeatures(@Lazy PaymentFeatures paymentFeatures) {
+        this.paymentFeatures = paymentFeatures;
+    }
+
+    @GetMapping("/get-all-Tournaments")
     public ResponseEntity<?> getAllGames(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "status", required = false) TournamentStatus status,
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {
             Pageable pageable = PageRequest.of(page, size);
             // Assuming your service returns Page<GetGameResponseDTO>
-            Page<GetGameResponseDTO> games = gameService.getAllGames(status, vendorId, pageable);
+            Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId);
 
             // Extract only the content (list of games) and return it
-            List<GetGameResponseDTO> gameList = games.getContent();
+            List<Tournament> gameList = games.getContent();
             long totalCount = games.getTotalElements();
 
-            return responseService.generateSuccessResponseWithCount("Games fetched successfully", gameList, totalCount, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithCount("Tournament fetched successfully", gameList, totalCount, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -44,7 +77,7 @@ public class TournamentController {
     }
 
 
-    @GetMapping("/get-games-by-vendor/{vendorId}")
+    @GetMapping("/get-tournament-by-vendor/{vendorId}")
     public ResponseEntity<?> getGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(value = "status", required = false) String status) {
         try {
 
@@ -56,16 +89,16 @@ public class TournamentController {
             }
 
             Pageable pageable = PageRequest.of(page, size);
-            Page<Game> gamesPage = gameService.findGamesByVendor(vendorId, status, pageable);
-            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage, HttpStatus.OK);
+            Page<Tournament> gamesPage = tournamentService.findTournamentsByVendor(pageable, vendorId);
+            return responseService.generateSuccessResponse("Tournament fetched successfully", gamesPage.getContent(), HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
 
-            return responseService.generateErrorResponse("Error fetching games by vendor : " + e, HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("Error fetching Tournament by vendor : " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    @GetMapping("/get-active-games-by-vendor/{vendorId}")
-    public ResponseEntity<?> getActiveGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+    @GetMapping("/get-active-tournament-by-vendor/{vendorId}")
+    public ResponseEntity<?> getActiveTournamentsByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         try {
             if (page < 0) {
                 throw new IllegalArgumentException("Page number cannot be negative");
@@ -77,18 +110,18 @@ public class TournamentController {
             Pageable pageable = PageRequest.of(page, size);
 
             // Call the updated service method
-            Page<GetGameResponseDTO> gamesPage = gameService.findGamesScheduledForToday(vendorId, pageable);
+            Page<Tournament> gamesPage = tournamentService.getAllActiveTournamentsByVendor(pageable,vendorId);
 
-            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Tournaments fetched successfully", gamesPage.getContent(), HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Error fetching games by vendor : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("Error fetching Tournaments by vendor : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @PostMapping("/publishGame/{vendorId}/{existinggameId}")
-    public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @PathVariable Long existinggameId, @RequestBody GameRequest gameRequest) {
+    @PostMapping("/publishTournament/{vendorId}")
+    public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @RequestBody TournamentRequest tournamentRequest) {
         try {
 
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
@@ -97,43 +130,39 @@ public class TournamentController {
                 return paymentEntity;
             }
 
-            Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId, existinggameId);
+           Tournament publishedGame = tournamentService.publishTournament(tournamentRequest, vendorId);
 
 
-            // Now create a single notification for the vendor
+           /* // Now create a single notification for the vendor
             Notification notification = new Notification();
             notification.setRole("Vendor");
 
             notification.setVendorId(vendorId);
             if (gameRequest.getScheduledAt() != null) {
-*/
-/*
                 notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
-*//*
+
 
                 notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
                 notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
             }else{
-*/
-/*
                 notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
-*//*
+
 
                 notification.setDescription("Published Game"); // Example NotificationType for a successful
                 notification.setDetails("Game has been Published"); // Example NotificationType for a successful
-            }
+            }*/
 
 
 
-            notificationRepository.save(notification);
+//            notificationRepository.save(notification);
 
-            if (gameRequest.getScheduledAt() != null) {
-                return responseService.generateSuccessResponse("Game scheduled successfully", publishedGame, HttpStatus.CREATED);
+            if (tournamentRequest.getScheduledAt() != null) {
+                return responseService.generateSuccessResponse("Tournament scheduled successfully", publishedGame, HttpStatus.CREATED);
             } else {
-                return responseService.generateSuccessResponse("Game published successfully", publishedGame, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("Tournament published successfully", publishedGame, HttpStatus.CREATED);
             }
         } catch (LimitExceededException e) {
-            return responseService.generateErrorResponse("Exceeded maximum allowed games ", HttpStatus.TOO_MANY_REQUESTS);
+            return responseService.generateErrorResponse("Exceeded maximum allowed Tournaments ", HttpStatus.TOO_MANY_REQUESTS);
 
         } catch (NoSuchElementException e) {
             return responseService.generateErrorResponse("Required entity not found " + e.getMessage(), HttpStatus.NOT_FOUND);
@@ -145,8 +174,8 @@ public class TournamentController {
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Error publishing game" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("Error publishing Tournaments" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 }
-*/
