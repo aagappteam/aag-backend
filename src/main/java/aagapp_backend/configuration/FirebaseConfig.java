@@ -12,18 +12,18 @@ import java.io.IOException;
 @Configuration
 public class FirebaseConfig {
 
-/*    @PostConstruct
-    public void initialize() {
-        try {
-            FirebaseOptions options = new FirebaseOptions.Builder()
-                    .setCredentials(GoogleCredentials.fromStream(new ClassPathResource(firebaseConfigPath).getInputStream())).build();
-            if (FirebaseApp.getApps().isEmpty()) {
-                FirebaseApp.initializeApp(options);
-                logger.info("Firebase application has been initialized");
-            }
-        } catch (IOException e) {
-            logger.error(e.getMessage());
+/*    @Bean
+    public FirebaseApp initializeFirebase() throws IOException {
+        FileInputStream serviceAccount = new FileInputStream("src/main/resources/google-services.json");
+
+        FirebaseOptions options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                .build();
+
+        if (FirebaseApp.getApps().isEmpty()) {
+            return FirebaseApp.initializeApp(options);
         }
+        return FirebaseApp.getInstance();
     }*/
 
     @Bean
