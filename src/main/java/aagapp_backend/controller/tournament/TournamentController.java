@@ -8,6 +8,7 @@ import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.NotificationType;
 import aagapp_backend.enums.TournamentStatus;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -34,6 +35,13 @@ public class TournamentController {
     private ExceptionHandlingImplement exceptionHandling;
     private PaymentFeatures paymentFeatures;
     private TournamentService tournamentService;
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    public void setNotificationRepository(NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
+    }
+
 
     @Autowired
     public void setTournamentService(TournamentService tournamentService) {
@@ -132,29 +140,27 @@ public class TournamentController {
 
            Tournament publishedGame = tournamentService.publishTournament(tournamentRequest, vendorId);
 
-
-           /* // Now create a single notification for the vendor
+            // Now create a single notification for the vendor
             Notification notification = new Notification();
             notification.setRole("Vendor");
 
             notification.setVendorId(vendorId);
-            if (gameRequest.getScheduledAt() != null) {
-                notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
+            if (tournamentRequest.getScheduledAt() != null) {
+//                notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
 
 
-                notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
-                notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
+                notification.setDescription("Scheduled Tournament"); // Example NotificationType for a successful
+                notification.setDetails("Tournament has been Scheduled"); // Example NotificationType for a successful
             }else{
-                notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
+//                notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
 
 
-                notification.setDescription("Published Game"); // Example NotificationType for a successful
-                notification.setDetails("Game has been Published"); // Example NotificationType for a successful
-            }*/
+                notification.setDescription("Published Tournament"); // Example NotificationType for a successful
+                notification.setDetails("Tournament has been Published"); // Example NotificationType for a successful
+            }
 
 
-
-//            notificationRepository.save(notification);
+            notificationRepository.save(notification);
 
             if (tournamentRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("Tournament scheduled successfully", publishedGame, HttpStatus.CREATED);

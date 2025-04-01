@@ -230,12 +230,20 @@ public class CommandLineService implements CommandLineRunner {
             System.out.println("Predefined plan features inserted into the database.");
         }*/
 
-      /*  String alterQuery = "ALTER TABLE aag_available_games \n" +
-                "ADD COLUMN minRange INT DEFAULT 2,\n" +
-                "ADD COLUMN maxRange INT DEFAULT 1024;\n";
+/*        String alterQuery = "ALTER TABLE vendor_table \n" +
+                "ADD COLUMN total_wallet_balance DOUBLE PRECISION DEFAULT 0.0,\n" +
+                "ADD COLUMN total_participated_in_game_tournament_league INT DEFAULT 0;";
+
+
 
         Query query = entityManager.createNativeQuery(alterQuery);
         query.executeUpdate();*/
+     /*   String alterQuery = "ALTER TABLE vendor_table \n" +
+                "ADD COLUMN total_wallet_balance DOUBLE DEFAULT 0.0,\n" +
+                "ADD COLUMN total_participated_in_game_tournament_league INT DEFAULT 0;";
+        Query query = entityManager.createNativeQuery(alterQuery);
+        query.executeUpdate();*/
+
 
 
     }

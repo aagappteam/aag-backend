@@ -256,7 +256,7 @@ public class PaymentService {
                 return extractNumberFromString(feature);
             }
         }
-        return 0; // Default value if no match found
+        return 5;
     }
 
     private Integer extractNumberFromString(String text) {
