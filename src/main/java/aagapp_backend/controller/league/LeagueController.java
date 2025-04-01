@@ -39,12 +39,10 @@ import java.util.stream.Collectors;
 public class LeagueController {
 
     private LeagueService leagueService;
-//    private GameService gameService;
     private ExceptionHandlingImplement exceptionHandling;
     private ResponseService responseService;
     private PaymentFeatures paymentFeatures;
     private VendorRepository vendorRepository;
-    private LeagueRepository leagueRepository;
     private NotificationRepository notificationRepository;
     private ChallangeRepository challangeRepository;
 
@@ -59,10 +57,6 @@ public class LeagueController {
         this.notificationRepository = notificationRepository;
     }
 
-    @Autowired
-    public void setLeagueRepository(@Lazy LeagueRepository leagueRepository) {
-        this.leagueRepository = leagueRepository;
-    }
 
     @Autowired
     public void setVendorRepository(@Lazy VendorRepository vendorRepository) {
