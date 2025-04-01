@@ -261,11 +261,14 @@ public class PaymentService {
     }
 
     private Integer extractNumberFromString(String text) {
-        String number = text.replaceAll("[^0-9]", ""); // Remove non-numeric characters
-        System.out.println(number + " extractNumberFromString");
+        // Use regular expression to find the first occurrence of digits in the string
+        String number = text.replaceAll("\\D", ""); // Remove non-digits characters
 
-        return number.isEmpty() ? 0 : Integer.parseInt(number);
+        System.out.println(number + " extractDailyGameLimit");
+
+        return number.isEmpty() ? 5 : Integer.parseInt(number); // Return 0 if no number is found
     }
+
 
 
     // Update referrer wallet balance
