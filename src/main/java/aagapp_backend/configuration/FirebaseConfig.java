@@ -11,7 +11,7 @@ import java.io.IOException;
 @Configuration
 public class FirebaseConfig {
 
-    @PostConstruct
+/*    @PostConstruct
     public FirebaseApp initializeFirebase() throws IOException {
         FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.getApplicationDefault())
@@ -21,6 +21,6 @@ public class FirebaseConfig {
             return FirebaseApp.initializeApp(options);
         }
         return FirebaseApp.getInstance();
-    }
+    }*/
 
 }
