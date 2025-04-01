@@ -252,6 +252,7 @@ public class PaymentService {
     private Integer extractDailyGameLimit(List<String> features) {
         for (String feature : features) {
             if (feature.toLowerCase().contains("daily game publish limit")) {
+                System.out.println(feature + " feature");
                 // Extract the number from the feature string (e.g., "Updated Daily Game Publish Limit: 10")
                 return extractNumberFromString(feature);
             }
@@ -261,6 +262,8 @@ public class PaymentService {
 
     private Integer extractNumberFromString(String text) {
         String number = text.replaceAll("[^0-9]", ""); // Remove non-numeric characters
+        System.out.println(number + " extractNumberFromString");
+
         return number.isEmpty() ? 0 : Integer.parseInt(number);
     }
 
