@@ -34,6 +34,8 @@ import java.util.List;
         @Index(name = "idx_vendor_league_status", columnList = "league_status"),
         @Index(name = "idx_vendor_is_verified", columnList = "isVerified"),
         @Index(name = "idx_vendor_wallet_balance", columnList = "wallet_balance"),
+        @Index(name = "idx_vendor_total_wallet_balance", columnList = "total_wallet_balance"),
+        @Index(name = "idx_vendor_total_participated_in_game_tournament_league", columnList = "total_participated_in_game_tournament_league"),
         @Index(name = "idx_vendor_wallet_active_league", columnList = "wallet_balance, service_provider_id, profile_picture ,first_name ,last_name")
 
 })
@@ -135,6 +137,15 @@ public class VendorEntity {
 
     @Column(name = "wallet_balance", nullable = false)
     private double walletBalance = 0.0;
+
+    // Column for total wallet balance
+    @Column(name = "total_wallet_balance", nullable = false)
+    private double totalWalletBalance = 0.0;
+
+    // Column for total participants in the game tournament league
+    @Column(name = "total_participated_in_game_tournament_league")
+    private int totalParticipatedInGameTournament = 0;
+
 
     @Column(name = "league_status", nullable = false)
     @Enumerated(EnumType.STRING)
