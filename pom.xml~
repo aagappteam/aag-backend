@@ -249,7 +249,7 @@
 			<artifactId>springdoc-openapi-security</artifactId>
 			<version>1.8.0</version>
 		</dependency>
-
+		
 
 		<!-- https://mvnrepository.com/artifact/com.google.firebase/firebase-admin -->
 		<dependency>

@@ -139,7 +139,7 @@ public class VendorEntity {
     @Column(name = "total_wallet_balance", nullable = false)
     private double totalWalletBalance = 0.0;
 
-
+    
 
 
 
