@@ -101,7 +101,7 @@ public class VendorSubmission {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
 
             if(email!=null){
-                Page<VendorSubmissionEntity> submissionsPage = submissionService.getSubmissionsByEmail(email, pageable);
+                Page<VendorSubmissionEntity> submissionsPage = submissionService.getSubmissionsByEmail( pageable);
                 if (submissionsPage.isEmpty()) {
                     return responseService.generateResponse(HttpStatus.OK, "No Data found for the provided email", null);
                 }

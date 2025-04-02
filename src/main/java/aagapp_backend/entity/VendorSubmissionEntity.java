@@ -13,7 +13,9 @@ import java.util.Map;
 @Entity
 @Table(name = "vendor_submission_details", indexes = {
         @Index(name = "idx_approved", columnList = "approved"),
-        @Index(name = "idx_profile_status", columnList = "profile_status")
+        @Index(name = "idx_profile_status", columnList = "profile_status"),
+        @Index(name = "idx_email_vendor_submission", columnList = "email")
+
 
 })
 @Getter
@@ -52,11 +54,9 @@ public class VendorSubmissionEntity {
     @PrePersist
     @PreUpdate
     public void ensureApproved() {
-        // Ensure approved is never null
         if (approved == null) {
             approved = false;
         }
-
     }
 
     public String getMobileNumber() {

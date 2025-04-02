@@ -4,6 +4,7 @@ import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.otp.Otp;
 import com.twilio.Twilio;
 import com.twilio.exception.ApiException;
 import com.twilio.rest.api.v2010.account.Message;
@@ -28,7 +29,7 @@ import java.util.Random;
     @Service
     public class TwilioServiceForAdmin {
 
-
+        private Otp otpservice;
         private ExceptionHandlingImplement exceptionHandling;
         private String accountSid;
         private String authToken;
@@ -38,6 +39,12 @@ import java.util.Random;
         private EntityManager entityManager;
         @Value("${service.provider.sid}")
         private String serviceProviderSid;
+
+
+        @Autowired
+        public void setOtpservice(Otp otpservice) {
+            this.otpservice = otpservice;
+        }
 
         @Autowired
         public void setExceptionHandling(ExceptionHandlingImplement exceptionHandling) {
@@ -89,9 +96,7 @@ import java.util.Random;
                 Twilio.init(accountSid, authToken);
                 String completeMobileNumber = countryCode + mobileNumber;
                 String otp = generateOTPForAdmin();
-/*
-                this.sendOtp(countryCode,mobileNumber,otp);
-*/
+                otpservice.sendOtp(countryCode,mobileNumber,otp);
 
 
                 CustomAdmin existingAdmin = adminService.findAdminByPhone(mobileNumber,countryCode);
@@ -123,27 +128,7 @@ import java.util.Random;
             }
         }
 
-        public String sendOtp(String countryCode, String mobileNumber, String otp) {
 
-            Twilio.init(accountSid, authToken);
-            String completeMobileNumber = countryCode + mobileNumber;
-
-            String messageBody = "Your OTP for AAG app is: " + otp + ". Please use this code to verify your identity. It will expire in 1 minute. - AAG Team";
-
-            try {
-                Message message = Message.creator(
-                        new PhoneNumber(completeMobileNumber),
-                        serviceProviderSid,
-                        messageBody
-                ).create();
-
-                System.out.println("OTP sent successfully to " + completeMobileNumber);
-            } catch (Exception e) {
-                exceptionHandling.handleException(e);
-            }
-
-            return otp;
-        }
         public synchronized String genereateMaskednumber(String mobileNumber) {
             String lastFourDigits = mobileNumber.substring(mobileNumber.length() - 4);
 

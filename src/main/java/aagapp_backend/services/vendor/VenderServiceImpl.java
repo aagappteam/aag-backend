@@ -3,17 +3,22 @@ package aagapp_backend.services.vendor;
 import aagapp_backend.components.CommonData;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
-import aagapp_backend.dto.ReferralDTO;
-import aagapp_backend.dto.VendorTopInviteeProjection;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
 import aagapp_backend.entity.cache.TopVendorCache;
+import aagapp_backend.entity.game.AagAvailableGames;
+import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.enums.VendorLevelPlan;
 import aagapp_backend.repository.TopVendorCacheRepository;
+import aagapp_backend.repository.aagavailblegames.AagAvailbleGamesRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.*;
 import aagapp_backend.services.devicemange.DeviceMange;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.gameservice.GameService;
+import aagapp_backend.services.payment.PaymentService;
 import aagapp_backend.services.referal.ReferralService;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.Nullable;
@@ -24,6 +29,8 @@ import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,10 +67,30 @@ public class VenderServiceImpl implements VenderService {
     private ReferralService referralService;
     private VendorReferralRepository vendorReferralRepository;
 
-    @Autowired
     private VendorRepository vendorRepository;
+    private AagGameService aagGameService;
+    private GameService gameService;
+
+    private PaymentService paymentService;
     @Autowired
-    private TopVendorCacheRepository topVendorCacheRepository;
+    @Lazy
+    public VenderServiceImpl(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
+    @Autowired
+    public void setVendorRepository(VendorRepository vendorRepository) {
+        this.vendorRepository = vendorRepository;
+    }
+    @Autowired
+    public void setAagGameService(AagGameService aagGameService) {
+        this.aagGameService = aagGameService;
+    }
+    @Autowired
+    public void setGameService(GameService gameService) {
+        this.gameService = gameService;
+    }
+
+
 
     @Autowired
     public void setVendorReferralRepository(VendorReferralRepository vendorReferralRepository) {
@@ -416,6 +443,7 @@ public class VenderServiceImpl implements VenderService {
      */
     @Override
     public VendorEntity findServiceProviderByPhone(String mobileNumber, String countryCode) {
+
         return entityManager.createQuery(Constant.PHONE_QUERY_SERVICE_PROVIDER, VendorEntity.class)
                 .setParameter("mobileNumber", mobileNumber)
                 .setParameter("country_code", countryCode)
@@ -792,10 +820,34 @@ public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId)
 
 
     @Override
-    public Map<String, Object> getDashboardData(String token) {
+    public Map<String, Object> getDashboardData(Long serviceProviderId) {
+
+        VendorEntity existingVendor = getServiceProviderById(serviceProviderId);
+
+        List<GetGameResponseDashboardDTO> games = aagGameService.getAllGamesDashboard(0,10);
+        Map<String, Object> result = new HashMap<>();
+        result.put("availablegames", games);
+        VendorLevelPlan level = existingVendor.getVendorLevelPlan();
+//        Integer  returnPercentage =  level.getReturnMultiplier();
+//        result.put("topPlayers", topPlayers);
+//        get active subscriptions of service provider
+//        List<Subscription> subscriptions = subscriptionService.getActiveSubscriptionsByServiceProvider(serviceProviderId);
+//        result.put("subscriptionPlanCards", subscriptions);
+
+//        get actives games by vendor id
+        List<GetGameResponseDashboardDTO> gamesPage = gameService.findActivegamesByVendorId(serviceProviderId,  0,10);
+        result.put("activeGames", gamesPage);
+//        getActiveTransactionsByVendorId
+        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit());
+        result.put("subscriptionPlanCards", transactions);
+
+        // Return percentage
+
+        return result;
 
 
-        return null;
+
+
     }
 
 
