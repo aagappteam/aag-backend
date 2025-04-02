@@ -3,6 +3,8 @@ package aagapp_backend.repository.ticket;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.ticket.Ticket;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +29,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     @Query("SELECT t FROM Ticket t WHERE t.customerId = :id ORDER BY t.createdDate DESC")
     List<Ticket> findByCustomerId(@Param("id") Long customerId);
 
+    Page<Ticket> findByStatus(String status, Pageable pageable);
 
-    List<Ticket> findByStatus(String status);
+    Page<Ticket> findByRole(String role, Pageable pageable);
+
+    Page<Ticket> findByStatusAndRole(String status, String role, Pageable pageable);
 }
