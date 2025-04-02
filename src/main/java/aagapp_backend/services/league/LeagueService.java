@@ -18,6 +18,7 @@ import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import com.google.firestore.v1.TransactionOptions;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -152,6 +153,11 @@ public class LeagueService {
         }
     }
 
+    @Transactional
+    public Challenge getChallengeById(Long challengeId) {
+        return challangeRepository.findById(challengeId)
+                .orElseThrow(() -> new RuntimeException("Challenge not found with ID: " + challengeId));
+    }
 
 
     @Transactional
