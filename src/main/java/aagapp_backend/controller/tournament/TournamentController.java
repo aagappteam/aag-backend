@@ -2,9 +2,11 @@ package aagapp_backend.controller.tournament;
 
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.dto.GetGameResponseDTO;
+import aagapp_backend.dto.JoinLeagueRequest;
 import aagapp_backend.dto.TournamentRequest;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.NotificationType;
 import aagapp_backend.enums.TournamentStatus;
@@ -181,6 +183,32 @@ public class TournamentController {
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error publishing Tournaments" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/startTournament/{tournamentId}")
+    public ResponseEntity<?> startTournament(@PathVariable Long tournamentId) {
+        try {
+            tournamentService.startTournament(tournamentId);
+            return ResponseEntity.ok("🏆 Tournament Started Successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error starting tournament: " + e.getMessage());
+        }
+    }
+
+    // Join a Room
+    @PostMapping("/join-room/{tournamentId}")
+    public ResponseEntity<String> joinRoom(
+            @PathVariable Long tournamentId,
+            @RequestBody JoinLeagueRequest joinTounamentRequest) {
+
+        try {
+            tournamentService.assignPlayerToRoom(joinTounamentRequest, tournamentId);
+            System.out.println(tournamentId +" " + joinTounamentRequest);
+            return new ResponseEntity<>("Player joined the room successfully!", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error joining the room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

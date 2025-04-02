@@ -3,6 +3,7 @@ package aagapp_backend.entity.players;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.game.Token;
 import aagapp_backend.entity.league.LeagueRoom;
+import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.enums.PlayerStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -54,6 +55,11 @@ public class Player {
     @ManyToOne
     @JoinColumn(name = "league_room_id")
     private LeagueRoom leagueRoom;
+
+    @ManyToOne
+    @JoinColumn(name = "tournament_room_id")
+    private TournamentRoom tournamentRoom;
+
 
     private String color; // Red, Blue, Green, Yellow
 
