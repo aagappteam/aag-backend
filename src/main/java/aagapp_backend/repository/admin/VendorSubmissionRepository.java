@@ -22,5 +22,8 @@ public interface VendorSubmissionRepository extends JpaRepository<VendorSubmissi
 
     Page<VendorSubmissionEntity> findAll(Pageable pageable);
 
+//    get submission by email
+Page<VendorSubmissionEntity> findByEmail(String email, Pageable pageable);
+
 
 }
