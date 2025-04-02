@@ -179,6 +179,17 @@ public class LeagueController {
         }
     }
 
+    @GetMapping("/getChallenge/{id}")
+    public ResponseEntity<?> getChallengeById(@PathVariable Long id) {
+        try {
+            Challenge challenge = leagueService.getChallengeById(id);
+            return responseService.generateSuccessResponse("Challenge retrieved successfully.", challenge, HttpStatus.OK);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error retrieving challenge: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 
     // Reject Challenge API
     @PostMapping("/rejectChallenge/{challengeId}")
