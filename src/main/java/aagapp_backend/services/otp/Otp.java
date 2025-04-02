@@ -73,6 +73,7 @@ public class Otp {
 
         String messageBody = "Your OTP for AAG app is: " + otp + ". Please use this code to verify your identity. It will expire in 30 seconds. - AAG Team";
 
+
         try {
             Message message = Message.creator(
                     new PhoneNumber(completeMobileNumber),
