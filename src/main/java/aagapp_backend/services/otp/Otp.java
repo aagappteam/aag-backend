@@ -23,6 +23,7 @@ public class Otp {
     private AdminService adminService;
     private ResponseService responseService;
     private EntityManager entityManager;
+
     @Value("${service.provider.sid}")
     private String serviceProviderSid;
 
@@ -72,6 +73,7 @@ public class Otp {
         String completeMobileNumber = countryCode + mobileNumber;
 
         String messageBody = "Your OTP for AAG app is: " + otp + ". Please use this code to verify your identity. It will expire in 30 seconds. - AAG Team";
+
 
 
         try {
