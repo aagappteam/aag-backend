@@ -1,17 +1,17 @@
 package aagapp_backend.services;
 
-import aagapp_backend.dto.PriceRequestDTO;
-import aagapp_backend.dto.ThemeRequestDTO;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.ThemeEntity;
-import aagapp_backend.dto.GameRequestDTO;
-import aagapp_backend.dto.GameResponseDTO;
 import aagapp_backend.entity.game.PriceEntity;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PriceRepository;
 import aagapp_backend.repository.game.ThemeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -133,6 +133,25 @@ public class AagGameService {
         List<AagAvailableGames> games = gameRepository.findAll(); // Pagination could be added here
         return games.stream().map(GameResponseDTO::new).collect(Collectors.toList());
     }
+
+    public List<GetGameResponseDashboardDTO> getAllGamesDashboard(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AagAvailableGames> gamesPage = gameRepository.findAll(pageable);
+
+        List<GetGameResponseDashboardDTO> gameResponseDTOs = gamesPage.stream()
+                .map(game -> new GetGameResponseDashboardDTO(
+                        game.getId(),
+                        game.getGameName(),
+                        game.getGameImage()
+
+                ))
+                .collect(Collectors.toList());
+
+        return gameResponseDTOs;
+
+
+    }
+
 
     // Get game by ID
     public GameResponseDTO getGameById(Long gameId) throws GameNotFoundException {

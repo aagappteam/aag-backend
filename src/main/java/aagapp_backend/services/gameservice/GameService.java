@@ -994,6 +994,57 @@ public class GameService {
         }
     }
 
+    @Transactional
+    public List<GetGameResponseDashboardDTO> findActivegamesByVendorId(Long vendorId, int offset, int limit) {
+        try {
+            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime startOfDay = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
+
+            String sql = "SELECT * FROM aag_ludo_game g WHERE g.vendor_id = :vendorId "
+                    + "AND g.scheduled_at >= :startOfDay AND g.scheduled_at <= :endOfDay "
+                    + "AND g.status = :status";
+            String activeStatus = GameStatus.ACTIVE.name();
+
+            Query query = em.createNativeQuery(sql, Game.class);
+            query.setParameter("vendorId", vendorId);
+            query.setParameter("startOfDay", startOfDay);
+            query.setParameter("endOfDay", endOfDay);
+            query.setParameter("status", activeStatus); // Pass the string representation of the enum
+
+            // Set the limit and offset for pagination
+            query.setFirstResult(offset);
+            query.setMaxResults(limit);
+
+            List<Game> games = query.getResultList();
+
+            // Adjust times for the returned games
+            games.forEach(game -> {
+                game.setCreatedDate(convertToKolkataTime(game.getCreatedDate()));
+                game.setUpdatedDate(convertToKolkataTime(game.getUpdatedDate()));
+                game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
+            });
+
+            // Convert games to response DTOs
+            List<GetGameResponseDashboardDTO> gameResponseDTOs = games.stream()
+                    .map(game -> new GetGameResponseDashboardDTO(
+                            game.getId(),
+                            game.getName(),
+                            game.getImageUrl()
+/*
+                            game.getTheme() != null ? game.getTheme().getImageUrl() : null
+*/
+
+                    ))
+                    .collect(Collectors.toList());
+
+            return gameResponseDTOs;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving active games scheduled for today by vendor ID: " + vendorId, e);
+        }
+    }
+
 
     private ZonedDateTime convertToKolkataTime(ZonedDateTime dateTime) {
         return dateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));

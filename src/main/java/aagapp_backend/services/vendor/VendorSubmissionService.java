@@ -187,5 +187,10 @@ public class VendorSubmissionService {
         submissionRepository.deleteById(id);
     }
 
+    public Page<VendorSubmissionEntity> getSubmissionsByEmail(String email, Pageable pageable) {
+        return submissionRepository.findByEmail(email, pageable);
+
+
+    }
 }
 

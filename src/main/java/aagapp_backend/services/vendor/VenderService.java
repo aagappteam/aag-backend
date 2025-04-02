@@ -23,5 +23,5 @@ public interface VenderService {
     List<VendorEntity> getTopInvitiesVendor();
     Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId);
 
-    Map<String, Object> getDashboardData(String token);
+    Map<String, Object> getDashboardData(Long serviceProviderId);
 }

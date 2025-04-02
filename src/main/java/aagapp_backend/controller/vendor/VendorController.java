@@ -73,17 +73,13 @@ public class VendorController {
 
 //    Vendor Dashboard api
 
-    @GetMapping("/dashboard")
-    public ResponseEntity<?> getDashboardData(@RequestHeader("Authorization") String token) {
+    @GetMapping("/dashboard/{serviceProviderId}")
+    public ResponseEntity<?> getDashboardData(@PathVariable Long serviceProviderId) {
        try{
-           if (token == null ||!token.startsWith("Bearer ")) {
-               return responseService.generateErrorResponse("Invalid or missing Authorization header", HttpStatus.BAD_REQUEST);
-           }
 
+           Map<String, Object> responseBody =  serviceProviderService.getDashboardData(serviceProviderId);
 
-           Map<String, Object> responseBody =  serviceProviderService.getDashboardData(token);
-
-           return responseService.generateSuccessResponse("Dashboard data fetched successfully", responseBody, HttpStatus.CREATED);
+           return responseService.generateSuccessResponse("Dashboard data fetched successfully", responseBody, HttpStatus.OK);
        }catch (Exception e) {
            exceptionHandling.handleException(e);
            return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);}//catch
