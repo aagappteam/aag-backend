@@ -16,6 +16,7 @@ import aagapp_backend.services.*;
 import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.devicemange.DeviceMange;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.otp.Otp;
 import aagapp_backend.services.referal.ReferralService;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import com.twilio.Twilio;
@@ -60,6 +61,12 @@ public class OtpEndpoint {
     private ReferralService referralService;
     private DeviceMange deviceMange;
     private WalletRepository walletRepository;
+
+    private Otp otpservice;
+    @Autowired
+    public void setOtpservice(Otp otpservice) {
+        this.otpservice = otpservice;
+    }
 
     @Autowired
     public void setWalletRepository(WalletRepository walletRepository) {
@@ -380,8 +387,11 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
             }
 
-            Twilio.init(accountSid, authToken);
+//            Twilio.init(accountSid, authToken);
             String otp = twilioService.generateOTP();
+
+            otpservice.sendOtp(countryCode,mobileNumber,otp);
+
 
             VendorEntity existingServiceProvider = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);
 
