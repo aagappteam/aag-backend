@@ -44,6 +44,4 @@ public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
     PaymentEntity findByTransactionId(String transactionId);
 
 
-
-
 }

@@ -90,6 +90,10 @@ public class VendorSubmission {
     @GetMapping("/status")
     public ResponseEntity<?> getSubmissionsByStatus(
             @RequestParam(required = false, defaultValue = "all") String status,
+            @RequestParam(required = false, defaultValue = "all") String email,
+            @RequestParam(required = false, defaultValue = "all") String planname,
+
+
             @RequestParam(defaultValue = "0") int page,    // Default page is 0 (first page)
             @RequestParam(defaultValue = "10") int size     // Default size is 10
     ) {

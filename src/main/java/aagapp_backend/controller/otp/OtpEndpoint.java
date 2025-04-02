@@ -302,11 +302,16 @@ public class OtpEndpoint {
         }
     }
 
-    @PostMapping("/refresh-token/{id}")
+    @Transactional
+    @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshToken(@RequestBody Map<String, Object> loginDetails, HttpSession session, HttpServletRequest request) {
         String mobileNumber = (String) loginDetails.get("mobileNumber");
         Integer role = (Integer) loginDetails.get("role");
         String countryCode = (String) loginDetails.get("countryCode");
+        if (countryCode == null) {
+            countryCode = Constant.COUNTRY_CODE;
+        }
+
 
         String ipAddress = request.getRemoteAddr();
 
@@ -322,7 +327,7 @@ public class OtpEndpoint {
             String newToken = jwtUtil.generateToken(existingCustomer.getId(), role, ipAddress, userAgent);
             existingCustomer.setToken(newToken);
             em.persist(existingCustomer);
-            return responseService.generateSuccessResponse("User has been logged in", existingCustomer, HttpStatus.OK);
+            return responseService.generateSuccessResponse("New token has been generated", existingCustomer.getToken(), HttpStatus.OK);
         } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {
 
             VendorEntity vendorEntity = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);
@@ -333,7 +338,7 @@ public class OtpEndpoint {
             String newToken = jwtUtil.generateToken(vendorEntity.getService_provider_id(), role, ipAddress, userAgent);
             vendorEntity.setToken(newToken);
             em.persist(vendorEntity);
-            return responseService.generateSuccessResponse("User has been logged in", vendorEntity, HttpStatus.OK);
+            return responseService.generateSuccessResponse("New token has been generated", vendorEntity.getToken(), HttpStatus.OK);
 
     }  else if (roleService.findRoleName(role).equals(Constant.ADMIN) || roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(role).equals(Constant.SUPPORT)) {
             CustomAdmin customAdmin = adminService.findAdminByPhone(mobileNumber, countryCode);
@@ -344,7 +349,7 @@ public class OtpEndpoint {
             String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), role, ipAddress, userAgent);
             customAdmin.setToken(newToken);
             em.persist(customAdmin);
-            return responseService.generateSuccessResponse("Admin has been logged in", customAdmin, HttpStatus.OK);
+            return responseService.generateSuccessResponse("New token has been generated", customAdmin.getToken(), HttpStatus.OK);
 
 
     } else {
@@ -375,7 +380,7 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
             }
 
-          /*  Twilio.init(accountSid, authToken);*/
+            Twilio.init(accountSid, authToken);
             String otp = twilioService.generateOTP();
 
             VendorEntity existingServiceProvider = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);

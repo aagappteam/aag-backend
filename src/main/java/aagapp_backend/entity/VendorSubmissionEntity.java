@@ -52,11 +52,9 @@ public class VendorSubmissionEntity {
     @PrePersist
     @PreUpdate
     public void ensureApproved() {
-        // Ensure approved is never null
         if (approved == null) {
             approved = false;
         }
-
     }
 
     public String getMobileNumber() {
