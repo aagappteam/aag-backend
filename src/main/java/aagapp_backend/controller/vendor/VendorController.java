@@ -23,6 +23,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -69,22 +70,6 @@ public class VendorController {
 
     @Autowired
     private VendorRepository vendorRepository;
-
-
-//    Vendor Dashboard api
-
-    @GetMapping("/dashboard/{serviceProviderId}")
-    public ResponseEntity<?> getDashboardData(@PathVariable Long serviceProviderId) {
-       try{
-
-           Map<String, Object> responseBody =  serviceProviderService.getDashboardData(serviceProviderId);
-
-           return responseService.generateSuccessResponse("Dashboard data fetched successfully", responseBody, HttpStatus.OK);
-       }catch (Exception e) {
-           exceptionHandling.handleException(e);
-           return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);}//catch
-
-    }
 
 
     @Transactional
@@ -499,6 +484,231 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
     }
 }
 
+    @GetMapping("/leaderboards")
+    public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String token,
+                                          @RequestParam("filterType") String filterType) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+
+            VendorEntity authenticatedVendor = entityManager.find(VendorEntity.class, authorizedVendorId);
+
+            // List to store the filtered vendor data
+            List<VendorEntity> allVendors = new ArrayList<>();
+
+            // Apply the filter based on filterType
+            switch (filterType.toLowerCase()) {
+                case "referrals":
+                    allVendors = vendorRepository.findTop3ByOrderByReferralCountDesc();
+                    break;
+
+                case "totalwallet":
+                    allVendors = vendorRepository.findTop3ByOrderByTotalWalletBalanceDesc();
+                    break;
+
+                case "participants":
+                    allVendors = vendorRepository.findTop3ByOrderByTotalParticipatedInGameTournamentDesc();
+                    break;
+
+
+                default:
+                    return new ResponseEntity<>(Map.of(
+                            "status", "ERROR",
+                            "message", "Invalid filter type provided",
+                            "status_code", 400
+                    ), HttpStatus.BAD_REQUEST);
+            }
+
+            // Sort the vendors according to the selected filter
+            final String finalFilterType = filterType; // Make filterType final for lambda use
+            List<Map<String, Object>> leaderboard = allVendors.stream().map(vendor -> {
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                        .map(firstName -> firstName + " " + vendor.getLast_name())
+                        .orElse(null));
+
+                // Add specific data based on the filter type
+                if ("wallet".equalsIgnoreCase(finalFilterType)) {
+                    vendorData.put("price", vendor.getWalletBalance());
+                } else if ("totalwallet".equalsIgnoreCase(finalFilterType)) {
+                    vendorData.put("total_wallet_balance", vendor.getTotalWalletBalance());
+                } else if ("participants".equalsIgnoreCase(finalFilterType)) {
+                    vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
+                } else if ("referrals".equalsIgnoreCase(finalFilterType)) {
+                    vendorData.put("referralCount", vendor.getReferralCount());
+                }
+
+                return vendorData;
+            }).collect(Collectors.toList());
+
+            // Add rank based on the sorted list
+            for (int i = 0; i < leaderboard.size(); i++) {
+                leaderboard.get(i).put("rank", i + 1);
+            }
+
+            // Check if the authenticated vendor is in the leaderboard
+            Map<String, Object> authenticatedVendorData = new HashMap<>();
+            boolean isAuthenticatedVendorInTopList = false;
+            for (int i = 0; i < leaderboard.size(); i++) {
+                Map<String, Object> vendorData = leaderboard.get(i);
+                if (vendorData.get("service_provider_id").equals(authenticatedVendor.getService_provider_id())) {
+                    authenticatedVendorData = vendorData;
+                    authenticatedVendorData.put("rank", i + 1);
+                    isAuthenticatedVendorInTopList = true;
+                    break;
+                }
+            }
+
+            // If the authenticated vendor is not in the top list, add them in the correct rank position
+            if (!isAuthenticatedVendorInTopList) {
+                authenticatedVendorData.put("service_provider_id", authenticatedVendor.getService_provider_id());
+                authenticatedVendorData.put("profileImage", Optional.ofNullable(authenticatedVendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                authenticatedVendorData.put("vendorName", Optional.ofNullable(authenticatedVendor.getFirst_name())
+                        .map(firstName -> firstName + " " + authenticatedVendor.getLast_name())
+                        .orElse(null));
+
+                // Add specific data based on the filter type
+                if ("wallet".equalsIgnoreCase(finalFilterType)) {
+                    authenticatedVendorData.put("price", authenticatedVendor.getWalletBalance());
+                } else if ("totalwallet".equalsIgnoreCase(finalFilterType)) {
+                    authenticatedVendorData.put("total_wallet_balance", authenticatedVendor.getTotalWalletBalance());
+                } else if ("participants".equalsIgnoreCase(finalFilterType)) {
+                    authenticatedVendorData.put("total_participated", authenticatedVendor.getTotalParticipatedInGameTournament());
+                } else if ("referrals".equalsIgnoreCase(finalFilterType)) {
+                    authenticatedVendorData.put("referralCount", authenticatedVendor.getReferralCount());
+                }
+
+                // Add them in the correct rank position (after top 3 vendors)
+                authenticatedVendorData.put("rank", leaderboard.size() + 1);
+                leaderboard.add(authenticatedVendorData);
+            }
+
+            return createResponse(authenticatedVendor, leaderboard);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return new ResponseEntity<>(Map.of(
+                    "status", "ERROR",
+                    "message", e.getMessage(),
+                    "status_code", 500
+            ), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+/*    @GetMapping("/leaderboards")
+    public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String token,
+                                          @RequestParam("filterType") String filterType) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+
+            VendorEntity authenticatedVendor = entityManager.find(VendorEntity.class, authorizedVendorId);
+
+            // List to store the filtered vendor data
+            List<VendorEntity> allVendors = new ArrayList<>();
+
+            // Apply the filter based on filterType
+            switch (filterType.toLowerCase()) {
+                case "refferal":
+                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("referralCount")));
+                    break;
+
+                case "totalwallet":
+                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance")));
+                    break;
+
+                case "participants":
+                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament")));
+                    break;
+
+                default:
+                    return new ResponseEntity<>(Map.of(
+                            "status", "ERROR",
+                            "message", "Invalid filter type provided",
+                            "status_code", 400
+                    ), HttpStatus.BAD_REQUEST);
+            }
+
+            // Sort the vendors based on the selected filter type
+            final String finalFilterType = filterType;  // Make filterType final for lambda use
+            List<Map<String, Object>> leaderboard = allVendors.stream().map(vendor -> {
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                        .map(firstName -> firstName + " " + vendor.getLast_name())
+                        .orElse(null));
+
+                // Add specific data based on the filter type
+                if ("wallet".equalsIgnoreCase(finalFilterType)) {
+                    vendorData.put("price", vendor.getWalletBalance());
+                } else if ("totalwallet".equalsIgnoreCase(finalFilterType)) {
+                    vendorData.put("total_wallet_balance", vendor.getTotalWalletBalance());
+                } else if ("participants".equalsIgnoreCase(finalFilterType)) {
+                    vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
+                } else if ("referrals".equalsIgnoreCase(finalFilterType)) {
+                    vendorData.put("referralCount", vendor.getReferralCount());
+                }
+
+                return vendorData;
+            }).collect(Collectors.toList());
+
+            // Add rank based on the sorted list (sorted list should now be complete)
+            for (int i = 0; i < leaderboard.size(); i++) {
+                leaderboard.get(i).put("rank", i + 1);
+            }
+
+            // Check if the authenticated vendor is in the leaderboard
+            Map<String, Object> authenticatedVendorData = new HashMap<>();
+            boolean isAuthenticatedVendorInTopList = false;
+            for (int i = 0; i < leaderboard.size(); i++) {
+                Map<String, Object> vendorData = leaderboard.get(i);
+                if (vendorData.get("service_provider_id").equals(authenticatedVendor.getService_provider_id())) {
+                    authenticatedVendorData = vendorData;
+                    authenticatedVendorData.put("rank", i + 1); // Correct rank
+                    isAuthenticatedVendorInTopList = true;
+                    break;
+                }
+            }
+
+            // If the authenticated vendor is not in the top list, add them in the correct rank position
+            if (!isAuthenticatedVendorInTopList) {
+                authenticatedVendorData.put("service_provider_id", authenticatedVendor.getService_provider_id());
+                authenticatedVendorData.put("profileImage", Optional.ofNullable(authenticatedVendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                authenticatedVendorData.put("vendorName", Optional.ofNullable(authenticatedVendor.getFirst_name())
+                        .map(firstName -> firstName + " " + authenticatedVendor.getLast_name())
+                        .orElse(null));
+
+                // Add specific data based on the filter type
+                if ("wallet".equalsIgnoreCase(finalFilterType)) {
+                    authenticatedVendorData.put("price", authenticatedVendor.getWalletBalance());
+                } else if ("totalwallet".equalsIgnoreCase(finalFilterType)) {
+                    authenticatedVendorData.put("total_wallet_balance", authenticatedVendor.getTotalWalletBalance());
+                } else if ("participants".equalsIgnoreCase(finalFilterType)) {
+                    authenticatedVendorData.put("total_participated", authenticatedVendor.getTotalParticipatedInGameTournament());
+                } else if ("referrals".equalsIgnoreCase(finalFilterType)) {
+                    authenticatedVendorData.put("referralCount", authenticatedVendor.getReferralCount());
+                }
+
+                // Add them in the correct rank position
+                authenticatedVendorData.put("rank", leaderboard.size() + 1); // Last rank
+                leaderboard.add(authenticatedVendorData);
+            }
+
+            return createResponse(authenticatedVendor, leaderboard);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return new ResponseEntity<>(Map.of(
+                    "status", "ERROR",
+                    "message", e.getMessage(),
+                    "status_code", 500
+            ), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }*/
+
     private ResponseEntity<?> createResponse(VendorEntity authenticatedVendor, List<Map<String, Object>> topInvitees) {
         Map<String, Object> data = Map.of(
                 "total_earning", authenticatedVendor.getWalletBalance(),
@@ -518,6 +728,19 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+//    Vendor Dashboard api
 
+    @GetMapping("/dashboard/{serviceProviderId}")
+    public ResponseEntity<?> getDashboardData(@PathVariable Long serviceProviderId) {
+        try{
+
+            Map<String, Object> responseBody =  serviceProviderService.getDashboardData(serviceProviderId);
+
+            return responseService.generateSuccessResponse("Dashboard data fetched successfully", responseBody, HttpStatus.OK);
+        }catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);}//catch
+
+    }
 
 }

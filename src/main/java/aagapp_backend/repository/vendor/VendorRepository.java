@@ -13,17 +13,14 @@ import java.util.List;
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
 
-/*
-    @EntityGraph(attributePaths = {"profilePic", "first_name", "last_name"})
-*/
     List<VendorEntity> findTop3ByOrderByWalletBalanceDesc();
 
-/*    @Query("SELECT v FROM VendorEntity v WHERE v.id = :vendorId OR v.id IN "
-            + "(SELECT t.vendorId FROM TopVendorCache t ORDER BY t.rank ASC LIMIT 3)")
-    List<VendorEntity> findVendorAndTopInvites(@Param("vendorId") Long vendorId);*/
+    List<VendorEntity> findTop3ByOrderByTotalWalletBalanceDesc();
+    List<VendorEntity> findTop3ByOrderByTotalParticipatedInGameTournamentDesc();
+
+    // By Referral Count (new method to fetch vendors based on referral count)
+    List<VendorEntity> findTop3ByOrderByReferralCountDesc();
 
 
-
-//    List<League> findByChallengedVendors_Id(Long vendorId);
 
 }
