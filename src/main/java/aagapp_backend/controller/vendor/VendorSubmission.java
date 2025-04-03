@@ -90,17 +90,15 @@ public class VendorSubmission {
     @GetMapping("/status")
     public ResponseEntity<?> getSubmissionsByStatus(
             @RequestParam(required = false, defaultValue = "all") String status,
-            @RequestParam(required = false, defaultValue = "all") String email,
-            @RequestParam(required = false, defaultValue = "all") String planname,
-
-
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String planname,
             @RequestParam(defaultValue = "0") int page,    // Default page is 0 (first page)
             @RequestParam(defaultValue = "10") int size     // Default size is 10
     ) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
 
-            if(email!=null){
+            if (email != null && !email.isEmpty()) {
                 Page<VendorSubmissionEntity> submissionsPage = submissionService.getSubmissionsByEmail(email, pageable);
                 if (submissionsPage.isEmpty()) {
                     return responseService.generateResponse(HttpStatus.OK, "No Data found for the provided email", null);
@@ -111,7 +109,7 @@ public class VendorSubmission {
                         submissionsPage.getTotalElements(),  // Total elements in the database
                         HttpStatus.OK
                 );
-            }
+           }
 
             Page<VendorSubmissionEntity> submissionsPage = submissionService.getSubmissionsByStatus(status, pageable);
 
@@ -134,6 +132,9 @@ public class VendorSubmission {
             );
         }
     }
+
+
+
 
 
 
