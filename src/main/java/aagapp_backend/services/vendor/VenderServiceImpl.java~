@@ -22,7 +22,11 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -31,15 +35,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class VenderServiceImpl implements VenderService {
@@ -759,7 +766,7 @@ public class VenderServiceImpl implements VenderService {
         VendorEntity authenticatedVendor = getServiceProviderById(authorizedVendorId);
 
         // Fetch top 3 vendors sorted by wallet balance
-        List<VendorEntity> topInvities = vendorRepository.findTop3ByOrderByRefferalbalanceDesc();
+        List<VendorEntity> topInvities = vendorRepository.findTop3ByOrderByReffalBalanceDesc();
         Map<String, Object> result = new HashMap<>();
         result.put("authenticatedVendor", authenticatedVendor);
         result.put("topInvities", topInvities);
@@ -772,7 +779,7 @@ public class VenderServiceImpl implements VenderService {
     @Override
     public List<VendorEntity> getTopInvitiesVendor() {
         // Fetch only the top 3 vendors sorted by walletBalance in descending order
-        return vendorRepository.findTop3ByOrderByRefferalbalanceDesc();
+        return vendorRepository.findTop3ByOrderByReffalBalanceDesc();
     }
 
 

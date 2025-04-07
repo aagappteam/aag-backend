@@ -1,19 +1,15 @@
 package aagapp_backend.repository.vendor;
 
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.league.League;
 import aagapp_backend.enums.LeagueStatus;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
 
-    List<VendorEntity> findTop3ByOrderByWalletBalanceDesc();
+    List<VendorEntity> findTop3ByOrderByRefferalbalanceDesc();
 
     List<VendorEntity> findTop3ByOrderByTotalWalletBalanceDesc();
     List<VendorEntity> findTop3ByOrderByTotalParticipatedInGameTournamentDesc();
