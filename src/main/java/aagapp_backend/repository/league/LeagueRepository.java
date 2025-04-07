@@ -46,4 +46,6 @@ public interface LeagueRepository extends JpaRepository<League, Long> {
     Page<League> findByVendorServiceProviderId(@Param("serviceProviderId") Long serviceProviderId, Pageable pageable);
 
     Page<League> findAll(Pageable pageable);
+
+
 }

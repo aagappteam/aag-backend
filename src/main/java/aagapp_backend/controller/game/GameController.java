@@ -5,26 +5,34 @@ import aagapp_backend.dto.*;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.NotificationType;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.games.GameLeagueTournamentService;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.payment.PaymentFeatures;
+import aagapp_backend.services.tournamnetservice.TournamentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 @RestController
@@ -37,6 +45,24 @@ public class GameController {
     private PlayerRepository playerRepository;
     private GameRoomRepository gameRoomRepository;
     private NotificationRepository notificationRepository;
+    private LeagueService leagueService;
+    private TournamentService tournamentService;
+    private GameLeagueTournamentService gameleaguetournamentservice;
+    @Autowired
+    public void setGameLeagueTournamentService(@Lazy GameLeagueTournamentService gameleaguetournamentservice) {
+        this.gameleaguetournamentservice = gameleaguetournamentservice;
+    }
+
+
+    @Autowired
+    public void setLeagueService(@Lazy LeagueService leagueService) {
+        this.leagueService = leagueService;
+    }
+    @Autowired
+    public void setTournamentService(@Lazy TournamentService tournamentService) {
+        this.tournamentService = tournamentService;
+    }
+
 
     @Autowired
     public void setNotificationRepository(@Lazy NotificationRepository notificationRepository) {
@@ -308,7 +334,70 @@ public class GameController {
 
         return response;
     }*/
+    @GetMapping("/get-all-scheduled-events/{vendorId}")
+    public ResponseEntity<?> getAllScheduledEvents(
+            @PathVariable Long vendorId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "events", required = false) String events,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(value = "scheduleddate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate scheduleddate) {
 
+        try {
+            // Validate required parameters
+
+
+            if (events == null || events.trim().isEmpty()) {
+                return responseService.generateErrorResponse("The 'events' parameter is required.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Initialize pageable object for pagination
+            Pageable pageable = PageRequest.of(page, size);
+            Map<String, Object> response = new HashMap<>();
+
+            // Handle event filtering based on events type
+            switch (events.toLowerCase()) {
+                case "game":
+                    // Filter for 'game' only
+                    Page<GetGameResponseDTO> games = gameleaguetournamentservice.getAllGames(status, vendorId, pageable, startDate, endDate, scheduleddate);
+                    response.put("games", games.getContent());
+                    break;
+
+                case "league":
+                    // Filter for 'league' only
+                    Page<LeagueResponseDTO> leagues = gameleaguetournamentservice.getAllLeagues(status,vendorId, pageable, startDate, endDate, scheduleddate);
+                    response.put("leagues", leagues.getContent());
+                    break;
+
+                case "tournament":
+                    // Filter for 'tournament' only
+                    Page<TournamentResponseDTO> tournaments = gameleaguetournamentservice.getAllTournaments(status,vendorId, pageable, startDate, endDate, scheduleddate);
+                    response.put("tournaments", tournaments.getContent());
+                    break;
+
+                case "league_tournament":
+                    // Combine filter for 'league' and 'tournament'
+                    Map<String, Object> leagueAndTournament = new HashMap<>();
+                    Page<LeagueResponseDTO> allLeagues = gameleaguetournamentservice.getAllLeagues(status,vendorId, pageable, startDate, endDate, scheduleddate);
+                    Page<TournamentResponseDTO> allTournaments = gameleaguetournamentservice.getAllTournaments(status,vendorId, pageable, startDate, endDate, scheduleddate);
+
+                    leagueAndTournament.put("leagues", allLeagues.getContent());
+                    leagueAndTournament.put("tournaments", allTournaments.getContent());
+                    response.put("league_tournament", leagueAndTournament);
+                    break;
+
+                default:
+                    return responseService.generateErrorResponse("Invalid 'events' value. Allowed values are: game, league, tournament, league_tournament.", HttpStatus.BAD_REQUEST);
+            }
+
+            return responseService.generateSuccessResponse("Scheduled events fetched successfully", response, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 
 }

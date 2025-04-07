@@ -36,6 +36,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -114,6 +115,7 @@ public class GameService {
         int pageSize = 100;
         List<Long> vendorIds;
         while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
+            System.out.println("Scheduled task checkAndActivateScheduledGames started  " + vendorIds);
 
 
             for (Long vendorId : vendorIds) {
@@ -147,51 +149,6 @@ public class GameService {
         }
     }*/
 
-   /* @Scheduled(cron = "0 * * * * *")  // Every minute
-    public void checkAndActivateScheduledGames() {
-        int page = 0;
-        int pageSize = 100;
-        List<Long> vendorIds;
-
-        // Reuse the same ExecutorService (create it once, not for every cron execution)
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
-
-        try {
-            while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
-                System.out.println("Scheduled task checkAndActivateScheduledGames started for vendors: " + vendorIds);
-
-                // Submit each vendorId task to the ExecutorService
-                for (Long vendorId : vendorIds) {
-                    executorService.submit(() -> {
-                        try {
-                           *//* updateGameAndLeagueStatuses(vendorId);*//*
-
-                            updateGameStatusToActive(vendorId);
-                            updateLeagueStatusToActive(vendorId);
-                            updateExpiredGameStatus(vendorId);
-                            updateExpiredLeagueStatus(vendorId);
-                        } catch (Exception e) {
-                            // Handle any task-specific exceptions here
-                            System.err.println("Error updating status for vendorId " + vendorId + ": " + e.getMessage());
-                        }
-                    });
-                }
-
-                page++;
-            }
-        } finally {
-            // Ensure the executor shuts down gracefully once all tasks are completed
-            shutdownExecutorService(executorService);
-        }
-    }
-*/
-/*    private void updateAllStatuses(Long vendorId) {
-        // Combine your update methods into a single method for efficiency
-        updateGameStatusToActive(vendorId);
-        updateLeagueStatusToActive(vendorId);
-        updateExpiredGameStatus(vendorId);
-        updateExpiredLeagueStatus(vendorId);
-    }*/
 
 
 
@@ -211,16 +168,17 @@ public class GameService {
     public List<Long> getActiveVendorIdsInBatch(int page, int pageSize) {
         LocalDateTime now = LocalDateTime.now();
 
-
+        // Query adjusted to capture the most recent active payment plans
         String queryString = "SELECT v.id FROM VendorEntity v " +
                 "JOIN PaymentEntity p ON p.vendorEntity.id = v.id " +
                 "WHERE p.status = :activeStatus " +
                 "AND p.expiryAt IS NOT NULL " +
                 "AND p.expiryAt > :now " +
-                "AND p.expiryAt = (" +
-                "   SELECT MAX(p2.expiryAt) " +
+                "AND p.id = (" +
+                "   SELECT MAX(p2.id) " +
                 "   FROM PaymentEntity p2 " +
                 "   WHERE p2.vendorEntity.id = v.id " +
+                "   AND p2.status = :activeStatus " +
                 "   AND p2.expiryAt IS NOT NULL " +
                 "   AND p2.expiryAt > :now" +
                 ")";
@@ -234,6 +192,7 @@ public class GameService {
 
         return query.getResultList();
     }
+
 
     public boolean isGameAvailable(String gameName) {
         // Use the repository to find a game by its name
@@ -261,7 +220,9 @@ public class GameService {
             Optional<AagAvailableGames> gameAvailable= aagGameRepository.findById(existinggameId);
             game.setImageUrl(gameAvailable.get().getGameImage());
 
-//           game.setName(gameRequest.getName());
+/*
+           game.setName(gameAvailable.get().getGameName());
+*/
 
 
             // Fetch Vendor and Theme Entities
@@ -310,6 +271,7 @@ public class GameService {
 
                 game.setScheduledAt(nowInKolkata.plusMinutes(15));
                 game.setEndDate(nowInKolkata.plusHours(4));
+
             }
 
             // Set the minimum and maximum players
@@ -600,6 +562,7 @@ public class GameService {
 
             List<Game> games = query.getResultList();
 
+
             // Map Game entities to GetGameResponseDTO
             List<GetGameResponseDTO> gameResponseDTOs = games.stream()
                     .map(game -> new GetGameResponseDTO(
@@ -614,6 +577,7 @@ public class GameService {
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
                             game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
                             game.getEndDate() != null ? game.getEndDate().toString() : null,
+
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
                             game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
@@ -728,12 +692,14 @@ public class GameService {
 
             String sql = "SELECT * FROM aag_ludo_game al " +
                     "WHERE al.vendor_id = :vendorId " +
-                    "AND al.status = :status";
+                    "AND al.status = :status " +
+                    "AND al.end_date <= :nowInKolkata"; // Add condition to check end_date
             String activeStatus = GameStatus.ACTIVE.name();
 
             Query query = em.createNativeQuery(sql, Game.class);
             query.setParameter("vendorId", vendorId);
             query.setParameter("status", activeStatus);
+            query.setParameter("nowInKolkata", nowInKolkata);
 
             List<Game> games = query.getResultList();
 
@@ -1046,14 +1012,18 @@ public class GameService {
     }
 
 
-    private ZonedDateTime convertToKolkataTime(ZonedDateTime dateTime) {
-        return dateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+
+    private ZonedDateTime convertToKolkataTime(ZonedDateTime utcDateTime) {
+        if (utcDateTime != null) {
+            return utcDateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+        }
+        return null;  // Handle null cases
     }
 
 
     @Transactional
     @Async
-    public void updateGameStatusToActive(Long vendorId) {
+    public void updateLeagueStatusToActive(Long vendorId) {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
@@ -1073,15 +1043,13 @@ public class GameService {
 
             for (League league : leagues) {
 
-                league.setScheduledAt(convertToKolkataTime(league.getScheduledAt()));
 
-                if (!league.getScheduledAt().isAfter(nowInKolkata)) {
                     league.setStatus(LeagueStatus.ACTIVE);
                     league.setScheduledAt(nowInKolkata);
                     league.setUpdatedDate(nowInKolkata);
                     leagueRepository.save(league);
                     System.out.println("league ID: " + league.getId() + " status updated to ACTIVE.");
-                }
+
             }
 
         } catch (Exception e) {
@@ -1092,7 +1060,7 @@ public class GameService {
 
     @Transactional
     @Async
-    private void updateLeagueStatusToActive(Long vendorId) {
+    private void updateGameStatusToActive(Long vendorId) {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
@@ -1111,15 +1079,12 @@ public class GameService {
 
             for (Game game : games) {
 
-                game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
-
-                if (!game.getScheduledAt().isAfter(nowInKolkata)) {
                     game.setStatus(GameStatus.ACTIVE);
                     game.setScheduledAt(nowInKolkata);
                     game.setUpdatedDate(nowInKolkata);
                     gameRepository.save(game);
                     System.out.println("Game ID: " + game.getId() + " status updated to ACTIVE.");
-                }
+
             }
 
         } catch (Exception e) {

@@ -72,8 +72,7 @@ public class VendorSubmission {
                     submittedEntity,
                     HttpStatus.OK);
 
-        } catch (VendorSubmissionException ex) {
-            // Handling specific VendorSubmissionException (e.g., invalid URL)
+        }catch (VendorSubmissionException ex) {
             return ResponseService.generateErrorResponse(
                     ex.getMessage(),
                     HttpStatus.BAD_REQUEST

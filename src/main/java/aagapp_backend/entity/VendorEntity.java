@@ -44,7 +44,6 @@ import java.util.List;
 @Getter
 @Setter
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-
 public class VendorEntity {
 
     @Id
@@ -72,7 +71,6 @@ public class VendorEntity {
     @Nullable
     private String country_code;
 
-
     private String mobileNumber;
     private String otp;
 
@@ -94,10 +92,8 @@ public class VendorEntity {
 
     private int isVerified = 0;
 
-
     @Column(name = "is_paid", nullable = false)
     private Boolean isPaid = false;
-
 
     @Nullable
     @Column(length = 512)
@@ -135,8 +131,9 @@ public class VendorEntity {
     @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VendorBankDetails> bankDetails = new ArrayList<>();
 
+//    this is reffal ammount of the vendor
     @Column(name = "wallet_balance", nullable = false)
-    private double walletBalance = 0.0;
+    private double refferalbalance = 0.0;
 
     // Column for total wallet balance
     @Column(name = "total_wallet_balance", nullable = false)

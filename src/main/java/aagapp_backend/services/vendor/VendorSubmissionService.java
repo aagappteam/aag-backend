@@ -51,45 +51,51 @@ public class VendorSubmissionService {
 
     @Transactional
     public VendorSubmissionEntity submitDetails(VendorSubmissionEntity submissionEntity, VendorEntity vendorEntity) throws IOException {
-      try{
-          // Check if vendor submission already exists
-          VendorSubmissionEntity existingSubmission = this.getVendorSubmissionByServiceProviderId(vendorEntity.getService_provider_id());
+        try {
+            // Check if vendor submission already exists
+            VendorSubmissionEntity existingSubmission = this.getVendorSubmissionByServiceProviderId(vendorEntity.getService_provider_id());
 
-          if (existingSubmission != null) {
-              throw new VendorSubmissionException("Data already exists for the given vendor.");
-          }
+            if (existingSubmission != null) {
+                throw new VendorSubmissionException("Data already exists for the given vendor.");
+            }
 
-          for (Map.Entry<String, String> entry : submissionEntity.getSocialMediaUrls().entrySet()) {
-              String platform = entry.getKey();
-              String url = entry.getValue();
-              if (!urlVerificationService.isUrlValid(url, platform)) {
-                  throw new VendorSubmissionException("Invalid URL for platform: " + platform + " - URL: " + url);
-              }
-          }
+            // Check for invalid URLs
+            for (Map.Entry<String, String> entry : submissionEntity.getSocialMediaUrls().entrySet()) {
+                String platform = entry.getKey();
+                String url = entry.getValue();
+                if (!urlVerificationService.isUrlValid(url, platform)) {
+                    throw new VendorSubmissionException("Invalid URL for platform: " + platform + " - URL: " + url);
+                }
+            }
 
-          VendorSubmissionEntity newEntity = new VendorSubmissionEntity();
-          newEntity.setFirstName(submissionEntity.getFirstName());
-          newEntity.setLastName(submissionEntity.getLastName());
-          newEntity.setVendorEntity(vendorEntity);
-          newEntity.setEmail(submissionEntity.getEmail());
-          newEntity.setPlanName(submissionEntity.getPlanName());
-          newEntity.setSocialMediaUrls(submissionEntity.getSocialMediaUrls());
-          newEntity.setApproved(false);
-          entityManager.persist(newEntity);
+            // Data persistence only after all validation checks pass
+            VendorSubmissionEntity newEntity = new VendorSubmissionEntity();
+            newEntity.setFirstName(submissionEntity.getFirstName());
+            newEntity.setLastName(submissionEntity.getLastName());
+            newEntity.setVendorEntity(vendorEntity);
+            newEntity.setEmail(submissionEntity.getEmail());
+            newEntity.setPlanName(submissionEntity.getPlanName());
+            newEntity.setSocialMediaUrls(submissionEntity.getSocialMediaUrls());
+            newEntity.setApproved(false);
+            entityManager.persist(newEntity);  // Persist vendor submission entity
 
-//          submissionRepository.save(newEntity);
-          vendorEntity.setPrimary_email(submissionEntity.getEmail());
-          vendorEntity.setFirst_name(submissionEntity.getFirstName());
-          vendorEntity.setLast_name(submissionEntity.getLastName());
-          entityManager.merge(vendorEntity);
-          sendonboardingmail(vendorEntity);
+            vendorEntity.setPrimary_email(submissionEntity.getEmail());
+            vendorEntity.setFirst_name(submissionEntity.getFirstName());
+            vendorEntity.setLast_name(submissionEntity.getLastName());
+            entityManager.merge(vendorEntity);  // Update vendor entity
 
-          return newEntity;
-      }catch (Exception e){
-          exceptionHandlingImplement.handleException(e);
-          throw new VendorSubmissionException("Failed to submit vendor details.");
-      }
+            sendonboardingmail(vendorEntity);  // Send onboarding email
+
+            return newEntity;
+        } catch (VendorSubmissionException ex) {
+            // Re-throw the VendorSubmissionException so it can be handled in the controller
+            throw ex;
+        } catch (Exception e) {
+            exceptionHandlingImplement.handleException(e);
+            throw new VendorSubmissionException("Failed to submit vendor details.");
+        }
     }
+
 
     public void sendonboardingmail(VendorEntity vendorEntity) throws IllegalAccessException, IOException {
         System.out.println(vendorEntity.getIsVerified() + " is verified" + vendorEntity.getPrimary_email() + " " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
