@@ -19,6 +19,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -298,7 +299,7 @@ public class PaymentService {
     // Update referrer wallet balance
     private void updateReferrerWallet(VendorEntity referrer, double amount) {
         if (referrer != null) {
-            referrer.setWalletBalance(referrer.getWalletBalance() + amount);
+            referrer.setRefferalbalance(referrer.getRefferalbalance() + amount);
             entityManager.merge(referrer);
         }
     }
@@ -511,5 +512,30 @@ public class PaymentService {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void expireChosenPlan(Long vendorId) {
+        // Get the current time for expiry
+        LocalDateTime now = LocalDateTime.now();
+
+        // Query to find the most recent active plan of the vendor (assuming it's chosen)
+        String queryString = "UPDATE PaymentEntity p " +
+                "SET p.status = :expiredStatus, p.expiryAt = :now " +
+                "WHERE p.vendorEntity.id = :vendorId " +
+                "AND p.status = :activeStatus " +
+                "ORDER BY p.expiryAt DESC"; // Assuming we want the most recent plan
+
+        // Create the query
+        Query query = entityManager.createQuery(queryString);
+        query.setParameter("expiredStatus", PaymentStatus.EXPIRED);
+        query.setParameter("activeStatus", PaymentStatus.ACTIVE);
+        query.setParameter("vendorId", vendorId);
+        query.setParameter("now", now);
+
+        // Execute the update
+        int updatedCount = query.executeUpdate();
+
+        // Log the result (optional)
+        System.out.println("Number of plans expired for vendor " + vendorId + ": " + updatedCount);
     }
 }
