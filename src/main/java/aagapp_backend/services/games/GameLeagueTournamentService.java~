@@ -311,7 +311,7 @@ public class GameLeagueTournamentService {
 
             // Retain vendorId filter
             if (vendorId != null) {
-                sql.append(" AND t.vendorId = :vendorId");
+                sql.append(" AND t.vendor_id = :vendorId");
             }
 
             // Corrected status filter
@@ -376,7 +376,7 @@ public class GameLeagueTournamentService {
 
             String countSql = "SELECT COUNT(*) FROM tournament t WHERE 1=1";
             if (vendorId != null) {
-                countSql += " AND t.vendorId = :vendorId";
+                countSql += " AND t.vendor_id = :vendorId";
             }
             if (status != null && !status.isEmpty()) {
                 countSql += " AND t.status = :status";
