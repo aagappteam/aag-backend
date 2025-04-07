@@ -8,6 +8,10 @@ import aagapp_backend.services.admin.AdminReviewService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.faqs.FAQService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -182,28 +186,40 @@ public class AdminReviewController {
     }
 
     @GetMapping("/tickets")
-    public ResponseEntity<?> getTicketsByStatus(@RequestParam(required = false) String status) {
+    public ResponseEntity<?> getTicketsByStatusAndRole(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String role,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         try {
-            // If no status is provided, return all tickets
-            if (status == null || status.isEmpty()) {
-                List<Ticket> tickets = ticketRepository.findAll();
-                return responseService.generateSuccessResponse("Tickets retrieved successfully", tickets, HttpStatus.OK);
-            }
+            Pageable pageable = PageRequest.of(page, size);
 
-            // Otherwise, filter tickets by status
-            List<Ticket> tickets = ticketRepository.findByStatus(status);
+            Page<Ticket> ticketPage;
+
+            // Filter by status and role
+            if ((status == null || status.isEmpty()) && (role == null || role.isEmpty())) {
+                ticketPage = ticketRepository.findAll(pageable);
+            } else if (status != null && !status.isEmpty() && (role == null || role.isEmpty())) {
+                ticketPage = ticketRepository.findByStatus(status, pageable);
+            } else if ((status == null || status.isEmpty()) && role != null && !role.isEmpty()) {
+                ticketPage = ticketRepository.findByRole(role, pageable);
+            } else {
+                ticketPage = ticketRepository.findByStatusAndRole(status, role, pageable);
+            }
 
             // Check if tickets were found
-            if (tickets.isEmpty()) {
-                return responseService.generateErrorResponse("No tickets found with the given status", HttpStatus.NOT_FOUND);
+            if (ticketPage.isEmpty()) {
+                return responseService.generateErrorResponse("No tickets found with the given filters", HttpStatus.NOT_FOUND);
             }
 
-            return responseService.generateSuccessResponse("Tickets retrieved successfully", tickets, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Tickets retrieved successfully", ticketPage.getContent(), HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     // 2. Create a new FAQ
     @PostMapping("/createFaqs")
