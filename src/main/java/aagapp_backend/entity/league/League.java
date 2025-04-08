@@ -87,6 +87,9 @@ public class League {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime createdDate;
 
+    private Integer totalplayerscount;
+
+
     @Nullable
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

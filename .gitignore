@@ -33,3 +33,4 @@ build/
 
 ### VS Code ###
 .vscode/
+/src/main/resources/aagapp-6aa05-firebase-adminsdk-fbsvc-c53b98eafe.json
