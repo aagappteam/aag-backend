@@ -25,7 +25,7 @@ import java.util.List;
 @Service
 public class DeviceMange {
 
-    @Autowired
+/*    @Autowired
     private CustomerDeviceMangeRepository deviceMangeRepository;
 
     @Autowired
@@ -39,7 +39,26 @@ public class DeviceMange {
     private ExceptionHandlingImplement exceptionHandling;
 
     @Autowired
-    private VendorDeviceRepo vendorDeviceRepo;
+    private VendorDeviceRepo vendorDeviceRepo*/;
+
+    private final CustomerDeviceMangeRepository deviceMangeRepository;
+    private final VendorDeviceService vendorDeviceService;
+    private final CustomCustomerService customCustomerService;
+    private final ExceptionHandlingImplement exceptionHandling;
+    private final VendorDeviceRepo vendorDeviceRepo;
+
+    @Autowired
+    public DeviceMange(CustomerDeviceMangeRepository deviceMangeRepository,
+                        VendorDeviceService vendorDeviceService,
+                       CustomCustomerService customCustomerService,
+                       ExceptionHandlingImplement exceptionHandling,
+                       VendorDeviceRepo vendorDeviceRepo) {
+        this.deviceMangeRepository = deviceMangeRepository;
+        this.vendorDeviceService = vendorDeviceService;
+        this.customCustomerService = customCustomerService;
+        this.exceptionHandling = exceptionHandling;
+        this.vendorDeviceRepo = vendorDeviceRepo;
+    }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

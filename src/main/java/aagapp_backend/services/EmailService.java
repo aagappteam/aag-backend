@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +24,6 @@ public class EmailService {
 
     public void sendOnboardingEmail(String to, String customerFirstName, String customerLastName) throws IOException {
         String template = loadTemplate("email-templates/vendor-onboarding-email.txt");
-        System.out.println("sendOnboardingEmail" + to + " " + customerFirstName + " " + customerLastName);
         String messageBody = template
                 .replace("{firstName}", customerFirstName)
                 .replace("{lastName}", customerLastName);

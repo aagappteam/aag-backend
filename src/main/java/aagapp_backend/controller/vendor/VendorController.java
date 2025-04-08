@@ -3,11 +3,8 @@ package aagapp_backend.controller.vendor;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
-import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.cache.TopVendorCache;
-import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
@@ -22,7 +19,10 @@ import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @RestController
 @RequestMapping("/vendor")
@@ -69,26 +68,6 @@ public class VendorController {
 
     @Autowired
     private VendorRepository vendorRepository;
-
-
-//    Vendor Dashboard api
-
-    @GetMapping("/dashboard")
-    public ResponseEntity<?> getDashboardData(@RequestHeader("Authorization") String token) {
-       try{
-           if (token == null ||!token.startsWith("Bearer ")) {
-               return responseService.generateErrorResponse("Invalid or missing Authorization header", HttpStatus.BAD_REQUEST);
-           }
-
-
-           Map<String, Object> responseBody =  serviceProviderService.getDashboardData(token);
-
-           return responseService.generateSuccessResponse("Dashboard data fetched successfully", responseBody, HttpStatus.CREATED);
-       }catch (Exception e) {
-           exceptionHandling.handleException(e);
-           return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);}//catch
-
-    }
 
 
     @Transactional
@@ -482,7 +461,7 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
         List<Map<String, Object>> topInvitees = topInvities.stream().map(vendor -> {
             Map<String, Object> vendorData = new HashMap<>();
             vendorData.put("service_provider_id", vendor.getService_provider_id());
-            vendorData.put("price", vendor.getWalletBalance());
+            vendorData.put("price", vendor.getRefferalbalance());
             vendorData.put("rank", topInvities.indexOf(vendor) + 1);
             vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
             vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
@@ -503,9 +482,116 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
     }
 }
 
+    @GetMapping("/leaderboards")
+    public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String token,
+                                          @RequestParam("filterType") String filterType,
+                                          @RequestParam("page") int page,
+                                          @RequestParam("size") int size) {
+        try {
+            // Extract the token and find the authenticated vendor
+            String jwtToken = token.replace("Bearer ", "");
+            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+            VendorEntity authenticatedVendor = entityManager.find(VendorEntity.class, authorizedVendorId);
+
+            // List to store the filtered vendor data
+            List<VendorEntity> allVendors = new ArrayList<>();
+
+            // Apply the filter based on filterType and fetch all data
+            switch (filterType.toLowerCase()) {
+                case "referrals":
+                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("refferalbalance")));
+                    break;
+
+                case "totalwallet":
+                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance")));
+                    break;
+
+                case "participants":
+                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament")));
+                    break;
+
+                default:
+                    return new ResponseEntity<>(Map.of(
+                            "status", "ERROR",
+                            "message", "Invalid filter type provided",
+                            "status_code", 400
+                    ), HttpStatus.BAD_REQUEST);
+            }
+
+            // Calculate the rank for each vendor based on the full list
+            List<Map<String, Object>> leaderboard = allVendors.stream().map(vendor -> {
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                        .map(firstName -> firstName + " " + vendor.getLast_name())
+                        .orElse(null));
+
+                // Add specific data based on the filter type
+                if ("wallet".equalsIgnoreCase(filterType)) {
+                    vendorData.put("price", vendor.getRefferalbalance());
+                } else if ("totalwallet".equalsIgnoreCase(filterType)) {
+                    vendorData.put("total_wallet_balance", vendor.getTotalWalletBalance());
+                } else if ("participants".equalsIgnoreCase(filterType)) {
+                    vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
+                } else if ("referrals".equalsIgnoreCase(filterType)) {
+                    vendorData.put("referralCount", vendor.getReferralCount());
+                }
+
+                return vendorData;
+            }).collect(Collectors.toList());
+
+            // Add rank for each vendor in the list (1-based index)
+            for (int i = 0; i < leaderboard.size(); i++) {
+                leaderboard.get(i).put("rank", i + 1);
+            }
+
+            // Calculate the rank of the logged-in vendor
+            int loggedInVendorRank = -1;
+            for (int i = 0; i < leaderboard.size(); i++) {
+                Map<String, Object> vendorData = leaderboard.get(i);
+                Long vendorId = (Long) vendorData.get("service_provider_id");
+                if (vendorId.equals(authenticatedVendor.getService_provider_id())) {
+                    loggedInVendorRank = i + 1;  // Vendor ranks are 1-based
+                    break;
+                }
+            }
+
+            // Paginate the leaderboard based on the requested page and size
+            int fromIndex = page * size;
+            int toIndex = Math.min(fromIndex + size, leaderboard.size());
+            List<Map<String, Object>> paginatedLeaderboard = leaderboard.subList(fromIndex, toIndex);
+
+            // Prepare response data
+            Map<String, Object> data = Map.of(
+                    "total_earning", authenticatedVendor.getRefferalbalance(),
+                    "referral_code", authenticatedVendor.getReferralCode(),
+                    "total_referrals", authenticatedVendor.getReferralCount(),
+                    "logged_in_vendor_rank", loggedInVendorRank,
+                    "top_invitees", paginatedLeaderboard,
+                    "message", "Top vendors fetched successfully!"
+            );
+
+            return new ResponseEntity<>(Map.of(
+                    "status", "OK",
+                    "data", data,
+                    "message", "Top vendors fetched successfully!",
+                    "status_code", 200
+            ), HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return new ResponseEntity<>(Map.of(
+                    "status", "ERROR",
+                    "message", e.getMessage(),
+                    "status_code", 500
+            ), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private ResponseEntity<?> createResponse(VendorEntity authenticatedVendor, List<Map<String, Object>> topInvitees) {
         Map<String, Object> data = Map.of(
-                "total_earning", authenticatedVendor.getWalletBalance(),
+                "total_earning", authenticatedVendor.getRefferalbalance(),
                 "referral_code", authenticatedVendor.getReferralCode(),
                 "total_referrals", authenticatedVendor.getReferralCount(),
                 "top_invitees", topInvitees,
@@ -522,6 +608,19 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+//    Vendor Dashboard api
 
+    @GetMapping("/dashboard/{serviceProviderId}")
+    public ResponseEntity<?> getDashboardData(@PathVariable Long serviceProviderId) {
+        try{
+
+            Map<String, Object> responseBody =  serviceProviderService.getDashboardData(serviceProviderId);
+
+            return responseService.generateSuccessResponse("Dashboard data fetched successfully", responseBody, HttpStatus.OK);
+        }catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);}//catch
+
+    }
 
 }

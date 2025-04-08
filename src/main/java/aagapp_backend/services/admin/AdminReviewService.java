@@ -14,6 +14,7 @@ import jakarta.persistence.EntityManager;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -47,6 +48,9 @@ public class AdminReviewService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
     @Transactional
     public Object reviewSubmission(Long id, boolean isApproved) {
@@ -110,7 +114,7 @@ public class AdminReviewService {
 
         try {
             // Set the "From" field with a name
-            helper.setFrom("aagappteam@gmail.com", "AAG App Team");
+            helper.setFrom(fromEmail, "AAG App Team");
 
             // Set the recipient, subject, and body of the email
             helper.setTo(vendorSubmissionEntity.getEmail());
@@ -145,7 +149,7 @@ public class AdminReviewService {
 
         try {
             // Set the "From" field with a name
-            helper.setFrom("aagappteam@gmail.com", "AAG App Team");
+            helper.setFrom(fromEmail, "AAG App Team");
 
             // Set the recipient, subject, and body of the email
             helper.setTo(vendorSubmissionEntity.getEmail());

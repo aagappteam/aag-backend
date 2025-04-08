@@ -1,16 +1,17 @@
 package aagapp_backend.services.payment;
 
+import aagapp_backend.dto.PaymentDashboardDTO;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.LeagueStatus;
-import aagapp_backend.enums.NotificationType;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
+import aagapp_backend.repository.payment.PlanRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
 import aagapp_backend.services.NotificationService;
 
@@ -18,6 +19,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +47,9 @@ public class PaymentService {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private PlanRepository planRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -247,9 +252,28 @@ public class PaymentService {
         // Generate the invoice URL using the transactionId or paymentRequest ID
         return baseUrl + "invoice_" + transactionId + ".pdf"; // The filename pattern could be adjusted as needed
     }
-
-
     private Integer extractDailyGameLimit(List<String> features) {
+        // Default limit if no matching feature is found
+        Integer defaultLimit = 5;
+
+        for (String feature : features) {
+            // Match for "daily game publish limit" followed by a number (case insensitive)
+            Pattern pattern = Pattern.compile("([0-9]+)\\s*daily game publish limit", Pattern.CASE_INSENSITIVE);
+            Matcher matcher = pattern.matcher(feature);
+
+            if (matcher.find()) {
+                String number = matcher.group(1); // Extract the number
+                System.out.println("Feature found: " + feature);
+                System.out.println("Extracted number: " + number);
+                return Integer.parseInt(number);  // Return the extracted number
+            }
+        }
+
+        System.out.println("Feature not found, returning default limit of " + defaultLimit);
+        return defaultLimit;
+    }
+
+/*    private Integer extractDailyGameLimit(List<String> features) {
         for (String feature : features) {
             if (feature.toLowerCase().contains("daily game publish limit")) {
                 System.out.println(feature + " feature");
@@ -262,19 +286,20 @@ public class PaymentService {
 
     private Integer extractNumberFromString(String text) {
         // Use regular expression to find the first occurrence of digits in the string
-        String number = text.replaceAll("\\D", ""); // Remove non-digits characters
+//        String number = text.replaceAll("\\D", ""); // Remove non-digits characters
+        String number = text.replaceAll("[^\\d]", ""); // Replace all non-digit characters except numbers
 
         System.out.println(number + " extractDailyGameLimit");
 
         return number.isEmpty() ? 5 : Integer.parseInt(number); // Return 0 if no number is found
-    }
+    }*/
 
 
 
     // Update referrer wallet balance
     private void updateReferrerWallet(VendorEntity referrer, double amount) {
         if (referrer != null) {
-            referrer.setWalletBalance(referrer.getWalletBalance() + amount);
+            referrer.setRefferalbalance(referrer.getRefferalbalance() + amount);
             entityManager.merge(referrer);
         }
     }
@@ -315,6 +340,57 @@ public class PaymentService {
         Pageable pageable = PageRequest.of(page, size);
         return paymentRepository.findAllTransactionsByVendorId(vendorId, transactionReference, pageable);
     }
+
+    // Updated to include transactionReference as an additional parameter
+    public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendorId, Integer dailyPercentage,Integer PublishedLimit) {
+        PaymentStatus status = PaymentStatus.ACTIVE;
+
+        // Retrieve the active payment plan for the vendor
+        Optional<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
+
+        // If an active payment plan is found, proceed to map it to the DTO
+        if (activePlanOptional.isPresent()) {
+            PaymentEntity paymentEntity = activePlanOptional.get();
+
+            // Retrieve the PlanEntity using the planId from the PaymentEntity
+            Optional<PlanEntity> planEntityOptional = planRepository.findById(paymentEntity.getPlanId());
+            String dailyLimitString = PublishedLimit  + "/" + paymentEntity.getDailyLimit();
+
+            // Map PaymentEntity and PlanEntity to PaymentDashboardDTO
+            return Optional.of(planEntityOptional.map(planEntity -> {
+                return new PaymentDashboardDTO(
+                        planEntity.getPlanName(),                      // Map PlanEntity's planName
+                        planEntity.getPlanVariant(),                   // Map PlanEntity's planVariant
+                        dailyPercentage != null ? dailyPercentage + "%" : 0 + "%", // Use the passed dailyPercentage or default to 0
+                        dailyLimitString,  // Map PaymentEntity's dailyLimit
+                        paymentEntity.getId() != null ? paymentEntity.getId() : 0L,  // Map PaymentEntity's ID
+                        planEntity.getPrice() != null ? planEntity.getPrice() : 0L   // Map PlanEntity's price
+                );
+            }).orElseGet(() -> {  // If PlanEntity is not found, return a default PaymentDashboardDTO
+                return new PaymentDashboardDTO(
+                        "NA",  // Default value for planName
+                        "NA",  // Default value for planVariant
+                        0 + "%",     // Default value for dailyPercentage
+                        PublishedLimit + "/" + 0,     // Default value for dailyLimit
+                        0L,    // Default value for id
+                        0D     // Default value for price
+                );
+            }));
+        } else {
+            // If no active plan is found, return a PaymentDashboardDTO with default values
+            PaymentDashboardDTO defaultDTO = new PaymentDashboardDTO(
+                    "NA",  // Default value for planName
+                    "NA",  // Default value for planVariant
+                    0+ "%",     // Default value for dailyPercentage
+                    PublishedLimit + "/" + 0,     // Default value for dailyLimit
+                    0L,    // Default value for id
+                    0D     // Default value for price
+            );
+
+            return Optional.of(defaultDTO);  // Wrap default DTO in Optional
+        }
+    }
+
 
     // Updated to include transactionReference as an additional parameter
     public List<PaymentEntity> getAllTransactionsByVendorName(String vendorName, int page, int size, String transactionReference) {
@@ -436,5 +512,30 @@ public class PaymentService {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void expireChosenPlan(Long vendorId) {
+        // Get the current time for expiry
+        LocalDateTime now = LocalDateTime.now();
+
+        // Query to find the most recent active plan of the vendor (assuming it's chosen)
+        String queryString = "UPDATE PaymentEntity p " +
+                "SET p.status = :expiredStatus, p.expiryAt = :now " +
+                "WHERE p.vendorEntity.id = :vendorId " +
+                "AND p.status = :activeStatus " +
+                "ORDER BY p.expiryAt DESC"; // Assuming we want the most recent plan
+
+        // Create the query
+        Query query = entityManager.createQuery(queryString);
+        query.setParameter("expiredStatus", PaymentStatus.EXPIRED);
+        query.setParameter("activeStatus", PaymentStatus.ACTIVE);
+        query.setParameter("vendorId", vendorId);
+        query.setParameter("now", now);
+
+        // Execute the update
+        int updatedCount = query.executeUpdate();
+
+        // Log the result (optional)
+        System.out.println("Number of plans expired for vendor " + vendorId + ": " + updatedCount);
     }
 }

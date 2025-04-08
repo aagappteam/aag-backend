@@ -1,17 +1,17 @@
 package aagapp_backend.services;
 
-import aagapp_backend.dto.PriceRequestDTO;
-import aagapp_backend.dto.ThemeRequestDTO;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.ThemeEntity;
-import aagapp_backend.dto.GameRequestDTO;
-import aagapp_backend.dto.GameResponseDTO;
 import aagapp_backend.entity.game.PriceEntity;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PriceRepository;
 import aagapp_backend.repository.game.ThemeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -111,12 +111,11 @@ public class AagGameService {
             newPrice.setPriceValue(priceRequestDTO.getPriceValue());
 
             // Associate the PriceEntity with the game (many-to-many relationship)
-            newPrice.getGames().add(newGame); // Add the game to the price entity
+            newPrice.getGames().add(newGame);  // Add the game to the price entity
             prices.add(newPrice); // Add the price to the list
-            PriceEntity price = priceRepository.save(newPrice);
-            prices.add(price); // Add the price to the list
 
-            // Don't save price yet; wait until the games are fully associated with the price entity
+            // Save price after associating with game
+            priceRepository.save(newPrice);  // Save price after associating with game
         }
 
         // Set the prices to the game entity (many-to-many relationship)
@@ -134,6 +133,14 @@ public class AagGameService {
         List<AagAvailableGames> games = gameRepository.findAll(); // Pagination could be added here
         return games.stream().map(GameResponseDTO::new).collect(Collectors.toList());
     }
+
+    public Page<GetGameResponseDashboardDTO> getAllGamesDashboard(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AagAvailableGames> gamesPage = gameRepository.findAll(pageable);
+
+        return gamesPage.map(GetGameResponseDashboardDTO::new);
+    }
+
 
     // Get game by ID
     public GameResponseDTO getGameById(Long gameId) throws GameNotFoundException {

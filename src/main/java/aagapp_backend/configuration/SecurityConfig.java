@@ -47,8 +47,7 @@ public class SecurityConfig {
                 "/api/**/files/**"
         );
     }
-
-       @Bean
+    @Bean
    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
        http
                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS configuration
