@@ -22,6 +22,7 @@ public class GetGameResponseDTO {
 
     private String themeName;
     private String themeImageUrl;
+    private String createdAt;
 
     private String scheduledAt;
     private String endDate;
