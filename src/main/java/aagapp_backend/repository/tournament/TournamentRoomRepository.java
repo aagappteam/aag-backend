@@ -9,4 +9,6 @@ import java.util.List;
 public interface TournamentRoomRepository extends JpaRepository<TournamentRoom , Long> {
 
     List<TournamentRoom> findByTournamentIdAndStatus(Long tournamentId, String open);
+
+    List<TournamentRoom> findByTournamentId(Long tournamentId);
 }

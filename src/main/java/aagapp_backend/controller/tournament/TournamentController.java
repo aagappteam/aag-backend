@@ -8,9 +8,11 @@ import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.enums.NotificationType;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -26,7 +28,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -38,6 +42,9 @@ public class TournamentController {
     private PaymentFeatures paymentFeatures;
     private TournamentService tournamentService;
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    PlayerRepository playerRepository;
 
     @Autowired
     public void setNotificationRepository(NotificationRepository notificationRepository) {
@@ -197,19 +204,37 @@ public class TournamentController {
         }
     }
 
+    @GetMapping("/get-rooms-by-tournament/{tournamentId}")
+    public ResponseEntity<?> getRoomsByTournamentId(@PathVariable Long tournamentId) {
+        try {
+            List<TournamentRoom> rooms = tournamentService.getAllRoomsByTournamentId(tournamentId);
+            return responseService.generateSuccessResponse("Rooms fetched successfully", rooms, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching rooms: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     // Join a Room
     @PostMapping("/join-room/{tournamentId}")
-    public ResponseEntity<String> joinRoom(
+    public ResponseEntity<?> joinRoom(
             @PathVariable Long tournamentId,
             @RequestBody JoinLeagueRequest joinTounamentRequest) {
 
         try {
-            tournamentService.assignPlayerToRoom(joinTounamentRequest, tournamentId);
-            System.out.println(tournamentId +" " + joinTounamentRequest);
-            return new ResponseEntity<>("Player joined the room successfully!", HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error joining the room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+
+            TournamentRoom roomDetails = tournamentService.assignPlayerToRoom(joinTounamentRequest, tournamentId);
+            return responseService.generateSuccessResponse("Player joined room successfully", roomDetails, HttpStatus.OK);
+        }catch (RuntimeException e) {
+            return responseService.generateErrorResponse("Error in joining rooms : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+        catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error in joining rooms : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
     }
+
+
 
 }

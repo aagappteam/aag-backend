@@ -3,17 +3,12 @@ package aagapp_backend.services.tournamnetservice;
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.JoinLeagueRequest;
 import aagapp_backend.dto.TournamentRequest;
-import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
-import aagapp_backend.entity.league.League;
-import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.tournament.TournamentRoom;
-import aagapp_backend.enums.LeagueStatus;
-import aagapp_backend.enums.PlayerStatus;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
@@ -21,12 +16,14 @@ import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.tournament.TournamentRoomRepository;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import javax.naming.LimitExceededException;
 import java.time.ZoneId;
@@ -53,6 +50,9 @@ public class TournamentService {
 
     @Autowired
     private PlayerRepository playerRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final Map<Long, Integer> playerRewards = new HashMap<>();
 
@@ -198,6 +198,15 @@ public class TournamentService {
             throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
         }
     }
+    @Transactional
+    public List<TournamentRoom> getAllRoomsByTournamentId(Long tournamentId) {
+        try {
+            return roomRepository.findByTournamentId(tournamentId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error fetching rooms: " + e.getMessage(), e);
+        }
+    }
 
     @Transactional
     public Page<Tournament> findTournamentsByVendor(Pageable pageable, Long vendorId) {
@@ -230,11 +239,40 @@ public class TournamentService {
         int round = 1;
         List<Player> winners = new ArrayList<>();
 
+        // Remove empty rooms before starting the tournament
+        rooms.removeIf(room -> {
+            if (room.getCurrentParticipants() == 0) {
+                roomRepository.delete(room);  // Delete empty room
+                System.out.println("❌ Room " + room.getId() + " deleted as it has no players.");
+                return true;
+            }
+            return false;
+        });
+
         while (rooms.size() > 1) {
+            System.out.println("🏆 Starting Round " + round);
+
+            List<Player> roundWinners = new ArrayList<>();
+            List<Player> freePassPlayers = new ArrayList<>();
+
             for (TournamentRoom room : rooms) {
-                if (room.getCurrentParticipants() == room.getMaxParticipants() && room.getCurrentPlayers().size() >= 2) {
-                    Player winner = playMatch(room.getCurrentPlayers().get(0), room.getCurrentPlayers().get(1));
-                    winners.add(winner);
+                if (room.getCurrentParticipants() == 2) {
+                    Player winner = getWinnerFromApi(room.getId(), tournamentId);
+                    if (winner != null) {
+                        roundWinners.add(winner);
+                        System.out.println("✅ Winner of Room " + room.getId() + ": " + winner.getPlayerId());
+                    } else {
+                        System.out.println("❌ Failed to fetch winner for Room " + room.getId());
+                    }
+
+                    room.setStatus("COMPLETED");
+                    room.setRound(round);
+                    roomRepository.save(room);
+                } else if (room.getCurrentParticipants() == 1) {
+                    Player freePassPlayer = room.getCurrentPlayers().get(0);
+                    freePassPlayers.add(freePassPlayer);
+                    System.out.println("🎟️ Free pass given to Player: " + freePassPlayer.getPlayerId());
+
                     room.setStatus("COMPLETED");
                     room.setRound(round);
                     roomRepository.save(room);
@@ -242,18 +280,82 @@ public class TournamentService {
                     System.out.println("⚠️ Room " + room.getId() + " does not have enough players.");
                 }
             }
+
+
+            winners.addAll(roundWinners);
+            winners.addAll(freePassPlayers);
+
+            // Next Round Setup
             rooms = createNextRoundRooms(winners, round + 1);
+
+            // Remove empty rooms in the next round
+            rooms.removeIf(room -> {
+                if (room.getCurrentParticipants() == 0) {
+                    roomRepository.delete(room);
+                    System.out.println("Room " + room.getId() + " deleted as it has no players.");
+                    return true;
+                }
+                return false;
+            });
+
+            winners.clear();  // Clear winners for the next round
             round++;
         }
 
-        if (!winners.isEmpty()) {
-            Player finalWinner = winners.get(0);
+        if (!rooms.isEmpty()) {
+            Player finalWinner = rooms.get(0).getCurrentPlayers().get(0);  // Last remaining player
             assignReward(finalWinner);
-            System.out.println("🎉 Final Winner: " + finalWinner.getName());
+            System.out.println("🏆 Final Winner: " + finalWinner.getPlayerId());
         } else {
             System.out.println("⚠️ No winners found. Tournament may have incomplete rounds.");
         }
     }
+
+    // API Call to get the winner for a match
+    private Player getWinnerFromApi(Long matchId) {
+        RestTemplate restTemplate = new RestTemplate();
+        String apiUrl = "http://your-api-url/api/match/" + matchId + "/winner";
+
+        try {
+            WinnerResponse response = restTemplate.getForObject(apiUrl, WinnerResponse.class);
+            if (response != null && response.getWinnerId() != null) {
+                return playerRepository.findById(response.getWinnerId()).orElse(null);
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error fetching winner from API for match " + matchId + ": " + e.getMessage());
+        }
+        return null;
+    }
+
+    // Response mapping class
+    public class WinnerResponse {
+        private String winnerId;
+
+        public Long getWinnerId() {
+            return Long.valueOf(winnerId);
+        }
+
+        public void setWinnerId(String winnerId) {
+            this.winnerId = winnerId;
+        }
+    }
+
+
+    private Player getWinnerFromApi(Long matchId, Long tournamentId) {
+        RestTemplate restTemplate = new RestTemplate();
+        String apiUrl = "http://your-api-url/api/match/" + matchId + "/winner?tournamentId=" + tournamentId;
+
+        try {
+            WinnerResponse response = restTemplate.getForObject(apiUrl, WinnerResponse.class);
+            if (response != null && response.getWinnerId() != null) {
+                return playerRepository.findById(response.getWinnerId()).orElse(null);
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error fetching winner from API for match " + matchId + ": " + e.getMessage());
+        }
+        return null;
+    }
+
 
     private Player playMatch(Player p1, Player p2) {
         Player winner = new Random().nextBoolean() ? p1 : p2;
@@ -272,17 +374,26 @@ public class TournamentService {
             room.setCurrentParticipants(0);
             room.setStatus("OPEN");
             room.setRound(round);
+
             roomRepository.save(room);
             newRooms.add(room);
+
+            // Automatically assign winners to the new room
+            assignPlayerToRoomNextRound(winners.get(i), room.getTournamentId());
+
+            if (i + 1 < winners.size()) {
+                assignPlayerToRoomNextRound(winners.get(i + 1), room.getTournamentId());
+            }
         }
 
         return newRooms;
     }
 
+
     private void assignReward(Player winner) {
         int rewardAmount = calculateReward(winner);
         playerRewards.put(winner.getPlayerId(), playerRewards.getOrDefault(winner.getPlayerId(), 0) + rewardAmount);
-        System.out.println("🎁 Reward of " + rewardAmount + " points credited to: " + winner.getName());
+        System.out.println("🎁 Reward of " + rewardAmount + " points credited to: " + winner.getPlayerId());
     }
 
     private int calculateReward(Player winner) {
@@ -291,33 +402,70 @@ public class TournamentService {
         return baseReward + bonus;
     }
 
-    public void assignPlayerToRoom(JoinLeagueRequest playerId, Long tournamentId) {
+    @Transactional
+    public TournamentRoom assignPlayerToRoom(JoinLeagueRequest playerId, Long tournamentId) {
         List<TournamentRoom> openRooms = roomRepository.findByTournamentIdAndStatus(tournamentId, "OPEN");
-        //find players By id by repository
-        Player player = playerRepository.findById(playerId.getPlayerId()).orElse(null);
-
-        if (player == null) {
-            System.out.println("���️ Player not found with id " + playerId.getPlayerId());
-            return;
-        }
-
-        System.out.println("Player with id " + player);
 
         if (openRooms.isEmpty()) {
-            System.out.println("⚠️ No open rooms available for player " + player.getName());
-            return;
+            throw new RuntimeException("No open rooms available for tournament " + tournamentId);
+        }
+
+        Player player = playerRepository.findById(playerId.getPlayerId()).orElse(null);
+        if (player == null) {
+            throw new RuntimeException("Player not found with id " + playerId.getPlayerId());
+
         }
 
         for (TournamentRoom room : openRooms) {
+
             if (room.getCurrentParticipants() < room.getMaxParticipants()) {
+                if (player.getTournamentRoom() != null && player.getTournamentRoom().getId().equals(room.getId())) {
+                    throw new RuntimeException("Player is already in the requested room.");
+                }
+
+                if (player.getTournamentRoom() != null) {
+                    throw new RuntimeException("Player already in another room.");
+                }
+
                 player.setTournamentRoom(room);
                 room.getCurrentPlayers().add(player);
                 room.setCurrentParticipants(room.getCurrentParticipants() + 1);
                 roomRepository.save(room);
-                break;
+                return room;
+            } else {
+                throw new RuntimeException("Tournament Rooms are full. Cannot add more players");
             }
         }
+
+        throw new RuntimeException("All rooms are full for tournament " + tournamentId);
     }
+
+    @Transactional
+    public TournamentRoom assignPlayerToRoomNextRound(Player player, Long tournamentId) {
+        List<TournamentRoom> openRooms = roomRepository.findByTournamentIdAndStatus(tournamentId, "OPEN");
+
+        if (openRooms.isEmpty()) {
+            throw new RuntimeException("No open rooms available for tournament " + tournamentId);
+        }
+
+        for (TournamentRoom room : openRooms) {
+            if (room.getCurrentParticipants() < room.getMaxParticipants()) {
+                /*if (player.getTournamentRoom() != null) {
+                    throw new RuntimeException("Player already in another room.");
+                }*/
+
+                player.setTournamentRoom(room);
+                room.getCurrentPlayers().add(player);
+                room.setCurrentParticipants(room.getCurrentParticipants() + 1);
+                roomRepository.save(room);
+                return room;
+            }
+        }
+
+        throw new RuntimeException("All rooms are full for tournament " + tournamentId);
+    }
+
+
 
 
 }

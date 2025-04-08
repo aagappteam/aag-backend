@@ -27,6 +27,7 @@ public class TournamentRoom {
     private int currentParticipants;
     private int round; // Track current round (e.g., 1, 2, 3)
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "tournamentRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Player> currentPlayers = new ArrayList<>();
 
