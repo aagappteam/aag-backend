@@ -481,7 +481,121 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
         ), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+    @GetMapping("/leaderboards")
+    public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String token,
+                                          @RequestParam("filterType") String filterType,
+                                          @RequestParam("page") int page,
+                                          @RequestParam("size") int size) {
+        try {
+            // Extract the token and find the authenticated vendor
+            String jwtToken = token.replace("Bearer ", "");
+            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
+            VendorEntity authenticatedVendor = entityManager.find(VendorEntity.class, authorizedVendorId);
 
+            // List to store the filtered vendor data
+            List<VendorEntity> allVendors = new ArrayList<>();
+
+            // Apply the filter based on filterType and fetch all data
+            switch (filterType.toLowerCase()) {
+                case "referrals":
+                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("refferalbalance")));
+                    break;
+
+                case "totalwallet":
+                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance")));
+                    break;
+
+                case "participants":
+                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament")));
+                    break;
+
+                default:
+                    return new ResponseEntity<>(Map.of(
+                            "status", "ERROR",
+                            "message", "Invalid filter type provided",
+                            "status_code", 400
+                    ), HttpStatus.BAD_REQUEST);
+            }
+
+            // Sort the vendors by the selected filterType before calculating ranks
+            List<Map<String, Object>> leaderboard = allVendors.stream().map(vendor -> {
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                        .map(firstName -> firstName + " " + vendor.getLast_name())
+                        .orElse(null));
+
+                // Add specific data based on the filter type
+                if ("wallet".equalsIgnoreCase(filterType)) {
+                    vendorData.put("price", vendor.getRefferalbalance());
+                } else if ("totalwallet".equalsIgnoreCase(filterType)) {
+                    vendorData.put("total_wallet_balance", vendor.getTotalWalletBalance());
+                } else if ("participants".equalsIgnoreCase(filterType)) {
+                    vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
+                } else if ("referrals".equalsIgnoreCase(filterType)) {
+                    vendorData.put("referralCount", vendor.getReferralCount());
+                }
+
+                return vendorData;
+            }).collect(Collectors.toList());
+
+            // Sort by the filter's value (e.g., referralCount, totalWalletBalance, etc.)
+            leaderboard.sort((a, b) -> {
+                int valueA = (Integer) a.get("referralCount");  // assuming you're sorting by referralCount
+                int valueB = (Integer) b.get("referralCount");
+                return Integer.compare(valueB, valueA);  // sort in descending order
+            });
+
+            // Add rank for each vendor (1-based index)
+            for (int i = 0; i < leaderboard.size(); i++) {
+                leaderboard.get(i).put("rank", i + 1);
+            }
+
+            // Calculate the rank of the logged-in vendor
+            int loggedInVendorRank = -1;
+            for (int i = 0; i < leaderboard.size(); i++) {
+                Map<String, Object> vendorData = leaderboard.get(i);
+                Long vendorId = (Long) vendorData.get("service_provider_id");
+                if (vendorId.equals(authenticatedVendor.getService_provider_id())) {
+                    loggedInVendorRank = i + 1;  // Vendor ranks are 1-based
+                    break;
+                }
+            }
+
+            // Paginate the leaderboard based on the requested page and size
+            int fromIndex = page * size;
+            int toIndex = Math.min(fromIndex + size, leaderboard.size());
+            List<Map<String, Object>> paginatedLeaderboard = leaderboard.subList(fromIndex, toIndex);
+
+            // Prepare response data
+            Map<String, Object> data = Map.of(
+                    "total_earning", authenticatedVendor.getRefferalbalance(),
+                    "referral_code", authenticatedVendor.getReferralCode(),
+                    "total_referrals", authenticatedVendor.getReferralCount(),
+                    "logged_in_vendor_rank", loggedInVendorRank,
+                    "top_invitees", paginatedLeaderboard,
+                    "message", "Top vendors fetched successfully!"
+            );
+
+            return new ResponseEntity<>(Map.of(
+                    "status", "OK",
+                    "data", data,
+                    "message", "Top vendors fetched successfully!",
+                    "status_code", 200
+            ), HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return new ResponseEntity<>(Map.of(
+                    "status", "ERROR",
+                    "message", e.getMessage(),
+                    "status_code", 500
+            ), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+/*
     @GetMapping("/leaderboards")
     public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String token,
                                           @RequestParam("filterType") String filterType,
@@ -588,6 +702,7 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
             ), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+*/
 
     private ResponseEntity<?> createResponse(VendorEntity authenticatedVendor, List<Map<String, Object>> topInvitees) {
         Map<String, Object> data = Map.of(
