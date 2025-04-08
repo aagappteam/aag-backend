@@ -163,6 +163,7 @@ public class GameLeagueTournamentService {
             List<GetGameResponseDTO> gameResponseDTOs = games.stream()
                     .map(game -> new GetGameResponseDTO(
                             game.getId(),
+                            game.getName(),
                             game.getFee(),
                             game.getMove(),
                             game.getStatus(),
@@ -264,6 +265,7 @@ public class GameLeagueTournamentService {
             List<LeagueResponseDTO> leagueResponseDTOs = leagues.stream()
                     .map(league -> new LeagueResponseDTO(
                             league.getId(),
+                            league.getName(),
                             league.getFee(),
                             league.getMove(),
                             league.getStatus(),
@@ -363,6 +365,7 @@ public class GameLeagueTournamentService {
             List<TournamentResponseDTO> tournamentResponseDTOs = tournaments.stream()
                     .map(tournament -> new TournamentResponseDTO(
                             tournament.getId(),
+                            tournament.getName(),
                             tournament.getEntryFee(),
                             tournament.getMove(),
                             tournament.getStatus(),

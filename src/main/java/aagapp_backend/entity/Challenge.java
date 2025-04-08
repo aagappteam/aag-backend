@@ -28,6 +28,8 @@ public class Challenge {
 
     private Long vendorId;
 
+    private String name;
+
     private Long opponentVendorId;
 
     @Enumerated(EnumType.STRING)
