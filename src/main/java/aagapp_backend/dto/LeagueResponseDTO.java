@@ -12,6 +12,7 @@ import lombok.Setter;
 public class LeagueResponseDTO {
 
     private Long id;
+    private String name;
     private Double fee;
     private Integer move;
     private LeagueStatus status;

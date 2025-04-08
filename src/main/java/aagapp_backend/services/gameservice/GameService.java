@@ -218,11 +218,10 @@ public class GameService {
             }
 //        check from gamerequestgamename that existing game exists or not for same vendor
             Optional<AagAvailableGames> gameAvailable= aagGameRepository.findById(existinggameId);
+
             game.setImageUrl(gameAvailable.get().getGameImage());
 
-/*
            game.setName(gameAvailable.get().getGameName());
-*/
 
 
             // Fetch Vendor and Theme Entities
@@ -357,11 +356,14 @@ public class GameService {
             }
 
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-            ZonedDateTime startTime = nowInKolkata.minusHours(24).withZoneSameInstant(ZoneId.of("UTC"));
-            ZonedDateTime endTime = nowInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
 
-// Now query the repository
-            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtWithin24Hours(vendorEntity, startTime, endTime);
+            ZonedDateTime startOfDayInKolkata = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime endOfDayInKolkata = startOfDayInKolkata.plusDays(1).minusSeconds(1);
+
+            ZonedDateTime startTimeUTC = startOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
+            ZonedDateTime endTimeUTC = endOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
+
+            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
 
 //            List<Game> games = gameRepository.findAll();
                     // Fetch all available games (no vendor filter)
@@ -384,7 +386,8 @@ public class GameService {
                     .map(game -> {
                         Map<String, String> gameMap = new HashMap<>();
                         gameMap.put("imageUrl", game.getTheme().getImageUrl());
-                        gameMap.put("name", game.getTheme().getName());
+                        gameMap.put("name", game.getName()!=null?game.getName():"n/a");
+                        gameMap.put("themename", game.getTheme().getName());
                         return gameMap;
                     })
                     .collect(Collectors.toList());
@@ -567,6 +570,8 @@ public class GameService {
             List<GetGameResponseDTO> gameResponseDTOs = games.stream()
                     .map(game -> new GetGameResponseDTO(
                             game.getId(),
+                            game.getName(),
+
                             game.getFee(),
                             game.getMove(),
                             game.getStatus(),
@@ -754,9 +759,6 @@ public class GameService {
         }
     }
 
-
-
-
     public int countGamesByVendorIdAndScheduledDate(Long vendorId, LocalDate date) {
         String queryString = "SELECT COUNT(g) FROM Game g WHERE g.vendorEntity.id = :vendorId AND FUNCTION('DATE', g.createdDate) = :date";
         Query query = em.createQuery(queryString);
@@ -935,6 +937,7 @@ public class GameService {
             List<GetGameResponseDTO> gameResponseDTOs = games.stream()
                     .map(game -> new GetGameResponseDTO(
                             game.getId(),
+                            game.getName(),
                             game.getFee(),
                             game.getMove(),
                             game.getStatus(),
