@@ -213,8 +213,7 @@ public class AdminReviewController {
                 return responseService.generateErrorResponse("No tickets found with the given filters", HttpStatus.NOT_FOUND);
             }
 
-            return responseService.generateSuccessResponse("Tickets retrieved successfully", ticketPage.getContent(), HttpStatus.OK);
-        } catch (Exception e) {
+            return responseService.generateSuccessResponseWithCount("Tickets retrieved successfully", ticketPage.getContent(), ticketPage.getTotalElements(),HttpStatus.OK);        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
