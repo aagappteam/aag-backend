@@ -6,6 +6,7 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
+import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,23 +17,26 @@ import org.springframework.stereotype.Service;
 @Service
 public class Otp {
 
+    private static final Dotenv dotenv = Dotenv.load();
+    private String accountSid = dotenv.get("TWILIO_ACCOUNT_SID");
+    private String authToken = dotenv.get("TWILIO_AUTH_TOKEN");
+    private String twilioPhoneNumber = dotenv.get("TWILIO_PHONE_NUMBER");
+    private String serviceProviderSid = dotenv.get("SERVICE_PROVIDER_SID");
+
     private ExceptionHandlingImplement exceptionHandling;
-    private String accountSid;
-    private String authToken;
-    private String twilioPhoneNumber;
     private AdminService adminService;
     private ResponseService responseService;
     private EntityManager entityManager;
 
-    @Value("${service.provider.sid}")
-    private String serviceProviderSid;
+/*    @Value("${service.provider.sid}")
+    private String serviceProviderSid;*/
 
     @Autowired
     public void setExceptionHandling(ExceptionHandlingImplement exceptionHandling) {
         this.exceptionHandling = exceptionHandling;
     }
 
-    @Value("${twilio.accountSid}")
+/*    @Value("${twilio.accountSid}")
     public void setAccountSid(String accountSid) {
         this.accountSid = accountSid;
     }
@@ -46,7 +50,7 @@ public class Otp {
     @Value("${twilio.phoneNumber}")
     public void setTwilioPhoneNumber(String twilioPhoneNumber) {
         this.twilioPhoneNumber = twilioPhoneNumber;
-    }
+    }*/
 
     @Autowired
     @Lazy
@@ -81,7 +85,6 @@ public class Otp {
                     messageBody
             ).create();
 
-            System.out.println("OTP sent successfully to " + completeMobileNumber);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
         }

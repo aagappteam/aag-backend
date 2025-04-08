@@ -36,8 +36,6 @@ public class Game {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    private String name;
-
     // Fee and Move columns
     @Column(name = "fee", nullable = false)
     private Double fee;

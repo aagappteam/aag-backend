@@ -10,6 +10,7 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.otp.Otp;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import com.twilio.rest.verify.v2.service.Verification;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -35,17 +36,12 @@ public class TwilioService {
 
     private ExceptionHandlingImplement exceptionHandling;
 
-    @Value("${twilio.accountSid}")
-    private String accountSid;
 
-    @Value("${twilio.authToken}")
-    private String authToken;
-
-    @Value("${twilio.phoneNumber}")
-    private String twilioPhoneNumber;
-
-    @Value("${service.provider.sid}")
-    private String serviceProviderSid;
+    private static final Dotenv dotenv = Dotenv.load();
+    private String accountSid = dotenv.get("TWILIO_ACCOUNT_SID");
+    private String authToken = dotenv.get("TWILIO_AUTH_TOKEN");
+    private String twilioPhoneNumber = dotenv.get("TWILIO_PHONE_NUMBER");
+    private String serviceProviderSid = dotenv.get("SERVICE_PROVIDER_SID");
 
     private CustomCustomerService customCustomerService;
     private EntityManager entityManager;

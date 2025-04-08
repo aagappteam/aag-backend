@@ -11,6 +11,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class TournamentResponseDTO {
     private Long id;
+    private String name;
     private Integer fee;
     private Integer move;
     private TournamentStatus status;

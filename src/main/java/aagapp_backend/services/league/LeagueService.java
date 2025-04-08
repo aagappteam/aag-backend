@@ -71,7 +71,13 @@ public class LeagueService {
     @Transactional
     public Challenge createChallenge(LeagueRequest leagueRequest, Long vendorId) {
         try {
+//            find game by game id
 
+            AagAvailableGames game = aagGameRepository.findById(leagueRequest.getExistinggameId()).orElse(null);
+
+            if (game == null) {
+                throw new RuntimeException("Game not found with ID: " + leagueRequest.getExistinggameId());
+            }
             if (leagueRequest.getOpponentVendorId() != null) {
                 // Check if the opponent vendor exists
                 VendorEntity opponentVendor = vendorRepository.findById(leagueRequest.getOpponentVendorId())
@@ -82,6 +88,7 @@ public class LeagueService {
                     throw new RuntimeException("The opponent vendor's league status is not available.");
                 }
             }
+
 
 
             if (leagueRequest.getOpponentVendorId() != null && leagueRequest.getOpponentVendorId().equals(vendorId)) {
@@ -106,6 +113,9 @@ public class LeagueService {
                 challenge.setMove(Constant.SIXTEENMOVES);
 
             }
+
+            challenge.setName(game.getGameName());
+
 //            challenge.setFee(leagueRequest.getFee());
             challenge.setThemeId(leagueRequest.getThemeId());
             challenge.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
