@@ -78,6 +78,8 @@ public class Game {
     private Integer minPlayersPerTeam;
     private Integer maxPlayersPerTeam;
 
+    private Integer totalplayerscount;
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

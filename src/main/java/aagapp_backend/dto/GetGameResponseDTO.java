@@ -18,6 +18,8 @@ public class GetGameResponseDTO {
     private Long aaggameid;
     private String gameIcon;
 
+    private Integer totalplayerscount;
+
     private String themeName;
     private String themeImageUrl;
 
