@@ -80,9 +80,11 @@ public class TwilioService {
           otpservice.sendOtp(countryCode,mobileNumber,otp);
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
+/*
             VendorEntity existingvendor = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
+*/
             String maskedNumber = this.genereateMaskednumber(mobileNumber);
-            if (existingCustomer == null && existingvendor == null) {
+            if (existingCustomer == null) {
                 CustomCustomer customerDetails = new CustomCustomer();
                 customerDetails.setCountryCode(countryCode);
                 customerDetails.setMobileNumber(mobileNumber);
@@ -97,14 +99,14 @@ public class TwilioService {
                         "otp", otp,
                         "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber
                 ));
-            } else if (existingvendor != null) {
+            } /*else if (existingvendor != null) {
 
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                         "status", ApiConstants.STATUS_ERROR,
                         "status_code", HttpStatus.BAD_REQUEST,
                         "message", ApiConstants.NUMBER_ALREADY_REGISTERED_SERVICE_PROVIDER
                 ));
-            } else {
+            }*/ else {
                 existingCustomer.setOtp(otp);
                 entityManager.merge(existingCustomer);
                 return ResponseEntity.ok(Map.of(
