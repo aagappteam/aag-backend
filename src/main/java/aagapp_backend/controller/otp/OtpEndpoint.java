@@ -375,10 +375,10 @@ public class OtpEndpoint {
 
 
             mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
-            if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
+           /* if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
                 return responseService.generateErrorResponse(ApiConstants.NUMBER_REGISTERED_AS_CUSTOMER, HttpStatus.BAD_REQUEST);
             }
-
+*/
             if (countryCode == null || countryCode.isEmpty()) {
                 countryCode = Constant.COUNTRY_CODE;
             }

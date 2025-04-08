@@ -18,6 +18,7 @@ public class GetGameResponseDTO {
     private Long aaggameid;
     private String gameIcon;
 
+
     private String themeName;
     private String themeImageUrl;
 
