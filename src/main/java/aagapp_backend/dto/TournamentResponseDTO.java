@@ -21,6 +21,7 @@ public class TournamentResponseDTO {
     private String themeName;
     private String themeImageUrl;
 
+    private String createdAt;
     private String scheduledAt;
 
 

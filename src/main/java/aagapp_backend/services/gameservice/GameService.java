@@ -580,6 +580,8 @@ public class GameService {
                             game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                            game.getCreatedDate() != null ? game.getCreatedDate().toString() : null,
+
                             game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
                             game.getEndDate() != null ? game.getEndDate().toString() : null,
 
@@ -946,6 +948,7 @@ public class GameService {
                             game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                            game.getCreatedDate() != null ? game.getCreatedDate().toString() : null,
                             game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
                             game.getEndDate() != null ? game.getEndDate().toString() : null,
                             game.getMinPlayersPerTeam(),

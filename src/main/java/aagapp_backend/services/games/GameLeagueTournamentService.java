@@ -172,7 +172,10 @@ public class GameLeagueTournamentService {
                             game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                            game.getCreatedDate() != null ? game.getCreatedDate().toString() : null,
+
                             game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
+
                             game.getEndDate() != null ? game.getEndDate().toString() : null,
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
@@ -272,6 +275,7 @@ public class GameLeagueTournamentService {
                             league.getShareableLink(),
                             league.getTheme() != null ? league.getTheme().getName() : null,
                             league.getTheme() != null ? league.getTheme().getImageUrl() : null,
+                            league.getCreatedDate() != null ? league.getCreatedDate().toString() : null,
                             league.getScheduledAt() != null ? league.getScheduledAt().toString() : null,
                             league.getEndDate() != null ? league.getEndDate().toString() : null,
                             league.getMinPlayersPerTeam(),
@@ -373,6 +377,8 @@ public class GameLeagueTournamentService {
                             tournament.getExistinggameId(),
                             tournament.getTheme() != null ? tournament.getTheme().getName() : null,
                             tournament.getTheme() != null ? tournament.getTheme().getImageUrl() : null,
+                            tournament.getCreatedAt() != null ? tournament.getCreatedAt().toString() : null,
+
                             tournament.getScheduledAt() != null ? tournament.getScheduledAt().toString() : null
                     ))
                     .collect(Collectors.toList());
