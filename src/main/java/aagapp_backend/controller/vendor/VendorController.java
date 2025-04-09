@@ -637,7 +637,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
             // Add specific data based on the filter type
             if ("referrals".equalsIgnoreCase(filterType)) {
-                vendorData.put("referralCount", vendor.getReferralCount());
+                vendorData.put("referralCount", vendor.getRefferalbalance());
             } else if ("totalwallet".equalsIgnoreCase(filterType)) {
                 vendorData.put("total_wallet_balance", vendor.getTotalWalletBalance());
             } else if ("participants".equalsIgnoreCase(filterType)) {

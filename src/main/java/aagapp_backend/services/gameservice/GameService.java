@@ -25,6 +25,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -36,7 +38,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import org.springframework.http.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -44,9 +46,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class GameService {
+    private final RestTemplate restTemplate = new RestTemplate();
+//    base url http://13.232.105.87:8082
+
+    private final String baseUrl = "http://13.232.105.87:8082";
+
 
     @Autowired
     private MoveRepository moveRepository;
@@ -299,7 +309,9 @@ public class GameService {
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(savedGame.getId());
             savedGame.setShareableLink(shareableLink);
+            Double total_prize= 3.2;
 
+            this.createNewGame(baseUrl, savedGame.getId(), gameRoom.getId(), gameRequest.getMaxPlayersPerTeam(), gameRequest.getMove(), total_prize);
             // Return the saved game with the shareable link
             return gameRepository.save(savedGame);
 
@@ -309,6 +321,55 @@ public class GameService {
         }
     }
 
+    /*public void createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
+            try{
+                // Construct the URL for the POST request
+                String url = baseUrl + "/CreateNewGame";
+
+                System.out.println(url + " url");
+
+                // Create form parameters using MultiValueMap (simulating form data)
+                MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+                formData.add("gameId", gameId.toString());
+                formData.add("roomId", roomId.toString());
+                formData.add("players", players.toString());
+                formData.add("move", move.toString());
+                formData.add("prize", prize.toString());
+
+                // Create headers (optional, can set Content-Type)
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Content-Type", "application/x-www-form-urlencoded");
+
+                // Wrap form data in HttpEntity to send in the request body
+                HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(formData, headers);
+
+                // Send the POST request with form data as the body
+                ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+
+                // Handle the response
+                System.out.println("Response: " + response.getBody());
+            }catch (Exception e){
+                exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                throw new RuntimeException("Error occurred while creating  the game on server: " + e.getMessage(), e);
+            }
+    }*/
+
+
+    public void createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
+        try{
+            // Construct the URL for the POST request
+            String url = baseUrl + "/CreateNewGame?players=" + players + "&prize=" + prize + "&moves=" + move;
+
+            // Send GET request
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+            // Handle the response
+            System.out.println("Response: " + response.getBody());
+        }catch (Exception e){
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error occurred while creating  the game on server: " + e.getMessage(), e);
+        }
+    }
     @Transactional
     public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
         try {
