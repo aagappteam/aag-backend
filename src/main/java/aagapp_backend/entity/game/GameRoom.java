@@ -43,10 +43,6 @@ public class GameRoom {
     @JoinColumn(name = "game_id", nullable = false)
     private Game game;
 
-    private Long currentPlayerId; // ID of the current player's turn
-
-    @Column(name = "turn_order")
-    private int turnOrder = 0;
 
     @ElementCollection
     @CollectionTable(name = "ludo_game_room_winners", joinColumns = @JoinColumn(name = "game_room_id"))
@@ -56,8 +52,6 @@ public class GameRoom {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "active_players_count")
-    private int activePlayersCount;
 
     @PrePersist
     @PreUpdate
@@ -71,7 +65,6 @@ public class GameRoom {
         if (this.maxPlayers == 0) {
             this.maxPlayers = 2;
         }
-        this.activePlayersCount = this.currentPlayers.size();
     }
 
     public Player getPlayerById(Long playerId) {
