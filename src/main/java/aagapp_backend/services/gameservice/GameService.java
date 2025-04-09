@@ -408,6 +408,7 @@ public class GameService {
             // 6. Update player status to PLAYING
             updatePlayerStatusToPlaying(player);
 
+
             // Return the saved game with the shareable link
             return responseService.generateSuccessResponse("Player join in the Game Room ", gameRoom, HttpStatus.OK);
 
