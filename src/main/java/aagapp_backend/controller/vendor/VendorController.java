@@ -607,15 +607,15 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         // Apply the filter based on filterType and fetch all data
         switch (filterType.toLowerCase()) {
             case "referrals":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("refferalbalance")));
+                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("referralCount"))); // Sorting by referral count
                 break;
 
             case "totalwallet":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance")));
+                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance"))); // Sorting by wallet balance
                 break;
 
             case "participants":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament")));
+                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament"))); // Sorting by participants
                 break;
 
             default:
@@ -636,29 +636,20 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
                     .orElse(null));
 
             // Add specific data based on the filter type
-            if ("wallet".equalsIgnoreCase(filterType)) {
-                vendorData.put("price", vendor.getRefferalbalance());
+            if ("referrals".equalsIgnoreCase(filterType)) {
+                vendorData.put("referralCount", vendor.getReferralCount());
             } else if ("totalwallet".equalsIgnoreCase(filterType)) {
                 vendorData.put("total_wallet_balance", vendor.getTotalWalletBalance());
             } else if ("participants".equalsIgnoreCase(filterType)) {
                 vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
-            } else if ("referrals".equalsIgnoreCase(filterType)) {
-                vendorData.put("referralCount", vendor.getReferralCount());
             }
 
             return vendorData;
         }).collect(Collectors.toList());
 
-        // Sort by the selected filter type (e.g., referralCount) in descending order
-        leaderboard.sort((a, b) -> {
-            int valueA = (Integer) a.get("referralCount");  // assuming you're sorting by referralCount
-            int valueB = (Integer) b.get("referralCount");
-            return Integer.compare(valueB, valueA);  // sort in descending order
-        });
-
-        // Add rank for each vendor in the sorted list (1-based index)
+        // Rank the vendors based on sorted list (1-based index)
         for (int i = 0; i < leaderboard.size(); i++) {
-            leaderboard.get(i).put("rank", i + 1);
+            leaderboard.get(i).put("rank", i + 1); // 1-based ranking
         }
 
         // Calculate the rank of the logged-in vendor
@@ -703,6 +694,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         ), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+
 
     private ResponseEntity<?> createResponse(VendorEntity authenticatedVendor, List<Map<String, Object>> topInvitees) {
         Map<String, Object> data = Map.of(

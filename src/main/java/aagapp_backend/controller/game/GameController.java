@@ -53,7 +53,6 @@ public class GameController {
         this.gameleaguetournamentservice = gameleaguetournamentservice;
     }
 
-
     @Autowired
     public void setLeagueService(@Lazy LeagueService leagueService) {
         this.leagueService = leagueService;
@@ -372,6 +371,8 @@ public class GameController {
             return responseService.generateErrorResponse("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+//    13.232.105.87:8082
 
 
 }
