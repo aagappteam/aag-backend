@@ -328,12 +328,9 @@ public class TournamentService {
     public void createRoomsForPlayers(Long tournamentId, Integer roundNumber) {
         // Calculate the number of rooms needed (each room holds 2 players)
         int roomSize = 2;
-
         // Get the list of winners (players) in this tournament and round
         List<TournamentRoundWinner> winners = tournamentRoundWinnerRepository.findByTournamentIdAndRoundNumber(tournamentId, roundNumber);
 
-        // Create the rooms first
-        List<TournamentRoom> createdRooms = new ArrayList<>();
         for (int i = 0; i < winners.size(); i += roomSize) {
             TournamentRoom room = new TournamentRoom();
             room.setTournamentId(tournamentId);
@@ -341,47 +338,11 @@ public class TournamentService {
             room.setMaxParticipants(roomSize);
             room.setCurrentParticipants(0);
             room.setStatus("OPEN");
-
-            // Save room to the database
-            room = roomRepository.save(room);
-            createdRooms.add(room);
+            roomRepository.save(room);
         }
 
-        // Now assign players to these rooms
-        int roomIndex = 0;
-        for (TournamentRoundWinner winner : winners) {
-            if (roomIndex < createdRooms.size()) {
-                // Get the current room
-                TournamentRoom room = createdRooms.get(roomIndex);
-
-                // Check if the player is already assigned to a room before trying to assign again
-                Player player = playerRepository.findById(winner.getPlayerId()).orElse(null);
-                if (player == null) {
-                    throw new RuntimeException("Player not found with ID: " + winner.getPlayerId());
-                }
-                if (player.getTournamentRoom() != null) {
-                    // Skip player if already assigned to a room (This should be very rare)
-                    System.out.println("Player " + player.getPlayerId() + " is already in a room: " + player.getTournamentRoom().getId());
-                    continue; // Skip assigning this player again
-                }
-
-                // Print player ID for debugging
-                System.out.println("Assigning player with ID: " + winner.getPlayerId() + " to room: " + room.getId());
-
-                // Assign the player to this room using the existing method
-                assignPlayerToRoom(winner.getPlayerId(), tournamentId);
-
-                // Increment the currentParticipants count for the room
-                room.setCurrentParticipants(room.getCurrentParticipants() + 1);
-
-                // If the room is full (2 players assigned), move to the next room
-                if (room.getCurrentParticipants() == room.getMaxParticipants()) {
-                    roomIndex++;
-                }
-            } else {
-                // If no more rooms are available, which shouldn't happen in this case
-                throw new RuntimeException("No more available rooms to assign the player.");
-            }
+        for(TournamentRoundWinner winner : winners){
+            assignPlayerToRoom(winner.getPlayerId(), tournamentId);
         }
     }
 
