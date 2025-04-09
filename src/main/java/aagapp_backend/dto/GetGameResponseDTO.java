@@ -11,6 +11,7 @@ import lombok.Setter;
 public class GetGameResponseDTO {
 
     private Long id;
+    private String gamename;
     private Double fee;
     private Integer move;
     private GameStatus status;
@@ -18,8 +19,10 @@ public class GetGameResponseDTO {
     private Long aaggameid;
     private String gameIcon;
 
+
     private String themeName;
     private String themeImageUrl;
+    private String createdAt;
 
     private String scheduledAt;
     private String endDate;

@@ -45,6 +45,7 @@ public class Player {
     @Column(name = "player_status", nullable = false)
     private PlayerStatus playerStatus;
 
+
     @OneToMany(mappedBy = "playerId", cascade = CascadeType.ALL)
     private List<Token> tokens = new ArrayList<>();
 

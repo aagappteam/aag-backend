@@ -76,11 +76,11 @@ public class TournamentService {
             // Create a new Game entity
             Tournament tournament = new Tournament();
 
-            boolean isAvailable = isGameAvailableById(tournamentRequest.getExistinggameId());
-
-            if (!isAvailable) {
-                throw new RuntimeException("game is not available");
+            AagAvailableGames game = aagGameRepository.findById(tournament.getExistinggameId()).orElse(null);
+            if (game == null) {
+                throw new RuntimeException("Game not found with ID: " + tournamentRequest.getExistinggameId());
             }
+
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(tournamentRequest.getExistinggameId());
             tournament.setGameUrl(gameAvailable.get().getGameImage());
 
@@ -90,7 +90,7 @@ public class TournamentService {
             }
 
             // Set Vendor and Theme to the Game
-            tournament.setName(tournamentRequest.getName());
+            tournament.setName(game.getGameName());
             tournament.setVendorId(vendorId);
             tournament.setTheme(theme);
             tournament.setExistinggameId(tournamentRequest.getExistinggameId());

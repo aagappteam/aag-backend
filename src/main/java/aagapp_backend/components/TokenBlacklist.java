@@ -99,7 +99,7 @@ public class TokenBlacklist {
     }
 
     // Scheduled task to clean expired tokens every 10 hours (36000000 milliseconds)
-    @Scheduled(fixedRate = 36000000)
+   /* @Scheduled(fixedRate = 36000000)
     public void cleanExpiredTokens() {
         long currentTime = System.currentTimeMillis();
         int removedTokensCount = 0;
@@ -120,5 +120,5 @@ public class TokenBlacklist {
         } else {
             System.out.println("No expired tokens to clean up");
         }
-    }
+    }*/
 }

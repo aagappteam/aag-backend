@@ -82,7 +82,8 @@ public class VendorEntity {
     @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "Please enter a valid email address.")
     private String primary_email;
 
-    @OneToMany(mappedBy = "vendorEntity", fetch = FetchType.LAZY)
+//    @OneToMany(mappedBy = "vendorEntity", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<PaymentEntity> payments;  // One vendor can have many payments (subscriptions)
 
     @Nullable

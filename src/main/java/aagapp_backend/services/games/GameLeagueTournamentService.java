@@ -163,6 +163,7 @@ public class GameLeagueTournamentService {
             List<GetGameResponseDTO> gameResponseDTOs = games.stream()
                     .map(game -> new GetGameResponseDTO(
                             game.getId(),
+                            game.getName(),
                             game.getFee(),
                             game.getMove(),
                             game.getStatus(),
@@ -171,7 +172,10 @@ public class GameLeagueTournamentService {
                             game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                            game.getCreatedDate() != null ? game.getCreatedDate().toString() : null,
+
                             game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
+
                             game.getEndDate() != null ? game.getEndDate().toString() : null,
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
@@ -264,12 +268,14 @@ public class GameLeagueTournamentService {
             List<LeagueResponseDTO> leagueResponseDTOs = leagues.stream()
                     .map(league -> new LeagueResponseDTO(
                             league.getId(),
+                            league.getName(),
                             league.getFee(),
                             league.getMove(),
                             league.getStatus(),
                             league.getShareableLink(),
                             league.getTheme() != null ? league.getTheme().getName() : null,
                             league.getTheme() != null ? league.getTheme().getImageUrl() : null,
+                            league.getCreatedDate() != null ? league.getCreatedDate().toString() : null,
                             league.getScheduledAt() != null ? league.getScheduledAt().toString() : null,
                             league.getEndDate() != null ? league.getEndDate().toString() : null,
                             league.getMinPlayersPerTeam(),
@@ -363,6 +369,7 @@ public class GameLeagueTournamentService {
             List<TournamentResponseDTO> tournamentResponseDTOs = tournaments.stream()
                     .map(tournament -> new TournamentResponseDTO(
                             tournament.getId(),
+                            tournament.getName(),
                             tournament.getEntryFee(),
                             tournament.getMove(),
                             tournament.getStatus(),
@@ -370,6 +377,8 @@ public class GameLeagueTournamentService {
                             tournament.getExistinggameId(),
                             tournament.getTheme() != null ? tournament.getTheme().getName() : null,
                             tournament.getTheme() != null ? tournament.getTheme().getImageUrl() : null,
+                            tournament.getCreatedAt() != null ? tournament.getCreatedAt().toString() : null,
+
                             tournament.getScheduledAt() != null ? tournament.getScheduledAt().toString() : null
                     ))
                     .collect(Collectors.toList());

@@ -10,6 +10,7 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.otp.Otp;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import com.twilio.rest.verify.v2.service.Verification;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -35,17 +36,12 @@ public class TwilioService {
 
     private ExceptionHandlingImplement exceptionHandling;
 
-    @Value("${twilio.accountSid}")
-    private String accountSid;
 
-    @Value("${twilio.authToken}")
-    private String authToken;
-
-    @Value("${twilio.phoneNumber}")
-    private String twilioPhoneNumber;
-
-    @Value("${service.provider.sid}")
-    private String serviceProviderSid;
+    private static final Dotenv dotenv = Dotenv.load();
+    private String accountSid = dotenv.get("TWILIO_ACCOUNT_SID");
+    private String authToken = dotenv.get("TWILIO_AUTH_TOKEN");
+    private String twilioPhoneNumber = dotenv.get("TWILIO_PHONE_NUMBER");
+    private String serviceProviderSid = dotenv.get("SERVICE_PROVIDER_SID");
 
     private CustomCustomerService customCustomerService;
     private EntityManager entityManager;
@@ -84,9 +80,11 @@ public class TwilioService {
           otpservice.sendOtp(countryCode,mobileNumber,otp);
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
+/*
             VendorEntity existingvendor = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
+*/
             String maskedNumber = this.genereateMaskednumber(mobileNumber);
-            if (existingCustomer == null && existingvendor == null) {
+            if (existingCustomer == null) {
                 CustomCustomer customerDetails = new CustomCustomer();
                 customerDetails.setCountryCode(countryCode);
                 customerDetails.setMobileNumber(mobileNumber);
@@ -101,14 +99,14 @@ public class TwilioService {
                         "otp", otp,
                         "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber
                 ));
-            } else if (existingvendor != null) {
+            } /*else if (existingvendor != null) {
 
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                         "status", ApiConstants.STATUS_ERROR,
                         "status_code", HttpStatus.BAD_REQUEST,
                         "message", ApiConstants.NUMBER_ALREADY_REGISTERED_SERVICE_PROVIDER
                 ));
-            } else {
+            }*/ else {
                 existingCustomer.setOtp(otp);
                 entityManager.merge(existingCustomer);
                 return ResponseEntity.ok(Map.of(

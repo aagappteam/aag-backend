@@ -20,104 +20,12 @@ public class GameWebSocketHandler {
     @Autowired
     private GameService gameService;
 
-    @Autowired
-    private LudoGameService ludogameservice;
+
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
 
-    @MessageMapping("/game/rollDice")
-    public void rollDice(GameMessage gameMessage) {
-        try {
-            Long roomId = gameMessage.getRoomId();
-            Long playerId = gameMessage.getPlayerId();
-
-            if (!ludogameservice.isPlayerTurn(roomId, playerId)) {
-                sendJsonResponse(roomId, "error", "It's not your turn!", null);
-                return;
-            }
-
-            LudoResponse response = ludogameservice.rollDice(roomId, playerId);
-            Long nextPlayerId = ludogameservice.getValidNextPlayerId(ludogameservice.getRoomById(roomId));
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("playerId", playerId);
-            data.put("rolledNumber", response.getDiceRoll());
-            data.put("nextPlayerId", nextPlayerId);
-
-            sendJsonResponse(roomId, "success", "Player " + playerId + " rolled a " + response.getDiceRoll(), data);
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendJsonResponse(gameMessage.getRoomId(), "error", "Unexpected error: " + e.getMessage(), null);
-        }
-    }
-
-    @MessageMapping("/game/moveToken")
-    public void moveToken(GameMessage gameMessage) {
-        try {
-            Long roomId = gameMessage.getRoomId();
-            Long playerId = gameMessage.getPlayerId();
-
-            if (!ludogameservice.isGameInProgress(roomId)) {
-                sendJsonResponse(roomId, "error", "Game is not in progress or invalid room.", null);
-                return;
-            }
-
-            if (ludogameservice.isGameCompleted(roomId)) {
-                sendJsonResponse(roomId, "error", "Game is already completed.", null);
-                return;
-            }
-
-            if (!ludogameservice.isPlayerInGame(roomId, playerId)) {
-                sendJsonResponse(roomId, "error", "Player is not part of this game.", null);
-                return;
-            }
-
-            String moveResponse = ludogameservice.moveToken(
-                    roomId,
-                    gameMessage.getGameId(),
-                    playerId,
-                    gameMessage.getTokenId(),
-                    gameMessage.getNewPosition()
-            );
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("playerId", playerId);
-            data.put("tokenId", gameMessage.getTokenId());
-            data.put("newPosition", gameMessage.getNewPosition());
-
-            sendJsonResponse(roomId, "success", moveResponse, data);
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendJsonResponse(gameMessage.getRoomId(), "error", "An error occurred: " + e.getMessage(), null);
-        }
-    }
-
-    @MessageMapping("/game/disconnect")
-    public void handleDisconnect(GameMessage gameMessage) {
-        try {
-            Long playerId = gameMessage.getPlayerId();
-            Long roomId = gameMessage.getRoomId();
-
-            if (!ludogameservice.isGameInProgress(roomId)) {
-                sendJsonResponse(roomId, "error", "Game is not in progress.", null);
-                return;
-            }
-
-            boolean isPlayerRemoved = ludogameservice.markPlayerAsLoser(roomId, playerId);
-            if (!isPlayerRemoved) {
-                sendJsonResponse(roomId, "error", "Player not found in this game.", null);
-                return;
-            }
-
-            sendJsonResponse(roomId, "info", "Player " + playerId + " has disconnected.", null);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            sendJsonResponse(gameMessage.getRoomId(), "error", "An error occurred: " + e.getMessage(), null);
-        }
-    }
 
     private void sendJsonResponse(Long roomId, String status, String message, Map<String, Object> data) {
         Map<String, Object> response = new HashMap<>();

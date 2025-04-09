@@ -1,16 +1,10 @@
 package aagapp_backend.controller.tournament;
 
-import aagapp_backend.dto.GameRequest;
-import aagapp_backend.dto.GetGameResponseDTO;
-import aagapp_backend.dto.JoinLeagueRequest;
 import aagapp_backend.dto.TournamentRequest;
-import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.notification.Notification;
-import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.entity.tournament.TournamentRoundWinner;
-import aagapp_backend.enums.NotificationType;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.PlayerRepository;

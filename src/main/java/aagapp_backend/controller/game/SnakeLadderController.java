@@ -1,10 +1,8 @@
 package aagapp_backend.controller.game;
-import aagapp_backend.dto.JoinRoomRequest;
 import aagapp_backend.dto.LeaveRoomRequest;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.services.gameservice.GameService;
-import aagapp_backend.services.gameservice.SnakeLadderGameService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentFeatures;
