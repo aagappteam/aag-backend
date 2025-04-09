@@ -322,6 +322,21 @@ public class CommandLineService implements CommandLineRunner {
 
             System.out.println("Predefined games, themes, and prices inserted into the database.");
         }
+
+
+     /*   String ludo_game_roomsalterQuery = "ALTER TABLE ludo_game_rooms ADD COLUMN gamepassword VARCHAR(255)";
+        Query ludo_game_roomsalterQueryquery = entityManager.createNativeQuery(ludo_game_roomsalterQuery);
+        ludo_game_roomsalterQueryquery.executeUpdate();
+
+
+        String ludo_league_roomsalterQuery = "ALTER TABLE ludo_league_rooms ADD COLUMN gamepassword VARCHAR(255)";
+        Query ludo_league_roomsalterQueryquery = entityManager.createNativeQuery(ludo_league_roomsalterQuery);
+        ludo_league_roomsalterQueryquery.executeUpdate();
+*/
+
+
+
+
     }
 
 }

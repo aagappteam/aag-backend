@@ -16,6 +16,8 @@ import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.payment.PaymentFeatures;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
@@ -257,11 +259,6 @@ public class GameService {
 
             }
 
-           /* if(gameRequest.getMove()!= null){
-                game.setMove(gameRequest.getMove());
-            }*/
-
-
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             if (gameRequest.getScheduledAt() != null) {
@@ -309,9 +306,6 @@ public class GameService {
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(savedGame.getId());
             savedGame.setShareableLink(shareableLink);
-            Double total_prize= 3.2;
-
-            this.createNewGame(baseUrl, savedGame.getId(), gameRoom.getId(), gameRequest.getMaxPlayersPerTeam(), gameRequest.getMove(), total_prize);
             // Return the saved game with the shareable link
             return gameRepository.save(savedGame);
 
@@ -355,19 +349,30 @@ public class GameService {
     }*/
 
 
-    public void createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
-        try{
+    public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
+        try {
             // Construct the URL for the POST request
             String url = baseUrl + "/CreateNewGame?players=" + players + "&prize=" + prize + "&moves=" + move;
 
-            // Send GET request
+            // Send GET request to external service
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
-            // Handle the response
-            System.out.println("Response: " + response.getBody());
-        }catch (Exception e){
+            // Parse the response body (assuming it's a JSON response)
+            String responseBody = response.getBody();
+            System.out.println("responseBody" + responseBody);
+
+            // Assuming the response is JSON and contains "GameId" and "GamePassword"
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonResponse = objectMapper.readTree(responseBody);
+
+            String gamePassword = jsonResponse.get("GamePassword").asText();
+            System.out.println("gamePassword" + gamePassword);
+
+            return gamePassword;
+
+        } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while creating  the game on server: " + e.getMessage(), e);
+            throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
         }
     }
     @Transactional
@@ -392,6 +397,10 @@ public class GameService {
             if (gameRoom.getCurrentPlayers().size() == gameRoom.getMaxPlayers()) {
                 transitionRoomToOngoing(gameRoom);
                 GameRoom newRoom = createNewEmptyRoom(game);
+               /* Double total_prize= 3.2;
+                String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), total_prize);
+                System.out.println("gamePassword" + gamePassword);
+                newRoom.setGamepassword(gamePassword);*/
                 gameRoomRepository.save(newRoom); // Save the new room
             }
 
@@ -399,7 +408,8 @@ public class GameService {
             // 6. Update player status to PLAYING
             updatePlayerStatusToPlaying(player);
 
-            return responseService.generateSuccessResponse("Player join in the Game Room ", game.getId(), HttpStatus.OK);
+            // Return the saved game with the shareable link
+            return responseService.generateSuccessResponse("Player join in the Game Room ", gameRoom, HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -569,7 +579,7 @@ public class GameService {
     }
 
     // Create a new empty room for a game
-    private GameRoom createNewEmptyRoom(Game game) {
+/*    private GameRoom createNewEmptyRoom(Game game) {
         GameRoom newRoom = new GameRoom();
         newRoom.setMaxPlayers(game.getMaxPlayersPerTeam());
         newRoom.setCurrentPlayers(new ArrayList<>());
@@ -578,7 +588,28 @@ public class GameService {
         newRoom.setRoomCode(generateRoomCode());
         newRoom.setGame(game);
         return newRoom;
+    }*/
+
+    private GameRoom createNewEmptyRoom(Game game) {
+        GameRoom newRoom = new GameRoom();
+        newRoom.setMaxPlayers(game.getMaxPlayersPerTeam());
+        newRoom.setCurrentPlayers(new ArrayList<>());
+        newRoom.setStatus(GameRoomStatus.INITIALIZED);
+        newRoom.setCreatedAt(LocalDateTime.now());
+        newRoom.setRoomCode(generateRoomCode()); // Assuming you have a method to generate a room code
+        newRoom.setGame(game);
+
+        Double total_prize = 3.2;
+        // Now, generate the game password and set it
+        String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), total_prize);
+//        System.out.println("gamePassword: " + gamePassword);
+
+        // Set the game password in the new room
+        newRoom.setGamepassword(gamePassword);
+
+        return newRoom;
     }
+
 
     // Generate a unique room code
     private String generateRoomCode() {
