@@ -236,47 +236,51 @@ public class TournamentController {
 
     }
 
+    // Endpoint to add a player to a round
     @PostMapping("/add-player-next-round")
-    public ResponseEntity<TournamentRoundWinner> addPlayerToRound(
+    public ResponseEntity<?> addPlayerToRound(
             @RequestParam Long tournamentId,
             @RequestParam Long playerId,
             @RequestParam Integer roundNumber) {
-        TournamentRoundWinner tournamentRoundWinner = tournamentService.addPlayerToRound(tournamentId, playerId, roundNumber);
-        return ResponseEntity.ok(tournamentRoundWinner);
+        try {
+            TournamentRoundWinner tournamentRoundWinner = tournamentService.addPlayerToRound(tournamentId, playerId, roundNumber);
+            return responseService.generateSuccessResponse("Player added successfully to the round", tournamentRoundWinner, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return responseService.generateErrorResponse("Error adding player to the round: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error occurred while adding player to the round: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     // Endpoint to retrieve players by tournamentId and roundNumber
-    @GetMapping("players-list")
-    public ResponseEntity<List<TournamentRoundWinner>> getPlayersInTournamentRound(
+    @GetMapping("/players-list")
+    public ResponseEntity<?> getPlayersInTournamentRound(
             @RequestParam Long tournamentId,
             @RequestParam Integer roundNumber) {
-        List<TournamentRoundWinner> players = tournamentService.getPlayersByTournamentAndRound(tournamentId, roundNumber);
-        return ResponseEntity.ok(players);
-    }
-
-    @GetMapping("/count")
-    public ResponseEntity<Long> getPlayersCount(
-            @RequestParam Long tournamentId,
-            @RequestParam Integer roundNumber) {
-        long count = tournamentService.getPlayersCountByTournamentAndRound(tournamentId, roundNumber);
-        return ResponseEntity.ok(count);
+        try {
+            List<TournamentRoundWinner> players = tournamentService.getPlayersByTournamentAndRound(tournamentId, roundNumber);
+            return responseService.generateSuccessResponse("Players retrieved successfully", players, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error occurred while retrieving players: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     // Endpoint to create rooms for players (called when creating rooms for tournament and round)
     @PostMapping("/create-rooms")
-    public ResponseEntity<String> createRoomsForTournament(
+    public ResponseEntity<?> createRoomsForTournament(
             @RequestParam Long tournamentId,    // Tournament ID (which tournament to create rooms for)
             @RequestParam Integer roundNumber   // Round number (which round to create rooms for)
     ) {
         try {
             // Call the service method to create rooms for players in this tournament round
-            tournamentService.createRoomsForPlayers(tournamentId, roundNumber);
-
+            List<TournamentRoom> createdRooms = tournamentService.createRoomsForPlayersNextRoundAndAssign(tournamentId, roundNumber);
             // Return a success message with status 200 OK
-            return ResponseEntity.ok("Rooms created successfully for Tournament " + tournamentId + " and Round " + roundNumber);
+            return responseService.generateSuccessResponse("Rooms created successfully for Tournament " + tournamentId + " and Round " + roundNumber, createdRooms, HttpStatus.OK);
         } catch (Exception e) {
-            // Return an error message in case of an exception (e.g., if there are no players or invalid data)
-            return ResponseEntity.status(500).body("Error occurred while creating rooms: " + e.getMessage());
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error occurred while creating rooms: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
