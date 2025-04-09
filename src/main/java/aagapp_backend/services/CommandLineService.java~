@@ -249,7 +249,7 @@ public class CommandLineService implements CommandLineRunner {
         query.executeUpdate();*/
 
 // Insert predefined games if not already present
-        if (entityManager.createQuery("SELECT COUNT(g) FROM AagAvailableGames g", Long.class).getSingleResult() == 0) {
+        if (entityManager.createQuery("SELECT COUNT(g) FROM aag_available_games g", Long.class).getSingleResult() == 0) {
 
             // Snakes & Ladders Ultimate game
             AagAvailableGames snakesAndLaddersGame = new AagAvailableGames();
