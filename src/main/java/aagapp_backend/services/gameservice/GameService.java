@@ -316,7 +316,7 @@ public class GameService {
             Game game = getGameById(gameId);
 
             if (isPlayerInRoom(player)) {
-                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
+                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.BAD_REQUEST);
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);
@@ -324,7 +324,7 @@ public class GameService {
             // 4. Attempt to add the player to the room
             boolean playerJoined = addPlayerToRoom(gameRoom, player);
             if (!playerJoined) {
-                return responseService.generateErrorResponse("Room is Already full with this id: " + game.getId(), HttpStatus.INTERNAL_SERVER_ERROR);
+                return responseService.generateErrorResponse("Room is Already full with this id: " + game.getId(), HttpStatus.BAD_REQUEST);
             }
 
             // 5. If the room is full, change status to ONGOING and create a new room
