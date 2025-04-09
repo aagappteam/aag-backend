@@ -27,6 +27,8 @@ public class GameRoom {
 
     private String gameType; // LUDO, SNAKE_LADDER, KNIFE_THROW, FRUIT_NINJA
 
+    @Column(name = "gamepassword", nullable = false)
+    private String gamepassword;
 
     @OneToMany(mappedBy = "gameRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference(value = "gameRoomReference")
