@@ -9,6 +9,7 @@ import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.tournament.TournamentRoom;
+import aagapp_backend.entity.tournament.TournamentRoundWinner;
 import aagapp_backend.enums.NotificationType;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
@@ -28,10 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 @RestController
 @RequestMapping("/tournament")
@@ -46,6 +44,8 @@ public class TournamentController {
     @Autowired
     PlayerRepository playerRepository;
 
+
+
     @Autowired
     public void setNotificationRepository(NotificationRepository notificationRepository) {
         this.notificationRepository = notificationRepository;
@@ -56,6 +56,7 @@ public class TournamentController {
     public void setTournamentService(TournamentService tournamentService) {
         this.tournamentService = tournamentService;
     }
+
 
     @Autowired
     public void setResponseService(ResponseService responseService) {
@@ -219,11 +220,11 @@ public class TournamentController {
     @PostMapping("/join-room/{tournamentId}")
     public ResponseEntity<?> joinRoom(
             @PathVariable Long tournamentId,
-            @RequestBody JoinLeagueRequest joinTounamentRequest) {
+            @RequestParam Long playerId) {
 
         try {
 
-            TournamentRoom roomDetails = tournamentService.assignPlayerToRoom(joinTounamentRequest, tournamentId);
+            TournamentRoom roomDetails = tournamentService.assignPlayerToRoom(playerId, tournamentId);
             return responseService.generateSuccessResponse("Player joined room successfully", roomDetails, HttpStatus.OK);
         }catch (RuntimeException e) {
             return responseService.generateErrorResponse("Error in joining rooms : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -235,6 +236,48 @@ public class TournamentController {
 
     }
 
+    @PostMapping("/add-player-next-round")
+    public ResponseEntity<TournamentRoundWinner> addPlayerToRound(
+            @RequestParam Long tournamentId,
+            @RequestParam Long playerId,
+            @RequestParam Integer roundNumber) {
+        TournamentRoundWinner tournamentRoundWinner = tournamentService.addPlayerToRound(tournamentId, playerId, roundNumber);
+        return ResponseEntity.ok(tournamentRoundWinner);
+    }
 
+    // Endpoint to retrieve players by tournamentId and roundNumber
+    @GetMapping("players-list")
+    public ResponseEntity<List<TournamentRoundWinner>> getPlayersInTournamentRound(
+            @RequestParam Long tournamentId,
+            @RequestParam Integer roundNumber) {
+        List<TournamentRoundWinner> players = tournamentService.getPlayersByTournamentAndRound(tournamentId, roundNumber);
+        return ResponseEntity.ok(players);
+    }
+
+    @GetMapping("/count")
+    public ResponseEntity<Long> getPlayersCount(
+            @RequestParam Long tournamentId,
+            @RequestParam Integer roundNumber) {
+        long count = tournamentService.getPlayersCountByTournamentAndRound(tournamentId, roundNumber);
+        return ResponseEntity.ok(count);
+    }
+
+    // Endpoint to create rooms for players (called when creating rooms for tournament and round)
+    @PostMapping("/create-rooms")
+    public ResponseEntity<String> createRoomsForTournament(
+            @RequestParam Long tournamentId,    // Tournament ID (which tournament to create rooms for)
+            @RequestParam Integer roundNumber   // Round number (which round to create rooms for)
+    ) {
+        try {
+            // Call the service method to create rooms for players in this tournament round
+            tournamentService.createRoomsForPlayers(tournamentId, roundNumber);
+
+            // Return a success message with status 200 OK
+            return ResponseEntity.ok("Rooms created successfully for Tournament " + tournamentId + " and Round " + roundNumber);
+        } catch (Exception e) {
+            // Return an error message in case of an exception (e.g., if there are no players or invalid data)
+            return ResponseEntity.status(500).body("Error occurred while creating rooms: " + e.getMessage());
+        }
+    }
 
 }
