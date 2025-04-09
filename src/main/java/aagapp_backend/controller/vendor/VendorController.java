@@ -607,7 +607,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         // Apply the filter based on filterType and fetch all data
         switch (filterType.toLowerCase()) {
             case "referrals":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("referralCount"))); // Sorting by referral count
+                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("refferalbalance"))); // Sorting by referral count
                 break;
 
             case "totalwallet":
