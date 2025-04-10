@@ -375,9 +375,6 @@ public class GameController {
         }
     }
 
-//    13.232.105.87:8082
-
-//    win ga,e
 
 
 }
