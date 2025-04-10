@@ -268,7 +268,7 @@ public class OtpEndpoint {
                         referrerWallet = new Wallet();
                         referrerWallet.setCustomCustomer(existingCustomer);
                         referrerWallet.setUnplayedBalance(0F);  // Set default value
-                        referrerWallet.setWinningAmount(0F);  // Set default value
+                        referrerWallet.setWinningAmount(BigDecimal.ZERO);  // Set default value
                         existingCustomer.setBonusBalance(BigDecimal.ZERO);  // Set default value
                         referrerWallet.setIsTest(false);  // Set default value (assuming it's not a test account)
 

@@ -70,7 +70,7 @@ public class CustomCustomer {
     private BigDecimal bonusBalance = BigDecimal.ZERO;
 
 
-    @OneToOne(mappedBy = "customCustomer")
+    @OneToOne(mappedBy = "customCustomer" ,cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @JsonManagedReference
     private Wallet wallet;

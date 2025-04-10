@@ -14,5 +14,5 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 
     Wallet findByCustomCustomer(CustomCustomer customer);
 
-    Wallet findByCustomCustomer_Id(Long customerId);
+    Wallet findByCustomCustomer_Id(Long winnerUserId);
 }
