@@ -1,12 +1,11 @@
 package aagapp_backend.entity;
 
 import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.entity.wallet.VendorWallet;
+import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.VendorLevelPlan;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.*;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -18,6 +17,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.CurrentTimestamp;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -121,6 +121,11 @@ public class VendorEntity {
 
     private Integer publishedLimit;
 
+    @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private VendorWallet wallet;
+
+
     @Nullable
     @Column(name = "referred_count")
     private int referralCount;
@@ -136,9 +141,9 @@ public class VendorEntity {
     @Column(name = "wallet_balance", nullable = false)
     private double refferalbalance = 0.0;
 
-    // Column for total wallet balance
     @Column(name = "total_wallet_balance", nullable = false)
-    private double totalWalletBalance = 0.0;
+    private BigDecimal totalWalletBalance = BigDecimal.ZERO;
+
 
     // Column for total participants in the game tournament league
     @Column(name = "total_participated_in_game_tournament_league")
