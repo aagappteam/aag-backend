@@ -12,7 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "tournament_room")
+@Table(
+        name = "tournament_room",
+        indexes = {
+                @Index(name = "idx_tournament_id", columnList = "tournamentId"),
+                @Index(name = "idx_status", columnList = "status")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,15 +29,14 @@ public class TournamentRoom {
     private Long id;
 
     private Long tournamentId;
+
     private int maxParticipants;
     private int currentParticipants;
-    private int round; // Track current round (e.g., 1, 2, 3)
+    private int round;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "tournamentRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Player> currentPlayers = new ArrayList<>();
 
-    private String status; // OPEN, IN_PROGRESS, COMPLETED
-
-    // Getters and Setters
+    private String status;
 }
