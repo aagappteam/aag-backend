@@ -329,7 +329,9 @@ public class GameController {
 
             // Initialize pageable object for pagination
 //            Pageable pageable = PageRequest.of(page, size);
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
             Map<String, Object> response = new HashMap<>();
 
