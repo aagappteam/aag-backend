@@ -413,7 +413,7 @@ public class LeagueService {
             player.setPlayerStatus(PlayerStatus.PLAYING);
             playerRepository.save(player);
 
-            return responseService.generateSuccessResponse("Player join in the Game Room ", leagueRoom.getRoomCode(), HttpStatus.OK);
+            return responseService.generateSuccessResponse("Player join in the Game Room ", leagueRoom, HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
