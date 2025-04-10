@@ -144,6 +144,10 @@ public class VendorEntity {
     @Column(name = "total_wallet_balance", nullable = false)
     private BigDecimal totalWalletBalance = BigDecimal.ZERO;
 
+    @Nullable
+    @Column(name = "theme_count")
+    private int themeCount = 0;
+
 
     // Column for total participants in the game tournament league
     @Column(name = "total_participated_in_game_tournament_league")

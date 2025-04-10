@@ -5,6 +5,8 @@ import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.game.PriceEntity;
 import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.GameStatus;
+import jakarta.annotation.Nullable;
+import jakarta.persistence.Column;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -324,6 +326,12 @@ public class CommandLineService implements CommandLineRunner {
         }
 
 
+
+
+/*        String alterQuery = "ALTER TABLE VendorEntity \n" +
+                "ADD COLUMN themeCount INTEGER DEFAULT 3";
+        Query query = entityManager.createNativeQuery(alterQuery);
+        query.executeUpdate();*/
      /*   String ludo_game_roomsalterQuery = "ALTER TABLE ludo_game_rooms ADD COLUMN gamepassword VARCHAR(255)";
         Query ludo_game_roomsalterQueryquery = entityManager.createNativeQuery(ludo_game_roomsalterQuery);
         ludo_game_roomsalterQueryquery.executeUpdate();
