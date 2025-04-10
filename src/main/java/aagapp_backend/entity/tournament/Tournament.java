@@ -59,14 +59,20 @@ public class Tournament {
     private String shareableLink;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
-    private ZonedDateTime scheduledAt;
+    @CreationTimestamp
+    @Column(updatable = false)
+    private ZonedDateTime createdDate;
+
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
-    @CreationTimestamp
-    private ZonedDateTime createdAt;
+    private ZonedDateTime scheduledAt;
 
-    @PrePersist
+/*    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    @CreationTimestamp
+    private ZonedDateTime createdAt;*/
+
+/*    @PrePersist
     protected void onCreate() {
         this.createdAt = ZonedDateTime.now();
-    }
+    }*/
 }

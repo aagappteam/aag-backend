@@ -9,9 +9,11 @@ import lombok.Setter;
 public class ThemeResponseDTO {
     private Long themeId;
     private String themeImage;
+    private Integer available;
 
     public ThemeResponseDTO(ThemeEntity theme) {
         this.themeId = theme.getId();
         this.themeImage = theme.getImageUrl();
+        this.available = 1;
     }
 }

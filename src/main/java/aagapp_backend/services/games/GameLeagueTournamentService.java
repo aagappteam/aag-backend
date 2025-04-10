@@ -377,7 +377,7 @@ public class GameLeagueTournamentService {
                             tournament.getExistinggameId(),
                             tournament.getTheme() != null ? tournament.getTheme().getName() : null,
                             tournament.getTheme() != null ? tournament.getTheme().getImageUrl() : null,
-                            tournament.getCreatedAt() != null ? tournament.getCreatedAt().toString() : null,
+                            tournament.getCreatedDate() != null ? tournament.getCreatedDate().toString() : null,
 
                             tournament.getScheduledAt() != null ? tournament.getScheduledAt().toString() : null
                     ))
