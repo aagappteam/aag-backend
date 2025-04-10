@@ -40,6 +40,9 @@ public class LeagueRoom {
     @Column(name = "room_code", unique = true, nullable = false, length = 10)
     private String roomCode;
 
+    @Column(name = "gamepassword", nullable = false)
+    private String gamepassword;
+
     private String gameType; // LUDO, SNAKE_LADDER, KNIFE_THROW, FRUIT_NINJA
 
     @OneToMany(mappedBy = "leagueRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
