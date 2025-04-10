@@ -11,6 +11,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.action.internal.OrphanRemovalAction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ public class Player {
     private PlayerStatus playerStatus;
 
 
-    @OneToMany(mappedBy = "playerId", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "playerId", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Token> tokens = new ArrayList<>();
 
     @JsonIgnore
