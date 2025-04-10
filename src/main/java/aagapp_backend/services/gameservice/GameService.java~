@@ -573,20 +573,19 @@ public class GameService {
         newRoom.setCurrentPlayers(new ArrayList<>());
         newRoom.setStatus(GameRoomStatus.INITIALIZED);
         newRoom.setCreatedAt(LocalDateTime.now());
-        newRoom.setRoomCode(generateRoomCode());
+        newRoom.setRoomCode(generateRoomCode()); // Assuming you have a method to generate a room code
         newRoom.setGame(game);
 
-        // Save the room first so it gets an ID
-        newRoom = gameRoomRepository.save(newRoom); // Save and assign the generated ID
-
         Double total_prize = 3.2;
+        // Now, generate the game password and set it
         String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), total_prize);
+//        System.out.println("gamePassword: " + gamePassword);
 
+        // Set the game password in the new room
         newRoom.setGamepassword(gamePassword);
 
         return newRoom;
     }
-
 
 
     // Generate a unique room code
