@@ -390,10 +390,12 @@ public class OtpEndpoint {
 //            Twilio.init(accountSid, authToken);
             String otp = twilioService.generateOTP();
 
+
             otpservice.sendOtp(countryCode,mobileNumber,otp);
 
 
             VendorEntity existingServiceProvider = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);
+
 
             if (existingServiceProvider == null) {
                 VendorEntity vendorEntity = new VendorEntity();

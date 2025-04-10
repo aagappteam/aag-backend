@@ -13,7 +13,7 @@ public class GameResult {
 
     private Long gameId;
     private Long roomId;
-    private List<PlayerDto> players;
-    private Double entryFee;
-    private Long vendorId; // New field to store the vendorId
+    private List<PlayerDtoWinner> players;
+   /* private Double entryFee;
+    private Long vendorId; // New field to store the vendorId*/
 }

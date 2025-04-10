@@ -69,10 +69,12 @@ private GameRoomRepository gameRoomRepository;
     public ResponseEntity<?> processGameResult(@RequestBody GameResult gameResult) {
         try {
             // Process game result (you may want to keep this as is, or include some additional logic here)
-            matchService.processMatch(gameResult);
+            List<PlayerDto> playersDetails =   matchService.processMatch(gameResult);
 
             // Get details of all players after the game
+/*
             List<PlayerDto> playersDetails = matchService.getAllPlayersDetails(gameResult);
+*/
 
             // Prepare the response
             Map<String, Object> response = new HashMap<>();
