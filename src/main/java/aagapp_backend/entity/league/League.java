@@ -43,6 +43,12 @@ public class League {
 
     private String name;
 
+    @Column(name = "challenging_vendor_id")
+    private String challengingVendorName;
+
+    @Column(name = "challenging_vendor_profile_pic")
+    private String challengingVendorProfilePic;
+
     @Column(name = "fee", nullable = false)
     private Double fee;
 
@@ -61,6 +67,7 @@ public class League {
     @JoinColumn(name = "vendor_id", nullable = false)
     @JsonBackReference
     private VendorEntity vendorEntity;
+
 
     @ManyToOne
     @JoinColumn(name = "theme_id", nullable = true)
@@ -81,6 +88,12 @@ public class League {
 
     @Column(name = "opponent_vendor_id")
     private Long opponentVendorId;
+
+    @Column(name = "opponent_vendor_profile_pic")
+    private String opponentVendorProfilePic;
+
+    @Column(name = "opponent_vendor_name")
+    private String opponentVendorName;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)

@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 @Service
 public class WalletService {
 
@@ -136,12 +138,15 @@ public class WalletService {
                 throw new RuntimeException("No wallet found for the customer");
             }
 
-            if (withdrawBalance > wallet.getWinningAmount()) {
+
+            BigDecimal withdrawBalanceBD = new BigDecimal(withdrawBalance);
+
+            if (withdrawBalanceBD.compareTo(wallet.getWinningAmount()) > 0) {
                 throw new RuntimeException("Insufficient balance in the wallet");
             }
 
-            // Withdraw the balance from the wallet
-            wallet.setWinningAmount(wallet.getWinningAmount() - withdrawBalance);
+// Withdraw the balance from the wallet
+            wallet.setWinningAmount(wallet.getWinningAmount().subtract(withdrawBalanceBD));
 
             // Save the updated wallet
             walletRepository.save(wallet);

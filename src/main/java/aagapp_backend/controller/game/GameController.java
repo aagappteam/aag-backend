@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -327,7 +328,9 @@ public class GameController {
             }
 
             // Initialize pageable object for pagination
-            Pageable pageable = PageRequest.of(page, size);
+//            Pageable pageable = PageRequest.of(page, size);
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
             Map<String, Object> response = new HashMap<>();
 
             // Handle event filtering based on events type
@@ -372,7 +375,6 @@ public class GameController {
         }
     }
 
-//    13.232.105.87:8082
 
 
 }
