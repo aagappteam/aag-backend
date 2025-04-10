@@ -285,8 +285,8 @@ public class TournamentService {
                         throw new RuntimeException("Player already in another room.");
                     }
 
-                    if (room.getRound() == 1) {
-                        tournament.setCurrentJoinedPlayers(tournament.getCurrentJoinedPlayers() + 1);
+                    if(tournament.getCurrentRound()==1){
+                        tournament.setCurrentJoinedPlayers(tournament.getCurrentJoinedPlayers()+1);
                     }
 
                     player.setTournamentRoom(room);
@@ -305,6 +305,7 @@ public class TournamentService {
             throw new RuntimeException("An error occurred while assigning the player to the room.", e);
         }
     }
+
 
 
     public TournamentRoundWinner addPlayerToRound(Long tournamentId, Long playerId, Integer roundNumber) {
@@ -353,6 +354,7 @@ public class TournamentService {
             throw new RuntimeException("An error occurred while retrieving players for tournament " + tournamentId + " and round " + roundNumber, e);
         }
     }
+
 
 
     public List<TournamentRoom> createRoomsForPlayersNextRoundAndAssign(Long tournamentId, Integer roundNumber) {
