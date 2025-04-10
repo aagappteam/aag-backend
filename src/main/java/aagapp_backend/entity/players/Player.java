@@ -3,12 +3,15 @@ package aagapp_backend.entity.players;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.game.Token;
 import aagapp_backend.entity.league.LeagueRoom;
+import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.enums.PlayerStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.action.internal.OrphanRemovalAction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -43,14 +46,26 @@ public class Player {
     @Column(name = "player_status", nullable = false)
     private PlayerStatus playerStatus;
 
+
+    @OneToMany(mappedBy = "playerId", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Token> tokens = new ArrayList<>();
+
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "game_room_id")
     @JsonBackReference(value = "gameRoomReference")
     private GameRoom gameRoom;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "league_room_id")
     private LeagueRoom leagueRoom;
+
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "tournament_room_id")
+    private TournamentRoom tournamentRoom;
+
 
     private String color; // Red, Blue, Green, Yellow
 

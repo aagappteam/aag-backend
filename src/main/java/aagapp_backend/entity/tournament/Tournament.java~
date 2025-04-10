@@ -49,8 +49,6 @@ public class Tournament {
     private String gameUrl;
     private int participants;
 
-    private int currentRound;
-
     @NotNull
     private int entryFee;
 
@@ -60,23 +58,15 @@ public class Tournament {
     private TournamentStatus status;
     private String shareableLink;
 
-
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
-    @CreationTimestamp
-    @Column(updatable = false)
-    private ZonedDateTime createdDate;
-
-
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;
 
-/*    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     @CreationTimestamp
-    private ZonedDateTime createdAt;*/
+    private ZonedDateTime createdAt;
 
-/*    @PrePersist
+    @PrePersist
     protected void onCreate() {
         this.createdAt = ZonedDateTime.now();
-    }*/
+    }
 }
