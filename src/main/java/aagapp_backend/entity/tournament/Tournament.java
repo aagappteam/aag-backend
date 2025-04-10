@@ -49,7 +49,7 @@ public class Tournament {
     private String gameUrl;
     private int participants;
 
-    private int currentRound;
+    private int currentJoinedPlayers=0;
 
     @NotNull
     private int entryFee;
@@ -71,12 +71,5 @@ public class Tournament {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;
 
-/*    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
-    @CreationTimestamp
-    private ZonedDateTime createdAt;*/
 
-/*    @PrePersist
-    protected void onCreate() {
-        this.createdAt = ZonedDateTime.now();
-    }*/
 }

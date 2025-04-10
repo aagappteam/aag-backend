@@ -16,7 +16,6 @@ import java.util.List;
         name = "tournament_room",
         indexes = {
                 @Index(name = "idx_tournament_id", columnList = "tournamentId"),
-                @Index(name = "idx_status", columnList = "status")
         }
 )
 @Getter
@@ -32,7 +31,7 @@ public class TournamentRoom {
 
     private int maxParticipants;
     private int currentParticipants;
-    private int round;
+    private int round=1;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "tournamentRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
