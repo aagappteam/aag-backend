@@ -102,6 +102,8 @@ public class PaymentService {
         if(vendorId != null){
             VendorLevelPlan level = existingVendor.getVendorLevelPlan();
             Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
+            Integer themeLimit = extractThemeLimit(planEntity.getFeatures());
+            existingVendor.setThemeCount(themeLimit);
             existingVendor.setDailyLimit(dailyGameLimit);
 
 /*
@@ -272,27 +274,26 @@ public class PaymentService {
         System.out.println("Feature not found, returning default limit of " + defaultLimit);
         return defaultLimit;
     }
+    private Integer extractThemeLimit(List<String> features) {
+        // Default limit if no matching feature is found
+        Integer defaultLimit = 3;
 
-/*    private Integer extractDailyGameLimit(List<String> features) {
         for (String feature : features) {
-            if (feature.toLowerCase().contains("daily game publish limit")) {
-                System.out.println(feature + " feature");
-                // Extract the number from the feature string (e.g., "Updated Daily Game Publish Limit: 10")
-                return extractNumberFromString(feature);
+            // Match patterns like "Upto 7 Themes" or "7 Skins", etc.
+            Pattern pattern = Pattern.compile("(?i)(?:upto\\s*)?([0-9]+)\\s*(themes|skins?)");
+            Matcher matcher = pattern.matcher(feature);
+
+            if (matcher.find()) {
+                String number = matcher.group(1); // Extract the number
+                System.out.println("Theme feature found: " + feature);
+                System.out.println("Extracted theme/skin number: " + number);
+                return Integer.parseInt(number);  // Return the extracted number
             }
         }
-        return 5;
+
+        System.out.println("Theme feature not found, returning default limit of " + defaultLimit);
+        return defaultLimit;
     }
-
-    private Integer extractNumberFromString(String text) {
-        // Use regular expression to find the first occurrence of digits in the string
-//        String number = text.replaceAll("\\D", ""); // Remove non-digits characters
-        String number = text.replaceAll("[^\\d]", ""); // Replace all non-digit characters except numbers
-
-        System.out.println(number + " extractDailyGameLimit");
-
-        return number.isEmpty() ? 5 : Integer.parseInt(number); // Return 0 if no number is found
-    }*/
 
 
 

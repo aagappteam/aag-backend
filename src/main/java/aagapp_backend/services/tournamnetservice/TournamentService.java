@@ -133,7 +133,7 @@ public class TournamentService {
 
 
             // Set created and updated timestamps
-            tournament.setCreatedAt(nowInKolkata);
+            tournament.setCreatedDate(nowInKolkata);
 
             // Save tournament first to get its ID
             Tournament savedTournament = tournamentRepository.save(tournament);

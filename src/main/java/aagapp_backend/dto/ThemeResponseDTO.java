@@ -13,5 +13,6 @@ public class ThemeResponseDTO {
     public ThemeResponseDTO(ThemeEntity theme) {
         this.themeId = theme.getId();
         this.themeImage = theme.getImageUrl();
+
     }
 }
