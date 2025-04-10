@@ -1,9 +1,13 @@
 package aagapp_backend.controller.tournament;
+
 import aagapp_backend.dto.TournamentRequest;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.entity.tournament.TournamentRoom;
+import aagapp_backend.entity.tournament.TournamentRoundWinner;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -19,8 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 @RestController
 @RequestMapping("/tournament")
@@ -33,6 +36,11 @@ public class TournamentController {
     private NotificationRepository notificationRepository;
 
     @Autowired
+    PlayerRepository playerRepository;
+
+
+
+    @Autowired
     public void setNotificationRepository(NotificationRepository notificationRepository) {
         this.notificationRepository = notificationRepository;
     }
@@ -42,6 +50,7 @@ public class TournamentController {
     public void setTournamentService(TournamentService tournamentService) {
         this.tournamentService = tournamentService;
     }
+
 
     @Autowired
     public void setResponseService(ResponseService responseService) {
@@ -176,6 +185,96 @@ public class TournamentController {
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error publishing Tournaments" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/startTournament/{tournamentId}")
+    public ResponseEntity<?> startTournament(@PathVariable Long tournamentId) {
+        try {
+            tournamentService.startTournament(tournamentId);
+            return ResponseEntity.ok("🏆 Tournament Started Successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error starting tournament: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/get-rooms-by-tournament/{tournamentId}")
+    public ResponseEntity<?> getRoomsByTournamentId(@PathVariable Long tournamentId) {
+        try {
+            List<TournamentRoom> rooms = tournamentService.getAllRoomsByTournamentId(tournamentId);
+            return responseService.generateSuccessResponse("Rooms fetched successfully", rooms, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching rooms: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Join a Room
+    @PostMapping("/join-room/{tournamentId}")
+    public ResponseEntity<?> joinRoom(
+            @PathVariable Long tournamentId,
+            @RequestParam Long playerId) {
+
+        try {
+
+            TournamentRoom roomDetails = tournamentService.assignPlayerToRoom(playerId, tournamentId);
+            return responseService.generateSuccessResponse("Player joined room successfully", roomDetails, HttpStatus.OK);
+        }catch (RuntimeException e) {
+            return responseService.generateErrorResponse("Error in joining rooms : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error in joining rooms : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+
+    // Endpoint to add a player to a round
+    @PostMapping("/add-player-next-round")
+    public ResponseEntity<?> addPlayerToRound(
+            @RequestParam Long tournamentId,
+            @RequestParam Long playerId,
+            @RequestParam Integer roundNumber) {
+        try {
+            TournamentRoundWinner tournamentRoundWinner = tournamentService.addPlayerToRound(tournamentId, playerId, roundNumber);
+            return responseService.generateSuccessResponse("Player added successfully to the round", tournamentRoundWinner, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return responseService.generateErrorResponse("Error adding player to the round: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error occurred while adding player to the round: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Endpoint to retrieve players by tournamentId and roundNumber
+    @GetMapping("/players-list")
+    public ResponseEntity<?> getPlayersInTournamentRound(
+            @RequestParam Long tournamentId,
+            @RequestParam Integer roundNumber) {
+        try {
+            List<TournamentRoundWinner> players = tournamentService.getPlayersByTournamentAndRound(tournamentId, roundNumber);
+            return responseService.generateSuccessResponse("Players retrieved successfully", players, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error occurred while retrieving players: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Endpoint to create rooms for players (called when creating rooms for tournament and round)
+    @PostMapping("/create-rooms")
+    public ResponseEntity<?> createRoomsForTournament(
+            @RequestParam Long tournamentId,    // Tournament ID (which tournament to create rooms for)
+            @RequestParam Integer roundNumber   // Round number (which round to create rooms for)
+    ) {
+        try {
+            // Call the service method to create rooms for players in this tournament round
+            List<TournamentRoom> createdRooms = tournamentService.createRoomsForPlayersNextRoundAndAssign(tournamentId, roundNumber);
+            // Return a success message with status 200 OK
+            return responseService.generateSuccessResponse("Rooms created successfully for Tournament " + tournamentId + " and Round " + roundNumber, createdRooms, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error occurred while creating rooms: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
