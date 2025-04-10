@@ -193,8 +193,12 @@ public class LeagueService {
             }
 
             // Set Vendor and Theme to the Game
-            league.setName(opponentVendor.getFirst_name() +"v/s" +vendorEntity.getFirst_name());
+            league.setName(opponentVendor.getFirst_name() +" v/s " +vendorEntity.getFirst_name());
             league.setVendorEntity(vendorEntity);
+            league.setChallengingVendorName(vendorEntity.getFirst_name()+" "+vendorEntity.getLast_name());
+            league.setChallengingVendorProfilePic(vendorEntity.getProfilePic());
+            league.setOpponentVendorName(opponentVendor.getFirst_name()+" "+opponentVendor.getLast_name());
+            league.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
             league.setTheme(theme);
             league.setAagGameId(leagueRequest.getExistinggameId());
             league.setOpponentVendorId(leagueRequest.getOpponentVendorId());
