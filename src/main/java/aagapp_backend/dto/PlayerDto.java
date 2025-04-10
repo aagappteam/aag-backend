@@ -1,0 +1,17 @@
+package aagapp_backend.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+
+@Getter
+@Setter
+public class PlayerDto {
+    private Long playerId;
+    private String name;
+    private int score;
+    private BigDecimal amount;
+    private String pictureUrl;
+
+}

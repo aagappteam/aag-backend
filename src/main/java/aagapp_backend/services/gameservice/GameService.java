@@ -315,41 +315,9 @@ public class GameService {
         }
     }
 
-    /*public void createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
-            try{
-                // Construct the URL for the POST request
-                String url = baseUrl + "/CreateNewGame";
-
-                System.out.println(url + " url");
-
-                // Create form parameters using MultiValueMap (simulating form data)
-                MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-                formData.add("gameId", gameId.toString());
-                formData.add("roomId", roomId.toString());
-                formData.add("players", players.toString());
-                formData.add("move", move.toString());
-                formData.add("prize", prize.toString());
-
-                // Create headers (optional, can set Content-Type)
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("Content-Type", "application/x-www-form-urlencoded");
-
-                // Wrap form data in HttpEntity to send in the request body
-                HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(formData, headers);
-
-                // Send the POST request with form data as the body
-                ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
-
-                // Handle the response
-                System.out.println("Response: " + response.getBody());
-            }catch (Exception e){
-                exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-                throw new RuntimeException("Error occurred while creating  the game on server: " + e.getMessage(), e);
-            }
-    }*/
 
 
-    public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
+   /* public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
         try {
             // Construct the URL for the POST request
             String url = baseUrl + "/CreateNewGame?players=" + players + "&prize=" + prize + "&moves=" + move;
@@ -367,6 +335,40 @@ public class GameService {
 
             String gamePassword = jsonResponse.get("GamePassword").asText();
             System.out.println("gamePassword" + gamePassword);
+
+            return gamePassword;
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
+        }
+    }*/
+
+    public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
+        try {
+            // Construct the URL for the POST request, including query parameters
+            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move;
+
+            // Create headers (optional, but good practice to include Content-Type for clarity)
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", "application/json");
+
+            // Create the HttpEntity with headers (no body needed for query parameters)
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            // Send POST request to the external service
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+            // Parse the response body (assuming it's a JSON response)
+            String responseBody = response.getBody();
+            System.out.println("responseBody: " + responseBody);
+
+            // Assuming the response is JSON and contains "GamePassword"
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonResponse = objectMapper.readTree(responseBody);
+            String gamePassword = jsonResponse.get("GamePassword").asText();
+            System.out.println("gamePassword: " + gamePassword);
 
             return gamePassword;
 
@@ -407,6 +409,7 @@ public class GameService {
 
             // 6. Update player status to PLAYING
             updatePlayerStatusToPlaying(player);
+
 
             // Return the saved game with the shareable link
             return responseService.generateSuccessResponse("Player join in the Game Room ", gameRoom, HttpStatus.OK);

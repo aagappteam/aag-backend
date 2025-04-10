@@ -1,6 +1,7 @@
 package aagapp_backend.entity.wallet;
 
 import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorEntity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import io.micrometer.common.lang.Nullable;
 import jakarta.persistence.*;
@@ -12,27 +13,24 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "wallet")
+@Table(name = "vendor_wallet")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Wallet {
+
+public class VendorWallet {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "wallet_id")
     private Long walletId;
 
-    @ManyToOne
-    @JoinColumn(name = "customerId", referencedColumnName = "customerId", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "service_provider_id", referencedColumnName = "service_provider_id", nullable = false)
     @JsonBackReference
-    private CustomCustomer customCustomer;
-
-
-    @Column(name = "unplayed_balance", nullable = false)
-    private Float unplayedBalance;
+    private VendorEntity vendorEntity;
 
     @Column(name = "winning_amount", nullable = false)
     private BigDecimal winningAmount;
