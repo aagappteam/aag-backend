@@ -8,6 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Entity
@@ -50,6 +53,9 @@ public class VendorSubmissionEntity {
 
     @ElementCollection
     private Map<String, String> socialMediaUrls;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
     @PrePersist
     @PreUpdate
