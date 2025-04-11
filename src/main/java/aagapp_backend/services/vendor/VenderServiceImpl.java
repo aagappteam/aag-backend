@@ -431,7 +431,10 @@ public class VenderServiceImpl implements VenderService {
      */
     @Override
     public VendorEntity findActiveServiceProviderByPhone(String mobileNumber, String countryCode) {
-         int signedUp=1;
+        int signedUp=1;
+        if(countryCode==null){
+            countryCode=Constant.COUNTRY_CODE;
+        }
         return entityManager.createQuery(Constant.ACTIVE_PHONE_QUERY_SERVICE_PROVIDER, VendorEntity.class)
                 .setParameter("mobileNumber", mobileNumber)
                 .setParameter("country_code", countryCode)
@@ -442,6 +445,10 @@ public class VenderServiceImpl implements VenderService {
     }
     @Override
     public VendorEntity findServiceProviderByPhone(String mobileNumber, String countryCode) {
+
+        if(countryCode==null){
+            countryCode=Constant.COUNTRY_CODE;
+        }
 
         return entityManager.createQuery(Constant.PHONE_QUERY_SERVICE_PROVIDER, VendorEntity.class)
                 .setParameter("mobileNumber", mobileNumber)

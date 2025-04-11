@@ -5,6 +5,7 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.*;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.admin.AdminService;
@@ -183,6 +184,7 @@ public class AccountEndPoint {
 
             String countryCode = (String) loginDetails.get("countryCode");
             Integer role = (Integer) loginDetails.get("role");
+
             if (mobileNumber == null) {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
 
@@ -197,8 +199,9 @@ public class AccountEndPoint {
             if (mobileNumber.startsWith("0")) {
                 updated_mobile = mobileNumber.substring(1);
             }
+
             if (roleService.findRoleName(role).equals(Constant.roleUser)) {
-                CustomCustomer customerRecords = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
+                CustomCustomer customerRecords = customCustomerService.findCustomCustomerByPhoneWithOtp(mobileNumber, countryCode);
                 if (customerRecords == null) {
                     return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
 
@@ -224,11 +227,10 @@ public class AccountEndPoint {
                     return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
                 }
             } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {
-                if (vendorService.findServiceProviderByPhone(mobileNumber, countryCode) != null) {
-                    if (vendorService.findServiceProviderByPhone(mobileNumber, countryCode).getOtp() != null) {
-                        responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+                VendorEntity vendorEntity = vendorService.findActiveServiceProviderByPhone(mobileNumber, countryCode);
 
-                    }
+                if (vendorEntity != null) {
+
                     return vendorService.sendOtp(mobileNumber, countryCode, session);
 
                 } else {
