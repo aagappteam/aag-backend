@@ -355,13 +355,19 @@ public class GameService {
     public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
         try {
             Player player = getPlayerById(playerId);
+            System.out.println("player: " + player.getPlayerId());
             Game game = getGameById(gameId);
+            if(game.getStatus()==GameStatus.EXPIRED){
+                return responseService.generateErrorResponse("Game is expired", HttpStatus.BAD_REQUEST);
+            }
+            System.out.println("game: " + game.getName());
 
             if (isPlayerInRoom(player)) {
                 return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.BAD_REQUEST);
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);
+            System.out.println("gameRoom: " + gameRoom.getRoomCode());
 
             // 4. Attempt to add the player to the room
             boolean playerJoined = addPlayerToRoom(gameRoom, player);
@@ -513,19 +519,24 @@ public class GameService {
 
 
     public GameRoom findAvailableGameRoom(Game game) {
-        // Find a game room that has available space and matches the specified game
-        List<GameRoom> availableRooms = gameRoomRepository.findByGameAndStatus(game, GameRoomStatus.INITIALIZED);
-        // Loop through the available rooms and return the first one with space
-        for (GameRoom room : availableRooms) {
-            if (room.getCurrentPlayers().size() < room.getMaxPlayers()) {
-                return room;
-            }
-        }
+            try{
+                // Find a game room that has available space and matches the specified game
+                List<GameRoom> availableRooms = gameRoomRepository.findByGameAndStatus(game, GameRoomStatus.INITIALIZED);
+                // Loop through the available rooms and return the first one with space
+                for (GameRoom room : availableRooms) {
+                    if (room.getCurrentPlayers().size() < room.getMaxPlayers()) {
+                        return room;
+                    }
+                }
 
-        // If no available room is found, return null or create a new room
-        GameRoom newRoom = createNewEmptyRoom(game);
-        gameRoomRepository.save(newRoom); // Save the new room
-        return newRoom;
+                // If no available room is found, return null or create a new room
+                GameRoom newRoom = createNewEmptyRoom(game);
+                gameRoomRepository.save(newRoom); // Save the new room
+                return newRoom;
+            }catch (Exception e){
+                exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                return null;
+            }
     }
 
 
@@ -568,23 +579,28 @@ public class GameService {
     }*/
 
     private GameRoom createNewEmptyRoom(Game game) {
-        GameRoom newRoom = new GameRoom();
-        newRoom.setMaxPlayers(game.getMaxPlayersPerTeam());
-        newRoom.setCurrentPlayers(new ArrayList<>());
-        newRoom.setStatus(GameRoomStatus.INITIALIZED);
-        newRoom.setCreatedAt(LocalDateTime.now());
-        newRoom.setRoomCode(generateRoomCode());
-        newRoom.setGame(game);
+        try{
+            GameRoom newRoom = new GameRoom();
+            newRoom.setMaxPlayers(game.getMaxPlayersPerTeam());
+            newRoom.setCurrentPlayers(new ArrayList<>());
+            newRoom.setStatus(GameRoomStatus.INITIALIZED);
+            newRoom.setCreatedAt(LocalDateTime.now());
+            newRoom.setRoomCode(generateRoomCode());
+            newRoom.setGame(game);
 
-        // Save the room first so it gets an ID
-        newRoom = gameRoomRepository.save(newRoom); // Save and assign the generated ID
+            // Save the room first so it gets an ID
+            newRoom = gameRoomRepository.save(newRoom); // Save and assign the generated ID
 
-        Double total_prize = 3.2;
-        String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), total_prize);
+            Double total_prize = 3.2;
+            String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), total_prize);
 
-        newRoom.setGamepassword(gamePassword);
+            newRoom.setGamepassword(gamePassword);
 
-        return newRoom;
+            return newRoom;
+        }catch (Exception e){
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return null;
+        }
     }
 
 
