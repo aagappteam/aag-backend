@@ -377,6 +377,11 @@ public class GameController {
         }
     }
 
+//    get active session by vendor id
+
+
+
+
 
 
 }

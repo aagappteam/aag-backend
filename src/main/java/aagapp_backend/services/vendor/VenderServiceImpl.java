@@ -430,6 +430,17 @@ public class VenderServiceImpl implements VenderService {
      * @return
      */
     @Override
+    public VendorEntity findActiveServiceProviderByPhone(String mobileNumber, String countryCode) {
+
+        return entityManager.createQuery(Constant.ACTIVE_PHONE_QUERY_SERVICE_PROVIDER, VendorEntity.class)
+                .setParameter("mobileNumber", mobileNumber)
+                .setParameter("country_code", countryCode)
+                .setParameter("signedUp", 1)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+    }
+    @Override
     public VendorEntity findServiceProviderByPhone(String mobileNumber, String countryCode) {
 
         return entityManager.createQuery(Constant.PHONE_QUERY_SERVICE_PROVIDER, VendorEntity.class)

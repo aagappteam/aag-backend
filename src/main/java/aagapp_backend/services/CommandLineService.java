@@ -264,27 +264,26 @@ public class CommandLineService implements CommandLineRunner {
 
             // Insert themes for Snakes & Ladders Ultimate game
             List<ThemeEntity> snakeThemes = List.of(
-                    new ThemeEntity("Default", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+and+ladders-01.png", currentTimestamp),
-                    new ThemeEntity("Forest Theme", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/forest+theame+%5BRecovered%5D-01.png", currentTimestamp),
-                    new ThemeEntity("Ninja Theme", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+nd+ladder+ice+theme+final-01.png", currentTimestamp),
-                    new ThemeEntity("Underwater Ludo", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+ladders+under+water+final-01.png", currentTimestamp),
-                    new ThemeEntity("Ice Theme", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+nd+ladder+ice+theme+final-01.png", currentTimestamp),
-                    new ThemeEntity("Heaven Theme", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/heaven+snake+ladders-01.png", currentTimestamp),
-                    new ThemeEntity("Hell Theme", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/hell+snake+ladder+final+2-01.png", currentTimestamp)
+                    new ThemeEntity("Standard", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+and+ladders-01.png", currentTimestamp),
+                    new ThemeEntity("Forest", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/forest+theame+%5BRecovered%5D-01.png", currentTimestamp),
+                    new ThemeEntity("Ninja", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+nd+ladder+ice+theme+final-01.png", currentTimestamp),
+                    new ThemeEntity("Underwater", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+ladders+under+water+final-01.png", currentTimestamp),
+                    new ThemeEntity("Ice", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+nd+ladder+ice+theme+final-01.png", currentTimestamp),
+                    new ThemeEntity("Heaven", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/heaven+snake+ladders-01.png", currentTimestamp),
+                    new ThemeEntity("Hell", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/hell+snake+ladder+final+2-01.png", currentTimestamp)
             );
 
             for (ThemeEntity theme : snakeThemes) {
-                theme.getGames().add(snakesAndLaddersGame); // Add Ludo game to the theme's list of games
+                theme.getGames().add(snakesAndLaddersGame); // Add Snakes & Ladders game to the theme's list of games
                 entityManager.persist(theme);
             }
-
 
             // Insert prices for Snakes & Ladders Ultimate game
             List<Double> ludoPrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
             for (Double price : ludoPrices) {
                 PriceEntity priceEntity = new PriceEntity();
                 priceEntity.setPriceValue(price);
-                priceEntity.getGames().add(snakesAndLaddersGame); // Add Ludo game to the price's list of games
+                priceEntity.getGames().add(snakesAndLaddersGame); // Add Snakes & Ladders game to the price's list of games
                 entityManager.persist(priceEntity);
             }
 
@@ -297,13 +296,15 @@ public class CommandLineService implements CommandLineRunner {
             ludoGame.setGameStatus(GameStatus.ACTIVE);
             entityManager.persist(ludoGame);
 
-            // Insert themes for Ludo game
+            // Insert themes for Ludo game (Updated order and theme names)
             List<ThemeEntity> ludoThemes = List.of(
-                    new ThemeEntity("Default", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/ludo/ludo+design+2-01.png", currentTimestamp),
-                    new ThemeEntity("Forest Theme", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/ludo/forest+theme+2-01.png", currentTimestamp),
-                    new ThemeEntity("Ninja Theme", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/ludo/ninja+theme+2-02.png", currentTimestamp),
-                    new ThemeEntity("Underwater Ludo", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/ludo/undewater+ludo.png", currentTimestamp),
-                    new ThemeEntity("Ice Theme", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/ludo/WhatsApp+Image+2025-03-24+at+11.25.04_d17b6e8a.png", currentTimestamp)
+                    new ThemeEntity("Standard", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Standard+ludo+theme.png", currentTimestamp),
+                    new ThemeEntity("Forest", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Jungle+Theme.png", currentTimestamp),
+                    new ThemeEntity("Underwater", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Undewater+Ludo.png", currentTimestamp),
+                    new ThemeEntity("Ice", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Ice+Ludo.png", currentTimestamp),
+                    new ThemeEntity("Ninja", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Ninja+Ludo.png", currentTimestamp),
+                    new ThemeEntity("Hell", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Hell+Ludo.png", currentTimestamp),
+                    new ThemeEntity("Heaven", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Heaven+Ludo.png", currentTimestamp)
             );
 
             for (ThemeEntity theme : ludoThemes) {
@@ -311,7 +312,7 @@ public class CommandLineService implements CommandLineRunner {
                 entityManager.persist(theme);
             }
 
-
+            // Insert prices for Ludo game
             List<Double> snakeladderludoPrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
             for (Double price : snakeladderludoPrices) {
                 PriceEntity priceEntity = new PriceEntity();
@@ -320,10 +321,9 @@ public class CommandLineService implements CommandLineRunner {
                 entityManager.persist(priceEntity);
             }
 
-
-
             System.out.println("Predefined games, themes, and prices inserted into the database.");
         }
+
 
 
 
