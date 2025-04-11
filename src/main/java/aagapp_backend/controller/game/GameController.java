@@ -245,6 +245,7 @@ public class GameController {
     @PostMapping("/joinRoom")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinRoomRequest joinRoomRequest) {
         try {
+
             return gameService.joinRoom(joinRoomRequest.getPlayerId(), joinRoomRequest.getGameId(), joinRoomRequest.getGametype());
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -321,15 +322,9 @@ public class GameController {
 
         try {
             // Validate required parameters
-
-
             if (events == null || events.trim().isEmpty()) {
                 return responseService.generateErrorResponse("The 'events' parameter is required.", HttpStatus.BAD_REQUEST);
             }
-
-            // Initialize pageable object for pagination
-//            Pageable pageable = PageRequest.of(page, size);
-
 
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
@@ -376,12 +371,6 @@ public class GameController {
             return responseService.generateErrorResponse("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-//    get active session by vendor id
-
-
-
-
 
 
 }
