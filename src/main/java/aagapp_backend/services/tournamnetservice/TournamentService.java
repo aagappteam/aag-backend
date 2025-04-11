@@ -22,6 +22,8 @@ import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.tournament.TournamentRoomRepository;
 import aagapp_backend.repository.tournament.TournamentRoundWinnerRepository;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
@@ -30,8 +32,9 @@ import jakarta.validation.constraints.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import javax.naming.LimitExceededException;
 import java.time.ZoneId;
@@ -61,11 +64,7 @@ public class TournamentService {
 
     @Autowired
     private TournamentRoundWinnerRepository tournamentRoundWinnerRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
-
-    private final Map<Long, Integer> playerRewards = new HashMap<>();
+    private final String baseUrl = "http://13.232.105.87:8082";
 
 
     @Transactional
@@ -143,6 +142,11 @@ public class TournamentService {
                 room.setStatus("OPEN");
                 room.setRound(1);
                 roomRepository.save(room);
+
+                Double total_prize = 3.2;
+                String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(), tournament.getParticipants(), tournament.getMove(), total_prize);
+
+                room.setGamepassword(gamePassword);
             }
 
             // Save the game to get the game ID
@@ -361,6 +365,8 @@ public class TournamentService {
             // Calculate the number of rooms needed (each room holds 2 players)
             int roomSize = 2;
 
+            Tournament tournament = tournamentRepository.findById(tournamentId).orElse(null);
+
             // Get the list of winners (players) in this tournament and round
             List<TournamentRoundWinner> winners = tournamentRoundWinnerRepository.findByTournamentIdAndRoundNumber(tournamentId, roundNumber);
 
@@ -378,6 +384,10 @@ public class TournamentService {
                 room.setStatus("OPEN");
                 roomRepository.save(room);
                 createdRooms.add(room);
+                Double total_prize = 3.2;
+                String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(), tournament.getParticipants(), tournament.getMove(), total_prize);
+
+                room.setGamepassword(gamePassword);
             }
 
             // Assign players to the created rooms
@@ -398,4 +408,40 @@ public class TournamentService {
     }
 
 
+
+
+    public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
+        try {
+            // Construct the URL for the POST request, including query parameters
+            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move;
+
+            System.out.println("url: " + url);
+            // Create headers (optional, but good practice to include Content-Type for clarity)
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", "application/json");
+
+            // Create the HttpEntity with headers (no body needed for query parameters)
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            // Send POST request to the external service
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+            // Parse the response body (assuming it's a JSON response)
+            String responseBody = response.getBody();
+            System.out.println("responseBody: " + responseBody);
+
+            // Assuming the response is JSON and contains "GamePassword"
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonResponse = objectMapper.readTree(responseBody);
+            String gamePassword = jsonResponse.get("GamePassword").asText();
+            System.out.println("gamePassword: " + gamePassword);
+
+            return gamePassword;
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
+        }
+    }
 }
