@@ -20,7 +20,7 @@ public class Constant {
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
     public static String PHONE_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code";
-    public static String ACTIVE_PHONE_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code AND c.signedUp=:profileStatus";
+    public static String ACTIVE_PHONE_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code AND c.signedUp=:signedUp";
 
     public static String PHONE_QUERY_ADMIN = "SELECT c FROM CustomAdmin c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code";
     public static String USERNAME_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.user_name = :username";
