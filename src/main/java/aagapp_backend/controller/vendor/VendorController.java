@@ -170,64 +170,6 @@ public class VendorController {
     }
 
 
-   /* @Transactional
-    @GetMapping("/get-all-vendors")
-    public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int limit,
-                                                    @RequestParam(value = "status", required = false) String status,
-                                                    @RequestParam(value = "email", required = false) String email,
-                                                    @RequestParam(value = "firstName", required = false) String firstName,
-
-                                                    @RequestParam(value = "vendorId", required = false) Long vendorId) {
-        try {
-            int startPosition = page * limit;
-
-            if (vendorId != null) {
-                VendorEntity serviceProvider = entityManager.find(VendorEntity.class, vendorId);
-                if (serviceProvider == null) {
-                    return ResponseService.generateErrorResponse("Service provider does not found", HttpStatus.NOT_FOUND);
-                }
-                return ResponseService.generateSuccessResponse("Service provider details fetched successfully", serviceProvider, HttpStatus.OK);
-            }
-
-            // Create base query for fetching all vendors
-            StringBuilder queryString = new StringBuilder(Constant.GET_ALL_SERVICE_PROVIDERS);
-
-
-            // Create the query for counting rows
-            StringBuilder countQueryString = new StringBuilder("SELECT COUNT(v) FROM VendorEntity v");
-
-
-            // Execute the count query to get the total number of matching vendors
-            Query countQuery = entityManager.createQuery(countQueryString.toString());
-            if (status != null && !status.isEmpty()) {
-                countQuery.setParameter("status", status);
-            }
-            Long totalCount = (Long) countQuery.getSingleResult();
-
-            // Create the query for fetching vendors
-            Query query = entityManager.createQuery(queryString.toString(), VendorEntity.class);
-
-            // Set parameter for status if provided
-            if (status != null && !status.isEmpty()) {
-                query.setParameter("status", status);
-            }
-
-            query.setFirstResult(startPosition);
-            query.setMaxResults(limit);
-
-            // Execute the query and get the list of vendors
-            List<VendorEntity> results = query.getResultList();
-
-            // Return the response including the list of vendors and the total count
-            return ResponseService.generateSuccessResponseWithCount("List of vendors", results, totalCount, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }*/
-
     @Transactional
     @GetMapping("/get-all-vendors")
     public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page,
@@ -259,8 +201,11 @@ public class VendorController {
             if (email != null && !email.isEmpty()) {
                 conditions.add("LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :email, '%'))");
             }
-            if (firstName != null && !firstName.isEmpty()) {
-                conditions.add("LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstName, '%'))");
+
+            // Apply firstName filter for both first_name and last_name columns if the firstName parameter is provided
+            if (firstName != null && !firstName.trim().isEmpty()) {
+                conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstName, '%')) " +
+                        "OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstName, '%')))");
             }
 
             // Apply WHERE clause if there are any conditions
@@ -270,7 +215,7 @@ public class VendorController {
                 countQueryString.append(" WHERE ").append(whereClause);
             }
 
-            queryString.append(" ORDER BY s.createdDate DESC");
+            queryString.append(" ORDER BY s.service_provider_id DESC");
 
             // Create queries
             Query countQuery = entityManager.createQuery(countQueryString.toString());
@@ -286,7 +231,7 @@ public class VendorController {
                 countQuery.setParameter("email", email);
                 query.setParameter("email", email);
             }
-            if (firstName != null && !firstName.isEmpty()) {
+            if (firstName != null && !firstName.trim().isEmpty()) {
                 countQuery.setParameter("firstName", firstName);
                 query.setParameter("firstName", firstName);
             }

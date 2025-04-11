@@ -132,6 +132,7 @@ public class GameLeagueTournamentService {
                 ZonedDateTime endOfDay = endDate.atStartOfDay(ZoneId.systemDefault()).plusDays(1).minusSeconds(1); // End of the day
                 sql.append(" AND g.created_at BETWEEN :pubStartDate AND :pubEndDate");
             }
+            sql.append(" ORDER BY g.created_date DESC"); // Ensure sorting by created_at
 
             Query query = entityManager.createNativeQuery(sql.toString(), Game.class);
 
@@ -237,6 +238,7 @@ public class GameLeagueTournamentService {
                 ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1); // End of the day
                 sql.append(" AND l.scheduled_at BETWEEN :scheduledStart AND :scheduledEnd");
             }
+            sql.append(" ORDER BY l.created_date DESC"); // Ensure sorting by created_at
 
             Query query = entityManager.createNativeQuery(sql.toString(), League.class);
 
@@ -329,7 +331,7 @@ public class GameLeagueTournamentService {
             if (startDate != null && endDate != null) {
                 ZonedDateTime startOfDay = startDate.atStartOfDay(ZoneId.systemDefault());
                 ZonedDateTime endOfDay = endDate.atStartOfDay(ZoneId.systemDefault()).plusDays(1).minusSeconds(1); // End of the day
-                sql.append(" AND t.created_at BETWEEN :pubStartDate AND :pubEndDate");
+                sql.append(" AND t.createdDate BETWEEN :pubStartDate AND :pubEndDate");
             }
 
             // Handle filtering by scheduled date (start and end of the day)
@@ -338,6 +340,7 @@ public class GameLeagueTournamentService {
                 ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1); // End of the day
                 sql.append(" AND t.scheduled_at BETWEEN :scheduledStart AND :scheduledEnd");
             }
+            sql.append(" ORDER BY t.createdDate DESC"); // Ensure sorting by created_at
 
             Query query = entityManager.createNativeQuery(sql.toString(), Tournament.class);
 
