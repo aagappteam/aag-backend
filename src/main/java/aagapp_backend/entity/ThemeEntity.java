@@ -14,6 +14,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -53,8 +55,9 @@ public class ThemeEntity {
     public ThemeEntity(String aDefault, String url, LocalDateTime currentTimestamp) {
         this.name = aDefault;
         this.imageUrl = url;
-        this.createdDate = Date.from(Instant.from(currentTimestamp));
+        this.createdDate = Date.from(currentTimestamp.atZone(ZoneId.of("Asia/Kolkata")).toInstant());
         this.updatedDate = null;
+        this.games = new ArrayList<>();
     }
 }
 
