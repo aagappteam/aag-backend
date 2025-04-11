@@ -245,7 +245,6 @@ public class GameController {
     @PostMapping("/joinRoom")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinRoomRequest joinRoomRequest) {
         try {
-            System.out.println("joinRoomRequest: " + joinRoomRequest);
 
             return gameService.joinRoom(joinRoomRequest.getPlayerId(), joinRoomRequest.getGameId(), joinRoomRequest.getGametype());
         } catch (Exception e) {
@@ -372,12 +371,6 @@ public class GameController {
             return responseService.generateErrorResponse("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-//    get active session by vendor id
-
-
-
-
 
 
 }

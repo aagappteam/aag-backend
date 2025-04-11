@@ -355,19 +355,16 @@ public class GameService {
     public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
         try {
             Player player = getPlayerById(playerId);
-            System.out.println("player: " + player.getPlayerId());
             Game game = getGameById(gameId);
             if(game.getStatus()==GameStatus.EXPIRED){
                 return responseService.generateErrorResponse("Game is expired", HttpStatus.BAD_REQUEST);
             }
-            System.out.println("game: " + game.getName());
 
             if (isPlayerInRoom(player)) {
                 return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.BAD_REQUEST);
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);
-            System.out.println("gameRoom: " + gameRoom.getRoomCode());
 
             // 4. Attempt to add the player to the room
             boolean playerJoined = addPlayerToRoom(gameRoom, player);
