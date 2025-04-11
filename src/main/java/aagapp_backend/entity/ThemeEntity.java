@@ -35,7 +35,6 @@ public class ThemeEntity {
     @Column(name = "image_url")
     private String imageUrl; // URL or path to the theme's image/icon
 
-
     @ManyToMany(mappedBy = "themes")
     @JsonBackReference
     private List<AagAvailableGames> games;

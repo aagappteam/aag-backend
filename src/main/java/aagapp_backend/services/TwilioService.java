@@ -99,14 +99,7 @@ public class TwilioService {
                         "otp", otp,
                         "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber
                 ));
-            } /*else if (existingvendor != null) {
-
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-                        "status", ApiConstants.STATUS_ERROR,
-                        "status_code", HttpStatus.BAD_REQUEST,
-                        "message", ApiConstants.NUMBER_ALREADY_REGISTERED_SERVICE_PROVIDER
-                ));
-            }*/ else {
+            }  else {
                 existingCustomer.setOtp(otp);
                 entityManager.merge(existingCustomer);
                 return ResponseEntity.ok(Map.of(

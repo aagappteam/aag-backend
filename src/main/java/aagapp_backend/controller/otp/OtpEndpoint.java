@@ -375,45 +375,47 @@ public class OtpEndpoint {
 
 
             mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
-           /* if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
-                return responseService.generateErrorResponse(ApiConstants.NUMBER_REGISTERED_AS_CUSTOMER, HttpStatus.BAD_REQUEST);
+            if (!CommonData.isValidMobileNumber(mobileNumber)) {
+                return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
             }
-*/
             if (countryCode == null || countryCode.isEmpty()) {
                 countryCode = Constant.COUNTRY_CODE;
             }
 
-            if (!CommonData.isValidMobileNumber(mobileNumber)) {
-                return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
-            }
 
-//            Twilio.init(accountSid, authToken);
             String otp = twilioService.generateOTP();
 
 
-            otpservice.sendOtp(countryCode,mobileNumber,otp);
-
-
-            VendorEntity existingServiceProvider = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);
-
-
-            if (existingServiceProvider == null) {
-                VendorEntity vendorEntity = new VendorEntity();
-                vendorEntity.setCountry_code(countryCode);
-                vendorEntity.setMobileNumber(mobileNumber);
-                vendorEntity.setOtp(otp);
-                vendorEntity.setRole(4);
-                em.persist(vendorEntity);
-            } else if (existingServiceProvider.getOtp() != null) {
-                existingServiceProvider.setOtp(otp);
-                em.merge(existingServiceProvider);
-            } else {
+            VendorEntity existingServiceProvider = serviceProviderService.findActiveServiceProviderByPhone(mobileNumber, countryCode);
+            if(existingServiceProvider!=null){
                 return responseService.generateErrorResponse(ApiConstants.MOBILE_NUMBER_REGISTERED, HttpStatus.BAD_REQUEST);
             }
-            Map<String, Object> details = new HashMap<>();
-            String maskedNumber = twilioService.genereateMaskednumber(mobileNumber);
-            details.put("otp", otp);
-            return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + " on " + maskedNumber, otp, HttpStatus.OK);
+            Bucket bucket = rateLimiterService.resolveBucket(mobileNumber, "/otp/vendor-signup");
+            if (bucket.tryConsume(1)) {
+
+                otpservice.sendOtp(countryCode,mobileNumber,otp);
+                VendorEntity existingServiceProviderwithoutsigneup = serviceProviderService.findActiveServiceProviderByPhone(mobileNumber, countryCode);
+                if(existingServiceProviderwithoutsigneup==null){
+                    VendorEntity vendorEntity = new VendorEntity();
+                    vendorEntity.setCountry_code(countryCode);
+                    vendorEntity.setMobileNumber(mobileNumber);
+                    vendorEntity.setOtp(otp);
+                    vendorEntity.setRole(4);
+                    em.persist(vendorEntity);
+                }else{
+                    existingServiceProviderwithoutsigneup.setOtp(otp);
+                    em.merge(existingServiceProviderwithoutsigneup);
+                }
+
+                Map<String, Object> details = new HashMap<>();
+                String maskedNumber = twilioService.genereateMaskednumber(mobileNumber);
+                details.put("otp", otp);
+                return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + " on " + maskedNumber, otp, HttpStatus.OK);
+            } else {
+                return responseService.generateErrorResponse(ApiConstants.RATE_LIMIT_EXCEEDED, HttpStatus.BANDWIDTH_LIMIT_EXCEEDED);
+            }
+
+
 
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
