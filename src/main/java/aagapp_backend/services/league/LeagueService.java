@@ -18,6 +18,8 @@ import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firestore.v1.TransactionOptions;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -25,10 +27,10 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import javax.naming.LimitExceededException;
 import java.time.LocalDateTime;
@@ -67,6 +69,7 @@ public class LeagueService {
 
     @Autowired
     private ResponseService responseService;
+    private final String baseUrl = "http://13.232.105.87:8082";
 
     @Transactional
     public Challenge createChallenge(LeagueRequest leagueRequest, Long vendorId) {
@@ -273,18 +276,51 @@ public class LeagueService {
         newRoom.setCreatedAt(LocalDateTime.now());
         newRoom.setRoomCode(generateRoomCode());
         newRoom.setGame(league);
+
+        Double total_prize = 3.2;
+        String gamePassword = this.createNewGame(baseUrl, league.getId(), newRoom.getId(), league.getMaxPlayersPerTeam(), league.getMove(), total_prize);
+
+        newRoom.setGamepassword(gamePassword);
+
         return newRoom;
     }
 
-    /*// Generate a unique room code
-    private String generateRoomCode() {
-        String roomCode;
-        do {
-            roomCode = RandomStringUtils.randomAlphanumeric(6);
-        } while (leagueRoomRepository.findByRoomCode(roomCode) != null);
-        return roomCode;
+    public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
+        try {
+            // Construct the URL for the POST request, including query parameters
+            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move;
+
+            System.out.println("url: " + url);
+            // Create headers (optional, but good practice to include Content-Type for clarity)
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", "application/json");
+
+            // Create the HttpEntity with headers (no body needed for query parameters)
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            // Send POST request to the external service
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+            // Parse the response body (assuming it's a JSON response)
+            String responseBody = response.getBody();
+            System.out.println("responseBody: " + responseBody);
+
+            // Assuming the response is JSON and contains "GamePassword"
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonResponse = objectMapper.readTree(responseBody);
+            String gamePassword = jsonResponse.get("GamePassword").asText();
+            System.out.println("gamePassword: " + gamePassword);
+
+            return gamePassword;
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
+        }
     }
-*/
+
+
     public boolean isGameAvailableById(Long gameId) {
         // Use the repository to find a game by its name
         Optional<AagAvailableGames> game = aagGameRepository.findById(gameId);

@@ -33,6 +33,9 @@ public class TournamentRoom {
     private int currentParticipants;
     private int round=1;
 
+    @Column(name = "gamepassword", nullable = false)
+    private String gamepassword;
+
     @JsonManagedReference
     @OneToMany(mappedBy = "tournamentRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Player> currentPlayers = new ArrayList<>();

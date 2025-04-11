@@ -19,9 +19,9 @@ public class Constant {
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
-    public static final String FIND_ALL_SERVICE_PROVIDER_TEST_STATUS_QUERY = "SELECT q FROM ServiceProviderTestStatus q";
-    public static final String FIND_ALL_SERVICE_PROVIDER_TEST_RANK_QUERY = "SELECT q FROM ServiceProviderRank q";
     public static String PHONE_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code";
+    public static String ACTIVE_PHONE_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code AND c.signedUp=:signedUp";
+
     public static String PHONE_QUERY_ADMIN = "SELECT c FROM CustomAdmin c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code";
     public static String USERNAME_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.user_name = :username";
     public static String USERNAME_QUERY_CUSTOM_ADMIN = "SELECT c FROM CustomAdmin c WHERE c.user_name = :username";
@@ -38,15 +38,11 @@ public class Constant {
     public static final String SP_USERNAME_QUERY = "SELECT s FROM VendorEntity s WHERE s.user_name LIKE :username";
     public static final String SP_EMAIL_QUERY = "SELECT s FROM VendorEntity s WHERE s.primary_email LIKE :email";
     public static final String jpql = "SELECT a FROM ServiceProviderAddressRef a";
-
     public static String FETCH_ROLE = "SELECT r.roleName FROM Role r WHERE r.roleId = :role_id";
     public static String roleUser = "CUSTOMER";
     public static String rolesuperadmin = "SUPER_ADMIN";
-
     public static String roleAdminServiceProvider = "SUPPORT";
     public static String rolevendor = "VENDOR";
-
-
     public static String GET_ALL_ROLES = "Select r from Role r";
 
     public static String GET_ROLE_BY_ROLE_ID = "SELECT r FROM Role r WHERE r.role_id = :roleId";
