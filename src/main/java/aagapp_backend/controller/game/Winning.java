@@ -1,9 +1,6 @@
 package aagapp_backend.controller.game;
 
-import aagapp_backend.dto.GameResult;
-import aagapp_backend.dto.LeaderboardResponseDTO;
-import aagapp_backend.dto.PlayerDto;
-import aagapp_backend.dto.VendorGameResponse;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.services.ResponseService;
@@ -64,9 +61,14 @@ private GameRoomRepository gameRoomRepository;
 
 
     @GetMapping("/game/{gameId}")
-    public ResponseEntity<List<LeaderboardResponseDTO>> getLeaderboard(@PathVariable Long gameId) {
-        List<LeaderboardResponseDTO> leaderboard = leaderboardService.getLeaderboard(gameId);
-        return ResponseEntity.ok(leaderboard);
+    public ResponseEntity<?> getLeaderboard(@PathVariable Long gameId) {
+      try{
+          GameLeaderboardResponseDTO leaderboard = leaderboardService.getLeaderboard(gameId);
+          return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
+      }catch (Exception e) {
+          exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+          return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+      }
     }
 
 

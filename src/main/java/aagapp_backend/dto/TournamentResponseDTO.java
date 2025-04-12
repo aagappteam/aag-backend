@@ -2,9 +2,12 @@ package aagapp_backend.dto;
 
 import aagapp_backend.enums.GameStatus;
 import aagapp_backend.enums.TournamentStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.ZonedDateTime;
 
 @Getter
 @Setter
@@ -21,8 +24,13 @@ public class TournamentResponseDTO {
     private String themeName;
     private String themeImageUrl;
 
-    private String createdAt;
-    private String scheduledAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime scheduledAt;
+
+
 
 
 
