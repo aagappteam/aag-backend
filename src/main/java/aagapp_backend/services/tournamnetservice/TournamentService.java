@@ -144,7 +144,7 @@ public class TournamentService {
                 roomRepository.save(room);
 
                 Double total_prize = 3.2;
-                String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(), tournament.getParticipants(), tournament.getMove(), total_prize);
+                String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(), room.getMaxParticipants(), tournament.getMove(), total_prize);
 
                 room.setGamepassword(gamePassword);
             }
@@ -385,7 +385,7 @@ public class TournamentService {
                 roomRepository.save(room);
                 createdRooms.add(room);
                 Double total_prize = 3.2;
-                String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(), tournament.getParticipants(), tournament.getMove(), total_prize);
+                String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(), room.getMaxParticipants(), tournament.getMove(), total_prize);
 
                 room.setGamepassword(gamePassword);
             }
