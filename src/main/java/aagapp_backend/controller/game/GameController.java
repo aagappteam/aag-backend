@@ -158,7 +158,7 @@ public class GameController {
             // Call the updated service method
             Page<GetGameResponseDTO> gamesPage = gameService.findGamesScheduledForToday(vendorId, pageable);
 
-            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Games fetched successfully", gamesPage.getContent(), HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
