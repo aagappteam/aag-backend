@@ -64,7 +64,7 @@ public class VendorSubmissionService {
                 String platform = entry.getKey();
                 String url = entry.getValue();
                 if (!urlVerificationService.isUrlValid(url, platform)) {
-                    throw new VendorSubmissionException("Invalid URL for platform: " + platform + " - URL: " + url);
+                    throw new VendorSubmissionException("Url is not valid for " + platform);
                 }
             }
 
