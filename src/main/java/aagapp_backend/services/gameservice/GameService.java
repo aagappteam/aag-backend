@@ -663,10 +663,10 @@ public class GameService {
                             game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
-                            game.getCreatedDate() != null ? game.getCreatedDate().toString() : null,
+                            game.getCreatedDate() != null ? game.getCreatedDate() : null,
 
-                            game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
-                            game.getEndDate() != null ? game.getEndDate().toString() : null,
+                            game.getScheduledAt() != null ? game.getScheduledAt() : null,
+                            game.getEndDate() != null ? game.getEndDate() : null,
 
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
@@ -1012,12 +1012,12 @@ public class GameService {
 
 
 
-            games.forEach(game -> {
+/*            games.forEach(game -> {
                 game.setCreatedDate(convertToKolkataTime(game.getCreatedDate()));
                 game.setUpdatedDate(convertToKolkataTime(game.getUpdatedDate()));
                 game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
 
-            });
+            });*/
 
             List<GetGameResponseDTO> gameResponseDTOs = games.stream()
                     .map(game -> new GetGameResponseDTO(
@@ -1031,9 +1031,9 @@ public class GameService {
                             game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
-                            game.getCreatedDate() != null ? game.getCreatedDate().toString() : null,
-                            game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
-                            game.getEndDate() != null ? game.getEndDate().toString() : null,
+                            game.getCreatedDate() != null ? game.getCreatedDate() : null,
+                            game.getScheduledAt() != null ? game.getScheduledAt() : null,
+                            game.getEndDate() != null ? game.getEndDate() : null,
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
                             game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,

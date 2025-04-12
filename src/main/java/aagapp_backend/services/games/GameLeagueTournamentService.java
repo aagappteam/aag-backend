@@ -173,11 +173,11 @@ public class GameLeagueTournamentService {
                             game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
-                            game.getCreatedDate() != null ? game.getCreatedDate().toString() : null,
+                            game.getCreatedDate() != null ? game.getCreatedDate() : null,
 
-                            game.getScheduledAt() != null ? game.getScheduledAt().toString() : null,
+                            game.getScheduledAt() != null ? game.getScheduledAt() : null,
 
-                            game.getEndDate() != null ? game.getEndDate().toString() : null,
+                            game.getEndDate() != null ? game.getEndDate() : null,
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
                             game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
@@ -277,9 +277,9 @@ public class GameLeagueTournamentService {
                             league.getShareableLink(),
                             league.getTheme() != null ? league.getTheme().getName() : null,
                             league.getTheme() != null ? league.getTheme().getImageUrl() : null,
-                            league.getCreatedDate() != null ? league.getCreatedDate().toString() : null,
-                            league.getScheduledAt() != null ? league.getScheduledAt().toString() : null,
-                            league.getEndDate() != null ? league.getEndDate().toString() : null,
+                            league.getCreatedDate() != null ? league.getCreatedDate() : null,
+                            league.getScheduledAt() != null ? league.getScheduledAt() : null,
+                            league.getEndDate() != null ? league.getEndDate() : null,
                             league.getMinPlayersPerTeam(),
                             league.getMaxPlayersPerTeam(),
                             league.getVendorEntity() != null ? league.getVendorEntity().getFirst_name() : null,
@@ -380,9 +380,9 @@ public class GameLeagueTournamentService {
                             tournament.getExistinggameId(),
                             tournament.getTheme() != null ? tournament.getTheme().getName() : null,
                             tournament.getTheme() != null ? tournament.getTheme().getImageUrl() : null,
-                            tournament.getCreatedDate() != null ? tournament.getCreatedDate().toString() : null,
+                            tournament.getCreatedDate() != null ? tournament.getCreatedDate() : null,
 
-                            tournament.getScheduledAt() != null ? tournament.getScheduledAt().toString() : null
+                            tournament.getScheduledAt() != null ? tournament.getScheduledAt() : null
                     ))
                     .collect(Collectors.toList());
 
