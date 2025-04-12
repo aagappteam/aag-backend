@@ -102,57 +102,23 @@ public class LeaderboardGame {
 
         return leaderboard;
     }*/
-    public GameLeaderboardResponseDTO getLeaderboard(Long gameId) {
-        // 1. Fetch the game details
-        Optional<Game> gameOpt = gameRepository.findById(gameId);
-        if (gameOpt.isEmpty()) {
-            throw new RuntimeException("Game not found with ID: " + gameId);
-        }
-        Game game = gameOpt.get();
+    public GameLeaderboardResponseDTO getGameLeaderboard(Long gameId) {
+        List<LeaderboardResponseDTO> players = leaderboardRepository.findLeaderboardPlayersByGameId(gameId); // customize this
 
-        // 2. Fetch the theme associated with the game
-        Optional<ThemeEntity> themeOpt = themeRepository.findById(game.getTheme().getId());
-        if (themeOpt.isEmpty()) {
-            throw new RuntimeException("Theme not found for game with ID: " + gameId);
-        }
-        ThemeEntity theme = themeOpt.get();
+        // Fetch game info, e.g., from Game entity
+        Game game = gameRepository.findById(gameId).orElseThrow(() -> new NotFoundException("Game not found"));
 
-        // 3. Fetch all winners (players with scores)
-        List<GameRoomWinner> winners = gameRoomWinnerRepository.findByGame_Id(gameId);
+        // Total max players from all rooms of this game
+        Long totalPlayers = gameRoomRepository.sumMaxPlayersByGameId(gameId);
 
-        // 4. Fetch total players in game rooms (sum of maxPlayers from GameRoom)
-        long totalPlayers = gameRoomRepository.sumMaxPlayersByGameId(gameId);
-
-        // 5. Prepare player list
-        List<LeaderboardResponseDTO> playerList = new ArrayList<>();
-        for (GameRoomWinner winner : winners) {
-            Player player = winner.getPlayer();
-
-            Optional<CustomCustomer> playerDetails = customCustomerRepository.findById(player.getPlayerId());
-            if (playerDetails.isEmpty()) {
-                throw new RuntimeException("Player details not found for player ID: " + player.getPlayerId());
-            }
-
-            LeaderboardResponseDTO playerDTO = new LeaderboardResponseDTO();
-            playerDTO.setPlayerId(player.getPlayerId());
-            playerDTO.setPlayerName(playerDetails.get().getName());
-            playerDTO.setProfilePicture(playerDetails.get().getProfilePic());
-            playerDTO.setScore(winner.getScore());
-
-            playerList.add(playerDTO);
-        }
-
-        // 6. Return final wrapped DTO
-        GameLeaderboardResponseDTO response = new GameLeaderboardResponseDTO();
-        response.setGameName(game.getName());
-        response.setGameFee(game.getFee());
-        response.setGameIcon(game.getImageUrl());
-        response.setThemeName(theme.getName());
-        response.setTotalPlayers((int) totalPlayers);
-        response.setPlayers(playerList);
-
-        return response;
+        return new GameLeaderboardResponseDTO(
+                game.getName(),
+                game.getFee(),
+                game.getImageUrl(),
+                game.getTheme().getName(),
+                totalPlayers != null ? totalPlayers.intValue() : 0,
+                players
+        );
     }
-
 
 }
