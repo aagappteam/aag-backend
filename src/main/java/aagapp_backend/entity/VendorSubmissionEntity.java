@@ -3,6 +3,7 @@ import aagapp_backend.enums.ProfileStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,7 +30,9 @@ public class VendorSubmissionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @NotNull(message = "First name is required")
     private String firstName;
+    @NotNull(message = "Last name is required")
     private String lastName;
 
     @OneToOne
@@ -38,10 +41,12 @@ public class VendorSubmissionEntity {
     private VendorEntity vendorEntity;
 
 
+    @NotNull(message = "Email is required")
     @Email(message = "invalid email format")
     @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",message = "Please enter a valid email address.")
     private String email;
 
+    @NotNull(message = "Plan name is required")
     private String planName;
 
     private String planType;

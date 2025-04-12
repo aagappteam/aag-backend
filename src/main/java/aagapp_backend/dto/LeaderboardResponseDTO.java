@@ -13,10 +13,4 @@ public class LeaderboardResponseDTO {
     private String playerName;
     private String profilePicture;
     private Integer score;
-    private String gameName;
-    private Double gameFee;
-    private String gameIcon;
-    private String themeName;
-    private Long totalPlayers;  // Total players in the game
 }
-
