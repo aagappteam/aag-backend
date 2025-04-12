@@ -277,8 +277,11 @@ public class LeagueService {
         newRoom.setRoomCode(generateRoomCode());
         newRoom.setGame(league);
 
+        // Save the room first so it gets an ID
+        newRoom = leagueRoomRepository.save(newRoom);
+
         Double total_prize = 3.2;
-        String gamePassword = this.createNewGame(baseUrl, league.getId(), newRoom.getId(), league.getMaxPlayersPerTeam(), league.getMove(), total_prize);
+        String gamePassword = this.createNewGame(baseUrl, league.getId(), newRoom.getId(), newRoom.getMaxPlayers(), league.getMove(), total_prize);
 
         newRoom.setGamepassword(gamePassword);
 

@@ -34,7 +34,7 @@ public class EmailService {
             throw new RuntimeException("Error sending onboarding email: " + e.getMessage(), e);
         }
     }
-    public void sendEmail(String to, String subject, String body) throws MessagingException {
+    private void sendEmail(String to, String subject, String body) throws MessagingException {
         // Create the MimeMessage for the email
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
@@ -59,7 +59,7 @@ public class EmailService {
         }
     }
 
-    public String loadTemplate(String templateName) throws IOException {
+    private String loadTemplate(String templateName) throws IOException {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(templateName)) {
             if (inputStream == null) {
                 throw new IOException("Template file not found: " + templateName);
