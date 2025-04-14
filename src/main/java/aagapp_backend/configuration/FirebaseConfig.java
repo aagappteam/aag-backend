@@ -20,7 +20,7 @@ public class FirebaseConfig {
     @Value("${app.firebase-configuration-file}")
     private String firebaseConfigPath;
     Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
-    @PostConstruct
+/*    @PostConstruct
     public void initializeFirebase() {
         try {
             // Load the service account key from the resources folder
@@ -41,6 +41,6 @@ public class FirebaseConfig {
         } catch (IOException e) {
             throw new RuntimeException("Failed to initialize Firebase", e);
         }
-    }
+    }*/
 
 }
