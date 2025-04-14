@@ -233,7 +233,6 @@ public class JwtUtil {
                 }
             }
             return true;
-
 /*            String storedIpAddress = claims.get("ipAddress", String.class);
 
             return ipAddress.trim().equals(storedIpAddress != null ? storedIpAddress.trim() : "");*/
