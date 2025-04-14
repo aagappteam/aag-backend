@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import javax.annotation.PostConstruct;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -18,26 +20,27 @@ public class FirebaseConfig {
     @Value("${app.firebase-configuration-file}")
     private String firebaseConfigPath;
     Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
-/*    @PostConstruct
-    public void initialize() {
+    @PostConstruct
+    public void initializeFirebase() {
         try {
+            // Load the service account key from the resources folder
             ClassPathResource resource = new ClassPathResource("aagapp-6aa05-firebase-adminsdk-fbsvc-c53b98eafe.json");
-            FirebaseOptions options = new FirebaseOptions.Builder()
-                    .setCredentials(GoogleCredentials.fromStream(resource.getInputStream()))
+            InputStream serviceAccount = resource.getInputStream();  // Use getInputStream() to read the file
+
+            // Initialize Firebase with the service account
+            FirebaseOptions options = FirebaseOptions.builder()
+                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                     .build();
 
+            // Initialize FirebaseApp only if it's not already initialized
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseApp.initializeApp(options);
-                logger.info("✅ Firebase initialized successfully");
-            } else {
-                logger.info("✅ Firebase already initialized");
+                System.out.println("Firebase initialized successfully");
             }
-        } catch (IOException e) {
-            logger.error("❌ Firebase config load failed: {}", e.getMessage(), e);
-        } catch (Exception e) {
-            logger.error("❌ Unexpected error during Firebase initialization: {}", e.getMessage(), e);
-        }
-    }*/
 
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to initialize Firebase", e);
+        }
+    }
 
 }

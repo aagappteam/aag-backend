@@ -48,18 +48,23 @@ public class NotoficationFirebase {
         }
     }*/
 public void sendNotificationToAll(String title, String body) throws FirebaseMessagingException {
-    System.out.println("title: " + title);
+    try{
+        System.out.println("title: " + title);
 
-    Message message = Message.builder()
-            .setNotification(Notification.builder()
-                    .setTitle(title)
-                    .setBody(body)
-                    .build())
-            .setTopic("all") // ✅ send to "all" topic
-            .build();
+        Message message = Message.builder()
+                .setNotification(Notification.builder()
+                        .setTitle(title)
+                        .setBody(body)
+                        .build())
+                .setTopic("all") // ✅ send to "all" topic
+                .build();
 
-    String response = FirebaseMessaging.getInstance().send(message);
-    System.out.println("Successfully sent message: " + response);
+        String response = FirebaseMessaging.getInstance().send(message);
+        System.out.println("Successfully sent message: " + response);
+    }catch (Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException("Error sending notification: " + e.getMessage());
+    }
 }
 
 
