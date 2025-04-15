@@ -1,7 +1,7 @@
-package aagapp_backend.controller.kycController;
+package aagapp_backend.controller.kyc;
 
 import aagapp_backend.entity.kyc.KycEntity;
-import aagapp_backend.entity.ticket.Ticket;
+import aagapp_backend.enums.KycStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.kycRepository.KycRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
@@ -16,8 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 
 @RestController
@@ -142,7 +140,7 @@ public class KycController {
     @PutMapping("/verify")
     public ResponseEntity<?> updateKycVerificationStatus(
             @RequestParam Long kycId,
-            @RequestParam boolean isVerified
+            @RequestParam KycStatus isVerified
     ) {
         try {
             KycEntity updatedKyc = kycService.updateKycVerificationStatus(kycId, isVerified);
