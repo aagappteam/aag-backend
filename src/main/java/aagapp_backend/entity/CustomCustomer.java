@@ -2,6 +2,7 @@ package aagapp_backend.entity;
 
 import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.KycStatus;
 import aagapp_backend.enums.ProfileStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -128,6 +129,9 @@ public class CustomCustomer {
     @JsonBackReference("bankDetails-customer")
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BankDetails> bankDetails = new ArrayList<>();
+
+    @Column(name = "kyc_status")
+    private KycStatus kycStatus = KycStatus.NOT_SUBMITTED;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
