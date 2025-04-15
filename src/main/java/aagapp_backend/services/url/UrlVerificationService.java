@@ -28,7 +28,6 @@ public class UrlVerificationService {
     public boolean isUrlValid(String url, String platform) {
         boolean isFormatValid = false;
 
-        // Validating the URL format for the specific platform
         switch (platform.toLowerCase()) {
             case "facebook":
                 isFormatValid = socialValidator.isFacebookUrl(url);
