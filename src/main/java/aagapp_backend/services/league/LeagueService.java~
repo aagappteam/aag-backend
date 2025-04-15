@@ -476,6 +476,7 @@ public class LeagueService {
             }
 
             player.setLeagueRoom(null);
+            player.setHasWon(false);
             player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
             player.setLeagueRoom(null);
             playerRepository.save(player);

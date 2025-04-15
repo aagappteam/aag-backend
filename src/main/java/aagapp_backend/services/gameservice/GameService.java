@@ -388,6 +388,8 @@ public class GameService {
             updatePlayerStatusToPlaying(player);
 
 
+
+
             // Return the saved game with the shareable link
             return responseService.generateSuccessResponse("Player join in the Game Room ", gameRoom, HttpStatus.OK);
 
@@ -492,7 +494,6 @@ public class GameService {
 
     private void leftPlayerFromRoom(GameRoom gameRoom, Player player) {
         player.setGameRoom(null);
-        player.setHasWon(false);
         player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
         playerRepository.save(player);
     }
