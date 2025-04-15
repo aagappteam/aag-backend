@@ -1,9 +1,7 @@
 package aagapp_backend.enums;
 
-public enum Ticket {
+public enum TicketEnum {
     OPEN,
-    RESOLVED,
     CLOSED,
-    CANCELLED
 
 }

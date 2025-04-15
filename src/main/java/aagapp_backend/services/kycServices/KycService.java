@@ -56,11 +56,13 @@ public class KycService {
                         .orElseThrow(() -> new RuntimeException("Vendor not found"));
                 mobileNumber = vendor.getMobileNumber();
                 mailId=vendor.getPrimary_email();
+                vendor.setKycStatus(KycStatus.PENDING);
             } else if (role.equalsIgnoreCase("user") || role.equalsIgnoreCase("customer")) {
                 CustomCustomer user = customCustomerRepository.findById(userOrVendorId)
                         .orElseThrow(() -> new RuntimeException("User not found"));
                 mobileNumber = user.getMobileNumber();
                 mailId= user.getEmail();
+                user.setKycStatus(KycStatus.PENDING);
             } else {
                 throw new RuntimeException("Invalid role");
             }
@@ -87,7 +89,6 @@ public class KycService {
             kycEntity.setPanNo(panNo);
             kycEntity.setAadharImage(adharUrl);
             kycEntity.setPanImage(panUrl);
-            kycEntity.setIsKycVerified(KycStatus.PENDING);
             return kycRepository.save(kycEntity);
 
         } catch (Exception e) {
@@ -99,10 +100,26 @@ public class KycService {
     public KycEntity updateKycVerificationStatus(Long kycId, KycStatus isVerified) {
         KycEntity kyc = kycRepository.findById(kycId)
                 .orElseThrow(() -> new RuntimeException("KYC not found"));
-
-        kyc.setIsKycVerified(isVerified);
         kycRepository.save(kyc);
         String email = kyc.getMailId();
+
+        // Get the role and update corresponding entity
+        Long userOrVendorId = kyc.getUserOrVendorId();
+        String role = kyc.getRole();
+
+        if ("VENDOR".equalsIgnoreCase(role)) {
+            VendorEntity vendor = vendorRepository.findById(userOrVendorId)
+                    .orElseThrow(() -> new RuntimeException("Vendor not found"));
+            vendor.setKycStatus(isVerified);
+            vendorRepository.save(vendor);
+        } else if ("USER".equalsIgnoreCase(role)) {
+            CustomCustomer user = customCustomerRepository.findById(userOrVendorId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            user.setKycStatus(isVerified);
+            customCustomerRepository.save(user);
+        } else {
+            throw new RuntimeException("Invalid role specified in KYC record");
+        }
 
         try {
             if (isVerified == KycStatus.VERIFIED) {
