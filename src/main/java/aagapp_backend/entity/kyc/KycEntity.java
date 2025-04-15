@@ -43,6 +43,6 @@ public class KycEntity {
 
     private String panImage;
 
-    private KycStatus isKycVerified;
+//    private KycStatus isKycVerified;
 
 }

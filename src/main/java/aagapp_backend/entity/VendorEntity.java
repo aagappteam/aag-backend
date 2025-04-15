@@ -3,6 +3,7 @@ package aagapp_backend.entity;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.KycStatus;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import com.fasterxml.jackson.annotation.*;
@@ -158,6 +159,9 @@ public class VendorEntity {
     @Enumerated(EnumType.STRING)
 
     private LeagueStatus leagueStatus;
+
+    @Column(name = "kyc_status")
+    private KycStatus kycStatus = KycStatus.NOT_SUBMITTED;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)

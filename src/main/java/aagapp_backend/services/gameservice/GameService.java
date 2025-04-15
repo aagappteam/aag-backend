@@ -361,7 +361,7 @@ public class GameService {
             }
 
             if (isPlayerInRoom(player)) {
-                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.BAD_REQUEST);
+                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId()  +player.getGameRoom().getId(), HttpStatus.BAD_REQUEST);
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);

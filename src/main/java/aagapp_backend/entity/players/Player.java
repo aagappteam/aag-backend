@@ -80,17 +80,23 @@ public class Player {
         this.updatedAt = LocalDateTime.now();
     }
     public String getPlayerProfilePic() {
-        if (playerProfilePic == null) {
+        if (playerProfilePic != null) {
+            return playerProfilePic;
+        } else if (customer != null && customer.getProfilePic() != null) {
             return customer.getProfilePic();
         }
-        return playerProfilePic;
+        return Constant.PROFILE_IMAGE_URL;
     }
+
     public String getPlayerName() {
-        if (customer.getName() == null) {
-            return "Aag User";
+        if (playerName != null) {
+            return playerName;
+        } else if (customer != null && customer.getName() != null) {
+            return customer.getName();
         }
-        return customer.getName();
+        return "Aag User";
     }
+
 
     @PrePersist
     public void setDefaultStatus() {

@@ -2,6 +2,7 @@ package aagapp_backend.controller.admin.vendorsubmission;
 
 import aagapp_backend.entity.faqs.FAQs;
 import aagapp_backend.entity.ticket.Ticket;
+import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -69,7 +71,7 @@ public class AdminReviewController {
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("An error occurred while processing the approval request." +e, HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("An error occurred while processing the approval request." + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -137,32 +139,9 @@ public class AdminReviewController {
         }
     }
 
-    @PutMapping("/resolve-ticket/{ticketId}")
-    public ResponseEntity<?> resolveTicket(@PathVariable Long ticketId) {
-        try {
-            // Find the ticket by its ID
-            Ticket ticket = ticketRepository.findById(ticketId).orElse(null);
-            if (ticket == null) {
-                return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
-            }
-
-            // Update the status to 'Resolved'
-            ticket.setStatus("Resolved");
-            ticket.setUpdatedDate(new java.util.Date());
-
-            // Save the resolved ticket back to the database
-            ticketRepository.save(ticket);
-
-            return responseService.generateSuccessResponse("Ticket resolved successfully", ticket, HttpStatus.OK);
-
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("An error occurred while resolving the ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     @PutMapping("/close-ticket/{ticketId}")
-    public ResponseEntity<?> closeTicket(@PathVariable Long ticketId) {
+    public ResponseEntity<?> closeTicket(@PathVariable Long ticketId, @RequestBody Map<String, Object> remark) {
         try {
             // Find the ticket by its ID
             Ticket ticket = ticketRepository.findById(ticketId).orElse(null);
@@ -170,8 +149,10 @@ public class AdminReviewController {
                 return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
             }
 
+            String remarkString = (String) remark.get("remark");
             // Update the status to 'Closed'
-            ticket.setStatus("Closed");
+            ticket.setStatus(TicketEnum.CLOSED);
+            ticket.setRemark(remarkString);
             ticket.setUpdatedDate(new java.util.Date());
 
             // Save the closed ticket back to the database
@@ -187,8 +168,9 @@ public class AdminReviewController {
 
     @GetMapping("/tickets")
     public ResponseEntity<?> getTicketsByStatusAndRole(
-            @RequestParam(required = false) String status,
+            @RequestParam(required = false) TicketEnum status,
             @RequestParam(required = false) String role,
+
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
@@ -198,11 +180,11 @@ public class AdminReviewController {
             Page<Ticket> ticketPage;
 
             // Filter by status and role
-            if ((status == null || status.isEmpty()) && (role == null || role.isEmpty())) {
+            if (status == null && (role == null || role.isEmpty())) {
                 ticketPage = ticketRepository.findAll(pageable);
-            } else if (status != null && !status.isEmpty() && (role == null || role.isEmpty())) {
+            } else if (status != null && (role == null || role.isEmpty())) {
                 ticketPage = ticketRepository.findByStatus(status, pageable);
-            } else if ((status == null || status.isEmpty()) && role != null && !role.isEmpty()) {
+            } else if ((status == null) && role != null && !role.isEmpty()) {
                 ticketPage = ticketRepository.findByRole(role, pageable);
             } else {
                 ticketPage = ticketRepository.findByStatusAndRole(status, role, pageable);
@@ -213,7 +195,8 @@ public class AdminReviewController {
                 return responseService.generateErrorResponse("No tickets found with the given filters", HttpStatus.NOT_FOUND);
             }
 
-            return responseService.generateSuccessResponseWithCount("Tickets retrieved successfully", ticketPage.getContent(), ticketPage.getTotalElements(),HttpStatus.OK);        } catch (Exception e) {
+            return responseService.generateSuccessResponseWithCount("Tickets retrieved successfully", ticketPage.getContent(), ticketPage.getTotalElements(), HttpStatus.OK);
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
