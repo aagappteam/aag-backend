@@ -347,6 +347,10 @@ public class CommandLineService implements CommandLineRunner {
         ludo_league_roomsalterQueryquery.executeUpdate();*/
 
 
+
+
+
+
     }
 
 }

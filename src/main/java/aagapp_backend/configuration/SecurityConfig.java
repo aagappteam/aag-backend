@@ -65,6 +65,8 @@ public class SecurityConfig {
                                "/aagdocument/**",
                                "/api/aagdocument/**",
                                "/otp/**",
+                               "/health/**",
+                               "/winning/**",
                                "/account/**",
                                "/test/**",
                                "/ludo-websocket/**"          // Allow WebSocket endpoint
