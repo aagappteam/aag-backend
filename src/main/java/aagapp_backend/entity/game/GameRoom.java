@@ -25,7 +25,6 @@ public class GameRoom {
     @Column(name = "room_code", unique = true, nullable = false, length = 10)
     private String roomCode;
 
-    private String gameType; // LUDO, SNAKE_LADDER, KNIFE_THROW, FRUIT_NINJA
 
     @Column(name = "gamepassword", nullable = false)
     private String gamepassword;
