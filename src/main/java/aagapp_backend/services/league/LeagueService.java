@@ -189,6 +189,7 @@ public class LeagueService {
             }
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(leagueRequest.getExistinggameId());
             league.setLeagueUrl(gameAvailable.get().getGameImage());
+            league.setGameName(gameAvailable.get().getGameName());
 
             ThemeEntity theme = em.find(ThemeEntity.class, leagueRequest.getThemeId());
             if (theme == null) {

@@ -39,6 +39,7 @@ public class Tournament {
 
     private Long vendorId;
     private String name;
+
     private Double totalPrizePool;
 
     @ManyToOne
