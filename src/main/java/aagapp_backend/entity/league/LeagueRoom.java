@@ -40,7 +40,7 @@ public class LeagueRoom {
     @Column(name = "room_code", unique = true, nullable = false, length = 10)
     private String roomCode;
 
-    @Column(name = "gamepassword", nullable = false)
+    @Column(name = "gamepassword", nullable = true)
     private String gamepassword;
 
     private String gameType; // LUDO, SNAKE_LADDER, KNIFE_THROW, FRUIT_NINJA
