@@ -97,9 +97,11 @@ public class AagGameService {
             ThemeEntity newTheme = new ThemeEntity();
             newTheme.setName(themeRequestDTO.getName());
             newTheme.setImageUrl(themeRequestDTO.getImageUrl());
-            ThemeEntity savedTheme = themeRepository.save(newTheme);
-            themes.add(savedTheme);
+            themes.add(newTheme);  // Add theme to list instead of saving right away
         }
+
+        // Batch save themes after constructing the entire list
+        themeRepository.saveAll(themes);
 
         // Set the themes to the game entity
         newGame.setThemes(themes);
@@ -113,19 +115,21 @@ public class AagGameService {
             // Associate the PriceEntity with the game (many-to-many relationship)
             newPrice.getGames().add(newGame);  // Add the game to the price entity
             prices.add(newPrice); // Add the price to the list
-
-            // Save price after associating with game
-            priceRepository.save(newPrice);  // Save price after associating with game
         }
+
+        // Batch save prices after constructing the entire list
+        priceRepository.saveAll(prices);  // Save all prices at once
 
         // Set the prices to the game entity (many-to-many relationship)
         newGame.setPrice(prices);
 
+        // Save the game entity along with its related entities (themes and prices)
         AagAvailableGames savedGame = gameRepository.save(newGame);
 
         // Return the saved game as a DTO response
         return new GameResponseDTO(savedGame);
     }
+
 
 
     // Get all games with pagination
