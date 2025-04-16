@@ -1,6 +1,7 @@
 package aagapp_backend.services.league;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.components.ZonedDateTimeAdapter;
 import aagapp_backend.dto.LeagueRequest;
 
 import aagapp_backend.dto.NotificationRequest;
@@ -147,7 +148,11 @@ public class LeagueService {
             String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
 
             if (fcmToken != null && !fcmToken.isEmpty()) {
-                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                Gson gson = new GsonBuilder()
+                        .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter())
+                        .setPrettyPrinting()
+                        .create();
+
                 String challengeJson = gson.toJson(challenge); // Convert Challenge to JSON string
 
                 NotificationRequest notificationRequest = new NotificationRequest();
