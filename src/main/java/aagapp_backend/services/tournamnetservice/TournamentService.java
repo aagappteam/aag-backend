@@ -163,6 +163,8 @@ public class TournamentService {
             String shareableLink = generateShareableLink(tournament.getId());
             tournament.setShareableLink(shareableLink);
 
+            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
+
             // Return the saved game with the shareable link
             return tournamentRepository.save(tournament);
 

@@ -1,7 +1,9 @@
 package aagapp_backend.repository.league;
 
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.LeagueStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
@@ -47,5 +49,14 @@ public interface LeagueRepository extends JpaRepository<League, Long> {
 
     Page<League> findAll(Pageable pageable);
 
+
+//    List<League> findByVendorEntityAndScheduledAtBetween(VendorEntity vendorEntity, ZonedDateTime startTimeUTC, ZonedDateTime endTimeUTC);
+
+    @Query("SELECT g FROM League g WHERE g.vendorEntity = :vendorEntity AND g.scheduledAt BETWEEN :startTime AND :endTime")
+    List<League> findByVendorEntityAndScheduledAtBetween(
+            @Param("vendorEntity") VendorEntity vendorEntity,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime
+    );
 
 }
