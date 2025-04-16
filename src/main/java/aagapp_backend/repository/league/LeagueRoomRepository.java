@@ -16,4 +16,6 @@ public interface LeagueRoomRepository extends JpaRepository<LeagueRoom, Long>  {
 
     LeagueRoom findByRoomCode(String roomCode);
     List findByGameAndStatus(League game, LeagueRoomStatus leagueRoomStatus);
+
+    List<LeagueRoom> findByStatus(LeagueRoomStatus gameRoomStatus);
 }

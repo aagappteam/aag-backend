@@ -1,23 +1,24 @@
 package aagapp_backend.controller.league;
 
 import aagapp_backend.dto.*;
-
 import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
-
+import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
 
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
-import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentFeatures;
+import aagapp_backend.services.pricedistribute.MatchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -28,8 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -46,6 +46,10 @@ public class LeagueController {
     private VendorRepository vendorRepository;
     private NotificationRepository notificationRepository;
     private ChallangeRepository challangeRepository;
+    @Autowired
+    private LeagueRoomRepository leagueRoomRepository;
+    @Autowired
+    private MatchService matchService;
 
     @Autowired
     public void setChallangeRepository(@Lazy ChallangeRepository challangeRepository) {
@@ -89,6 +93,7 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) LeagueStatus status,
+
             @RequestParam(value = "vendorId", required = false) Long vendorId
     ) {
         try {
@@ -367,6 +372,27 @@ public class LeagueController {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/active-game-rooms")
+    public ResponseEntity<?> getAllActiveGameRooms() {
+        // Fetch all GameRooms with status ONGOING
+        List<LeagueRoom> ongoingRooms = leagueRoomRepository.findByStatus(LeagueRoomStatus.ONGOING);
+
+        // Map the GameRoom entities to GameRoomResponseDTO
+        List<GameRoomResponseDTO> gameRoomResponseDTOS = ongoingRooms.stream().map(gameRoom -> {
+            Integer maxParticipants = gameRoom.getMaxPlayers();
+            Long gameId = gameRoom.getGame().getId();
+            String gamePassword = gameRoom.getGamepassword();
+            Integer moves = gameRoom.getGame().getMove();  // Assuming moves is stored in the Game entity
+
+            BigDecimal totalPrize = matchService.getWinningAmountLeague(gameRoom);  // Assuming matchService calculates the total prize
+
+            return new GameRoomResponseDTO(gameId, gameRoom.getId(), gamePassword, moves, totalPrize, maxParticipants);
+        }).collect(Collectors.toList());
+
+        // Return the response wrapped in a success response
+        return responseService.generateSuccessResponse("Fetching active game rooms from all leagues", gameRoomResponseDTOS, HttpStatus.OK);
     }
 
 

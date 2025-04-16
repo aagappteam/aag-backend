@@ -1,13 +1,17 @@
 package aagapp_backend.controller.tournament;
 
+import aagapp_backend.dto.GameRoomResponseDTO;
 import aagapp_backend.dto.TournamentRequest;
+import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.entity.tournament.TournamentRoundWinner;
+import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.PlayerRepository;
+import aagapp_backend.repository.tournament.TournamentRoomRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -23,7 +27,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
+import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/tournament")
@@ -34,6 +40,9 @@ public class TournamentController {
     private PaymentFeatures paymentFeatures;
     private TournamentService tournamentService;
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private TournamentRoomRepository tournamentRoomRepository;
 
     @Autowired
     PlayerRepository playerRepository;
@@ -277,5 +286,26 @@ public class TournamentController {
             return responseService.generateErrorResponse("Error occurred while creating rooms: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    /*@GetMapping("/active-game-rooms")
+    public ResponseEntity<?> getAllActiveGameRooms() {
+        // Fetch all GameRooms with status ONGOING
+        List<TournamentRoom> ongoingRooms = tournamentRoomRepository.findByStatus("ACTIVE");
+
+        // Map the GameRoom entities to GameRoomResponseDTO
+        List<GameRoomResponseDTO> gameRoomResponseDTOS = ongoingRooms.stream().map(gameRoom -> {
+            Integer maxParticipants = gameRoom.getMaxParticipants();
+            Long gameId = gameRoom.ge().getId();
+            String gamePassword = gameRoom.getGamepassword();
+            Integer moves = gameRoom.get().getMove();  // Assuming moves is stored in the Game entity
+
+            BigDecimal totalPrize = matchService.getWinningAmountLeague(gameRoom);  // Assuming matchService calculates the total prize
+
+            return new GameRoomResponseDTO(gameId, gameRoom.getId(), gamePassword, moves, totalPrize, maxParticipants);
+        }).collect(Collectors.toList());
+
+        // Return the response wrapped in a success response
+        return responseService.generateSuccessResponse("Fetching active game rooms from all leagues", gameRoomResponseDTOS, HttpStatus.OK);
+    }*/
 
 }
