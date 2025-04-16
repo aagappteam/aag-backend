@@ -33,7 +33,7 @@ public class TournamentRoom {
     private int currentParticipants;
     private int round=1;
 
-    @Column(name = "gamepassword", nullable = false)
+    @Column(name = "gamepassword", nullable = true)
     private String gamepassword;
 
     @JsonManagedReference
