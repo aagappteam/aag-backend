@@ -139,8 +139,30 @@ public class AdminReviewController {
         }
     }
 
-
     @PutMapping("/close-ticket/{ticketId}")
+    public ResponseEntity<?> closeTicket(@PathVariable Long ticketId) {
+        try {
+            // Find the ticket by its ID
+            Ticket ticket = ticketRepository.findById(ticketId).orElse(null);
+            if (ticket == null) {
+                return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+            }
+
+            // Update the status to 'Closed'
+            ticket.setStatus(TicketEnum.CLOSED);
+            ticket.setUpdatedDate(new java.util.Date());
+
+            // Save the closed ticket back to the database
+            ticketRepository.save(ticket);
+
+            return responseService.generateSuccessResponse("Ticket closed successfully", ticket, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("An error occurred while closing the ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+/*    @PutMapping("/close-ticket/{ticketId}")
     public ResponseEntity<?> closeTicket(@PathVariable Long ticketId, @RequestBody Map<String, Object> remark) {
         try {
             // Find the ticket by its ID
@@ -164,7 +186,7 @@ public class AdminReviewController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while closing the ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     @GetMapping("/tickets")
     public ResponseEntity<?> getTicketsByStatusAndRole(

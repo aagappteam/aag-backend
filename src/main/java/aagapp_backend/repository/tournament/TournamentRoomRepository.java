@@ -1,5 +1,6 @@
 package aagapp_backend.repository.tournament;
 
+import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.tournament.TournamentRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +12,6 @@ public interface TournamentRoomRepository extends JpaRepository<TournamentRoom ,
     List<TournamentRoom> findByTournamentIdAndStatus(Long tournamentId, String open);
 
     List<TournamentRoom> findByTournamentId(Long tournamentId);
+
+    List<TournamentRoom> findByStatus(String active);
 }
