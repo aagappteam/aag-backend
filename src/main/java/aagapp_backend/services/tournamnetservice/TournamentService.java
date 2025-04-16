@@ -125,7 +125,6 @@ public class TournamentService {
             }*/
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
-
             // Set created and updated timestamps
             tournament.setCreatedDate(nowInKolkata);
 

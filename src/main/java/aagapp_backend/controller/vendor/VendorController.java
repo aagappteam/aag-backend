@@ -196,6 +196,7 @@ public class VendorController {
             // Where conditions
             List<String> conditions = new ArrayList<>();
             if (status != null && !status.isEmpty()) {
+                boolean isActive = Boolean.parseBoolean(status); // "true" or "false" string to boolean
                 conditions.add("s.isActive = :status");
             }
             if (email != null && !email.isEmpty()) {

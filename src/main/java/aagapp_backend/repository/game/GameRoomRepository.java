@@ -20,13 +20,9 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, Long> {
 
     List<GameRoom> findByStatus(GameRoomStatus status);
 
-
-    Optional<GameRoom> findByGameId(Long gameId);
-
     List findByGameAndStatus(Game game, GameRoomStatus gameRoomStatus);
-
     Optional<GameRoom> findByCurrentPlayersContains(Player player);
-    Page<GameRoom> findByGame_Id(Long gameId, Pageable pageable);
+    List<GameRoom> findByGame_Id(Long gameId, Pageable pageable);
 
     @Query("SELECT SUM(g.maxPlayers) FROM GameRoom g WHERE g.game.id = :gameId")
     Long sumMaxPlayersByGameId(@Param("gameId") Long gameId);

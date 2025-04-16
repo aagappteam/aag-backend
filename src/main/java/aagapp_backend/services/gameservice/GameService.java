@@ -361,7 +361,7 @@ public class GameService {
             }
 
             if (isPlayerInRoom(player)) {
-                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.BAD_REQUEST);
+                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId() + " " + player.getGameRoom().getGame().getId(), HttpStatus.BAD_REQUEST);
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);
@@ -467,8 +467,6 @@ public class GameService {
             throw new RuntimeException("Error occurred while fetching games: " + e.getMessage(), e);
         }
     }
-    
-
 
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long gameId) {
@@ -477,7 +475,7 @@ public class GameService {
             Game game = getGameById(gameId);
 
             if (!isPlayerInRoom(player)) {
-                return responseService.generateErrorResponse("Player is not in room with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
+                return responseService.generateErrorResponse("Player is not in room with this id: " + player.getPlayerId(), HttpStatus.BAD_REQUEST);
             }
             GameRoom gameRoom = player.getGameRoom();
             leftPlayerFromRoom(gameRoom, player);
@@ -623,12 +621,15 @@ public class GameService {
     }
 
     @Transactional
-    public Page<GetGameResponseDTO> getAllGames(String status, Long vendorId, Pageable pageable) {
+    public Page<GetGameResponseDTO> getAllGames(String status, Long vendorId, Pageable pageable,String gamename) {
         try {
             StringBuilder sql = new StringBuilder("SELECT * FROM aag_ludo_game g WHERE 1=1");
 
             if (status != null && !status.isEmpty()) {
                 sql.append(" AND g.status = :status");
+            }
+            if(gamename!= null &&!gamename.isEmpty()) {
+                sql.append(" AND g.name LIKE :gamename");
             }
             if (vendorId != null) {
                 sql.append(" AND g.vendor_id = :vendorId");
@@ -641,6 +642,9 @@ public class GameService {
             }
             if (vendorId != null) {
                 query.setParameter("vendorId", vendorId);
+            }
+            if(gamename!= null &&!gamename.isEmpty()) {
+                query.setParameter("gamename", "%" + gamename + "%");
             }
 
             query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
