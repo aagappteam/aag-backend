@@ -280,7 +280,6 @@ public class LeagueService {
             if (leagueRequest.getMaxPlayersPerTeam() != null) {
                 league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
             }
-            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
 
             // Set created and updated timestamps

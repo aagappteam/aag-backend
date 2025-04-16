@@ -26,9 +26,8 @@ public class GameRoom {
     private String roomCode;
 
 
-    @Column(name = "gamepassword", nullable = false)
+    @Column(name = "gamepassword", nullable = true) // Allow null values
     private String gamepassword;
-
     @OneToMany(mappedBy = "gameRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference(value = "gameRoomReference")
     private List<Player> currentPlayers = new ArrayList<>();

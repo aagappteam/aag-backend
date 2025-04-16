@@ -40,8 +40,8 @@ public class AagAvailableGames {
     @Column(nullable = false)
     private String gameImage;
 
-
-    @ManyToMany(fetch = FetchType.LAZY)
+    // Cascading all operations on themes: persist, merge, remove, refresh, detach
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinTable(
             name = "game_themes",
             joinColumns = @JoinColumn(name = "game_id"),
@@ -50,8 +50,8 @@ public class AagAvailableGames {
     @JsonManagedReference
     private List<ThemeEntity> themes;
 
-
-    @ManyToMany(fetch = FetchType.LAZY)
+    // Cascading all operations on prices: persist, merge, remove, refresh, detach
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinTable(
             name = "game_prices",
             joinColumns = @JoinColumn(name = "game_id"),
@@ -60,26 +60,14 @@ public class AagAvailableGames {
     @JsonManagedReference
     private List<PriceEntity> price;
 
-
-   /* @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "game_prices",
-            joinColumns = @JoinColumn(name = "game_id"),
-            inverseJoinColumns = @JoinColumn(name = "price_id")
-    )
-    @JsonManagedReference
-    private List<PriceEntity> price;*/
-
     @Column(name = "minRange", nullable = false)
     private Integer minRange = 2;
 
     @Column(name = "maxRange", nullable = false)
     private Integer maxRange = 1024;
 
-
     @Column(nullable = false)
     private GameStatus gameStatus;
-
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
@@ -95,4 +83,3 @@ public class AagAvailableGames {
         this.updatedDate = ZonedDateTime.now();
     }
 }
-
