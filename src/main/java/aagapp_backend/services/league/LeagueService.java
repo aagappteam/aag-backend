@@ -215,9 +215,6 @@ public class LeagueService {
 
 
 
-
-
-
     @Transactional
     public League publishLeague(Challenge leagueRequest, Long vendorId) throws LimitExceededException {
         try {
@@ -243,7 +240,8 @@ public class LeagueService {
 
             // Set Vendor and Theme to the Game
             league.setName(opponentVendor.getFirst_name() +" v/s " +vendorEntity.getFirst_name());
-            league.setVendorEntity(vendorEntity);
+            league.setVendorEntity(opponentVendor);
+            league.setChallengingVendorId(opponentVendor.getService_provider_id());
             league.setChallengingVendorName(vendorEntity.getFirst_name()+" "+vendorEntity.getLast_name());
             league.setChallengingVendorProfilePic(vendorEntity.getProfilePic());
             league.setOpponentVendorName(opponentVendor.getFirst_name()+" "+opponentVendor.getLast_name());
@@ -303,7 +301,8 @@ public class LeagueService {
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(savedLeague.getId());
             savedLeague.setShareableLink(shareableLink);
-
+            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
+            opponentVendor.setPublishedLimit((opponentVendor.getPublishedLimit() == null ? 0 : opponentVendor.getPublishedLimit()) + 1);
             // Return the saved game with the shareable link
             return leagueRepository.save(savedLeague);
 
