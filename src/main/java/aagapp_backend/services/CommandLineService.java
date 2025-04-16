@@ -251,7 +251,7 @@ public class CommandLineService implements CommandLineRunner {
         query.executeUpdate();*/
 
 // Insert predefined games if not already present
-        if (entityManager.createQuery("SELECT COUNT(g) FROM AagAvailableGames g", Long.class).getSingleResult() == 0) {
+/*        if (entityManager.createQuery("SELECT COUNT(g) FROM AagAvailableGames g", Long.class).getSingleResult() == 0) {
 
             // Snakes & Ladders Ultimate game
             AagAvailableGames snakesAndLaddersGame = new AagAvailableGames();
@@ -274,18 +274,13 @@ public class CommandLineService implements CommandLineRunner {
             );
 
             for (ThemeEntity theme : snakeThemes) {
-                theme.getGames().add(snakesAndLaddersGame); // Add Snakes & Ladders game to the theme's list of games
+                theme.getGames().add(snakesAndLaddersGame);
                 entityManager.persist(theme);
             }
 
             // Insert prices for Snakes & Ladders Ultimate game
-            List<Double> ludoPrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
-            for (Double price : ludoPrices) {
-                PriceEntity priceEntity = new PriceEntity();
-                priceEntity.setPriceValue(price);
-                priceEntity.getGames().add(snakesAndLaddersGame); // Add Snakes & Ladders game to the price's list of games
-                entityManager.persist(priceEntity);
-            }
+            List<Double> snakePrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
+
 
             // Ludo game
             AagAvailableGames ludoGame = new AagAvailableGames();
@@ -296,7 +291,7 @@ public class CommandLineService implements CommandLineRunner {
             ludoGame.setGameStatus(GameStatus.ACTIVE);
             entityManager.persist(ludoGame);
 
-            // Insert themes for Ludo game (Updated order and theme names)
+            // Insert themes for Ludo game (Updated URLs and theme names)
             List<ThemeEntity> ludoThemes = List.of(
                     new ThemeEntity("Standard", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Standard+ludo+theme.png", currentTimestamp),
                     new ThemeEntity("Forest", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Jungle+Theme.png", currentTimestamp),
@@ -308,21 +303,18 @@ public class CommandLineService implements CommandLineRunner {
             );
 
             for (ThemeEntity theme : ludoThemes) {
-                theme.getGames().add(ludoGame); // Add Ludo game to the theme's list of games
+                theme.getGames().add(ludoGame);
                 entityManager.persist(theme);
             }
 
             // Insert prices for Ludo game
-            List<Double> snakeladderludoPrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
-            for (Double price : snakeladderludoPrices) {
-                PriceEntity priceEntity = new PriceEntity();
-                priceEntity.setPriceValue(price);
-                priceEntity.getGames().add(ludoGame); // Add Ludo game to the price's list of games
-                entityManager.persist(priceEntity);
-            }
+            List<Double> ludoPrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
+
+
 
             System.out.println("Predefined games, themes, and prices inserted into the database.");
-        }
+        }*/
+
 
 
 
