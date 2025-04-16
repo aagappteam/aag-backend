@@ -3,22 +3,17 @@ package aagapp_backend.controller.league;
 import aagapp_backend.dto.*;
 import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.game.Game;
-import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
-import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
-import aagapp_backend.enums.NotificationType;
+
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
-import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
-import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -35,8 +30,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -58,7 +52,7 @@ public class LeagueController {
     private MatchService matchService;
 
     @Autowired
-    public void setChallangeRepository(@Lazy ChallangeRepository challangeRepository){
+    public void setChallangeRepository(@Lazy ChallangeRepository challangeRepository) {
         this.challangeRepository = challangeRepository;
     }
 
@@ -108,7 +102,7 @@ public class LeagueController {
             Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId);
 
             if (leaguesPage.isEmpty()) {
-                return responseService.generateResponse(HttpStatus.OK,ApiConstants.NO_RECORDS_FOUND, null);
+                return responseService.generateResponse(HttpStatus.OK, ApiConstants.NO_RECORDS_FOUND, null);
 
             }
 
@@ -135,7 +129,7 @@ public class LeagueController {
             Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(pageable, vendorId);
 
             if (leaguesPage.isEmpty()) {
-                return responseService.generateResponse(HttpStatus.OK,ApiConstants.NO_RECORDS_FOUND, null);
+                return responseService.generateResponse(HttpStatus.OK, ApiConstants.NO_RECORDS_FOUND, null);
 
             }
 
@@ -161,7 +155,7 @@ public class LeagueController {
             Page<League> leaguesPage = leagueService.getAllLeaguesByVendorId(pageable, vendorId);
 
             if (leaguesPage.isEmpty()) {
-                return responseService.generateResponse(HttpStatus.OK,ApiConstants.NO_RECORDS_FOUND, null);
+                return responseService.generateResponse(HttpStatus.OK, ApiConstants.NO_RECORDS_FOUND, null);
 
             }
 
@@ -184,8 +178,8 @@ public class LeagueController {
             if (paymentEntity.getStatusCode() != HttpStatus.OK) {
                 return paymentEntity;
             }
-            Challenge challenge= leagueService.createChallenge(leagueRequest, vendorId);
-            return responseService.generateSuccessResponse("Challenge created successfully. Awaiting opponent's response.",challenge, HttpStatus.OK);
+            Challenge challenge = leagueService.createChallenge(leagueRequest, vendorId);
+            return responseService.generateSuccessResponse("Challenge created successfully. Awaiting opponent's response.", challenge, HttpStatus.OK);
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error creating challenge: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -201,6 +195,60 @@ public class LeagueController {
         }
     }
 
+    @GetMapping("/by-opponents/{opponentVendorId}")
+    public ResponseEntity<?> getChallengesByOpponentVendorIds(
+            @PathVariable Long opponentVendorId,
+            @RequestParam(required = false) Challenge.ChallengeStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        try {
+            Page<Challenge> challenges = leagueService.getChallengesByOpponentVendorIds(
+                    Collections.singletonList(opponentVendorId), status, pageable);
+
+            return responseService.generateSuccessResponseWithCount(
+                    "Challenges retrieved successfully.",
+                    challenges.getContent(),
+                    challenges.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "Error retrieving challenges: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+
+    @GetMapping("/by-vendor/{vendorId}")
+    public ResponseEntity<?> getChallengesByVendorIds(
+            @PathVariable Long vendorId,
+            @RequestParam(required = false) Challenge.ChallengeStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        try {
+            Page<Challenge> challenges = leagueService.getByVendorIdInAndStatus(
+                    Collections.singletonList(vendorId), status, pageable);
+
+            return responseService.generateSuccessResponseWithCount(
+                    "Challenges retrieved successfully.",
+                    challenges.getContent(),
+                    challenges.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "Error retrieving challenges: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 
 
     // Reject Challenge API
@@ -208,7 +256,7 @@ public class LeagueController {
     public ResponseEntity<?> rejectChallenge(@PathVariable Long challengeId, @RequestParam Long vendorId) {
         try {
             leagueService.rejectChallenge(challengeId, vendorId);
-            return responseService.generateSuccessResponse("Challenge rejected successfully.","reject", HttpStatus.OK);
+            return responseService.generateSuccessResponse("Challenge rejected successfully.", "reject", HttpStatus.OK);
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error rejecting challenge: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -221,7 +269,7 @@ public class LeagueController {
 
             Challenge challenge = challangeRepository.findById(challengeId)
                     .orElseThrow(() -> new RuntimeException("This Challange is  not found"));
-            if(vendorId != challenge.getOpponentVendorId()) {
+            if (vendorId != challenge.getOpponentVendorId()) {
                 return responseService.generateErrorResponse("You are not the opponent of this challenge.", HttpStatus.UNAUTHORIZED);
             }
 
@@ -249,14 +297,13 @@ public class LeagueController {
 */
                 notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
                 notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
-            }else{
+            } else {
 /*
                 notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
 */
                 notification.setDescription("Published Game"); // Example NotificationType for a successful
                 notification.setDetails("Game has been Published"); // Example NotificationType for a successful
             }
-
 
 
             notificationRepository.save(notification);
@@ -296,7 +343,7 @@ public class LeagueController {
 
             // Map VendorEntity to VendorDTO
             List<VendorDTO> vendorDTOs = vendors.stream()
-                    .map(vendor -> new VendorDTO(vendor.getService_provider_id(), vendor.getFirst_name()+" "+ vendor.getLast_name()))
+                    .map(vendor -> new VendorDTO(vendor.getService_provider_id(), vendor.getFirst_name() + " " + vendor.getLast_name()))
                     .collect(Collectors.toList());
 
             // Return vendors' IDs and names

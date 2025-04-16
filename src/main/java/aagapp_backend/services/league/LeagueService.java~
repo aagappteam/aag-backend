@@ -176,23 +176,15 @@ public class LeagueService {
     }
 
     @Transactional
-    public Page<Challenge> getChallengesByOpponentVendorIds(List<Long> opponentVendorId, Challenge.ChallengeStatus status, Pageable pageable) {
-        Page<Challenge> challenges;
-
-        if (status != null) {
-            challenges = challangeRepository.findByOpponentVendorIdInAndStatus(opponentVendorId, status, pageable);
-        } else {
-            challenges = challangeRepository.findByOpponentVendorIdIn(opponentVendorId, pageable);
-        }
+    public List<Challenge> getChallengesByOpponentVendorIds(List<Long> opponentVendorId) {
+        List<Challenge> challenges = challangeRepository.findByOpponentVendorIdIn(opponentVendorId);
 
         if (challenges.isEmpty()) {
-            throw new RuntimeException("No challenges found for opponentVendorIds: " + opponentVendorId +
-                    (status != null ? " with status: " + status : ""));
+            throw new RuntimeException("No challenges found for opponentVendorIds: " + opponentVendorId);
         }
 
         return challenges;
     }
-
 
 
     @Transactional
@@ -405,7 +397,7 @@ public class LeagueService {
                 return leagueRepository.findByStatus(status, pageable);
             } else if (vendorId != null) {
                 return leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
-            }  else {
+            } else {
                 return leagueRepository.findAll(pageable);
             }
         } catch (Exception e) {
