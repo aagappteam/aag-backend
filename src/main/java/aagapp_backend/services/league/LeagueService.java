@@ -26,7 +26,6 @@ import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.firestore.v1.TransactionOptions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import jakarta.persistence.EntityManager;
