@@ -28,25 +28,6 @@ public class NotoficationFirebase {
 
     private Logger logger = LoggerFactory.getLogger(NotoficationFirebase.class);
 
-
-
-/*    public String sendNotification(String title, String body, String token) {
-        try {
-            Message message = Message.builder()
-                    .setToken(token)
-                    .setNotification(Notification.builder()
-                            .setTitle(title)
-                            .setBody(body)
-                            .build())
-                    .build();
-            logger.info("Sent message to token. Device token: " +  ", " + message+ " msg ");
-
-            return FirebaseMessaging.getInstance().send(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Error sending notification: " + e.getMessage();
-        }
-    }*/
 public void sendNotificationToAll(String title, String body) throws FirebaseMessagingException {
     try{
         System.out.println("title: " + title);
@@ -76,6 +57,7 @@ public void sendNotificationToAll(String title, String body) throws FirebaseMess
         pushData.put("text", " Hello. This is payload content "+ " " + LocalDateTime.now());
         return pushData;
     }
+
     public void sendMessageToToken(NotificationRequest request)
             throws InterruptedException, ExecutionException {
         Message message = getPreconfiguredMessageToToken(request);
@@ -116,7 +98,5 @@ public void sendNotificationToAll(String title, String body) throws FirebaseMess
         return Message.builder()
                 .setApnsConfig(apnsConfig).setAndroidConfig(androidConfig).setNotification(notification);
     }
-
-
 
 }

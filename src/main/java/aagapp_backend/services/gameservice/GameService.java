@@ -275,9 +275,6 @@ public class GameService {
                 game.setScheduledAt(scheduledInKolkata);
                 game.setEndDate(scheduledInKolkata.plusHours(4));
             } else {
-/*
-                game.setStatus(GameStatus.ACTIVE);
-*/
                 game.setStatus(GameStatus.SCHEDULED);
 
                 game.setScheduledAt(nowInKolkata.plusMinutes(15));

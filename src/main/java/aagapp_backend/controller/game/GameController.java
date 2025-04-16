@@ -291,6 +291,18 @@ public class GameController {
 
     }
 
+    @GetMapping("/getroomdetails/{roomId}")
+    public ResponseEntity<?> getRoomDataById(@PathVariable Long roomId) {
+        try {
+
+            return gameService.getRoomById(roomId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting game room data: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+
     @GetMapping("/published/{vendorId}")
     public ResponseEntity<?> getAllPublishedGamesByVendorId(@PathVariable Long vendorId) {
         try {

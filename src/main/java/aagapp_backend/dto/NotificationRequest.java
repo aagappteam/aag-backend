@@ -1,4 +1,5 @@
 package aagapp_backend.dto;
+import aagapp_backend.entity.Challenge;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

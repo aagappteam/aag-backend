@@ -20,11 +20,11 @@ public class FirebaseConfig {
     @Value("${app.firebase-configuration-file}")
     private String firebaseConfigPath;
     Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
-/*    @PostConstruct
+    @PostConstruct
     public void initializeFirebase() {
         try {
             // Load the service account key from the resources folder
-            ClassPathResource resource = new ClassPathResource("aagapp-6aa05-firebase-adminsdk-fbsvc-c53b98eafe.json");
+            ClassPathResource resource = new ClassPathResource(firebaseConfigPath);
             InputStream serviceAccount = resource.getInputStream();  // Use getInputStream() to read the file
 
             // Initialize Firebase with the service account
@@ -36,11 +36,14 @@ public class FirebaseConfig {
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseApp.initializeApp(options);
                 System.out.println("Firebase initialized successfully");
+            }else{
+                System.out.println("Firebase doesn't initialized ");
+
             }
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to initialize Firebase", e);
         }
-    }*/
+    }
 
 }
