@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;  // Import for LocalDateTime
 import java.util.Date;          // Import for Date
 import java.util.List;
@@ -251,9 +252,10 @@ public class CommandLineService implements CommandLineRunner {
         query.executeUpdate();*/
 
 // Insert predefined games if not already present
-/*        if (entityManager.createQuery("SELECT COUNT(g) FROM AagAvailableGames g", Long.class).getSingleResult() == 0) {
+        if (entityManager.createQuery("SELECT COUNT(g) FROM AagAvailableGames g", Long.class).getSingleResult() == 0) {
 
-            // Snakes & Ladders Ultimate game
+
+            // --- Create Snakes & Ladders Game ---
             AagAvailableGames snakesAndLaddersGame = new AagAvailableGames();
             snakesAndLaddersGame.setGameName("Snakes & Ladders Ultimate");
             snakesAndLaddersGame.setGameImage("https://aag-data.s3.ap-south-1.amazonaws.com/game-folder/snakes+and+leader.png");
@@ -262,7 +264,6 @@ public class CommandLineService implements CommandLineRunner {
             snakesAndLaddersGame.setGameStatus(GameStatus.ACTIVE);
             entityManager.persist(snakesAndLaddersGame);
 
-            // Insert themes for Snakes & Ladders Ultimate game
             List<ThemeEntity> snakeThemes = List.of(
                     new ThemeEntity("Standard", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+and+ladders-01.png", currentTimestamp),
                     new ThemeEntity("Forest", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/forest+theame+%5BRecovered%5D-01.png", currentTimestamp),
@@ -278,11 +279,15 @@ public class CommandLineService implements CommandLineRunner {
                 entityManager.persist(theme);
             }
 
-            // Insert prices for Snakes & Ladders Ultimate game
             List<Double> snakePrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
+            for (Double priceValue : snakePrices) {
+                PriceEntity price = new PriceEntity();
+                price.setPriceValue(priceValue);
+                price.getGames().add(snakesAndLaddersGame);
+                entityManager.persist(price);
+            }
 
-
-            // Ludo game
+            // --- Create Ludo Game ---
             AagAvailableGames ludoGame = new AagAvailableGames();
             ludoGame.setGameName("Ludo");
             ludoGame.setGameImage("https://aag-data.s3.ap-south-1.amazonaws.com/game-folder/Ludo.png");
@@ -291,7 +296,6 @@ public class CommandLineService implements CommandLineRunner {
             ludoGame.setGameStatus(GameStatus.ACTIVE);
             entityManager.persist(ludoGame);
 
-            // Insert themes for Ludo game (Updated URLs and theme names)
             List<ThemeEntity> ludoThemes = List.of(
                     new ThemeEntity("Standard", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Standard+ludo+theme.png", currentTimestamp),
                     new ThemeEntity("Forest", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Jungle+Theme.png", currentTimestamp),
@@ -307,18 +311,16 @@ public class CommandLineService implements CommandLineRunner {
                 entityManager.persist(theme);
             }
 
-            // Insert prices for Ludo game
             List<Double> ludoPrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
-
-
+            for (Double priceValue : ludoPrices) {
+                PriceEntity price = new PriceEntity();
+                price.setPriceValue(priceValue);
+                price.getGames().add(ludoGame);
+                entityManager.persist(price);
+            }
 
             System.out.println("Predefined games, themes, and prices inserted into the database.");
-        }*/
-
-
-
-
-
+        }
 
 /*        String alterQuery = "ALTER TABLE VendorEntity \n" +
                 "ADD COLUMN themeCount INTEGER DEFAULT 3";

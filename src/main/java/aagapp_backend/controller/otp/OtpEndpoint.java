@@ -210,6 +210,7 @@ public class OtpEndpoint {
             String countryCode = (String) loginDetails.get("countryCode");
             String mobileNumber = (String) loginDetails.get("mobileNumber");
             String referredCode = (String) loginDetails.get("referralCode");
+            String fcm_token = (String) loginDetails.get("fcm_token");
 
             if (role == null) {
                 return responseService.generateErrorResponse(ApiConstants.ROLE_EMPTY, HttpStatus.BAD_REQUEST);
@@ -245,6 +246,10 @@ public class OtpEndpoint {
                 if (isNewDevice) {
                     deviceMange.recordLoginDevice(customer, ipAddress, userAgent, jwtUtil.generateToken(userId, role, ipAddress, userAgent));
                 }*/
+                if(fcm_token!=null){
+                    existingCustomer.setFcmToken(fcm_token);
+
+                }
 
                 if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                     existingCustomer.setReferralCode(referralCode);
@@ -315,6 +320,8 @@ public class OtpEndpoint {
         String mobileNumber = (String) loginDetails.get("mobileNumber");
         Integer role = (Integer) loginDetails.get("role");
         String countryCode = (String) loginDetails.get("countryCode");
+        String fcm_token = (String) loginDetails.get("fcm_token");
+
         if (countryCode == null) {
             countryCode = Constant.COUNTRY_CODE;
         }
@@ -331,7 +338,11 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
             }
 
+
             String newToken = jwtUtil.generateToken(existingCustomer.getId(), role, ipAddress, userAgent);
+            if(fcm_token!= null){
+                existingCustomer.setFcmToken(fcm_token);
+            }
             existingCustomer.setToken(newToken);
             em.persist(existingCustomer);
             return responseService.generateSuccessResponse("New token has been generated", existingCustomer.getToken(), HttpStatus.OK);
@@ -343,6 +354,11 @@ public class OtpEndpoint {
             }
 
             String newToken = jwtUtil.generateToken(vendorEntity.getService_provider_id(), role, ipAddress, userAgent);
+
+            if(fcm_token!= null){
+                vendorEntity.setFcmToken(fcm_token);
+            }
+
             vendorEntity.setToken(newToken);
             em.persist(vendorEntity);
             return responseService.generateSuccessResponse("New token has been generated", vendorEntity.getToken(), HttpStatus.OK);
