@@ -56,7 +56,6 @@ public class CustomerController {
             @RequestParam(required = false) Long customerId
     ) {
         try {
-
             int startPosition = offset * limit;
             if(customerId!=null) {
                 CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, customerId);

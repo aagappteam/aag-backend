@@ -360,7 +360,7 @@ public class LeagueService {
                 return leagueRepository.findByStatus(status, pageable);
             } else if (vendorId != null) {
                 return leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
-            } else {
+            }  else {
                 return leagueRepository.findAll(pageable);
             }
         } catch (Exception e) {
