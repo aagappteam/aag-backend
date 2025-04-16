@@ -5,6 +5,7 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.ticket.Ticket;
+import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
@@ -43,12 +44,20 @@ public class TicketController {
 
     @PostMapping("/create-ticket")
     public ResponseEntity<?> createTicket(@RequestBody Map<String, Object> ticketDetails, @RequestHeader("Authorization") String token) {
-        return ticketService.createTicket(ticketDetails, token);
+        try {
+            return ticketService.createTicket(ticketDetails, token);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error while creating ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping("/by-role/{role}/{id}")
-    public ResponseEntity<?> getTicketsByRoleAndId(@PathVariable String role, @PathVariable Long id) {
-        return ticketService.getTicketsByRoleAndId(role, id);
+    public ResponseEntity<?> getTicketsByRoleAndId(@PathVariable String role, @PathVariable Long id, @RequestParam(required = false) TicketEnum status) {
+        try {
+            return ticketService.getTicketsByRoleAndId(role, id, status);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error while fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 

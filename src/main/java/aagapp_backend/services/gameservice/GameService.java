@@ -361,7 +361,8 @@ public class GameService {
             }
 
             if (isPlayerInRoom(player)) {
-                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId() + " " + player.getGameRoom().getGame().getId(), HttpStatus.BAD_REQUEST);
+                return responseService.generateErrorResponse("Player + " +player.getPlayerId() +" already in room with this game "  + player.getGameRoom().getGame().getId(), HttpStatus.BAD_REQUEST);
+
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);
@@ -386,6 +387,8 @@ public class GameService {
 
             // 6. Update player status to PLAYING
             updatePlayerStatusToPlaying(player);
+
+
 
 
             // Return the saved game with the shareable link
@@ -490,7 +493,6 @@ public class GameService {
 
     private void leftPlayerFromRoom(GameRoom gameRoom, Player player) {
         player.setGameRoom(null);
-        player.setHasWon(false);
         player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
         playerRepository.save(player);
     }

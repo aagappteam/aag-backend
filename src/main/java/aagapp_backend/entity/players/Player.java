@@ -1,5 +1,7 @@
 package aagapp_backend.entity.players;
 
+import aagapp_backend.components.Constant;
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.game.Token;
 import aagapp_backend.entity.league.LeagueRoom;
@@ -22,14 +24,10 @@ import java.util.List;
         name = "players",
         indexes = {
                 @Index(name = "idx_player_status", columnList = "player_status"),
+                @Index(name = "idx_player_name", columnList = "playerName"),
                 @Index(name = "idx_game_room_id", columnList = "game_room_id"),
                 @Index(name = "idx_league_room_id", columnList = "league_room_id"),
-                @Index(name = "idx_color", columnList = "color"),
-                @Index(name = "idx_is_current_turn", columnList = "is_current_turn"),
-/*
-                @Index(name = "idx_created_at", columnList = "created_at"),
-*/
-                @Index(name = "idx_game_room_id_player_status", columnList = "game_room_id, player_status")
+                @Index(name = "idx_tournament_room_id", columnList = "tournament_room_id")
         }
 )
 @Getter
@@ -40,15 +38,14 @@ public class Player {
     @Column(name = "player_id")
     private Long playerId;
 
-    private String name;
+    private String playerName;
+
+    private String playerProfilePic;
 
     @NotNull(message = "Status cannot be null")
+    @Enumerated(EnumType.STRING)
     @Column(name = "player_status", nullable = false)
     private PlayerStatus playerStatus;
-
-
-    @OneToMany(mappedBy = "playerId", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Token> tokens = new ArrayList<>();
 
     @JsonIgnore
     @ManyToOne
@@ -66,18 +63,11 @@ public class Player {
     @JoinColumn(name = "tournament_room_id")
     private TournamentRoom tournamentRoom;
 
+    @ManyToOne
+    @JoinColumn(name = "customer_id")
+    @JsonIgnore
+    private CustomCustomer customer;
 
-    private String color; // Red, Blue, Green, Yellow
-
-    private int moveCount = 0;
-
-    private boolean hasWon;
-
-    @Column(name = "score")
-    private Integer score = 0;
-
-    @Column(name = "is_current_turn")
-    private boolean isCurrentTurn = false;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -89,6 +79,24 @@ public class Player {
     public void setUpdatedAt() {
         this.updatedAt = LocalDateTime.now();
     }
+    public String getPlayerProfilePic() {
+        if (playerProfilePic != null) {
+            return playerProfilePic;
+        } else if (customer != null && customer.getProfilePic() != null) {
+            return customer.getProfilePic();
+        }
+        return Constant.PROFILE_IMAGE_URL;
+    }
+
+    public String getPlayerName() {
+        if (playerName != null) {
+            return playerName;
+        } else if (customer != null && customer.getName() != null) {
+            return customer.getName();
+        }
+        return "Aag User";
+    }
+
 
     @PrePersist
     public void setDefaultStatus() {
@@ -101,9 +109,6 @@ public class Player {
         if (this.updatedAt == null) {
             this.updatedAt = LocalDateTime.now();
         }
-    }
 
-    public void updateScore(int points) {
-        this.score += points;
     }
 }

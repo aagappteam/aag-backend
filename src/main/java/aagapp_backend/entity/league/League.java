@@ -43,6 +43,8 @@ public class League {
 
     private String name;
 
+    private String gameName;
+
     @Column(name = "challenging_vendor_id")
     private String challengingVendorName;
 
