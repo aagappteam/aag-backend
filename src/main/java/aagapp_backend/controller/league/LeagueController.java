@@ -267,6 +267,8 @@ public class LeagueController {
     public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @PathVariable Long challengeId) {
         try {
 
+
+
             Challenge challenge = challangeRepository.findById(challengeId)
                     .orElseThrow(() -> new RuntimeException("This Challange is  not found"));
             if (vendorId != challenge.getOpponentVendorId()) {
