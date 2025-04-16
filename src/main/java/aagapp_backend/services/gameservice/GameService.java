@@ -426,7 +426,7 @@ public class GameService {
             VendorGameResponse response = new VendorGameResponse();
             response.setVendorId(vendorEntity.getService_provider_id());
             response.setDailyLimit(vendorEntity.getDailyLimit());
-            response.setPublishedLimit(countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now()));
+            response.setPublishedLimit(vendorEntity.getPublishedLimit());
 
             // Merge all published games, leagues, and tournaments into one list
             List<Map<String, String>> publishedContent = new ArrayList<>();
