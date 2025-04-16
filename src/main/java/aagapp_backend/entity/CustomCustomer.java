@@ -122,6 +122,9 @@ public class CustomCustomer {
     @Column(name = "city")
     private String city;
 
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
     @Nullable
     @Column(length = 512)
     private String token;

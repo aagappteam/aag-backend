@@ -332,7 +332,6 @@ public class LeagueController {
         }
     }
 
-
     @GetMapping("/get-vendors-with-available-leagues")
     public ResponseEntity<?> getVendorsWithAvailableLeagues() {
         try {

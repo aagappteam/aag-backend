@@ -3,6 +3,7 @@ package aagapp_backend.services.league;
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.LeagueRequest;
 
+import aagapp_backend.dto.NotificationRequest;
 import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
@@ -22,8 +23,11 @@ import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import aagapp_backend.services.firebase.NotoficationFirebase;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -34,7 +38,6 @@ import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
 import javax.naming.LimitExceededException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -43,6 +46,9 @@ import java.util.*;
 
 @Service
 public class LeagueService {
+    @Autowired
+    private NotoficationFirebase notificationFirebase;
+
 
     @Autowired
     private LeagueRepository leagueRepository;
@@ -77,7 +83,6 @@ public class LeagueService {
     @Transactional
     public Challenge createChallenge(LeagueRequest leagueRequest, Long vendorId) {
         try {
-//            find game by game id
 
             AagAvailableGames game = aagGameRepository.findById(leagueRequest.getExistinggameId()).orElse(null);
 
@@ -96,17 +101,20 @@ public class LeagueService {
             }
 
 
-
             if (leagueRequest.getOpponentVendorId() != null && leagueRequest.getOpponentVendorId().equals(vendorId)) {
                 throw new IllegalArgumentException("A vendor cannot challenge themselves");
             }
 
             Challenge challenge = new Challenge();
             if (leagueRequest.getOpponentVendorId() == null) {
-                challenge.setOpponentVendorId(getRandomAvailableVendor(vendorId).getService_provider_id());
+                Long oppnentvendorid = getRandomAvailableVendor(vendorId).getService_provider_id();
+                challenge.setOpponentVendorId(oppnentvendorid);
             }else{
-                challenge.setOpponentVendorId(leagueRequest.getOpponentVendorId());
+                Long oppnentvendorid = leagueRequest.getOpponentVendorId();
+                challenge.setOpponentVendorId(oppnentvendorid);
             }
+
+
 
             // Create the challenge entity
             challenge.setVendorId(vendorId);
@@ -131,6 +139,30 @@ public class LeagueService {
 
             // Save the challenge in the database
             challangeRepository.save(challenge);
+
+            Long receiverVendorId = challenge.getOpponentVendorId();
+
+            VendorEntity opponentVendor = vendorRepository.findById(receiverVendorId)
+                    .orElseThrow(() -> new RuntimeException("Opponent Vendor not found"));
+            String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
+
+            if (fcmToken != null && !fcmToken.isEmpty()) {
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                String challengeJson = gson.toJson(challenge); // Convert Challenge to JSON string
+
+                NotificationRequest notificationRequest = new NotificationRequest();
+                notificationRequest.setToken(fcmToken);
+                notificationRequest.setTitle("New Challenge Received!");
+                notificationRequest.setBody(challengeJson);
+                notificationRequest.setTopic("League Challenge"); // Optional, just for tagging
+
+                try {
+                    notificationFirebase.sendMessageToToken(notificationRequest);
+                } catch (Exception e) {
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
+            }
+
 
             return challenge;
 
@@ -255,7 +287,6 @@ public class LeagueService {
             if (leagueRequest.getMove() != null) {
                 league.setMove(leagueRequest.getMove());
             }
-
 
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));

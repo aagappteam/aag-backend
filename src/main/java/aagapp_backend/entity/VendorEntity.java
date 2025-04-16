@@ -175,6 +175,10 @@ public class VendorEntity {
     @Column(name = "kyc_status")
     private KycStatus kycStatus = KycStatus.NOT_SUBMITTED;
 
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

@@ -520,6 +520,8 @@ public class VenderServiceImpl implements VenderService {
             String countryCode = (String) loginDetails.get("countryCode");
             String referralCode = (String) loginDetails.get("referralCode");
             Integer role = (Integer) loginDetails.get("role");
+            String fcm_token = (String) loginDetails.get("fcm_token");
+
             if (countryCode == null || countryCode.isEmpty()) {
                 countryCode = Constant.COUNTRY_CODE;
             }
@@ -546,6 +548,9 @@ public class VenderServiceImpl implements VenderService {
             String storedOtp = existingServiceProvider.getOtp();
             String ipAddress = request.getRemoteAddr();
             String userAgent = request.getHeader("User-Agent");
+            if(fcm_token!= null){
+                existingServiceProvider.setFcmToken(fcm_token);
+            }
 
             if (otpEntered == null || otpEntered.trim().isEmpty()) {
                 return responseService.generateErrorResponse("OTP cannot be empty", HttpStatus.BAD_REQUEST);
