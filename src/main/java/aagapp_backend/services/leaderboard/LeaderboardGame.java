@@ -43,7 +43,7 @@ public class LeaderboardGame {
     private ThemeRepository themeRepository;
 
     @Autowired
-    private CustomCustomerRepository customCustomerRepository; // Assuming you have this repository
+    private CustomCustomerRepository customCustomerRepository;
 
 
 /*    public List<GameRoomWinner> getPaginatedWinners(Long gameId, int page, int size) {
