@@ -10,7 +10,6 @@ import aagapp_backend.entity.game.GameRoomWinner;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.players.Player;
-import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -26,7 +25,6 @@ import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.gameservice.GameService;
 import jakarta.transaction.Transactional;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -186,7 +184,7 @@ private LeagueRepository leagueRepository;
         }
 
         // Fetch the Game associated with the gameId
-        Optional<League> leagueOpt = leagueRepository.findById(leagueRoom.getGame().getId());
+        Optional<League> leagueOpt = leagueRepository.findById(leagueRoom.getLeague().getId());
         if (leagueOpt.isEmpty()) {
             throw new RuntimeException("league not found with ID: " + leagueRoomOptional.get().getId());
         }

@@ -383,9 +383,9 @@ public class LeagueController {
         // Map the GameRoom entities to GameRoomResponseDTO
         List<GameRoomResponseDTO> gameRoomResponseDTOS = ongoingRooms.stream().map(gameRoom -> {
             Integer maxParticipants = gameRoom.getMaxPlayers();
-            Long gameId = gameRoom.getGame().getId();
+            Long gameId = gameRoom.getLeague().getId();
             String gamePassword = gameRoom.getGamepassword();
-            Integer moves = gameRoom.getGame().getMove();  // Assuming moves is stored in the Game entity
+            Integer moves = gameRoom.getLeague().getMove();  // Assuming moves is stored in the Game entity
 
             BigDecimal totalPrize = matchService.getWinningAmountLeague(gameRoom);  // Assuming matchService calculates the total prize
 
