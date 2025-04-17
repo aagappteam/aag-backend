@@ -148,8 +148,6 @@ public class LeagueService {
                 challenge.setOpponentVendorId(oppnentvendorid);
             }
 
-
-
             // Create the challenge entity
             challenge.setVendorId(vendorId);
             challenge.setExistinggameId(leagueRequest.getExistinggameId());

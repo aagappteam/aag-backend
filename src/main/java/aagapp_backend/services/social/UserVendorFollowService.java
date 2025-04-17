@@ -1,18 +1,38 @@
 package aagapp_backend.services.social;
 
 import aagapp_backend.dto.TopVendorDto;
+import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.social.UserVendorFollow;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.social.UserVendorFollowRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.services.vendor.VenderService;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class UserVendorFollowService {
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
+
+    @Autowired
+    private VenderService vendorService;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private UserVendorFollowRepository followRepo;
@@ -30,23 +50,134 @@ public class UserVendorFollowService {
             follow.setVendor(vendorRepo.findById(vendorId).orElseThrow());
             follow.setFollowedAt(LocalDateTime.now());
             followRepo.save(follow);
+            this.updateFollowerCount(vendorId);
+
         }
         return "Followed";
+    }
+
+    //   update follower count of vendor
+    @Transactional
+    public void updateFollowerCount(Long vendorId) {
+        VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
+
+        vendor.setFollowercount(vendor.getFollowercount()==null?0:vendor.getFollowercount()+1);
+        entityManager.persist(vendor);
+    }
+
+    @Transactional
+    private void removeollowerCount(Long vendorId) {
+        VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
+        vendor.setFollowercount(vendor.getFollowercount()==null?0:vendor.getFollowercount()-1);
+
+        entityManager.persist(vendor);
     }
 
     public String unfollowVendor(Long userId, Long vendorId) {
         followRepo.findByUserIdAndVendorId(userId, vendorId)
                 .ifPresent(followRepo::delete);
+        this.removeollowerCount(vendorId);
         return "Unfollowed";
     }
 
-    public List<UserVendorFollow> getFollowersOfVendor(Long vendorId) {
-        return followRepo.findByVendorId(vendorId);
+
+
+/*
+    public Map<String, Object> getFollowersOfVendor(Long vendorId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Get the vendor only once
+        VendorEntity vendor = vendorRepo.findById(vendorId)
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+
+        Page<UserVendorFollow> followPage = followRepo.findByVendorId(vendorId, pageable);
+
+        // Map user data
+        List<Map<String, Object>> userList = followPage.getContent().stream().map(follow -> {
+            CustomCustomer user = follow.getUser();
+
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("name", user.getName());
+            userInfo.put("profilePic", user.getProfilePic());
+            userInfo.put("email", user.getEmail());
+            userInfo.put("isFollowing", true); // because it's from the follow list
+
+            return userInfo;
+        }).collect(Collectors.toList());
+
+        // Users pagination info
+        Map<String, Object> userPageMap = new HashMap<>();
+        userPageMap.put("content", userList);
+        userPageMap.put("pageNumber", followPage.getNumber());
+        userPageMap.put("pageSize", followPage.getSize());
+        userPageMap.put("totalPages", followPage.getTotalPages());
+        userPageMap.put("totalElements", followPage.getTotalElements());
+        userPageMap.put("last", followPage.isLast());
+
+        // Final response
+        Map<String, Object> response = new HashMap<>();
+
+        Map<String, Object> vendorMap = new HashMap<>();
+        vendorMap.put("name", vendor.getName());
+        vendorMap.put("profilePic", vendor.getProfilePic());
+        vendorMap.put("email", vendor.getPrimary_email());
+        vendorMap.put("followerCount", followRepo.countByVendorId(vendorId));
+
+        response.put("vendor", vendorMap);
+        response.put("users", userPageMap);
+
+        return response;
+    }
+*/
+
+
+    public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Get the user only once
+        CustomCustomer user = customCustomerRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Fetch the follows (i.e., vendors followed by user)
+        Page<UserVendorFollow> followPage = followRepo.findByUserId(userId, pageable);
+
+        // Map vendor data only
+        List<Map<String, Object>> vendorList = followPage.getContent().stream().map(follow -> {
+            VendorEntity vendor = follow.getVendor();
+
+            Map<String, Object> vendorInfo = new HashMap<>();
+            vendorInfo.put("name", vendor.getName());
+            vendorInfo.put("profilePic", vendor.getProfilePic());
+            vendorInfo.put("email", vendor.getPrimary_email());
+            vendorInfo.put("followerCount", followRepo.countByVendorId(vendor.getService_provider_id()));
+            vendorInfo.put("isFollowing", true); // it's from follow list, so always true
+
+            return vendorInfo;
+        }).collect(Collectors.toList());
+
+        // Vendor pagination info
+        Map<String, Object> vendorPageMap = new HashMap<>();
+        vendorPageMap.put("content", vendorList);
+        vendorPageMap.put("pageNumber", followPage.getNumber());
+        vendorPageMap.put("pageSize", followPage.getSize());
+        vendorPageMap.put("totalPages", followPage.getTotalPages());
+        vendorPageMap.put("totalElements", followPage.getTotalElements());
+        vendorPageMap.put("last", followPage.isLast());
+
+        // Final response structure
+        Map<String, Object> response = new HashMap<>();
+
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("name", user.getName());
+        userMap.put("profilePic", user.getProfilePic());
+        userMap.put("email", user.getEmail());
+
+        response.put("user", userMap);
+        response.put("vendors", vendorPageMap);
+
+        return response;
     }
 
-    public List<UserVendorFollow> getVendorsFollowedByUser(Long userId) {
-        return followRepo.findByUserId(userId);
-    }
 
     public List<TopVendorDto> getTopVendors() {
         return followRepo.findTopVendorsWithFollowerCount();
@@ -61,7 +192,7 @@ public class UserVendorFollowService {
     }
 
 
-    public void notifyFollowers(Long vendorId, String title, String body) {
+/*    public void notifyFollowers(Long vendorId, String title, String body) {
         List<UserVendorFollow> followers = followRepo.findByVendorId(vendorId);
         for (UserVendorFollow follow : followers) {
             String token = follow.getUser().getFcmToken();
@@ -69,7 +200,7 @@ public class UserVendorFollowService {
                 sendPushNotification(token, title, body);
             }
         }
-    }
+    }*/
 
     private void sendPushNotification(String token, String title, String body) {
         // Implementation to send notification using Firebase or other service

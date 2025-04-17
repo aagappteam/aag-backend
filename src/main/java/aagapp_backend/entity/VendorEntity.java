@@ -92,6 +92,11 @@ public class VendorEntity {
 
     private int signedUp = 0;
 
+    @Column(name = "follower_count",nullable = false)
+    private Integer followercount = 0;
+
+
+
     private int isVerified = 0;
 
     @Column(name = "is_paid", nullable = false)
