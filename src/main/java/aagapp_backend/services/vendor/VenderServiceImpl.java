@@ -44,54 +44,65 @@ import java.util.*;
 @Service
 public class VenderServiceImpl implements VenderService {
 
-    private EntityManager entityManager;
-    private ExceptionHandlingImplement exceptionHandling;
-    private CustomCustomerService customCustomerService;
-    private JwtUtil jwtUtil;
-    private ResponseService responseService;
-    private TwilioService twilioService;
+    private final EntityManager entityManager;
+    private final ExceptionHandlingImplement exceptionHandling;
+    private final CustomCustomerService customCustomerService;
+    private final JwtUtil jwtUtil;
+    private final ResponseService responseService;
+    private final TwilioService twilioService;
+    private final DeviceMange deviceMange;
+    private final ReferralService referralService;
+    private final VendorReferralRepository vendorReferralRepository;
+    private final VendorRepository vendorRepository;
+    private final AagGameService aagGameService;
+    private final GameService gameService;
+    private final PaymentService paymentService;
+    private final RateLimiterService rateLimiterService;
+    private final PasswordEncoder passwordEncoder;
 
-    private DeviceMange deviceMange;
-    private ReferralService referralService;
-    private VendorReferralRepository vendorReferralRepository;
-
-    private VendorRepository vendorRepository;
-    private AagGameService aagGameService;
-    private GameService gameService;
-
-    private PaymentService paymentService;
     @Autowired
-    @Lazy
-    public VenderServiceImpl(PaymentService paymentService) {
+    public VenderServiceImpl(
+            EntityManager entityManager,
+            @Lazy PaymentService paymentService,
+            ExceptionHandlingImplement exceptionHandling,
+            CustomCustomerService customCustomerService,
+            JwtUtil jwtUtil,
+            ResponseService responseService,
+            @Lazy TwilioService twilioService,
+            @Lazy DeviceMange deviceMange,
+            @Lazy ReferralService referralService,
+            VendorReferralRepository vendorReferralRepository,
+            VendorRepository vendorRepository,
+            AagGameService aagGameService,
+            GameService gameService,
+            @Lazy RateLimiterService rateLimiterService,
+            PasswordEncoder passwordEncoder
+    ) {
+        this.entityManager = entityManager;
         this.paymentService = paymentService;
-    }
-    @Autowired
-    public void setVendorRepository(VendorRepository vendorRepository) {
-        this.vendorRepository = vendorRepository;
-    }
-    @Autowired
-    public void setAagGameService(AagGameService aagGameService) {
-        this.aagGameService = aagGameService;
-    }
-    @Autowired
-    public void setGameService(GameService gameService) {
-        this.gameService = gameService;
-    }
-
-
-
-    @Autowired
-    public void setVendorReferralRepository(VendorReferralRepository vendorReferralRepository) {
-        this.vendorReferralRepository = vendorReferralRepository;
-    }
-
-    @Autowired
-    @Lazy
-    public void setDeviceMange(DeviceMange deviceMange) {
+        this.exceptionHandling = exceptionHandling;
+        this.customCustomerService = customCustomerService;
+        this.jwtUtil = jwtUtil;
+        this.responseService = responseService;
+        this.twilioService = twilioService;
         this.deviceMange = deviceMange;
+        this.referralService = referralService;
+        this.vendorReferralRepository = vendorReferralRepository;
+        this.vendorRepository = vendorRepository;
+        this.aagGameService = aagGameService;
+        this.gameService = gameService;
+        this.rateLimiterService = rateLimiterService;
+        this.passwordEncoder = passwordEncoder;
     }
 
+    public VendorEntity findServiceProviderByUserName(String username) {
 
+        return entityManager.createQuery(Constant.USERNAME_QUERY_SERVICE_PROVIDER, VendorEntity.class)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+    }
 
     public VendorEntity findServiceProviderByReferralCode(String referralCode) {
         List<VendorEntity> results = entityManager.createQuery("SELECT v FROM VendorEntity v WHERE v.referralCode = :referralCode", VendorEntity.class)
@@ -105,60 +116,6 @@ public class VenderServiceImpl implements VenderService {
         return results.isEmpty() ? null : results.get(0);
     }
 
-
-    @Autowired
-    @Lazy
-    public void setReferralService(ReferralService referralService) {
-        this.referralService = referralService;
-    }
-
-    @Autowired
-    public void setTwilioService(@Lazy
-                                 TwilioService twilioService) {
-        this.twilioService = twilioService;
-    }
-
-
-    @Autowired
-    @Lazy
-    RateLimiterService rateLimiterService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @PersistenceContext
-    public void setEntityManager(EntityManager entityManager) {
-        this.entityManager = entityManager;
-    }
-
-    @Autowired
-    public void setExceptionHandling(ExceptionHandlingImplement exceptionHandling) {
-        this.exceptionHandling = exceptionHandling;
-    }
-
-    @Autowired
-    public void setCustomCustomerService(CustomCustomerService customCustomerService) {
-        this.customCustomerService = customCustomerService;
-    }
-
-    @Autowired
-    public void setJwtUtil(JwtUtil jwtUtil) {
-        this.jwtUtil = jwtUtil;
-    }
-
-    @Autowired
-    public void setResponseService(ResponseService responseService) {
-        this.responseService = responseService;
-    }
-
-    public VendorEntity findServiceProviderByUserName(String username) {
-
-        return entityManager.createQuery(Constant.USERNAME_QUERY_SERVICE_PROVIDER, VendorEntity.class)
-                .setParameter("username", username)
-                .getResultStream()
-                .findFirst()
-                .orElse(null);
-    }
 
     @Override
     @Transactional
@@ -798,38 +755,6 @@ public class VenderServiceImpl implements VenderService {
         return vendorRepository.findTop3ByOrderByRefferalbalanceDesc();
     }
 
-
-/*
-@Override
-public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
-    // Fetch top 3 vendors sorted by rank (from cache)
-    List<TopVendorCache> topVendorsFromCache = topVendorCacheRepository.findTop3ByOrderByRankAsc();
-
-    // Convert the list of TopVendorCache into a list of Maps
-    List<Map<String, Object>> topVendorsData = new ArrayList<>();
-    for (TopVendorCache topVendor : topVendorsFromCache) {
-        Map<String, Object> vendorData = new HashMap<>();
-        vendorData.put("id", topVendor.getId());
-        vendorData.put("serviceProviderId", topVendor.getServiceProviderId());
-        vendorData.put("price", topVendor.getPrice());
-        vendorData.put("rank", topVendor.getRank());
-        vendorData.put("profileImage", Optional.ofNullable(topVendor.getProfileImage()).orElse(Constant.PROFILE_IMAGE_URL));
-        vendorData.put("vendorName", topVendor.getVendorName() != null ? topVendor.getVendorName() : null);
-        vendorData.put("updatedAt", topVendor.getUpdatedAt());
-        topVendorsData.add(vendorData);
-    }
-
-
-    // Return the data
-    Map<String, Object> result = new HashMap<>();
-    result.put("topInvities", topVendorsData);
-
-    return result;
-}
-*/
-
-
-
     @Override
     public Map<String, Object> getDashboardData(Long serviceProviderId) {
 
@@ -839,25 +764,13 @@ public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId)
         Map<String, Object> result = new HashMap<>();
         result.put("availablegames", games);
         VendorLevelPlan level = existingVendor.getVendorLevelPlan();
-//        Integer  returnPercentage =  level.getReturnMultiplier();
-//        result.put("topPlayers", topPlayers);
-//        get active subscriptions of service provider
-//        List<Subscription> subscriptions = subscriptionService.getActiveSubscriptionsByServiceProvider(serviceProviderId);
-//        result.put("subscriptionPlanCards", subscriptions);
 
-//        get actives games by vendor id
         List<GetGameResponseDashboardDTO> gamesPage = gameService.findActivegamesByVendorId(serviceProviderId,  0,10);
         result.put("activeGames", gamesPage);
-//        getActiveTransactionsByVendorId
-        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit());
+        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit(),existingVendor.getDailyLimit());
         result.put("subscriptionPlanCards", transactions);
 
-        // Return percentage
-
         return result;
-
-
-
 
     }
 

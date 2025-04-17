@@ -343,7 +343,7 @@ public class PaymentService {
     }
 
     // Updated to include transactionReference as an additional parameter
-    public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendorId, Integer dailyPercentage,Integer PublishedLimit) {
+    public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendorId, Integer dailyPercentage,Integer PublishedLimit,Integer dailyLimit) {
         PaymentStatus status = PaymentStatus.ACTIVE;
 
         // Retrieve the active payment plan for the vendor
@@ -355,7 +355,7 @@ public class PaymentService {
 
             // Retrieve the PlanEntity using the planId from the PaymentEntity
             Optional<PlanEntity> planEntityOptional = planRepository.findById(paymentEntity.getPlanId());
-            String dailyLimitString = PublishedLimit  + "/" + paymentEntity.getDailyLimit();
+            String dailyLimitString = PublishedLimit  + "/" + dailyLimit;
 
             // Map PaymentEntity and PlanEntity to PaymentDashboardDTO
             return Optional.of(planEntityOptional.map(planEntity -> {

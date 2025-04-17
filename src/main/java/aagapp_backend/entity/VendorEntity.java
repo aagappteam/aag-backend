@@ -229,6 +229,11 @@ public class VendorEntity {
         }
         return last_name;
     }
+    @Transient
+    public String getName() {
+        return this.first_name + " " + this.last_name;
+    }
+
 
 
 }
