@@ -17,7 +17,12 @@ import java.time.ZonedDateTime;
         indexes = {
                 @Index(name = "idx_vendorId", columnList = "vendorId"),
                 @Index(name = "idx_challengeStatus", columnList = "challengeStatus"),
-                @Index(name = "idx_scheduledAt", columnList = "scheduledAt")
+                @Index(name = "idx_scheduledAt", columnList = "scheduledAt"),
+                @Index(name = "idx_opponentVendorId", columnList = "opponentVendorId"),
+                @Index(name = "idx_existinggameId", columnList = "existinggameId"),
+                @Index(name = "idx_vendor_status", columnList = "vendorId,challengeStatus"),
+                @Index(name = "idx_createdAt", columnList = "createdAt"),
+                @Index(name = "idx_endDate", columnList = "endDate")
         }
 )
 public class Challenge {
@@ -28,9 +33,19 @@ public class Challenge {
 
     private Long vendorId;
 
+    private  String vendorName;
+
+    private String vendorProfilePic;
+
     private String name;
 
+    private String gameImage;
+
     private Long opponentVendorId;
+
+    private String opponentVendorName;
+
+    private String opponentVendorProfilePic;
 
     @Enumerated(EnumType.STRING)
     private ChallengeStatus challengeStatus;
