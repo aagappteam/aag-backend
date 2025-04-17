@@ -123,7 +123,6 @@ public class TournamentService {
             if (leagueRequest.getMaxPlayersPerTeam() != null) {
                 league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
             }*/
-            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
 
             // Set created and updated timestamps
@@ -163,6 +162,8 @@ public class TournamentService {
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(tournament.getId());
             tournament.setShareableLink(shareableLink);
+
+            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
             // Return the saved game with the shareable link
             return tournamentRepository.save(tournament);

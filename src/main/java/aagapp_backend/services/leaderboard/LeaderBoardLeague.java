@@ -55,7 +55,7 @@ public class LeaderBoardLeague {
         List<GameRoomWinner> winners = leagueRoomWinnerRepository.findByGame_Id(gameId);
 
         // 4. Fetch total players in game rooms (sum of maxPlayers from GameRoom)
-        long totalPlayers = leagueRoomRepository.sumMaxPlayersByGameId(gameId);
+        long totalPlayers = leagueRoomRepositorypu.sumMaxPlayersByGameId(gameId);
 
         // 5. Prepare player list
         List<LeaderboardResponseDTO> playerList = new ArrayList<>();

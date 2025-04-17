@@ -2,6 +2,7 @@ package aagapp_backend.entity.ticket;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.TicketEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -31,26 +32,17 @@ public class Ticket {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long ticketId;
+    private Long id;
 
     private String subject;
 
     private String description;
 
-    private String status;
+    private TicketEnum status;
 
     private String remark;
 
-    private String priority;
-
-    private String type;
-
-
-    private Long customerId;
-
-
-    private Long vendorId;
-
+    private Long customerOrVendorId;
 
     private String role;
 
@@ -66,6 +58,7 @@ public class Ticket {
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
+
 
 
 }

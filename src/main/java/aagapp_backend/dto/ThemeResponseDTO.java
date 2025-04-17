@@ -12,6 +12,6 @@ public class ThemeResponseDTO {
 
     public ThemeResponseDTO(ThemeEntity theme) {
         this.themeId = theme.getId();
-        this.themeImage = theme.getImageUrl().replaceAll("[\r\n]+", "").trim();
+        this.themeImage = theme.getImageUrl();
     }
 }

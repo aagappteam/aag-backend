@@ -7,7 +7,10 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.game.GameRoomWinner;
+import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -15,10 +18,15 @@ import aagapp_backend.repository.game.GameRepository;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.repository.game.GameRoomWinnerRepository;
 import aagapp_backend.repository.game.PlayerRepository;
+import aagapp_backend.repository.league.LeagueRepository;
+import aagapp_backend.repository.league.LeagueRoomRepository;
+import aagapp_backend.repository.tournament.TournamentRepository;
+import aagapp_backend.repository.tournament.TournamentRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.gameservice.GameService;
 import jakarta.transaction.Transactional;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +48,17 @@ public class MatchService {
 
     @Autowired
     private GameRoomWinnerRepository gameRoomWinnerRepository;
+
+    @Autowired
+    private LeagueRoomRepository leagueRoomRepository;
+
+    @Autowired
+    private TournamentRepository tournamentRepository;
+
+@Autowired
+private LeagueRepository leagueRepository;
+    @Autowired
+    private TournamentRoomRepository tournamentRoomRepository;
 
     @Autowired
     private CustomCustomerRepository customCustomerRepository;
@@ -136,6 +155,52 @@ public class MatchService {
         // Return all players' details (including updated amount for the winner)
         return getAllPlayersDetails(gameResult, gameRoomOpt, game, winner, loser);
     }
+
+    //method to get wiining ammount from game room to user
+    public BigDecimal getWinningAmount(GameRoom gameRoom) {
+        Optional<GameRoom> gameRoomOpt = gameRoomRepository.findById(gameRoom.getId());
+        if (gameRoomOpt.isEmpty()) {
+            throw new RuntimeException("Game room not found with ID: " + gameRoom.getId());
+        }
+
+        // Fetch the Game associated with the gameId
+        Optional<Game> gameOpt = gameRepository.findById(gameRoom.getGame().getId());
+        if (gameOpt.isEmpty()) {
+            throw new RuntimeException("Game not found with ID: " + gameRoom.getGame().getId());
+        }
+        Game game = gameOpt.get();
+
+        // Calculate the total collection and shares
+        BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(gameOpt.get().getMaxPlayersPerTeam()));
+
+        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
+        BigDecimal finalAmountToUser = userWin;
+
+        return finalAmountToUser;
+    }
+
+    public BigDecimal getWinningAmountLeague(LeagueRoom leagueRoom) {
+        Optional<LeagueRoom> leagueRoomOptional = leagueRoomRepository.findById(leagueRoom.getId());
+        if (leagueRoomOptional.isEmpty()) {
+            throw new RuntimeException("Game room not found with ID: " + leagueRoom.getId());
+        }
+
+        // Fetch the Game associated with the gameId
+        Optional<League> leagueOpt = leagueRepository.findById(leagueRoom.getGame().getId());
+        if (leagueOpt.isEmpty()) {
+            throw new RuntimeException("league not found with ID: " + leagueRoomOptional.get().getId());
+        }
+        League league = leagueOpt.get();
+
+        // Calculate the total collection and shares
+        BigDecimal totalCollection = BigDecimal.valueOf(league.getFee()).multiply(BigDecimal.valueOf(leagueOpt.get().getMaxPlayersPerTeam()));
+
+        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
+        BigDecimal finalAmountToUser = userWin;
+
+        return finalAmountToUser;
+    }
+
 
     private Player getPlayerById(Long playerId) {
         Optional<Player> playerOpt = playerRepository.findById(playerId);

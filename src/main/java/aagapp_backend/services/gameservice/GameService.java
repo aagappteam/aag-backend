@@ -8,11 +8,13 @@ import aagapp_backend.entity.game.*;
 
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.*;
 import aagapp_backend.repository.aagavailblegames.AagAvailbleGamesRepository;
 import aagapp_backend.repository.game.*;
 
 import aagapp_backend.repository.league.LeagueRepository;
+import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.payment.PaymentFeatures;
@@ -71,6 +73,9 @@ public class GameService {
 
     @Autowired
     private AagGameRepository aagGameRepository;
+
+    @Autowired
+    private TournamentRepository tournamentRepository;
 
     @Autowired
     private AagAvailbleGamesRepository aagAvailbleGamesRepository;
@@ -270,9 +275,6 @@ public class GameService {
                 game.setScheduledAt(scheduledInKolkata);
                 game.setEndDate(scheduledInKolkata.plusHours(4));
             } else {
-/*
-                game.setStatus(GameStatus.ACTIVE);
-*/
                 game.setStatus(GameStatus.SCHEDULED);
 
                 game.setScheduledAt(nowInKolkata.plusMinutes(15));
@@ -361,7 +363,8 @@ public class GameService {
             }
 
             if (isPlayerInRoom(player)) {
-                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.BAD_REQUEST);
+                return responseService.generateErrorResponse("Player + " +player.getPlayerId() +" already in room with this game "  + player.getGameRoom().getGame().getId(), HttpStatus.BAD_REQUEST);
+
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);
@@ -388,6 +391,8 @@ public class GameService {
             updatePlayerStatusToPlaying(player);
 
 
+
+
             // Return the saved game with the shareable link
             return responseService.generateSuccessResponse("Player join in the Game Room ", gameRoom, HttpStatus.OK);
 
@@ -400,14 +405,12 @@ public class GameService {
     @Transactional
     public VendorGameResponse getVendorPublishedGames(Long vendorId) {
         try {
-            // Fetch Vendor entity
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
             if (vendorEntity == null) {
                 throw new RuntimeException("No records found for vendor with ID: " + vendorId);
             }
 
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-
             ZonedDateTime startOfDayInKolkata = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
             ZonedDateTime endOfDayInKolkata = startOfDayInKolkata.plusDays(1).minusSeconds(1);
 
@@ -415,51 +418,65 @@ public class GameService {
             ZonedDateTime endTimeUTC = endOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
 
             List<Game> games = gameRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
+            List<League> leagues = leagueRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
+            List<Tournament> tournaments = tournamentRepository.findByVendorEntityAndScheduledAtBetween(vendorId, startTimeUTC, endTimeUTC);
 
-//            List<Game> games = gameRepository.findAll();
-                    // Fetch all available games (no vendor filter)
-            List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll(); // Fetch all available games
+            List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll();
 
-            // Prepare the response data
             VendorGameResponse response = new VendorGameResponse();
             response.setVendorId(vendorEntity.getService_provider_id());
             response.setDailyLimit(vendorEntity.getDailyLimit());
-            int dailyUsage = countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
-            vendorEntity.setPublishedLimit(dailyUsage);
-            response.setPublishedLimit(dailyUsage);
-
-/*
             response.setPublishedLimit(vendorEntity.getPublishedLimit());
-*/
 
-            // Map the published games to return relevant details (image, name)
-            List<Map<String, String>> publishedGames = games.stream()
+            // Merge all published games, leagues, and tournaments into one list
+            List<Map<String, String>> publishedContent = new ArrayList<>();
+
+            publishedContent.addAll(games.stream()
                     .map(game -> {
                         Map<String, String> gameMap = new HashMap<>();
                         gameMap.put("imageUrl", game.getTheme().getImageUrl());
-                        gameMap.put("name", game.getName()!=null?game.getName():"n/a");
+                        gameMap.put("name", game.getName() != null ? game.getName() : "n/a");
                         gameMap.put("themename", game.getTheme().getName());
                         return gameMap;
                     })
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toList()));
 
-            response.setPublishedGames(publishedGames);
+            publishedContent.addAll(leagues.stream()
+                    .map(league -> {
+                        Map<String, String> gameMap = new HashMap<>();
+                        gameMap.put("imageUrl", league.getTheme().getImageUrl());
+                        gameMap.put("name", league.getName() != null ? league.getName() : "n/a");
+                        gameMap.put("themename", league.getTheme().getName());
+                        return gameMap;
+                    })
+                    .collect(Collectors.toList()));
 
-            // Map the available games to return relevant details (image, name)
+            publishedContent.addAll(tournaments.stream()
+                    .map(tournament -> {
+                        Map<String, String> gameMap = new HashMap<>();
+                        gameMap.put("imageUrl", tournament.getTheme().getImageUrl());
+                        gameMap.put("name", tournament.getName() != null ? tournament.getName() : "n/a");
+                        gameMap.put("themename", tournament.getTheme().getName());
+                        return gameMap;
+                    })
+                    .collect(Collectors.toList()));
+
+            // Set merged list as publishedGames
+            response.setPublishedGames(publishedContent);
+
+            // available games untouched
             List<Map<String, String>> availableGamesList = availableGames.stream()
                     .map(game -> {
                         Map<String, String> gameMap = new HashMap<>();
-                        gameMap.put("gameId", String.valueOf(game.getId()));  // Include gameId
-                        gameMap.put("gameImage", game.getGameImage());         // Include game image URL
-                        gameMap.put("gameName", game.getGameName());           // Include game name
+                        gameMap.put("gameId", String.valueOf(game.getId()));
+                        gameMap.put("gameImage", game.getGameImage());
+                        gameMap.put("gameName", game.getGameName());
                         return gameMap;
                     })
                     .collect(Collectors.toList());
 
-            // Add available games to the response
-            response.setGames(availableGamesList); // Set available games in the response
+            response.setGames(availableGamesList);
 
-            // Return the response
             return response;
 
         } catch (Exception e) {
@@ -467,7 +484,6 @@ public class GameService {
             throw new RuntimeException("Error occurred while fetching games: " + e.getMessage(), e);
         }
     }
-    
 
 
     @Transactional
@@ -477,7 +493,7 @@ public class GameService {
             Game game = getGameById(gameId);
 
             if (!isPlayerInRoom(player)) {
-                return responseService.generateErrorResponse("Player is not in room with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
+                return responseService.generateErrorResponse("Player is not in room with this id: " + player.getPlayerId(), HttpStatus.BAD_REQUEST);
             }
             GameRoom gameRoom = player.getGameRoom();
             leftPlayerFromRoom(gameRoom, player);
@@ -492,7 +508,6 @@ public class GameService {
 
     private void leftPlayerFromRoom(GameRoom gameRoom, Player player) {
         player.setGameRoom(null);
-        player.setHasWon(false);
         player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
         playerRepository.save(player);
     }
@@ -623,12 +638,15 @@ public class GameService {
     }
 
     @Transactional
-    public Page<GetGameResponseDTO> getAllGames(String status, Long vendorId, Pageable pageable) {
+    public Page<GetGameResponseDTO> getAllGames(String status, Long vendorId, Pageable pageable,String gamename) {
         try {
             StringBuilder sql = new StringBuilder("SELECT * FROM aag_ludo_game g WHERE 1=1");
 
             if (status != null && !status.isEmpty()) {
                 sql.append(" AND g.status = :status");
+            }
+            if(gamename!= null &&!gamename.isEmpty()) {
+                sql.append(" AND g.name LIKE :gamename");
             }
             if (vendorId != null) {
                 sql.append(" AND g.vendor_id = :vendorId");
@@ -641,6 +659,9 @@ public class GameService {
             }
             if (vendorId != null) {
                 query.setParameter("vendorId", vendorId);
+            }
+            if(gamename!= null &&!gamename.isEmpty()) {
+                query.setParameter("gamename", "%" + gamename + "%");
             }
 
             query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
@@ -1195,22 +1216,5 @@ public class GameService {
         }
     }
 
-
-/*    public PlayerScore getWinner(List<PlayerScore> playerScores, PostGameRequest postGameRequest) {
-        Game game = getGameById(postGameRequest.getGameId());
-        PlayerScore winner = null;
-
-        for (PlayerScore playerScore : playerScores) {
-            if (winner == null || playerScore.getScore() > winner.getScore()) {
-                winner = playerScore;
-            }
-        }
-
-        if (winner != null) {
-            winner.setPrize(game.getPrice());
-        }
-
-        return winner;
-    }*/
 }
 

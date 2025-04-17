@@ -4,6 +4,7 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.TournamentStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.micrometer.common.lang.Nullable;
 import jakarta.persistence.*;
@@ -39,6 +40,7 @@ public class Tournament {
 
     private Long vendorId;
     private String name;
+
     private Double totalPrizePool;
 
     @ManyToOne
@@ -60,7 +62,8 @@ public class Tournament {
     private TournamentStatus status;
     private String shareableLink;
 
-
+    @ManyToOne
+    private VendorEntity vendorEntity;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     @CreationTimestamp

@@ -5,9 +5,11 @@ import aagapp_backend.dto.*;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.enums.NotificationType;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.GameRoomRepository;
@@ -19,6 +21,7 @@ import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.payment.PaymentFeatures;
+import aagapp_backend.services.pricedistribute.MatchService;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -32,9 +35,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/games")
@@ -49,6 +54,13 @@ public class GameController {
     private LeagueService leagueService;
     private TournamentService tournamentService;
     private GameLeagueTournamentService gameleaguetournamentservice;
+    private MatchService matchService;
+
+    @Autowired
+    public void setMatchService(@Lazy MatchService matchService) {
+        this.matchService = matchService;
+    }
+
     @Autowired
     public void setGameLeagueTournamentService(@Lazy GameLeagueTournamentService gameleaguetournamentservice) {
         this.gameleaguetournamentservice = gameleaguetournamentservice;
@@ -104,12 +116,14 @@ public class GameController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "gamename", required = false) String gamename,
+
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {
             Pageable pageable = PageRequest.of(page, size);
             // Assuming your service returns Page<GetGameResponseDTO>
-            Page<GetGameResponseDTO> games = gameService.getAllGames(status, vendorId, pageable);
+            Page<GetGameResponseDTO> games = gameService.getAllGames(status, vendorId, pageable,gamename);
 
             // Extract only the content (list of games) and return it
             List<GetGameResponseDTO> gameList = games.getContent();
@@ -277,6 +291,18 @@ public class GameController {
 
     }
 
+    @GetMapping("/getroomdetails/{roomId}")
+    public ResponseEntity<?> getRoomDataById(@PathVariable Long roomId) {
+        try {
+
+            return gameService.getRoomById(roomId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting game room data: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+
     @GetMapping("/published/{vendorId}")
     public ResponseEntity<?> getAllPublishedGamesByVendorId(@PathVariable Long vendorId) {
         try {
@@ -292,23 +318,6 @@ public class GameController {
         }
     }
 
-    // Endpoint to handle game completion and winner calculation
-   /* @PostMapping("/game-completed")
-    public Map<String, Object> gameCompleted(@RequestBody PostGameRequest postGameRequest) {
-
-        // Fetch game details using gameId (e.g., prize for the game)
-
-        // Calculate the winner based on player scores
-        PlayerScore winner = gameService.getWinner(postGameRequest.getPlayers(), postGameRequest);
-
-        // Prepare the response
-        Map<String, Object> response = new HashMap<>();
-        response.put("winner", winner);
-        response.put("players", postGameRequest.getPlayers());
-        response.put("roomId", postGameRequest.getRoomId());
-
-        return response;
-    }*/
     @GetMapping("/get-all-scheduled-events/{vendorId}")
     public ResponseEntity<?> getAllScheduledEvents(
             @PathVariable Long vendorId,
@@ -370,6 +379,27 @@ public class GameController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/active-game-rooms")
+    public ResponseEntity<?> getAllActiveGameRooms() {
+        // Fetch all GameRooms with status ONGOING
+        List<GameRoom> ongoingRooms = gameRoomRepository.findByStatus(GameRoomStatus.ONGOING);
+
+        // Map the GameRoom entities to GameRoomResponseDTO
+        List<GameRoomResponseDTO> gameRoomResponseDTOS = ongoingRooms.stream().map(gameRoom -> {
+            Integer maxParticipants = gameRoom.getMaxPlayers();
+            Long gameId = gameRoom.getGame().getId();
+            String gamePassword = gameRoom.getGamepassword();
+            Integer moves = gameRoom.getGame().getMove();  // Assuming moves is stored in the Game entity
+
+            BigDecimal totalPrize = matchService.getWinningAmount(gameRoom);  // Assuming matchService calculates the total prize
+
+            return new GameRoomResponseDTO(gameId, gameRoom.getId(), gamePassword, moves, totalPrize, maxParticipants);
+        }).collect(Collectors.toList());
+
+        // Return the response wrapped in a success response
+        return responseService.generateSuccessResponse("Fetching game room details", gameRoomResponseDTOS, HttpStatus.OK);
     }
 
 

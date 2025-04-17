@@ -3,6 +3,7 @@ package aagapp_backend.entity;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.KycStatus;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import com.fasterxml.jackson.annotation.*;
@@ -146,8 +147,20 @@ public class VendorEntity {
 
     @Nullable
     @Column(name = "theme_count")
-    private int themeCount = 0;
+    private Integer themeCount = 0;
 
+    @Nullable
+
+    @Column(name = "total_game_published")
+    private Integer total_game_published = 0;  // Use Integer instead of int
+    @Nullable
+
+    @Column(name = "total_league_published")
+    private Integer total_league_published = 0;
+    @Nullable
+
+    @Column(name = "total_tournament_published")
+    private Integer total_tournament_published = 0;
 
     // Column for total participants in the game tournament league
     @Column(name = "total_participated_in_game_tournament_league")
@@ -158,6 +171,13 @@ public class VendorEntity {
     @Enumerated(EnumType.STRING)
 
     private LeagueStatus leagueStatus;
+
+    @Column(name = "kyc_status")
+    private KycStatus kycStatus = KycStatus.NOT_SUBMITTED;
+
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
@@ -177,8 +197,18 @@ public class VendorEntity {
 
     @PrePersist
     public void prePersist() {
+        if (this.total_game_published == null) {
+            this.total_game_published = 0;
+        }
+        if (this.total_league_published == null) {
+            this.total_league_published = 0;
+        }
+        if (this.total_tournament_published == null) {
+            this.total_tournament_published = 0;
+        }
         this.setLeagueStatus(LeagueStatus.NOT_PAID);
     }
+
 
     @JsonManagedReference("submissionentity-vendor")
     @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)

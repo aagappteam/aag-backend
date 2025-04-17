@@ -1,10 +1,17 @@
 package aagapp_backend.services.league;
 
 import aagapp_backend.components.Constant;
+
 import aagapp_backend.dto.GameResult;
 import aagapp_backend.dto.LeagueRequest;
 import aagapp_backend.dto.PlayerDto;
 import aagapp_backend.dto.PlayerDtoWinner;
+
+import aagapp_backend.components.ZonedDateTimeAdapter;
+import aagapp_backend.dto.LeagueRequest;
+
+import aagapp_backend.dto.NotificationRequest;
+
 import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
@@ -17,9 +24,16 @@ import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.league.LeagueRoomWinner;
 import aagapp_backend.entity.players.Player;
+
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.*;
+
+
+import aagapp_backend.enums.LeagueRoomStatus;
+import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.PlayerStatus;
+
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
@@ -31,9 +45,11 @@ import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import aagapp_backend.services.firebase.NotoficationFirebase;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.firestore.v1.TransactionOptions;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -44,7 +60,6 @@ import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -54,6 +69,9 @@ import java.util.*;
 
 @Service
 public class LeagueService {
+    @Autowired
+    private NotoficationFirebase notificationFirebase;
+
 
     @Autowired
     private LeagueRepository leagueRepository;
@@ -103,7 +121,6 @@ public class LeagueService {
     @Transactional
     public Challenge createChallenge(LeagueRequest leagueRequest, Long vendorId) {
         try {
-//            find game by game id
 
             AagAvailableGames game = aagGameRepository.findById(leagueRequest.getExistinggameId()).orElse(null);
 
@@ -128,10 +145,16 @@ public class LeagueService {
 
             Challenge challenge = new Challenge();
             if (leagueRequest.getOpponentVendorId() == null) {
+
                 challenge.setOpponentVendorId(getRandomAvailableVendor(vendorId).getService_provider_id());
             } else {
                 challenge.setOpponentVendorId(leagueRequest.getOpponentVendorId());
+
+                Long oppnentvendorid = getRandomAvailableVendor(vendorId).getService_provider_id();
+                challenge.setOpponentVendorId(oppnentvendorid);
             }
+
+
 
             // Create the challenge entity
             challenge.setVendorId(vendorId);
@@ -156,6 +179,34 @@ public class LeagueService {
 
             // Save the challenge in the database
             challangeRepository.save(challenge);
+
+            Long receiverVendorId = challenge.getOpponentVendorId();
+
+            VendorEntity opponentVendor = vendorRepository.findById(receiverVendorId)
+                    .orElseThrow(() -> new RuntimeException("Opponent Vendor not found"));
+            String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
+
+            if (fcmToken != null && !fcmToken.isEmpty()) {
+                Gson gson = new GsonBuilder()
+                        .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter())
+                        .setPrettyPrinting()
+                        .create();
+
+                String challengeJson = gson.toJson(challenge); // Convert Challenge to JSON string
+
+                NotificationRequest notificationRequest = new NotificationRequest();
+                notificationRequest.setToken(fcmToken);
+                notificationRequest.setTitle("New Challenge Received!");
+                notificationRequest.setBody(challengeJson);
+                notificationRequest.setTopic("League Challenge"); // Optional, just for tagging
+
+                try {
+                    notificationFirebase.sendMessageToToken(notificationRequest);
+                } catch (Exception e) {
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
+            }
+
 
             return challenge;
 
@@ -199,6 +250,45 @@ public class LeagueService {
                 .orElseThrow(() -> new RuntimeException("Challenge not found with ID: " + challengeId));
     }
 
+    @Transactional
+    public Page<Challenge> getChallengesByOpponentVendorIds(List<Long> opponentVendorId, Challenge.ChallengeStatus status, Pageable pageable) {
+        Page<Challenge> challenges;
+
+        if (status != null) {
+            challenges = challangeRepository.findByOpponentVendorIdInAndStatus(opponentVendorId, status, pageable);
+        } else {
+            challenges = challangeRepository.findByOpponentVendorIdIn(opponentVendorId, pageable);
+        }
+
+        if (challenges.isEmpty()) {
+            throw new RuntimeException("No challenges found for opponentVendorIds: " + opponentVendorId +
+                    (status != null ? " with status: " + status : ""));
+        }
+
+        return challenges;
+    }
+
+
+
+    @Transactional
+    public Page<Challenge> getByVendorIdInAndStatus(List<Long> vendorIds, Challenge.ChallengeStatus status, Pageable pageable) {
+        Page<Challenge> challenges;
+
+        if (status != null) {
+            challenges = challangeRepository.findByVendorIdInAndStatus(vendorIds, status, pageable);
+        } else {
+            challenges = challangeRepository.findByVendorIdIn(vendorIds, pageable);
+        }
+
+        if (challenges.isEmpty()) {
+            throw new RuntimeException("No challenges found for vendorIds: " + vendorIds +
+                    (status != null ? " with status: " + status : ""));
+        }
+
+        return challenges;
+    }
+
+
 
     @Transactional
     public League publishLeague(Challenge leagueRequest, Long vendorId) throws LimitExceededException {
@@ -216,6 +306,7 @@ public class LeagueService {
             }
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(leagueRequest.getExistinggameId());
             league.setLeagueUrl(gameAvailable.get().getGameImage());
+            league.setGameName(gameAvailable.get().getGameName());
 
             ThemeEntity theme = em.find(ThemeEntity.class, leagueRequest.getThemeId());
             if (theme == null) {
@@ -223,9 +314,16 @@ public class LeagueService {
             }
 
             // Set Vendor and Theme to the Game
+
             league.setName(opponentVendor.getFirst_name() + " v/s " + vendorEntity.getFirst_name());
             league.setVendorEntity(vendorEntity);
             league.setChallengingVendorName(vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
+
+            league.setName(opponentVendor.getFirst_name() +" v/s " +vendorEntity.getFirst_name());
+            league.setVendorEntity(opponentVendor);
+            league.setChallengingVendorId(opponentVendor.getService_provider_id());
+            league.setChallengingVendorName(vendorEntity.getFirst_name()+" "+vendorEntity.getLast_name());
+
             league.setChallengingVendorProfilePic(vendorEntity.getProfilePic());
             league.setOpponentVendorName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
             league.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
@@ -238,7 +336,6 @@ public class LeagueService {
             if (leagueRequest.getMove() != null) {
                 league.setMove(leagueRequest.getMove());
             }
-
 
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
@@ -263,7 +360,6 @@ public class LeagueService {
             if (leagueRequest.getMaxPlayersPerTeam() != null) {
                 league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
             }
-            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
 
             // Set created and updated timestamps
@@ -284,7 +380,8 @@ public class LeagueService {
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(savedLeague.getId());
             savedLeague.setShareableLink(shareableLink);
-
+            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
+            opponentVendor.setPublishedLimit((opponentVendor.getPublishedLimit() == null ? 0 : opponentVendor.getPublishedLimit()) + 1);
             // Return the saved game with the shareable link
             return leagueRepository.save(savedLeague);
 
@@ -385,7 +482,7 @@ public class LeagueService {
                 return leagueRepository.findByStatus(status, pageable);
             } else if (vendorId != null) {
                 return leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
-            } else {
+            }  else {
                 return leagueRepository.findAll(pageable);
             }
         } catch (Exception e) {
@@ -503,7 +600,6 @@ public class LeagueService {
             }
 
             player.setLeagueRoom(null);
-            player.setHasWon(false);
             player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
             player.setLeagueRoom(null);
             playerRepository.save(player);
