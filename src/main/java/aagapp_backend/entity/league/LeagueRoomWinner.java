@@ -30,6 +30,11 @@ public class LeagueRoomWinner {
     private League league;  // Links to the Game entity
 
     @ManyToOne
+    @JoinColumn(name = "league_room_id", nullable = false)
+    private LeagueRoom leagueRoom;
+
+
+    @ManyToOne
     @JoinColumn(name = "player_id", nullable = false)
     private Player player;
 

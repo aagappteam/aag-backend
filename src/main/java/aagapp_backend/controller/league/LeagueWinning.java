@@ -11,15 +11,15 @@ import aagapp_backend.services.league.LeagueService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+@RestController
+@RequestMapping("/leagues/winning")
 public class LeagueWinning {
 
     @Autowired
@@ -55,10 +55,10 @@ public class LeagueWinning {
         }
     }
 
-    @GetMapping("/game/{gameId}")
-    public ResponseEntity<?> getLeaderboard(@PathVariable Long gameId) {
+    @GetMapping("/game/{leagueId}")
+    public ResponseEntity<?> getLeaderboard(@PathVariable Long leagueId) {
         try{
-            GameLeaderboardResponseDTO leaderboard = leaderBoardLeague.getLeaderboard(gameId);
+            GameLeaderboardResponseDTO leaderboard = leaderBoardLeague.getLeaderboard(leagueId);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         }catch (Exception e) {
             exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);

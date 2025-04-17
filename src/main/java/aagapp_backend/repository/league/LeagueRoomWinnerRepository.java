@@ -1,12 +1,16 @@
 package aagapp_backend.repository.league;
 
-
-import aagapp_backend.entity.game.GameRoomWinner;
 import aagapp_backend.entity.league.LeagueRoomWinner;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
 public interface LeagueRoomWinnerRepository extends JpaRepository<LeagueRoomWinner, Long> {
-    List<GameRoomWinner> findByGame_Id(Long gameId);
+    @Query("SELECT lrw FROM LeagueRoomWinner lrw WHERE lrw.leagueRoom.id = :leagueRoomId")
+    List<LeagueRoomWinner> findByLeagueRoomId(@Param("leagueRoomId") Long leagueRoomId);
+
+
+
 }

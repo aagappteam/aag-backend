@@ -1,5 +1,6 @@
 package aagapp_backend.entity.league;
 
+import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.LeagueRoomStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -43,8 +44,6 @@ public class LeagueRoom {
     @Column(name = "gamepassword", nullable = true)
     private String gamepassword;
 
-    private String gameType; // LUDO, SNAKE_LADDER, KNIFE_THROW, FRUIT_NINJA
-
     @OneToMany(mappedBy = "leagueRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference(value = "leagueRoomReference")
     private List<Player> currentPlayers = new ArrayList<>();
@@ -56,9 +55,14 @@ public class LeagueRoom {
     @Column(name = "max_players", nullable = false)
     private int maxPlayers;
 
+
+
     @ManyToOne
-    @JoinColumn(name = "game_id", nullable = false)
-    private League game;
+    @JoinColumn(name = "league_id", nullable = false)
+    private League league;
+
+
+
 
     private Long currentPlayerId; // ID of the current player's turn
 
