@@ -124,6 +124,7 @@ public class LeagueService {
 
             AagAvailableGames game = aagGameRepository.findById(leagueRequest.getExistinggameId()).orElse(null);
 
+            Challenge challenge = new Challenge();
             if (game == null) {
                 throw new RuntimeException("Game not found with ID: " + leagueRequest.getExistinggameId());
             }
@@ -131,6 +132,8 @@ public class LeagueService {
                 // Check if the opponent vendor exists
                 VendorEntity opponentVendor = vendorRepository.findById(leagueRequest.getOpponentVendorId())
                         .orElseThrow(() -> new RuntimeException("Opponent Vendor not found"));
+                challenge.setOpponentVendorName(opponentVendor.getFirst_name()+" "+opponentVendor.getLast_name());
+                challenge.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
 
                 // Check if the opponent vendor's league status is available
                 if (opponentVendor.getLeagueStatus() != LeagueStatus.AVAILABLE) {
@@ -138,12 +141,14 @@ public class LeagueService {
                 }
             }
 
+            VendorEntity vendor = vendorRepository.findById(vendorId)
+                    .orElseThrow(() -> new RuntimeException("Vendor not found with this id: " + vendorId));
 
             if (leagueRequest.getOpponentVendorId() != null && leagueRequest.getOpponentVendorId().equals(vendorId)) {
                 throw new IllegalArgumentException("A vendor cannot challenge themselves");
             }
 
-            Challenge challenge = new Challenge();
+
             if (leagueRequest.getOpponentVendorId() == null) {
 
                 challenge.setOpponentVendorId(getRandomAvailableVendor(vendorId).getService_provider_id());
@@ -176,6 +181,11 @@ public class LeagueService {
             challenge.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
             challenge.setScheduledAt(leagueRequest.getScheduledAt());
             challenge.setEndDate(leagueRequest.getEndDate());
+            challenge.setVendorName(vendor.getFirst_name()+" "+vendor.getLast_name());
+            challenge.setVendorProfilePic(vendor.getProfilePic());
+            challenge.setName(game.getGameName());
+            challenge.setGameImage(game.getGameImage());
+
 
             // Save the challenge in the database
             challangeRepository.save(challenge);
