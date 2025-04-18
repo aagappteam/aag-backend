@@ -26,8 +26,7 @@ import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.gameservice.GameService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import org.springframework.context.annotation.Lazy;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -36,7 +35,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Service
 public class MatchService {
 
     private static final double TAX_PERCENT = 0.28;
@@ -45,43 +43,85 @@ public class MatchService {
     private static final double USER_WIN_PERCENT = 0.63;
     private static final double BONUS_PERCENT = 0.20;
 
-    @Autowired
     private GameRoomWinnerRepository gameRoomWinnerRepository;
-
-    @Autowired
     private GameResultRecordRepository gameResultRecordRepository;
-
-    @Autowired
     private LeagueRoomRepository leagueRoomRepository;
-
-    @Autowired
     private TournamentRepository tournamentRepository;
-
-@Autowired
-private LeagueRepository leagueRepository;
-    @Autowired
+    private LeagueRepository leagueRepository;
     private TournamentRoomRepository tournamentRoomRepository;
-
-    @Autowired
     private CustomCustomerRepository customCustomerRepository;
-
-    @Autowired
     private PlayerRepository playerRepository;
-
-    @Autowired
     private GameService gameService;
-
-    @Autowired
     private VendorRepository vendorRepo;
-
-    @Autowired
     private GameRoomRepository gameRoomRepository;
-
-    @Autowired
     private GameRepository gameRepository;
+    private WalletRepository walletRepo;
 
     @Autowired
-    private WalletRepository walletRepo;
+    public void setGameRoomWinnerRepository(GameRoomWinnerRepository repo) {
+        this.gameRoomWinnerRepository = repo;
+    }
+
+    @Autowired
+    public void setGameResultRecordRepository(GameResultRecordRepository repo) {
+        this.gameResultRecordRepository = repo;
+    }
+
+    @Autowired
+    public void setLeagueRoomRepository(LeagueRoomRepository repo) {
+        this.leagueRoomRepository = repo;
+    }
+
+    @Autowired
+    public void setTournamentRepository(TournamentRepository repo) {
+        this.tournamentRepository = repo;
+    }
+
+    @Autowired
+    public void setLeagueRepository(LeagueRepository repo) {
+        this.leagueRepository = repo;
+    }
+
+    @Autowired
+    public void setTournamentRoomRepository(TournamentRoomRepository repo) {
+        this.tournamentRoomRepository = repo;
+    }
+
+    @Autowired
+    public void setCustomCustomerRepository(CustomCustomerRepository repo) {
+        this.customCustomerRepository = repo;
+    }
+
+    @Autowired
+    public void setPlayerRepository(PlayerRepository repo) {
+        this.playerRepository = repo;
+    }
+
+    @Autowired
+    @Lazy
+    public void setGameService(GameService service) {
+        this.gameService = service;
+    }
+
+    @Autowired
+    public void setVendorRepo(VendorRepository repo) {
+        this.vendorRepo = repo;
+    }
+
+    @Autowired
+    public void setGameRoomRepository(GameRoomRepository repo) {
+        this.gameRoomRepository = repo;
+    }
+
+    @Autowired
+    public void setGameRepository(GameRepository repo) {
+        this.gameRepository = repo;
+    }
+
+    @Autowired
+    public void setWalletRepo(WalletRepository repo) {
+        this.walletRepo = repo;
+    }
 
     public List<PlayerDto> processMatch(GameResult gameResult) {
         // Fetch the GameRoom based on roomId
