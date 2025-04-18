@@ -14,6 +14,7 @@ import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.*;
 import aagapp_backend.repository.league.LeagueRepository;
@@ -89,8 +90,7 @@ private LeagueRepository leagueRepository;
             throw new RuntimeException("Game room not found with ID: " + gameResult.getRoomId());
         }
         GameRoom gameRoom = gameRoomOpt.get();
-
-        // Fetch the Game associated with the gameId
+                // Fetch the Game associated with the gameId
         Optional<Game> gameOpt = gameRepository.findById(gameRoom.getGame().getId());
         if (gameOpt.isEmpty()) {
             throw new RuntimeException("Game not found with ID: " + gameRoom.getGame().getId());
@@ -170,6 +170,10 @@ private LeagueRepository leagueRepository;
 
         gameResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
 
+        gameRoom.setStatus(GameRoomStatus.COMPLETED);
+        gameRoomRepository.save(gameRoom);
+
+
 
 
         // Optional: Update AAG Wallet if needed
@@ -226,6 +230,8 @@ private LeagueRepository leagueRepository;
 
         return finalAmountToUser;
     }
+
+
 
 
     private Player getPlayerById(Long playerId) {
