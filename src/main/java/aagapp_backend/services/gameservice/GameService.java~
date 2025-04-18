@@ -479,7 +479,7 @@ public void updateDailylimit() {
             gameRoom.setStatus(GameRoomStatus.COMPLETED);
 
 
-            return responseService.generateSuccessResponse("Player left the Game Room ", gameRoom, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Player left the Game Room ", game.getId(), HttpStatus.OK);
         } catch (Exception e){
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);

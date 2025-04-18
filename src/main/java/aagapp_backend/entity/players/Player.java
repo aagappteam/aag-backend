@@ -42,10 +42,10 @@ public class Player {
 
     private String playerProfilePic;
 
-    @NotNull(message = "Status cannot be null")
+    /*@NotNull(message = "Status cannot be null")
     @Enumerated(EnumType.STRING)
     @Column(name = "player_status", nullable = false)
-    private PlayerStatus playerStatus;
+    private PlayerStatus playerStatus;*/
 
     @JsonIgnore
     @ManyToOne
@@ -100,9 +100,9 @@ public class Player {
 
     @PrePersist
     public void setDefaultStatus() {
-        if (this.playerStatus == null) {
+        /*if (this.playerStatus == null) {
             this.playerStatus = PlayerStatus.READY_TO_PLAY;
-        }
+        }*/
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }

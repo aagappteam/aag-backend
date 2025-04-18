@@ -8,8 +8,10 @@ import lombok.Setter;
 public class VendorDTO {
     private Long id;
     private String name;
+    private String profilePicUrl;
 
-    public VendorDTO(Long id, String name) {
+    public VendorDTO(Long id, String name, String profilePicUrl) {
+        this.profilePicUrl = profilePicUrl;
         this.id = id;
         this.name = name;
     }

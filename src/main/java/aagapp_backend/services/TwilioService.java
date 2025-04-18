@@ -95,7 +95,7 @@ public class TwilioService {
                 player.setPlayerId(customerDetails.getId());
                 player.setCustomer(customerDetails);
 
-                player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
+//                player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
                 entityManager.merge(player);
                 return ResponseEntity.ok(Map.of(
                         "otp", otp,
