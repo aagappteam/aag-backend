@@ -15,15 +15,19 @@ import aagapp_backend.repository.game.*;
 
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.tournament.TournamentRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.payment.PaymentFeatures;
+import aagapp_backend.services.vendor.VenderService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.platform.commons.logging.LoggerFactory;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -50,8 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
+
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -62,68 +65,55 @@ public class GameService {
     private final String baseUrl = "http://13.232.105.87:8082";
 
 
-    @Autowired
-    private MoveRepository moveRepository;
-
-    private GameRepository gameRepository;
-    private ResponseService responseService;
-    private PaymentFeatures paymentFeatures;
-    private EntityManager em;
-    private ExceptionHandlingService exceptionHandling;
-
-    @Autowired
-    private AagGameRepository aagGameRepository;
-
-    @Autowired
-    private TournamentRepository tournamentRepository;
-
-    @Autowired
-    private AagAvailbleGamesRepository aagAvailbleGamesRepository;
-
+    private final MoveRepository moveRepository;
+    private final VenderService venderService;
+    private final GameRepository gameRepository;
+    private final ResponseService responseService;
+    private final PaymentFeatures paymentFeatures;
+    private final EntityManager em;
+    private final ExceptionHandlingService exceptionHandling;
+    private final AagGameRepository aagGameRepository;
+    private final TournamentRepository tournamentRepository;
+    private final AagAvailbleGamesRepository aagAvailbleGamesRepository;
     private final LeagueRepository leagueRepository;
-
-    public GameService(LeagueRepository leagueRepository) {
-        this.leagueRepository = leagueRepository;
-    }
-
-    private PlayerRepository playerRepository;
-    private GameRoomRepository gameRoomRepository;
-
+    private final PlayerRepository playerRepository;
+    private final GameRoomRepository gameRoomRepository;
+    private final VendorRepository vendorRepository;
 
     @Autowired
-    public void setExceptionHandling(ExceptionHandlingService exceptionHandling) {
-        this.exceptionHandling = exceptionHandling;
-    }
-
-    @Autowired
-    public void setGameRepository(GameRepository gameRepository) {
+    public GameService(
+            VendorRepository vendorRepository,
+            MoveRepository moveRepository,
+            @Lazy VenderService venderService,
+            GameRepository gameRepository,
+            ResponseService responseService,
+            @Lazy PaymentFeatures paymentFeatures,
+            EntityManager em,
+            ExceptionHandlingService exceptionHandling,
+            AagGameRepository aagGameRepository,
+            TournamentRepository tournamentRepository,
+            AagAvailbleGamesRepository aagAvailbleGamesRepository,
+            LeagueRepository leagueRepository,
+            PlayerRepository playerRepository,
+            GameRoomRepository gameRoomRepository
+    ) {
+        this.vendorRepository = vendorRepository;
+        this.moveRepository = moveRepository;
+        this.venderService = venderService;
         this.gameRepository = gameRepository;
-    }
-
-    @Autowired
-    public void setResponseService(ResponseService responseService) {
         this.responseService = responseService;
-    }
-
-    @Autowired
-    public void setPaymentFeatures(@Lazy PaymentFeatures paymentFeatures) {
         this.paymentFeatures = paymentFeatures;
-    }
-
-    @Autowired
-    public void setEntityManager(EntityManager em) {
         this.em = em;
-    }
-
-    @Autowired
-    public void setPlayerRepository(PlayerRepository playerRepository) {
+        this.exceptionHandling = exceptionHandling;
+        this.aagGameRepository = aagGameRepository;
+        this.tournamentRepository = tournamentRepository;
+        this.aagAvailbleGamesRepository = aagAvailbleGamesRepository;
+        this.leagueRepository = leagueRepository;
         this.playerRepository = playerRepository;
-    }
-
-    @Autowired
-    public void setGameRoomRepository(GameRoomRepository gameRoomRepository) {
         this.gameRoomRepository = gameRoomRepository;
     }
+
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(GameService.class);
 
 
     @Scheduled(cron = "0 * * * * *")  // Every minute
@@ -136,7 +126,6 @@ public class GameService {
 
 
             for (Long vendorId : vendorIds) {
-
                 updateGameStatusToActive(vendorId);
                 updateLeagueStatusToActive(vendorId);
                 updateExpiredGameStatus(vendorId);
@@ -147,39 +136,24 @@ public class GameService {
         }
     }
 
-/*    @Scheduled(cron = "0 * * * * *")  // Every minute
-    public void checkAndActivateScheduledGames() {
-        int page = 0;
-        int pageSize = 100;
-        List<Long> vendorIds;
-        while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
-            System.out.println("Scheduled task checkAndActivateScheduledGames started  " + vendorIds);
+/// at 12 am cron should run daily
+@Scheduled(cron = "0 0 0 * * *")  // Every day at midnight
+@Transactional
+public void updateDailylimit() {
+    int page = 0;
+    int pageSize = 100;
+    List<Long> vendorIds;
 
-            vendorIds.parallelStream().forEach(vendorId -> {
-                updateGameStatusToActive(vendorId);
-                updateLeagueStatusToActive(vendorId);
-                updateExpiredGameStatus(vendorId);
-                updateExpiredLeagueStatus(vendorId);
-            });
-
-            page++;
-        }
-    }*/
-
-
-
-
-    private void shutdownExecutorService(ExecutorService executorService) {
-        executorService.shutdown();  // Initiates an orderly shutdown of the executor
+    while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
         try {
-            // Block indefinitely until all tasks have completed execution
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-        } catch (InterruptedException e) {
-            // If the current thread is interrupted, cancel ongoing tasks
-            executorService.shutdownNow();
-            Thread.currentThread().interrupt();
+            logger.info("Updating daily limit for vendor IDs: {}", vendorIds);
+            vendorRepository.updateDailyLimitForVendors(vendorIds);
+        } catch (Exception e) {
+            logger.error("Failed to update daily limits for batch page {} with vendorIds: {}", page, vendorIds, e);
         }
+        page++;
     }
+}
 
 
     public List<Long> getActiveVendorIdsInBatch(int page, int pageSize) {

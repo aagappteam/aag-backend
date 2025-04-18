@@ -44,54 +44,65 @@ import java.util.*;
 @Service
 public class VenderServiceImpl implements VenderService {
 
-    private EntityManager entityManager;
-    private ExceptionHandlingImplement exceptionHandling;
-    private CustomCustomerService customCustomerService;
-    private JwtUtil jwtUtil;
-    private ResponseService responseService;
-    private TwilioService twilioService;
+    private final EntityManager entityManager;
+    private final ExceptionHandlingImplement exceptionHandling;
+    private final CustomCustomerService customCustomerService;
+    private final JwtUtil jwtUtil;
+    private final ResponseService responseService;
+    private final TwilioService twilioService;
+    private final DeviceMange deviceMange;
+    private final ReferralService referralService;
+    private final VendorReferralRepository vendorReferralRepository;
+    private final VendorRepository vendorRepository;
+    private final AagGameService aagGameService;
+    private final GameService gameService;
+    private final PaymentService paymentService;
+    private final RateLimiterService rateLimiterService;
+    private final PasswordEncoder passwordEncoder;
 
-    private DeviceMange deviceMange;
-    private ReferralService referralService;
-    private VendorReferralRepository vendorReferralRepository;
-
-    private VendorRepository vendorRepository;
-    private AagGameService aagGameService;
-    private GameService gameService;
-
-    private PaymentService paymentService;
     @Autowired
-    @Lazy
-    public VenderServiceImpl(PaymentService paymentService) {
+    public VenderServiceImpl(
+            EntityManager entityManager,
+            @Lazy PaymentService paymentService,
+            ExceptionHandlingImplement exceptionHandling,
+            CustomCustomerService customCustomerService,
+            JwtUtil jwtUtil,
+            ResponseService responseService,
+            @Lazy TwilioService twilioService,
+            @Lazy DeviceMange deviceMange,
+            @Lazy ReferralService referralService,
+            VendorReferralRepository vendorReferralRepository,
+            VendorRepository vendorRepository,
+            AagGameService aagGameService,
+            GameService gameService,
+            @Lazy RateLimiterService rateLimiterService,
+            PasswordEncoder passwordEncoder
+    ) {
+        this.entityManager = entityManager;
         this.paymentService = paymentService;
-    }
-    @Autowired
-    public void setVendorRepository(VendorRepository vendorRepository) {
-        this.vendorRepository = vendorRepository;
-    }
-    @Autowired
-    public void setAagGameService(AagGameService aagGameService) {
-        this.aagGameService = aagGameService;
-    }
-    @Autowired
-    public void setGameService(GameService gameService) {
-        this.gameService = gameService;
-    }
-
-
-
-    @Autowired
-    public void setVendorReferralRepository(VendorReferralRepository vendorReferralRepository) {
-        this.vendorReferralRepository = vendorReferralRepository;
-    }
-
-    @Autowired
-    @Lazy
-    public void setDeviceMange(DeviceMange deviceMange) {
+        this.exceptionHandling = exceptionHandling;
+        this.customCustomerService = customCustomerService;
+        this.jwtUtil = jwtUtil;
+        this.responseService = responseService;
+        this.twilioService = twilioService;
         this.deviceMange = deviceMange;
+        this.referralService = referralService;
+        this.vendorReferralRepository = vendorReferralRepository;
+        this.vendorRepository = vendorRepository;
+        this.aagGameService = aagGameService;
+        this.gameService = gameService;
+        this.rateLimiterService = rateLimiterService;
+        this.passwordEncoder = passwordEncoder;
     }
 
+    public VendorEntity findServiceProviderByUserName(String username) {
 
+        return entityManager.createQuery(Constant.USERNAME_QUERY_SERVICE_PROVIDER, VendorEntity.class)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+    }
 
     public VendorEntity findServiceProviderByReferralCode(String referralCode) {
         List<VendorEntity> results = entityManager.createQuery("SELECT v FROM VendorEntity v WHERE v.referralCode = :referralCode", VendorEntity.class)
@@ -105,60 +116,6 @@ public class VenderServiceImpl implements VenderService {
         return results.isEmpty() ? null : results.get(0);
     }
 
-
-    @Autowired
-    @Lazy
-    public void setReferralService(ReferralService referralService) {
-        this.referralService = referralService;
-    }
-
-    @Autowired
-    public void setTwilioService(@Lazy
-                                 TwilioService twilioService) {
-        this.twilioService = twilioService;
-    }
-
-
-    @Autowired
-    @Lazy
-    RateLimiterService rateLimiterService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @PersistenceContext
-    public void setEntityManager(EntityManager entityManager) {
-        this.entityManager = entityManager;
-    }
-
-    @Autowired
-    public void setExceptionHandling(ExceptionHandlingImplement exceptionHandling) {
-        this.exceptionHandling = exceptionHandling;
-    }
-
-    @Autowired
-    public void setCustomCustomerService(CustomCustomerService customCustomerService) {
-        this.customCustomerService = customCustomerService;
-    }
-
-    @Autowired
-    public void setJwtUtil(JwtUtil jwtUtil) {
-        this.jwtUtil = jwtUtil;
-    }
-
-    @Autowired
-    public void setResponseService(ResponseService responseService) {
-        this.responseService = responseService;
-    }
-
-    public VendorEntity findServiceProviderByUserName(String username) {
-
-        return entityManager.createQuery(Constant.USERNAME_QUERY_SERVICE_PROVIDER, VendorEntity.class)
-                .setParameter("username", username)
-                .getResultStream()
-                .findFirst()
-                .orElse(null);
-    }
 
     @Override
     @Transactional
@@ -280,135 +237,6 @@ public class VenderServiceImpl implements VenderService {
             return ResponseService.generateErrorResponse("Error updating Service Provider: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-/*    @Transactional
-    public ResponseEntity<?> updateServiceProvider(Long userId, Map<String, Object> updates) {
-        try {
-          updates = CommonData.trimStringValues(updates);
-            List<String> errorMessages = new ArrayList<>();
-
-
-            VendorEntity existingServiceProvider = entityManager.find(VendorEntity.class, userId);
-            if (existingServiceProvider == null) {
-                errorMessages.add("VendorEntity with ID " + userId + " not found");
-            }
-
-
-            String mobileNumber = (String) updates.get("mobileNumber");
-
-            // Validate and check for unique constraints
-            VendorEntity existingSPByUsername = null;
-            VendorEntity existingSPByEmail = null;
-
-            if (updates.containsKey("user_name")) {
-                updates.remove("user_name");
-            }
-            if (updates.containsKey("primary_mobile_number")) {
-                String userName = (String) updates.get("user_name");
-                existingSPByUsername = findServiceProviderByUserName(userName);
-            }
-
-            if (updates.containsKey("primary_email")) {
-                String primaryEmail = (String) updates.get("primary_email");
-                existingSPByEmail = findSPbyEmail(primaryEmail);
-            }
-
-            if ((existingSPByUsername != null) || existingSPByEmail != null) {
-                if (existingSPByUsername != null && !existingSPByUsername.getService_provider_id().equals(userId)) {
-                    return responseService.generateErrorResponse("Username is not available", HttpStatus.BAD_REQUEST);
-                }
-                if (existingSPByEmail != null && !existingSPByEmail.getService_provider_id().equals(userId)) {
-                    return responseService.generateErrorResponse("Email not available", HttpStatus.BAD_REQUEST);
-                }
-            }
-
-           if (updates.containsKey("date_of_birth")) {
-                String dob = (String) updates.get("date_of_birth");
-                if (CommonData.isFutureDate(dob))
-                    errorMessages.add("DOB cannot be in future");
-            }
-*//*            if (updates.containsKey("pan_number") && ((String) updates.get("pan_number")).isEmpty())
-                errorMessages.add("pan number cannot be empty");*//*
-            for (Map.Entry<String, Object> entry : updates.entrySet()) {
-                String fieldName = entry.getKey();
-                Object newValue = entry.getValue();
-
-                Field field = VendorEntity.class.getDeclaredField(fieldName);
-                System.out.println(field);
-                Column columnAnnotation = field.getAnnotation(Column.class);
-                boolean isColumnNotNull = (columnAnnotation != null && !columnAnnotation.nullable());
-                // Check if the field has the @Nullable annotation
-                boolean isNullable = field.isAnnotationPresent(Nullable.class);
-                field.setAccessible(true);
-                if (newValue.toString().isEmpty() && !isNullable)
-                    errorMessages.add(fieldName + " cannot be null");
-                if (newValue.toString().isEmpty() && isNullable)
-                    continue;
-                if (newValue != null) {
-                    if (field.isAnnotationPresent(Size.class)) {
-                        Size sizeAnnotation = field.getAnnotation(Size.class);
-                        int min = sizeAnnotation.min();
-                        int max = sizeAnnotation.max();
-                        if (newValue.toString().length() > max || newValue.toString().length() < min) {
-                            if (max == min)
-                                errorMessages.add(fieldName + " size should be of size " + max);
-                            else
-                                errorMessages.add(fieldName + " size should be in between " + min + " " + max);
-                            continue;
-                        }
-                    }
-                    if (field.isAnnotationPresent(Email.class)) {
-                        Email emailAnnotation = field.getAnnotation(Email.class);
-                        String message = emailAnnotation.message();
-                        if (!this.isValidEmail((String) newValue)) {
-                            errorMessages.add(message.replace("{field}", fieldName));
-                            continue;
-                        }
-                    }
-
-                    if (field.isAnnotationPresent(Pattern.class)) {
-                        Pattern patternAnnotation = field.getAnnotation(Pattern.class);
-                        String regex = patternAnnotation.regexp();
-                        String message = patternAnnotation.message(); // Get custom message
-                        if (!newValue.toString().matches(regex)) {
-                            errorMessages.add(fieldName + "is invalid"); // Use a placeholder
-                            continue;
-                        }
-                    }
-
-                    if (fieldName.equals("date_of_birth")) {
-                        String dobString = (String) newValue;
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-                        try {
-                            LocalDate dob = LocalDate.parse(dobString, formatter);
-                            if (dob.isAfter(LocalDate.now())) {
-                                errorMessages.add("Date of birth cannot be in the future");
-                            }
-                        } catch (DateTimeParseException e) {
-                            errorMessages.add("Invalid date format for " + fieldName + ". Expected format is DD-MM-YYYY.");
-                        }
-                    }
-                }
-                field.setAccessible(true);
-                if (newValue != null && field.getType().isAssignableFrom(newValue.getClass())) {
-                    field.set(existingServiceProvider, newValue);
-                }
-            }
-            if (!errorMessages.isEmpty())
-                return ResponseService.generateErrorResponse(errorMessages.toString(), HttpStatus.BAD_REQUEST);
-
-            entityManager.merge(existingServiceProvider);
-            entityManager.merge(existingServiceProvider);
-
-
-            return responseService.generateSuccessResponse("Service Provider Updated Successfully", existingServiceProvider, HttpStatus.OK);
-        } catch (NoSuchFieldException e) {
-            return ResponseService.generateErrorResponse("No such field present :" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return ResponseService.generateErrorResponse("Error updating Service Provider : ", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
 
     public boolean isValidEmail(String email) {
         return email != null && email.matches(Constant.EMAIL_REGEXP);
@@ -798,38 +626,6 @@ public class VenderServiceImpl implements VenderService {
         return vendorRepository.findTop3ByOrderByRefferalbalanceDesc();
     }
 
-
-/*
-@Override
-public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId) {
-    // Fetch top 3 vendors sorted by rank (from cache)
-    List<TopVendorCache> topVendorsFromCache = topVendorCacheRepository.findTop3ByOrderByRankAsc();
-
-    // Convert the list of TopVendorCache into a list of Maps
-    List<Map<String, Object>> topVendorsData = new ArrayList<>();
-    for (TopVendorCache topVendor : topVendorsFromCache) {
-        Map<String, Object> vendorData = new HashMap<>();
-        vendorData.put("id", topVendor.getId());
-        vendorData.put("serviceProviderId", topVendor.getServiceProviderId());
-        vendorData.put("price", topVendor.getPrice());
-        vendorData.put("rank", topVendor.getRank());
-        vendorData.put("profileImage", Optional.ofNullable(topVendor.getProfileImage()).orElse(Constant.PROFILE_IMAGE_URL));
-        vendorData.put("vendorName", topVendor.getVendorName() != null ? topVendor.getVendorName() : null);
-        vendorData.put("updatedAt", topVendor.getUpdatedAt());
-        topVendorsData.add(vendorData);
-    }
-
-
-    // Return the data
-    Map<String, Object> result = new HashMap<>();
-    result.put("topInvities", topVendorsData);
-
-    return result;
-}
-*/
-
-
-
     @Override
     public Map<String, Object> getDashboardData(Long serviceProviderId) {
 
@@ -839,25 +635,13 @@ public Map<String, Object> getTopInvitiesVendorWithAuth(Long authorizedVendorId)
         Map<String, Object> result = new HashMap<>();
         result.put("availablegames", games);
         VendorLevelPlan level = existingVendor.getVendorLevelPlan();
-//        Integer  returnPercentage =  level.getReturnMultiplier();
-//        result.put("topPlayers", topPlayers);
-//        get active subscriptions of service provider
-//        List<Subscription> subscriptions = subscriptionService.getActiveSubscriptionsByServiceProvider(serviceProviderId);
-//        result.put("subscriptionPlanCards", subscriptions);
 
-//        get actives games by vendor id
         List<GetGameResponseDashboardDTO> gamesPage = gameService.findActivegamesByVendorId(serviceProviderId,  0,10);
         result.put("activeGames", gamesPage);
-//        getActiveTransactionsByVendorId
-        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit());
+        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit(),existingVendor.getDailyLimit());
         result.put("subscriptionPlanCards", transactions);
 
-        // Return percentage
-
         return result;
-
-
-
 
     }
 

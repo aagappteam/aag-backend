@@ -5,12 +5,14 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.repository.social.UserVendorFollowRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.social.UserVendorFollowService;
 import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import aagapp_backend.services.vendor.VendorBankAccountService;
@@ -19,9 +21,6 @@ import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +46,8 @@ public class VendorController {
 
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private UserVendorFollowService followService;
 
     @Autowired
     private ResponseService responseService;
@@ -116,16 +117,19 @@ public class VendorController {
         }
     }
 
-
     @GetMapping("/get-vendor/{serviceProviderId}")
-    public ResponseEntity<?> getVendorDetailsById(@PathVariable Long serviceProviderId) {
+    public ResponseEntity<?> getVendorDetailsById(@PathVariable Long serviceProviderId,  @RequestParam(required = false) Long userId) {
         try {
             VendorEntity serviceProviderEntity = vendorService.getServiceProviderById(serviceProviderId);
             if (serviceProviderEntity == null) {
                 return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
             }
             Map<String, Object> responseBody = serviceProviderService.VendorDetails( serviceProviderEntity).getBody();
-
+            if (userId != null) {
+                boolean isFollowing = followService.isUserFollowing(userId, serviceProviderEntity.getService_provider_id());
+                System.out.println("Is following: " + isFollowing + " - User ID: " + userId + " - Service Provider ID: " + serviceProviderEntity.getService_provider_id());
+                serviceProviderEntity.setIsFollowing(isFollowing);
+            }
 
             return ResponseEntity.ok(responseBody);
 //            return responseService.generateSuccessResponse("Service provider details are", responseBody, HttpStatus.OK);
@@ -174,6 +178,7 @@ public class VendorController {
     @GetMapping("/get-all-vendors")
     public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(defaultValue = "10") int limit,
+                                                    @RequestParam(required = false) Long userId,
                                                     @RequestParam(value = "status", required = false) String status,
                                                     @RequestParam(value = "vendorId", required = false) Long vendorId,
                                                     @RequestParam(value = "email", required = false) String email,
@@ -241,9 +246,18 @@ public class VendorController {
             query.setFirstResult(startPosition);
             query.setMaxResults(limit);
 
+
             // Execute queries
             Long totalCount = (Long) countQuery.getSingleResult();
             List<VendorEntity> results = query.getResultList();
+            if (userId != null) {
+                for (VendorEntity vendor : results) {
+                    boolean isFollowing = followService.isUserFollowing(userId, vendor.getService_provider_id());
+                    vendor.setIsFollowing(isFollowing);
+                }
+            }
+
+
 
             // Return result
             return ResponseService.generateSuccessResponseWithCount("List of vendors", results, totalCount, HttpStatus.OK);
@@ -260,20 +274,27 @@ public class VendorController {
 
     @Transactional
     @GetMapping("/get-all-details/{serviceProviderId}")
-    public ResponseEntity<?> getAllDetails(@PathVariable Long serviceProviderId) {
+    public ResponseEntity<?> getAllDetails(@PathVariable Long serviceProviderId,
+                                           @RequestParam(required = false) Long userId) {
         try {
+            // Fetch the vendor by ID
             VendorEntity serviceProviderEntity = entityManager.find(VendorEntity.class, serviceProviderId);
             if (serviceProviderEntity == null) {
-                return ResponseService.generateErrorResponse("Service provider does not found", HttpStatus.NOT_FOUND);
+                return ResponseService.generateErrorResponse("Service provider not found", HttpStatus.NOT_FOUND);
             }
 
-//            Map<String,Object> serviceProviderMap= sharedUtilityService.serviceProviderDetailsMap(serviceProviderEntity);
+            if (userId != null) {
+                boolean isFollowing = followService.isUserFollowing(userId, serviceProviderEntity.getService_provider_id());
+                System.out.println("Is following: " + isFollowing + " - User ID: " + userId + " - Service Provider ID: " + serviceProviderEntity.getService_provider_id());
+                serviceProviderEntity.setIsFollowing(isFollowing);
+            }
+
             return ResponseService.generateSuccessResponse("Service Provider details retrieved successfully", serviceProviderEntity, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return ResponseService.generateErrorResponse("Some issue in fetching service provider details " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            return ResponseService.generateErrorResponse("Some issue in fetching service provider details: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -506,114 +527,6 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
     }
 }
 
-/*
-    @GetMapping("/leaderboards")
-    public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String token,
-                                          @RequestParam("filterType") String filterType,
-                                          @RequestParam("page") int page,
-                                          @RequestParam("size") int size) {
-        try {
-            // Extract the token and find the authenticated vendor
-            String jwtToken = token.replace("Bearer ", "");
-            Long authorizedVendorId = jwtUtil.extractId(jwtToken);
-            VendorEntity authenticatedVendor = entityManager.find(VendorEntity.class, authorizedVendorId);
-
-            // List to store the filtered vendor data
-            List<VendorEntity> allVendors = new ArrayList<>();
-
-            // Apply the filter based on filterType and fetch all data
-            switch (filterType.toLowerCase()) {
-                case "referrals":
-                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("refferalbalance")));
-                    break;
-
-                case "totalwallet":
-                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance")));
-                    break;
-
-                case "participants":
-                    allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament")));
-                    break;
-
-                default:
-                    return new ResponseEntity<>(Map.of(
-                            "status", "ERROR",
-                            "message", "Invalid filter type provided",
-                            "status_code", 400
-                    ), HttpStatus.BAD_REQUEST);
-            }
-
-            // Calculate the rank for each vendor based on the full list
-            List<Map<String, Object>> leaderboard = allVendors.stream().map(vendor -> {
-                Map<String, Object> vendorData = new HashMap<>();
-                vendorData.put("service_provider_id", vendor.getService_provider_id());
-                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
-                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
-                        .map(firstName -> firstName + " " + vendor.getLast_name())
-                        .orElse(null));
-
-                // Add specific data based on the filter type
-                if ("wallet".equalsIgnoreCase(filterType)) {
-                    vendorData.put("price", vendor.getRefferalbalance());
-                } else if ("totalwallet".equalsIgnoreCase(filterType)) {
-                    vendorData.put("total_wallet_balance", vendor.getTotalWalletBalance());
-                } else if ("participants".equalsIgnoreCase(filterType)) {
-                    vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
-                } else if ("referrals".equalsIgnoreCase(filterType)) {
-                    vendorData.put("referralCount", vendor.getReferralCount());
-                }
-
-                return vendorData;
-            }).collect(Collectors.toList());
-
-            // Add rank for each vendor in the list (1-based index)
-            for (int i = 0; i < leaderboard.size(); i++) {
-                leaderboard.get(i).put("rank", i + 1);
-            }
-
-            // Calculate the rank of the logged-in vendor
-            int loggedInVendorRank = -1;
-            for (int i = 0; i < leaderboard.size(); i++) {
-                Map<String, Object> vendorData = leaderboard.get(i);
-                Long vendorId = (Long) vendorData.get("service_provider_id");
-                if (vendorId.equals(authenticatedVendor.getService_provider_id())) {
-                    loggedInVendorRank = i + 1;  // Vendor ranks are 1-based
-                    break;
-                }
-            }
-
-            // Paginate the leaderboard based on the requested page and size
-            int fromIndex = page * size;
-            int toIndex = Math.min(fromIndex + size, leaderboard.size());
-            List<Map<String, Object>> paginatedLeaderboard = leaderboard.subList(fromIndex, toIndex);
-
-            // Prepare response data
-            Map<String, Object> data = Map.of(
-                    "total_earning", authenticatedVendor.getRefferalbalance(),
-                    "referral_code", authenticatedVendor.getReferralCode(),
-                    "total_referrals", authenticatedVendor.getReferralCount(),
-                    "logged_in_vendor_rank", loggedInVendorRank,
-                    "top_invitees", paginatedLeaderboard,
-                    "message", "Top vendors fetched successfully!"
-            );
-
-            return new ResponseEntity<>(Map.of(
-                    "status", "OK",
-                    "data", data,
-                    "message", "Top vendors fetched successfully!",
-                    "status_code", 200
-            ), HttpStatus.OK);
-
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return new ResponseEntity<>(Map.of(
-                    "status", "ERROR",
-                    "message", e.getMessage(),
-                    "status_code", 500
-            ), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-*/
 @GetMapping("/leaderboards")
 public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String token,
                                       @RequestParam("filterType") String filterType,

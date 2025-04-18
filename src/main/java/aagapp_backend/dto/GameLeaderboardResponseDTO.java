@@ -18,4 +18,8 @@ public class GameLeaderboardResponseDTO {
     private String themeName;
     private Integer totalPlayers;
     private List<LeaderboardResponseDTO> players;
+    private int currentPage;
+    private int totalPages;
+    private long totalItems;
+
 }

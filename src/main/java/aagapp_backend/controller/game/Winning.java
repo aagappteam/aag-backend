@@ -8,6 +8,9 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.leaderboard.LeaderboardGame;
 import aagapp_backend.services.pricedistribute.MatchService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -61,15 +64,20 @@ private GameRoomRepository gameRoomRepository;
 
 
     @GetMapping("/game/{gameId}")
-    public ResponseEntity<?> getLeaderboard(@PathVariable Long gameId) {
-      try{
-          GameLeaderboardResponseDTO leaderboard = leaderboardService.getLeaderboard(gameId);
-          return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
-      }catch (Exception e) {
-          exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-          return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-      }
+    public ResponseEntity<?> getLeaderboard(
+            @PathVariable Long gameId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("score").descending());
+            GameLeaderboardResponseDTO leaderboard = leaderboardService.getLeaderboard(gameId, pageable);
+            return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
+        } catch (Exception e) {
+            exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
+
 
 
 }

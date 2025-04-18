@@ -50,14 +50,6 @@ public void sendNotificationToAll(String title, String body) throws FirebaseMess
 
 
 
-
-    private Map<String, String> getSamplePayloadData() {
-        Map<String, String> pushData = new HashMap<>();
-        pushData.put("messageId", "123");
-        pushData.put("text", " Hello. This is payload content "+ " " + LocalDateTime.now());
-        return pushData;
-    }
-
     public void sendMessageToToken(NotificationRequest request)
             throws InterruptedException, ExecutionException {
         Message message = getPreconfiguredMessageToToken(request);
