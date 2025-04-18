@@ -13,4 +13,5 @@ public class LeaderboardResponseDTO {
     private String playerName;
     private String profilePicture;
     private Integer score;
+    private Double winningammount;
 }

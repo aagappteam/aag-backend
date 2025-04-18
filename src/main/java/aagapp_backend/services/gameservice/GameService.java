@@ -58,17 +58,14 @@ import java.util.stream.Collectors;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.web.client.RestTemplate;
-
 @Service
 public class GameService {
-    private final RestTemplate restTemplate = new RestTemplate();
-//    base url http://13.232.105.87:8082
 
+    private final RestTemplate restTemplate = new RestTemplate();
     private final String baseUrl = "http://13.232.105.87:8082";
 
-
     private final MoveRepository moveRepository;
-    private  MatchService matchService;
+    private MatchService matchService;
     private final VenderService venderService;
     private final GameRepository gameRepository;
     private final ResponseService responseService;
@@ -86,7 +83,6 @@ public class GameService {
     @Autowired
     public GameService(
             VendorRepository vendorRepository,
-            MatchService matchService,
             MoveRepository moveRepository,
             @Lazy VenderService venderService,
             GameRepository gameRepository,
@@ -102,7 +98,6 @@ public class GameService {
             GameRoomRepository gameRoomRepository
     ) {
         this.vendorRepository = vendorRepository;
-        this.matchService = matchService;
         this.moveRepository = moveRepository;
         this.venderService = venderService;
         this.gameRepository = gameRepository;
@@ -118,6 +113,11 @@ public class GameService {
         this.gameRoomRepository = gameRoomRepository;
     }
 
+    @Autowired
+    @Lazy
+    public void setMatchService(MatchService matchService) {
+        this.matchService = matchService;
+    }
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(GameService.class);
 
 
@@ -573,6 +573,7 @@ public void updateDailylimit() {
             // Save the room first so it gets an ID
             newRoom = gameRoomRepository.save(newRoom); // Save and assign the generated ID
         BigDecimal toalprize =    matchService.getWinningAmount(newRoom);
+        System.out.println("Total prize: " + toalprize);
             Double total_prize = 3.2;
             String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), toalprize);
 
