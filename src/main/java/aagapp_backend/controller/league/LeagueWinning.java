@@ -2,6 +2,7 @@ package aagapp_backend.controller.league;
 
 import aagapp_backend.dto.GameLeaderboardResponseDTO;
 import aagapp_backend.dto.GameResult;
+import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.PlayerDto;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -69,6 +70,30 @@ public class LeagueWinning {
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @GetMapping("/leaderboard")
+    public ResponseEntity<?> getLeaderboard(
+            @RequestParam Long leagueId,
+            @RequestParam(required = false) Long roomId,
+            @RequestParam(required = false) Boolean winner  // Optional param
+    ) {
+        try {
+            List<LeaderboardDto> leaderboard = leaderBoardLeague.getLeaderboard(leagueId, roomId, winner);
+            return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
+        }catch (RuntimeException e){
+            return responseService.generateErrorResponse(
+                    "No game results found for this room and game ",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+        catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "Error fetching leaderboard: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
     }
 }
