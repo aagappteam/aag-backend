@@ -78,6 +78,31 @@ private GameRoomRepository gameRoomRepository;
         }
     }
 
+    @GetMapping("/leaderboard")
+    public ResponseEntity<?> getLeaderboard(
+            @RequestParam Long gameId,
+            @RequestParam(required = false) Long roomId,
+            @RequestParam(required = false) Boolean winner  // Optional param
+    ) {
+        try {
+            List<LeaderboardDto> leaderboard = matchService.getLeaderboard(gameId, roomId, winner);
+            return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
+        }catch (RuntimeException e){
+            return responseService.generateErrorResponse(
+                    "No game results found for this room and game ",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+        catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "Error fetching leaderboard: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+
+
 
 
 }
