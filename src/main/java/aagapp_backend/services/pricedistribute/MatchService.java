@@ -315,8 +315,15 @@ private LeagueRepository leagueRepository;
         vendorRepo.save(vendor);
     }
     public List<LeaderboardDto> getLeaderboard(Long gameId, Long roomId, Boolean winnerFlag) {
-        List<GameResultRecord> results = gameResultRecordRepository.findByGame_IdAndRoomId(gameId, roomId);
+        List<GameResultRecord> results;
 
+        if (roomId != null) {
+            // Filter by both game and room
+            results = gameResultRecordRepository.findByGame_IdAndRoomId(gameId, roomId);
+        } else {
+            // Filter only by game
+            results = gameResultRecordRepository.findByGame_Id(gameId);
+        }
         if (results.isEmpty()) {
             throw new RuntimeException("No game results found for this room and game.");
         }
