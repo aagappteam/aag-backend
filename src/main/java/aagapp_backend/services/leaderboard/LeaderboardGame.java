@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.context.Theme;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -184,12 +185,16 @@ public class LeaderboardGame {
             if (playerDetails.isEmpty()) {
                 throw new RuntimeException("Player details not found for player ID: " + player.getPlayerId());
             }
+            BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(winner.getGame().getMaxPlayersPerTeam()));
+            BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(0.63));
 
+            Double winningammount = winner.getGame().getFee()*0.63;
             LeaderboardResponseDTO playerDTO = new LeaderboardResponseDTO();
             playerDTO.setPlayerId(player.getPlayerId());
             playerDTO.setPlayerName(playerDetails.get().getName());
             playerDTO.setProfilePicture(playerDetails.get().getProfilePic());
             playerDTO.setScore(winner.getScore());
+            playerDTO.setWinningammount(userWin.stripTrailingZeros().doubleValue());
 
             playerList.add(playerDTO);
         }
