@@ -126,6 +126,7 @@ public class GameService {
 
 
             for (Long vendorId : vendorIds) {
+
                 updateGameStatusToActive(vendorId);
                 updateLeagueStatusToActive(vendorId);
                 updateExpiredGameStatus(vendorId);
