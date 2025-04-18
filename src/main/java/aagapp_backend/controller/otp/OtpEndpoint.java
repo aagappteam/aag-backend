@@ -9,6 +9,7 @@ import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.devices.UserDevice;
+import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.repository.wallet.WalletRepository;
@@ -38,6 +39,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -263,6 +265,14 @@ public class OtpEndpoint {
                 if (otpEntered.equals(storedOtp)) {
                     if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                         existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
+                        // Only create player if not already present
+                        if (existingCustomer.getPlayer() == null) {
+                            Player player = new Player();
+                            player.setCustomer(existingCustomer); // Yeh automatically ID bhi set karega
+                            player.setCreatedAt(LocalDateTime.now());
+                            player.setUpdatedAt(LocalDateTime.now());
+                            existingCustomer.setPlayer(player); // bidirectional link
+                        }
 /*
                         sendOnboardingEmail(existingCustomer.getEmail(), existingCustomer.getName(), existingCustomer.getLastName());
 */

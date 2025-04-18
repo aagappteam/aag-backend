@@ -34,9 +34,13 @@ import java.util.List;
 @Setter
 public class Player {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "player_id")
-    private Long playerId;
+    private Long playerId;  // Same as Customer ID
+
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "player_id") // Link to Customer's ID
+    @JsonIgnore
+    private CustomCustomer customer;
 
     private String playerName;
 
@@ -63,10 +67,10 @@ public class Player {
     @JoinColumn(name = "tournament_room_id")
     private TournamentRoom tournamentRoom;
 
-    @ManyToOne
+    /*@ManyToOne
     @JoinColumn(name = "customer_id")
     @JsonIgnore
-    private CustomCustomer customer;
+    private CustomCustomer customer;*/
 
 
     @Column(name = "created_at", nullable = false)

@@ -141,6 +141,7 @@ public class CustomCustomer {
     @JsonIgnore
     private Player player;
 
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

@@ -476,7 +476,12 @@ public void updateDailylimit() {
             }
             GameRoom gameRoom = player.getGameRoom();
             player.setGameRoom(null);
-            gameRoom.setStatus(GameRoomStatus.COMPLETED);
+
+            List<Player> remainingPlayers = playerRepository.findAllByGameRoom(gameRoom);
+            if (remainingPlayers.isEmpty()) {
+                gameRoom.setStatus(GameRoomStatus.COMPLETED);
+                gameRoomRepository.save(gameRoom);
+            }
 
 
             return responseService.generateSuccessResponse("Player left the Game Room ", gameRoom, HttpStatus.OK);
