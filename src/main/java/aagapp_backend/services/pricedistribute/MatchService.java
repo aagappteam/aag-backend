@@ -14,6 +14,7 @@ import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.*;
 import aagapp_backend.repository.league.LeagueRepository;
@@ -25,6 +26,7 @@ import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.gameservice.GameService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -44,43 +46,85 @@ public class MatchService {
     private static final double USER_WIN_PERCENT = 0.63;
     private static final double BONUS_PERCENT = 0.20;
 
-    @Autowired
     private GameRoomWinnerRepository gameRoomWinnerRepository;
-
-    @Autowired
     private GameResultRecordRepository gameResultRecordRepository;
-
-    @Autowired
     private LeagueRoomRepository leagueRoomRepository;
-
-    @Autowired
     private TournamentRepository tournamentRepository;
-
-@Autowired
-private LeagueRepository leagueRepository;
-    @Autowired
+    private LeagueRepository leagueRepository;
     private TournamentRoomRepository tournamentRoomRepository;
-
-    @Autowired
     private CustomCustomerRepository customCustomerRepository;
-
-    @Autowired
     private PlayerRepository playerRepository;
-
-    @Autowired
     private GameService gameService;
-
-    @Autowired
     private VendorRepository vendorRepo;
-
-    @Autowired
     private GameRoomRepository gameRoomRepository;
-
-    @Autowired
     private GameRepository gameRepository;
+    private WalletRepository walletRepo;
 
     @Autowired
-    private WalletRepository walletRepo;
+    public void setGameRoomWinnerRepository(GameRoomWinnerRepository repo) {
+        this.gameRoomWinnerRepository = repo;
+    }
+
+    @Autowired
+    public void setGameResultRecordRepository(GameResultRecordRepository repo) {
+        this.gameResultRecordRepository = repo;
+    }
+
+    @Autowired
+    public void setLeagueRoomRepository(LeagueRoomRepository repo) {
+        this.leagueRoomRepository = repo;
+    }
+
+    @Autowired
+    public void setTournamentRepository(TournamentRepository repo) {
+        this.tournamentRepository = repo;
+    }
+
+    @Autowired
+    public void setLeagueRepository(LeagueRepository repo) {
+        this.leagueRepository = repo;
+    }
+
+    @Autowired
+    public void setTournamentRoomRepository(TournamentRoomRepository repo) {
+        this.tournamentRoomRepository = repo;
+    }
+
+    @Autowired
+    public void setCustomCustomerRepository(CustomCustomerRepository repo) {
+        this.customCustomerRepository = repo;
+    }
+
+    @Autowired
+    public void setPlayerRepository(PlayerRepository repo) {
+        this.playerRepository = repo;
+    }
+
+    @Autowired
+    @Lazy
+    public void setGameService(GameService service) {
+        this.gameService = service;
+    }
+
+    @Autowired
+    public void setVendorRepo(VendorRepository repo) {
+        this.vendorRepo = repo;
+    }
+
+    @Autowired
+    public void setGameRoomRepository(GameRoomRepository repo) {
+        this.gameRoomRepository = repo;
+    }
+
+    @Autowired
+    public void setGameRepository(GameRepository repo) {
+        this.gameRepository = repo;
+    }
+
+    @Autowired
+    public void setWalletRepo(WalletRepository repo) {
+        this.walletRepo = repo;
+    }
 
     public List<PlayerDto> processMatch(GameResult gameResult) {
         // Fetch the GameRoom based on roomId
@@ -89,8 +133,7 @@ private LeagueRepository leagueRepository;
             throw new RuntimeException("Game room not found with ID: " + gameResult.getRoomId());
         }
         GameRoom gameRoom = gameRoomOpt.get();
-
-        // Fetch the Game associated with the gameId
+                // Fetch the Game associated with the gameId
         Optional<Game> gameOpt = gameRepository.findById(gameRoom.getGame().getId());
         if (gameOpt.isEmpty()) {
             throw new RuntimeException("Game not found with ID: " + gameRoom.getGame().getId());
@@ -170,6 +213,10 @@ private LeagueRepository leagueRepository;
 
         gameResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
 
+/*        gameRoom.setStatus(GameRoomStatus.COMPLETED);
+        gameRoomRepository.save(gameRoom);*/
+
+
 
 
         // Optional: Update AAG Wallet if needed
@@ -226,6 +273,8 @@ private LeagueRepository leagueRepository;
 
         return finalAmountToUser;
     }
+
+
 
 
     private Player getPlayerById(Long playerId) {

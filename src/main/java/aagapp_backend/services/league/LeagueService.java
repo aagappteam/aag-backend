@@ -34,6 +34,7 @@ import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
+import aagapp_backend.services.pricedistribute.MatchService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -41,6 +42,7 @@ import com.google.gson.GsonBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -67,6 +69,9 @@ public class LeagueService {
 
     @Autowired
     private LeagueRoomRepository leagueRoomRepository;
+
+    @Autowired
+    private MatchService matchService;
 
     @Autowired
     private ExceptionHandlingService exceptionHandling;
@@ -399,16 +404,17 @@ public class LeagueService {
 
         // Save the room first so it gets an ID
         newRoom = leagueRoomRepository.save(newRoom);
+        BigDecimal toalprize =    matchService.getWinningAmountLeague(newRoom);
 
         Double total_prize = 3.2;
-        String gamePassword = this.createNewGame(baseUrl, league.getId(), newRoom.getId(), newRoom.getMaxPlayers(), league.getMove(), total_prize);
+        String gamePassword = this.createNewGame(baseUrl, league.getId(), newRoom.getId(), newRoom.getMaxPlayers(), league.getMove(), toalprize);
 
         newRoom.setGamepassword(gamePassword);
 
         return newRoom;
     }
 
-    public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
+    public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
             // Construct the URL for the POST request, including query parameters
             String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move;
