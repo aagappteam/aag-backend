@@ -19,6 +19,7 @@ import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.payment.PaymentFeatures;
+import aagapp_backend.services.pricedistribute.MatchService;
 import aagapp_backend.services.vendor.VenderService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,6 +43,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.naming.LimitExceededException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -66,6 +68,7 @@ public class GameService {
 
 
     private final MoveRepository moveRepository;
+    private  MatchService matchService;
     private final VenderService venderService;
     private final GameRepository gameRepository;
     private final ResponseService responseService;
@@ -83,6 +86,7 @@ public class GameService {
     @Autowired
     public GameService(
             VendorRepository vendorRepository,
+            MatchService matchService,
             MoveRepository moveRepository,
             @Lazy VenderService venderService,
             GameRepository gameRepository,
@@ -98,6 +102,7 @@ public class GameService {
             GameRoomRepository gameRoomRepository
     ) {
         this.vendorRepository = vendorRepository;
+        this.matchService = matchService;
         this.moveRepository = moveRepository;
         this.venderService = venderService;
         this.gameRepository = gameRepository;
@@ -294,7 +299,7 @@ public void updateDailylimit() {
 
 
 
-    public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, Double prize) {
+    public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
             // Construct the URL for the POST request, including query parameters
             String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move;
@@ -356,10 +361,6 @@ public void updateDailylimit() {
             if (gameRoom.getCurrentPlayers().size() == gameRoom.getMaxPlayers()) {
                 transitionRoomToOngoing(gameRoom);
                 GameRoom newRoom = createNewEmptyRoom(game);
-               /* Double total_prize= 3.2;
-                String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), total_prize);
-                System.out.println("gamePassword" + gamePassword);
-                newRoom.setGamepassword(gamePassword);*/
                 gameRoomRepository.save(newRoom); // Save the new room
             }
 
@@ -571,9 +572,9 @@ public void updateDailylimit() {
 
             // Save the room first so it gets an ID
             newRoom = gameRoomRepository.save(newRoom); // Save and assign the generated ID
-
+        BigDecimal toalprize =    matchService.getWinningAmount(newRoom);
             Double total_prize = 3.2;
-            String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), total_prize);
+            String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), toalprize);
 
             newRoom.setGamepassword(gamePassword);
 
