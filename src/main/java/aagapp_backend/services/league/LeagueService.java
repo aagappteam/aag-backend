@@ -9,7 +9,9 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
+import aagapp_backend.entity.game.GameResultRecord;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.league.LeagueRoomWinner;
 import aagapp_backend.entity.players.Player;
@@ -24,6 +26,7 @@ import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueRepository;
+import aagapp_backend.repository.league.LeagueResultRecordRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.league.LeagueRoomWinnerRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
@@ -45,6 +48,7 @@ import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -96,6 +100,9 @@ public class LeagueService {
     private PlayerRepository playerRepository;
 
     @Autowired
+    private LeagueResultRecordRepository leagueResultRecordRepository;
+
+    @Autowired
     private ResponseService responseService;
     private final String baseUrl = "http://13.232.105.87:8082";
 
@@ -123,7 +130,7 @@ public class LeagueService {
                 // Check if the opponent vendor exists
                 VendorEntity opponentVendor = vendorRepository.findById(leagueRequest.getOpponentVendorId())
                         .orElseThrow(() -> new RuntimeException("Opponent Vendor not found"));
-                challenge.setOpponentVendorName(opponentVendor.getFirst_name()+" "+opponentVendor.getLast_name());
+                challenge.setOpponentVendorName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
                 challenge.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
 
                 // Check if the opponent vendor's league status is available
@@ -143,7 +150,7 @@ public class LeagueService {
             if (leagueRequest.getOpponentVendorId() == null) {
                 Long oppnentvendorid = getRandomAvailableVendor(vendorId).getService_provider_id();
                 challenge.setOpponentVendorId(oppnentvendorid);
-            }else{
+            } else {
                 Long oppnentvendorid = leagueRequest.getOpponentVendorId();
                 challenge.setOpponentVendorId(oppnentvendorid);
             }
@@ -153,9 +160,9 @@ public class LeagueService {
             challenge.setExistinggameId(leagueRequest.getExistinggameId());
             challenge.setChallengeStatus(Challenge.ChallengeStatus.PENDING); // Initially set the status to PENDING
             challenge.setFee(leagueRequest.getFee());
-            if(leagueRequest.getFee()>10){
+            if (leagueRequest.getFee() > 10) {
                 challenge.setMove(Constant.TENMOVES);
-            } else{
+            } else {
                 challenge.setMove(Constant.SIXTEENMOVES);
 
             }
@@ -168,7 +175,7 @@ public class LeagueService {
             challenge.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
             challenge.setScheduledAt(leagueRequest.getScheduledAt());
             challenge.setEndDate(leagueRequest.getEndDate());
-            challenge.setVendorName(vendor.getFirst_name()+" "+vendor.getLast_name());
+            challenge.setVendorName(vendor.getFirst_name() + " " + vendor.getLast_name());
             challenge.setVendorProfilePic(vendor.getProfilePic());
             challenge.setName(game.getGameName());
             challenge.setGameImage(game.getGameImage());
@@ -212,7 +219,6 @@ public class LeagueService {
             throw new RuntimeException("Error creating challenge: " + e.getMessage(), e);
         }
     }
-
 
 
     @Transactional
@@ -267,7 +273,6 @@ public class LeagueService {
     }
 
 
-
     @Transactional
     public Page<Challenge> getByVendorIdInAndStatus(List<Long> vendorIds, Challenge.ChallengeStatus status, Pageable pageable) {
         Page<Challenge> challenges;
@@ -285,7 +290,6 @@ public class LeagueService {
 
         return challenges;
     }
-
 
 
     @Transactional
@@ -312,12 +316,12 @@ public class LeagueService {
             }
 
             // Set Vendor and Theme to the Game
-            league.setName(opponentVendor.getFirst_name() +" v/s " +vendorEntity.getFirst_name());
+            league.setName(opponentVendor.getFirst_name() + " v/s " + vendorEntity.getFirst_name());
             league.setVendorEntity(opponentVendor);
             league.setChallengingVendorId(opponentVendor.getService_provider_id());
-            league.setChallengingVendorName(opponentVendor.getFirst_name()+" "+opponentVendor.getLast_name());
+            league.setChallengingVendorName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
             league.setChallengingVendorProfilePic(opponentVendor.getProfilePic());
-            league.setOpponentVendorName(vendorEntity.getFirst_name()+" "+vendorEntity.getLast_name());
+            league.setOpponentVendorName(vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
             league.setOpponentVendorProfilePic(vendorEntity.getProfilePic());
             league.setTheme(theme);
             league.setAagGameId(leagueRequest.getExistinggameId());
@@ -470,12 +474,11 @@ public class LeagueService {
             // Check if 'status' and 'vendorId' are provided and build a query accordingly
             if (status != null && vendorId != null) {
                 return leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
-            } else
-            if (status != null) {
+            } else if (status != null) {
                 return leagueRepository.findByStatus(status, pageable);
             } else if (vendorId != null) {
                 return leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
-            }  else {
+            } else {
                 return leagueRepository.findAll(pageable);
             }
         } catch (Exception e) {
@@ -487,10 +490,10 @@ public class LeagueService {
     public Page<League> getAllActiveLeaguesByVendor(Pageable pageable, Long vendorId) {
         try {
             // Check if 'status' and 'vendorId' are provided and build a query accordingly
-            LeagueStatus status= LeagueStatus.ACTIVE;
+            LeagueStatus status = LeagueStatus.ACTIVE;
             if (status != null && vendorId != null) {
                 return leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
-            }else {
+            } else {
                 return leagueRepository.findAll(pageable);
             }
         } catch (Exception e) {
@@ -512,6 +515,7 @@ public class LeagueService {
             throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
         }
     }
+
     // Scheduled task to auto reject expired challenges after 10 minutes
     @Scheduled(cron = "0 * * * * *")
     public void autoRejectExpiredChallenges() {
@@ -578,7 +582,7 @@ public class LeagueService {
 
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
-        try{
+        try {
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
 
@@ -597,7 +601,7 @@ public class LeagueService {
             playerRepository.save(player);
 
             return responseService.generateSuccessResponse("Player left the Game Room ", leagueRoom.getRoomCode(), HttpStatus.OK);
-        } catch (Exception e){
+        } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
         }
@@ -650,7 +654,6 @@ public class LeagueService {
     }
 
 
-
     public List<PlayerDto> processMatch(GameResult gameResult) {
 
         // Fetch the GameRoom based on roomId
@@ -666,7 +669,6 @@ public class LeagueService {
         LeagueRoom leagueRoom = leagueRoomOpt.get();
 
 
-
         // Fetch the Game associated with the gameId
 
         Optional<League> legueOpt = leagueRepository.findById(leagueRoom.getLeague().getId());
@@ -677,13 +679,12 @@ public class LeagueService {
 
         }
 
-        League game = legueOpt.get();
-
+        League league = legueOpt.get();
 
 
         // Calculate the total collection and shares
 
-        BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
+        BigDecimal totalCollection = BigDecimal.valueOf(league.getFee()).multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
 
         BigDecimal tax = totalCollection.multiply(BigDecimal.valueOf(TAX_PERCENT));
 
@@ -698,11 +699,9 @@ public class LeagueService {
         BigDecimal finalAmountToUser = userWin;
 
 
-
         // Process the players to find the winner
 
         PlayerDtoWinner winner = determineWinner(gameResult.getPlayers()); // Get the winner
-
 
 
         // Identify the loser
@@ -712,7 +711,6 @@ public class LeagueService {
                 .filter(p -> !p.getPlayerId().equals(winner.getPlayerId()))
 
                 .findFirst().orElseThrow(() -> new RuntimeException("No loser found"));
-
 
 
         // Update winner's wallet with the prize amount
@@ -726,13 +724,9 @@ public class LeagueService {
         }
 
 
+        leaveRoom(winner.getPlayerId(), league.getId());
 
-        leaveRoom(winner.getPlayerId(), game.getId());
-
-        leaveRoom(loser.getPlayerId(), game.getId());
-
-
-
+        leaveRoom(loser.getPlayerId(), league.getId());
 
 
         // Add the prize to the winner's wallet
@@ -746,11 +740,9 @@ public class LeagueService {
         walletRepo.save(wallet);
 
 
-
         // Add vendor share and update total balance
 
-        this.addToVendorWalletAndTotalBalance(game.getVendorEntity().getService_provider_id(), vendorShare);
-
+        this.addToVendorWalletAndTotalBalance(league.getVendorEntity().getService_provider_id(), vendorShare);
 
 
         // Fetch Player entity using playerId
@@ -766,10 +758,9 @@ public class LeagueService {
         Player winnerPlayer = winnerPlayerOpt.get();
 
 
-
         LeagueRoomWinner leagueRoomWinner = new LeagueRoomWinner();
 
-        leagueRoomWinner.setLeague(game);  // Set the game
+        leagueRoomWinner.setLeague(league);  // Set the game
 
         leagueRoomWinner.setLeagueRoom(leagueRoom);
 
@@ -780,13 +771,30 @@ public class LeagueService {
         leagueRoomWinner.setWinTimestamp(LocalDateTime.now());  // Set the win timestamp
 
 
-
         // Save the winner record into the database
 
         leagueRoomWinnerRepository.save(leagueRoomWinner);
 
+        LeagueResultRecord winnerRecord = new LeagueResultRecord();
+        winnerRecord.setRoomId(leagueRoom.getId());
+        winnerRecord.setLeague(league);
+        winnerRecord.setPlayer(winnerPlayer); // already fetched
+        winnerRecord.setScore(winner.getScore());
+        winnerRecord.setIsWinner(true);
+        winnerRecord.setPlayedAt(LocalDateTime.now());
 
+        Player loserPlayer = playerRepository.findById(loser.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found"));
 
+        LeagueResultRecord loserRecord = new LeagueResultRecord();
+        loserRecord.setRoomId(leagueRoom.getId());
+        loserRecord.setLeague(league);
+        loserRecord.setPlayer(loserPlayer);
+        loserRecord.setScore(loser.getScore());
+        loserRecord.setIsWinner(false);
+        loserRecord.setPlayedAt(LocalDateTime.now());
+
+        leagueResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
 
 
         // Optional: Update AAG Wallet if needed
@@ -794,13 +802,11 @@ public class LeagueService {
         // updateAAGWallet(platformShare, tax);
 
 
-
         // Return all players' details (including updated amount for the winner)
 
-        return getAllPlayersDetails(gameResult, leagueRoomOpt, game, winner, loser);
+        return getAllPlayersDetails(gameResult, leagueRoomOpt, league, winner, loser);
 
     }
-
 
 
     // Method to determine the winner based on score
@@ -816,15 +822,11 @@ public class LeagueService {
     }
 
 
-
-
-
     // Get all players' details (including amount for the winner)
 
     public List<PlayerDto> getAllPlayersDetails(GameResult gameResult, Optional<LeagueRoom> gameRoomOpt, League game, PlayerDtoWinner winner, PlayerDtoWinner loser) {
 
         List<PlayerDto> playersDetails = new ArrayList<>();
-
 
 
         // Calculate the total collection first
@@ -834,11 +836,9 @@ public class LeagueService {
                 .multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
 
 
-
         BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
 
 //        BigDecimal bonus = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(BONUS_PERCENT));
-
 
 
         // Iterate over all players and set their details
@@ -876,17 +876,14 @@ public class LeagueService {
             }
 
 
-
             playersDetails.add(playerDto);
 
         }
 
 
-
         return playersDetails;
 
     }
-
 
 
     // Fetch player's picture URL based on player ID
@@ -900,9 +897,6 @@ public class LeagueService {
     }
 
 
-
-
-
     // Method to add the vendor share to the vendor's wallet
 
     @Transactional
@@ -914,7 +908,6 @@ public class LeagueService {
         VendorEntity vendor = vendorRepository.findById(vendorId)
 
                 .orElseThrow(() -> new RuntimeException("Vendor not found"));
-
 
 
         // 2. Get or create wallet for vendor
@@ -936,7 +929,6 @@ public class LeagueService {
         }
 
 
-
         // 3. Update the vendor's wallet with the new share
 
         BigDecimal currentWinningAmount = wallet.getWinningAmount();
@@ -948,13 +940,11 @@ public class LeagueService {
         wallet.setUpdatedAt(LocalDateTime.now());
 
 
-
         // 4. Update the total wallet balance
 
         BigDecimal updatedBalance = vendor.getTotalWalletBalance().add(vendorShare);
 
         vendor.setTotalWalletBalance(updatedBalance);
-
 
 
         // 5. Save the vendor (wallet will be saved due to cascading)
