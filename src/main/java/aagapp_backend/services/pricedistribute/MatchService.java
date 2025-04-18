@@ -1,10 +1,12 @@
 package aagapp_backend.services.pricedistribute;
 import aagapp_backend.dto.GameResult;
+import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.PlayerDto;
 import aagapp_backend.dto.PlayerDtoWinner;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.game.GameResultRecord;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.game.GameRoomWinner;
 import aagapp_backend.entity.league.League;
@@ -13,10 +15,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
-import aagapp_backend.repository.game.GameRepository;
-import aagapp_backend.repository.game.GameRoomRepository;
-import aagapp_backend.repository.game.GameRoomWinnerRepository;
-import aagapp_backend.repository.game.PlayerRepository;
+import aagapp_backend.repository.game.*;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.tournament.TournamentRepository;
@@ -34,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class MatchService {
@@ -46,6 +46,9 @@ public class MatchService {
 
     @Autowired
     private GameRoomWinnerRepository gameRoomWinnerRepository;
+
+    @Autowired
+    private GameResultRecordRepository gameResultRecordRepository;
 
     @Autowired
     private LeagueRoomRepository leagueRoomRepository;
@@ -146,6 +149,28 @@ private LeagueRepository leagueRepository;
         // Save the winner record into the database
         gameRoomWinnerRepository.save(gameRoomWinner);
 
+        GameResultRecord winnerRecord = new GameResultRecord();
+        winnerRecord.setRoomId(gameRoom.getId());
+        winnerRecord.setGame(game);
+        winnerRecord.setPlayer(winnerPlayer); // already fetched
+        winnerRecord.setScore(winner.getScore());
+        winnerRecord.setIsWinner(true);
+        winnerRecord.setPlayedAt(LocalDateTime.now());
+
+        Player loserPlayer = playerRepository.findById(loser.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found"));
+
+        GameResultRecord loserRecord = new GameResultRecord();
+        loserRecord.setRoomId(gameRoom.getId());
+        loserRecord.setGame(game);
+        loserRecord.setPlayer(loserPlayer);
+        loserRecord.setScore(loser.getScore());
+        loserRecord.setIsWinner(false);
+        loserRecord.setPlayedAt(LocalDateTime.now());
+
+        gameResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
+
+
 
         // Optional: Update AAG Wallet if needed
         // updateAAGWallet(platformShare, tax);
@@ -176,6 +201,9 @@ private LeagueRepository leagueRepository;
 
         return finalAmountToUser;
     }
+
+
+
 
     public BigDecimal getWinningAmountLeague(LeagueRoom leagueRoom) {
         Optional<LeagueRoom> leagueRoomOptional = leagueRoomRepository.findById(leagueRoom.getId());
@@ -285,6 +313,40 @@ private LeagueRepository leagueRepository;
 
         // 5. Save the vendor (wallet will be saved due to cascading)
         vendorRepo.save(vendor);
+    }
+    public List<LeaderboardDto> getLeaderboard(Long gameId, Long roomId, Boolean winnerFlag) {
+        List<GameResultRecord> results = gameResultRecordRepository.findByGame_IdAndRoomId(gameId, roomId);
+
+        if (results.isEmpty()) {
+            throw new RuntimeException("No game results found for this room and game.");
+        }
+
+        // Filter based on winner param
+        if (winnerFlag != null) {
+            results = results.stream()
+                    .filter(record -> record.getIsWinner().equals(winnerFlag))
+                    .collect(Collectors.toList());
+        }
+
+        // Sort by score in descending order
+        results.sort(Comparator.comparing(GameResultRecord::getScore).reversed());
+
+        return results.stream()
+                .map(this::mapToLeaderboardDto)
+                .collect(Collectors.toList());
+    }
+
+
+    private LeaderboardDto mapToLeaderboardDto(GameResultRecord record) {
+        Player player = record.getPlayer();
+
+        return new LeaderboardDto(
+                player.getPlayerId(),
+                player.getCustomer().getName(),
+                player.getCustomer().getProfilePic(),
+                record.getScore(),
+                record.getIsWinner()
+        );
     }
 
 
