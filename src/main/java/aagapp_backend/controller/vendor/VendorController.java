@@ -117,7 +117,6 @@ public class VendorController {
         }
     }
 
-
     @GetMapping("/get-vendor/{serviceProviderId}")
     public ResponseEntity<?> getVendorDetailsById(@PathVariable Long serviceProviderId,  @RequestParam(required = false) Long userId) {
         try {
