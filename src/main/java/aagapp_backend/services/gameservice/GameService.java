@@ -331,8 +331,10 @@ public void updateDailylimit() {
     @Transactional
     public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
         try {
-            Player player = getPlayerById(playerId);
-            Game game = getGameById(gameId);
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+            Game game = gameRepository.findById(gameId)
+                    .orElseThrow(() -> new RuntimeException("Game not found with ID: " + gameId));
             if(game.getStatus()==GameStatus.EXPIRED){
                 return responseService.generateErrorResponse("Game is expired", HttpStatus.BAD_REQUEST);
             }
@@ -464,16 +466,25 @@ public void updateDailylimit() {
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long gameId) {
         try{
-            Player player = getPlayerById(playerId);
-            Game game = getGameById(gameId);
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+            Game game = gameRepository.findById(gameId)
+                    .orElseThrow(() -> new RuntimeException("Game not found with ID: " + gameId));
 
             if (!isPlayerInRoom(player)) {
                 return responseService.generateErrorResponse("Player is not in room with this id: " + player.getPlayerId(), HttpStatus.BAD_REQUEST);
             }
             GameRoom gameRoom = player.getGameRoom();
-            leftPlayerFromRoom(gameRoom, player);
+            player.setGameRoom(null);
 
-            return responseService.generateSuccessResponse("Player left the Game Room ", game.getId(), HttpStatus.OK);
+            List<Player> remainingPlayers = playerRepository.findAllByGameRoom(gameRoom);
+            if (remainingPlayers.isEmpty()) {
+                gameRoom.setStatus(GameRoomStatus.COMPLETED);
+                gameRoomRepository.save(gameRoom);
+            }
+
+
+            return responseService.generateSuccessResponse("Player left the Game Room ", gameRoom, HttpStatus.OK);
         } catch (Exception e){
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
@@ -481,23 +492,6 @@ public void updateDailylimit() {
 
     }
 
-    private void leftPlayerFromRoom(GameRoom gameRoom, Player player) {
-        player.setGameRoom(null);
-        player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
-        playerRepository.save(player);
-    }
-
-    // Get Player by ID (Ensures player exists)
-    private Player getPlayerById(Long playerId) {
-        return playerRepository.findById(playerId)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
-    }
-
-    // Get Game by ID (Ensures game exists)
-    private Game getGameById(Long gameId) {
-        return gameRepository.findById(gameId)
-                .orElseThrow(() -> new RuntimeException("Game not found with ID: " + gameId));
-    }
 
     // Check if the player is already in a room
     public boolean isPlayerInRoom(Player player) {
@@ -534,7 +528,7 @@ public void updateDailylimit() {
 
             player.setGameRoom(gameRoom);
 
-            player.setPlayerStatus(PlayerStatus.PLAYING);
+//            player.setPlayerStatus(PlayerStatus.PLAYING);
 
             gameRoomRepository.save(gameRoom);
             playerRepository.save(player);
@@ -603,7 +597,7 @@ public void updateDailylimit() {
 
     // Update the player's status to PLAYING
     private void updatePlayerStatusToPlaying(Player player) {
-        player.setPlayerStatus(PlayerStatus.PLAYING);
+//        player.setPlayerStatus(PlayerStatus.PLAYING);
         playerRepository.save(player);
     }
 

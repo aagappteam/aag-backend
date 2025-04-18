@@ -11,7 +11,6 @@ import aagapp_backend.services.league.LeagueService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -63,7 +62,7 @@ public class LeagueWinning {
                                             @RequestParam(defaultValue = "10") int size) {
         try {
 
-            Pageable pageable = PageRequest.of(page, size, Sort.by("score").descending());
+            Pageable pageable = PageRequest.of(page, size);
             GameLeaderboardResponseDTO leaderboard = leaderBoardLeague.getLeaderboard(leagueId, pageable);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         } catch (Exception e) {
