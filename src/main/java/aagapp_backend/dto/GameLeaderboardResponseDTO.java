@@ -16,6 +16,10 @@ public class GameLeaderboardResponseDTO {
     private Double gameFee;
     private String gameIcon;
     private String themeName;
-    private Integer totalPlayers;
+    private int totalPlayers;
     private List<LeaderboardResponseDTO> players;
+    private int currentPage;
+    private int totalPages;
+    private long totalItems;
+
 }

@@ -10,6 +10,7 @@ import java.util.List;
 public interface GameRoomWinnerRepository extends JpaRepository<GameRoomWinner, Long> {
 
 //    Page<GameRoomWinner> findByGame_Id(Long gameId, Pageable pageable);
-List<GameRoomWinner> findByGame_Id(Long gameId);
+//List<GameRoomWinner> findByGame_Id(Long gameId);
+Page<GameRoomWinner> findByGame_Id(Long gameId, Pageable pageable);
 
 }

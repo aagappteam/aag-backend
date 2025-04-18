@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/follow")
@@ -19,21 +20,21 @@ public class UserVendorFollowController {
     @Autowired
     private ResponseService responseService;
 
-    @PostMapping("/vendor")
+    @PostMapping("/follow-vendor")
     public ResponseEntity<?> followVendor(@RequestParam Long userId, @RequestParam Long vendorId) {
-
-        try{
+        try {
             String result = followService.followVendor(userId, vendorId);
-            return responseService.generateSuccessResponse("Followed",result, HttpStatus.OK);
-        }catch (IllegalStateException e) {
-            return responseService.generateErrorResponse("You are Already following", HttpStatus.BAD_REQUEST);
-        }catch (Exception e) {
-            exceptionHandling.handleException(
-                HttpStatus.BAD_REQUEST,
-                    e);
-            return responseService.generateErrorResponse("failed to follow vendor", HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateSuccessResponse("Followed", result, HttpStatus.OK);
+        } catch (IllegalStateException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Failed to follow vendor", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     @DeleteMapping("/unfollow-vendor")
     public ResponseEntity<?> unfollowVendor(@RequestParam Long userId, @RequestParam Long vendorId) {
@@ -41,12 +42,15 @@ public class UserVendorFollowController {
             String result = followService.unfollowVendor(userId, vendorId);
             return responseService.generateSuccessResponse("Unfollowed", result, HttpStatus.OK);
         } catch (IllegalStateException e) {
-            return responseService.generateErrorResponse("User is not following the vendor", HttpStatus.BAD_REQUEST);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Failed to unfollow vendor", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
 
 /*    @GetMapping("/vendors-by-user/{userId}")

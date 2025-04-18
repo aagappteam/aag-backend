@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
@@ -84,24 +85,30 @@ public class UserVendorFollowService {
 
     @Transactional
     public String unfollowVendor(Long userId, Long vendorId) {
+        // Check if user exists
+        userRepo.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found with ID: " + userId));
+
+        // Check if user is following the vendor
         UserVendorFollow follow = followRepo.findByUserIdAndVendorId(userId, vendorId)
-                .orElseThrow(() -> new IllegalStateException("Not followed yet"));
+                .orElseThrow(() -> new IllegalStateException("User is not following the vendor"));
 
         followRepo.delete(follow);
 
-        VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
-        if(vendor== null) {
-            throw new IllegalStateException("Vendor not found");
-        }
-        int currentCount = vendor.getFollowercount() != null ? vendor.getFollowercount() : 0;
+        // Check if vendor exists
+        VendorEntity vendor = vendorRepo.findById(vendorId)
+                .orElseThrow(() -> new NoSuchElementException("Vendor not found with ID: " + vendorId));
 
+        // Decrement follower count if > 0
+        int currentCount = vendor.getFollowercount() != null ? vendor.getFollowercount() : 0;
         if (currentCount > 0) {
             vendor.setFollowercount(currentCount - 1);
-            entityManager.merge(vendor); // Optional if you're already modifying a managed entity
+            entityManager.merge(vendor);
         }
 
         return "Unfollowed";
     }
+
 
 
     @Transactional
@@ -110,17 +117,22 @@ public class UserVendorFollowService {
             throw new IllegalStateException("Already followed");
         }
 
+        CustomCustomer user = userRepo.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found with ID: " + userId));
+
+        VendorEntity vendor = vendorRepo.findById(vendorId)
+                .orElseThrow(() -> new NoSuchElementException("Vendor not found with ID: " + vendorId));
+
         UserVendorFollow follow = new UserVendorFollow();
-        follow.setUser(userRepo.findById(userId).orElseThrow());
-        follow.setVendor(vendorRepo.findById(vendorId).orElseThrow());
+        follow.setUser(user);
+        follow.setVendor(vendor);
         follow.setFollowedAt(LocalDateTime.now());
         followRepo.save(follow);
 
-        VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
         vendor.setFollowercount((vendor.getFollowercount() != null ? vendor.getFollowercount() : 0) + 1);
         entityManager.merge(vendor);
-        return "Followed";
 
+        return "Followed";
     }
 
 
