@@ -213,8 +213,8 @@ public class MatchService {
 
         gameResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
 
-        gameRoom.setStatus(GameRoomStatus.COMPLETED);
-        gameRoomRepository.save(gameRoom);
+/*        gameRoom.setStatus(GameRoomStatus.COMPLETED);
+        gameRoomRepository.save(gameRoom);*/
 
 
 
