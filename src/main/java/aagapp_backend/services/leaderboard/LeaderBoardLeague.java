@@ -1,17 +1,22 @@
 package aagapp_backend.services.leaderboard;
 
 import aagapp_backend.dto.GameLeaderboardResponseDTO;
+import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.LeaderboardResponseDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.game.GameResultRecord;
 import aagapp_backend.entity.game.GameRoomWinner;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.league.LeagueRoomWinner;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
+import aagapp_backend.repository.game.GameResultRecordRepository;
 import aagapp_backend.repository.game.ThemeRepository;
 import aagapp_backend.repository.league.LeagueRepository;
+import aagapp_backend.repository.league.LeagueResultRecordRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.league.LeagueRoomWinnerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +25,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -38,6 +45,9 @@ public class LeaderBoardLeague {
 
     @Autowired
     private LeagueRoomWinnerRepository leagueRoomWinnerRepository;
+
+    @Autowired
+    private LeagueResultRecordRepository leagueResultRecordRepository;
 
     @Autowired
     private CustomCustomerRepository customCustomerRepository;
@@ -96,5 +106,46 @@ public class LeaderBoardLeague {
         response.setCurrentPage(winnersPage.getNumber());
 
         return response;
+    }
+
+
+    public List<LeaderboardDto> getLeaderboard(Long leagueId, Long roomId, Boolean winnerFlag) {
+        List<LeagueResultRecord> results;
+
+        if (roomId != null) {
+            // Filter by both game and room
+            results = leagueResultRecordRepository.findByLeague_IdAndRoomId(leagueId, roomId);
+        } else {
+            // Filter only by game
+            results = leagueResultRecordRepository.findByLeague_Id(leagueId);
+        }
+        if (results.isEmpty()) {
+            throw new RuntimeException("No game results found for this room and game.");
+        }
+
+        // Filter based on winner param
+        if (winnerFlag != null) {
+            results = results.stream()
+                    .filter(record -> record.getIsWinner().equals(winnerFlag))
+                    .collect(Collectors.toList());
+        }
+
+        // Sort by score in descending order
+        results.sort(Comparator.comparing(LeagueResultRecord::getScore).reversed());
+
+        return results.stream()
+                .map(this::mapToLeaderboardDto)
+                .collect(Collectors.toList());
+    }
+    private LeaderboardDto mapToLeaderboardDto(LeagueResultRecord record) {
+        Player player = record.getPlayer();
+
+        return new LeaderboardDto(
+                player.getPlayerId(),
+                player.getCustomer().getName(),
+                player.getCustomer().getProfilePic(),
+                record.getScore(),
+                record.getIsWinner()
+        );
     }
 }
