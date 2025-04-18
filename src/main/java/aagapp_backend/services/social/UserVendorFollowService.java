@@ -204,6 +204,7 @@ public class UserVendorFollowService {
 
             Map<String, Object> vendorInfo = new HashMap<>();
             vendorInfo.put("name", vendor.getName());
+            vendorInfo.put("id", vendor.getService_provider_id());
             vendorInfo.put("profilePic", vendor.getProfilePic());
             vendorInfo.put("email", vendor.getPrimary_email());
             vendorInfo.put("followerCount", followRepo.countByVendorId(vendor.getService_provider_id()));
