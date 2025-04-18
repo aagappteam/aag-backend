@@ -9,8 +9,10 @@ import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.devices.UserDevice;
+import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.ProfileStatus;
+import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.*;
 import aagapp_backend.services.admin.AdminService;
@@ -38,6 +40,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +70,9 @@ public class OtpEndpoint {
     public void setOtpservice(Otp otpservice) {
         this.otpservice = otpservice;
     }
+
+    @Autowired
+    private  PlayerRepository playerRepository;
 
     @Autowired
     public void setWalletRepository(WalletRepository walletRepository) {
@@ -263,6 +269,15 @@ public class OtpEndpoint {
                 if (otpEntered.equals(storedOtp)) {
                     if (existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                         existingCustomer.setProfileStatus(ProfileStatus.ACTIVE);
+                        // Only create player if not already present
+                        if (existingCustomer.getPlayer() == null) {
+                            Player player = new Player();
+                            player.setCustomer(existingCustomer); // Yeh automatically ID bhi set karega
+                            player.setCreatedAt(LocalDateTime.now());
+                            player.setUpdatedAt(LocalDateTime.now());
+                            existingCustomer.setPlayer(player); // bidirectional link
+                            playerRepository.save(player);
+                        }
 /*
                         sendOnboardingEmail(existingCustomer.getEmail(), existingCustomer.getName(), existingCustomer.getLastName());
 */

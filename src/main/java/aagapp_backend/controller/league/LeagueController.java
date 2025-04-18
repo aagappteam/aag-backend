@@ -345,7 +345,7 @@ public class LeagueController {
 
             // Map VendorEntity to VendorDTO
             List<VendorDTO> vendorDTOs = vendors.stream()
-                    .map(vendor -> new VendorDTO(vendor.getService_provider_id(), vendor.getFirst_name() + " " + vendor.getLast_name()))
+                    .map(vendor -> new VendorDTO(vendor.getService_provider_id(), vendor.getFirst_name() + " " + vendor.getLast_name(), vendor.getProfilePic()))
                     .collect(Collectors.toList());
 
             // Return vendors' IDs and names

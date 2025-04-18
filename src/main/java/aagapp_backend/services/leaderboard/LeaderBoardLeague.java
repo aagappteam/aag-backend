@@ -15,6 +15,8 @@ import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.league.LeagueRoomWinnerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -40,7 +42,7 @@ public class LeaderBoardLeague {
     @Autowired
     private CustomCustomerRepository customCustomerRepository;
 
-    public GameLeaderboardResponseDTO getLeaderboard(Long leagueId) {
+    public GameLeaderboardResponseDTO getLeaderboard(Long leagueId, Pageable pageable) {
         // 1. Fetch the game details
         Optional<League> gameOpt = leagueRepository.findById(leagueId);
         if (gameOpt.isEmpty()) {
@@ -56,7 +58,8 @@ public class LeaderBoardLeague {
         ThemeEntity theme = themeOpt.get();
 
         // 3. Fetch all winners (players with scores)
-        List<LeagueRoomWinner> winners = leagueRoomWinnerRepository.findByLeagueRoomId(leagueId);
+        Page<LeagueRoomWinner> winnersPage = leagueRoomWinnerRepository.findByLeagueRoomId(leagueId, pageable);
+        List<LeagueRoomWinner> winners = winnersPage.getContent();
 
         // 4. Fetch total players in game rooms (sum of maxPlayers from GameRoom)
         long totalPlayers = leagueRoomRepository.sumMaxPlayersByLeagueId(leagueId);
@@ -88,6 +91,9 @@ public class LeaderBoardLeague {
         response.setThemeName(theme.getName());
         response.setTotalPlayers((int) totalPlayers);
         response.setPlayers(playerList);
+        response.setTotalPages(winnersPage.getTotalPages());
+        response.setTotalItems(winnersPage.getNumberOfElements());
+        response.setCurrentPage(winnersPage.getNumber());
 
         return response;
     }

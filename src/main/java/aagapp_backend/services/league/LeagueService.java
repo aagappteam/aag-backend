@@ -565,7 +565,7 @@ public class LeagueService {
                 leagueRoomRepository.save(newRoom); // Save the new room
             }
 
-            player.setPlayerStatus(PlayerStatus.PLAYING);
+//            player.setPlayerStatus(PlayerStatus.PLAYING);
             playerRepository.save(player);
 
             return responseService.generateSuccessResponse("Player join in the Game Room ", leagueRoom, HttpStatus.OK);
@@ -592,7 +592,7 @@ public class LeagueService {
             }
 
             player.setLeagueRoom(null);
-            player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
+//            player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
             player.setLeagueRoom(null);
             playerRepository.save(player);
 
@@ -628,7 +628,7 @@ public class LeagueService {
 
             player.setLeagueRoom(leagueRoom);
 
-            player.setPlayerStatus(PlayerStatus.PLAYING);
+//            player.setPlayerStatus(PlayerStatus.PLAYING);
 
             leagueRoomRepository.save(leagueRoom);
             playerRepository.save(player);

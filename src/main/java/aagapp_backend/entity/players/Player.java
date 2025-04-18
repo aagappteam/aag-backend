@@ -23,7 +23,7 @@ import java.util.List;
 @Table(
         name = "players",
         indexes = {
-                @Index(name = "idx_player_status", columnList = "player_status"),
+//                @Index(name = "idx_player_status", columnList = "player_status"),
                 @Index(name = "idx_player_name", columnList = "playerName"),
                 @Index(name = "idx_game_room_id", columnList = "game_room_id"),
                 @Index(name = "idx_league_room_id", columnList = "league_room_id"),
@@ -34,18 +34,22 @@ import java.util.List;
 @Setter
 public class Player {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "player_id")
-    private Long playerId;
+    private Long playerId;  // Same as Customer ID
+
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "player_id") // Link to Customer's ID
+    @JsonIgnore
+    private CustomCustomer customer;
 
     private String playerName;
 
     private String playerProfilePic;
 
-    @NotNull(message = "Status cannot be null")
+    /*@NotNull(message = "Status cannot be null")
     @Enumerated(EnumType.STRING)
     @Column(name = "player_status", nullable = false)
-    private PlayerStatus playerStatus;
+    private PlayerStatus playerStatus;*/
 
     @JsonIgnore
     @ManyToOne
@@ -63,10 +67,10 @@ public class Player {
     @JoinColumn(name = "tournament_room_id")
     private TournamentRoom tournamentRoom;
 
-    @ManyToOne
+    /*@ManyToOne
     @JoinColumn(name = "customer_id")
     @JsonIgnore
-    private CustomCustomer customer;
+    private CustomCustomer customer;*/
 
 
     @Column(name = "created_at", nullable = false)
@@ -100,9 +104,9 @@ public class Player {
 
     @PrePersist
     public void setDefaultStatus() {
-        if (this.playerStatus == null) {
+        /*if (this.playerStatus == null) {
             this.playerStatus = PlayerStatus.READY_TO_PLAY;
-        }
+        }*/
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
