@@ -5,12 +5,14 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.repository.social.UserVendorFollowRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.social.UserVendorFollowService;
 import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import aagapp_backend.services.vendor.VendorBankAccountService;
@@ -44,6 +46,8 @@ public class VendorController {
 
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private UserVendorFollowService followService;
 
     @Autowired
     private ResponseService responseService;
@@ -115,14 +119,18 @@ public class VendorController {
 
 
     @GetMapping("/get-vendor/{serviceProviderId}")
-    public ResponseEntity<?> getVendorDetailsById(@PathVariable Long serviceProviderId) {
+    public ResponseEntity<?> getVendorDetailsById(@PathVariable Long serviceProviderId,  @RequestParam(required = false) Long userId) {
         try {
             VendorEntity serviceProviderEntity = vendorService.getServiceProviderById(serviceProviderId);
             if (serviceProviderEntity == null) {
                 return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
             }
             Map<String, Object> responseBody = serviceProviderService.VendorDetails( serviceProviderEntity).getBody();
-
+            if (userId != null) {
+                boolean isFollowing = followService.isUserFollowing(userId, serviceProviderEntity.getService_provider_id());
+                System.out.println("Is following: " + isFollowing + " - User ID: " + userId + " - Service Provider ID: " + serviceProviderEntity.getService_provider_id());
+                serviceProviderEntity.setIsFollowing(isFollowing);
+            }
 
             return ResponseEntity.ok(responseBody);
 //            return responseService.generateSuccessResponse("Service provider details are", responseBody, HttpStatus.OK);
@@ -171,6 +179,7 @@ public class VendorController {
     @GetMapping("/get-all-vendors")
     public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(defaultValue = "10") int limit,
+                                                    @RequestParam(required = false) Long userId,
                                                     @RequestParam(value = "status", required = false) String status,
                                                     @RequestParam(value = "vendorId", required = false) Long vendorId,
                                                     @RequestParam(value = "email", required = false) String email,
@@ -238,9 +247,18 @@ public class VendorController {
             query.setFirstResult(startPosition);
             query.setMaxResults(limit);
 
+
             // Execute queries
             Long totalCount = (Long) countQuery.getSingleResult();
             List<VendorEntity> results = query.getResultList();
+            if (userId != null) {
+                for (VendorEntity vendor : results) {
+                    boolean isFollowing = followService.isUserFollowing(userId, vendor.getService_provider_id());
+                    vendor.setIsFollowing(isFollowing);
+                }
+            }
+
+
 
             // Return result
             return ResponseService.generateSuccessResponseWithCount("List of vendors", results, totalCount, HttpStatus.OK);
@@ -257,20 +275,27 @@ public class VendorController {
 
     @Transactional
     @GetMapping("/get-all-details/{serviceProviderId}")
-    public ResponseEntity<?> getAllDetails(@PathVariable Long serviceProviderId) {
+    public ResponseEntity<?> getAllDetails(@PathVariable Long serviceProviderId,
+                                           @RequestParam(required = false) Long userId) {
         try {
+            // Fetch the vendor by ID
             VendorEntity serviceProviderEntity = entityManager.find(VendorEntity.class, serviceProviderId);
             if (serviceProviderEntity == null) {
-                return ResponseService.generateErrorResponse("Service provider does not found", HttpStatus.NOT_FOUND);
+                return ResponseService.generateErrorResponse("Service provider not found", HttpStatus.NOT_FOUND);
             }
 
-//            Map<String,Object> serviceProviderMap= sharedUtilityService.serviceProviderDetailsMap(serviceProviderEntity);
+            if (userId != null) {
+                boolean isFollowing = followService.isUserFollowing(userId, serviceProviderEntity.getService_provider_id());
+                System.out.println("Is following: " + isFollowing + " - User ID: " + userId + " - Service Provider ID: " + serviceProviderEntity.getService_provider_id());
+                serviceProviderEntity.setIsFollowing(isFollowing);
+            }
+
             return ResponseService.generateSuccessResponse("Service Provider details retrieved successfully", serviceProviderEntity, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return ResponseService.generateErrorResponse("Some issue in fetching service provider details " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            return ResponseService.generateErrorResponse("Some issue in fetching service provider details: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 

@@ -43,7 +43,7 @@ public class UserVendorFollowService {
     @Autowired
     private VendorRepository vendorRepo;
 
-    public String followVendor(Long userId, Long vendorId) {
+/*    public String followVendor(Long userId, Long vendorId) {
         if (!followRepo.existsByUserIdAndVendorId(userId, vendorId)) {
             UserVendorFollow follow = new UserVendorFollow();
             follow.setUser(userRepo.findById(userId).orElseThrow());
@@ -63,8 +63,9 @@ public class UserVendorFollowService {
 
         vendor.setFollowercount(vendor.getFollowercount()==null?0:vendor.getFollowercount()+1);
         entityManager.persist(vendor);
-    }
+    }*/
 
+/*
     @Transactional
     private void removeollowerCount(Long vendorId) {
         VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
@@ -72,13 +73,57 @@ public class UserVendorFollowService {
 
         entityManager.persist(vendor);
     }
+*/
 
-    public String unfollowVendor(Long userId, Long vendorId) {
+/*    public String unfollowVendor(Long userId, Long vendorId) {
         followRepo.findByUserIdAndVendorId(userId, vendorId)
                 .ifPresent(followRepo::delete);
         this.removeollowerCount(vendorId);
         return "Unfollowed";
+    }*/
+
+    @Transactional
+    public String unfollowVendor(Long userId, Long vendorId) {
+        UserVendorFollow follow = followRepo.findByUserIdAndVendorId(userId, vendorId)
+                .orElseThrow(() -> new IllegalStateException("Not followed yet"));
+
+        followRepo.delete(follow);
+
+        VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
+        if(vendor== null) {
+            throw new IllegalStateException("Vendor not found");
+        }
+        int currentCount = vendor.getFollowercount() != null ? vendor.getFollowercount() : 0;
+
+        if (currentCount > 0) {
+            vendor.setFollowercount(currentCount - 1);
+            entityManager.merge(vendor); // Optional if you're already modifying a managed entity
+        }
+
+        return "Unfollowed";
     }
+
+
+    @Transactional
+    public String followVendor(Long userId, Long vendorId) {
+        if (followRepo.existsByUserIdAndVendorId(userId, vendorId)) {
+            throw new IllegalStateException("Already followed");
+        }
+
+        UserVendorFollow follow = new UserVendorFollow();
+        follow.setUser(userRepo.findById(userId).orElseThrow());
+        follow.setVendor(vendorRepo.findById(vendorId).orElseThrow());
+        follow.setFollowedAt(LocalDateTime.now());
+        followRepo.save(follow);
+
+        VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
+        vendor.setFollowercount((vendor.getFollowercount() != null ? vendor.getFollowercount() : 0) + 1);
+        entityManager.merge(vendor);
+        return "Followed";
+
+    }
+
+
 
 
 

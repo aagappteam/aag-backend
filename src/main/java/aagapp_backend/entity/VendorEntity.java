@@ -194,6 +194,18 @@ public class VendorEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
 
+    @Transient
+    private Boolean isFollowing;
+
+    public Boolean getIsFollowing() {
+        return isFollowing;
+    }
+
+    public void setIsFollowing(Boolean isFollowing) {
+        this.isFollowing = isFollowing;
+    }
+
+
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = new Date();
