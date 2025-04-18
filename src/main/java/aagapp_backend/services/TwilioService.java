@@ -66,6 +66,7 @@ public class TwilioService {
         this.customCustomerService = customCustomerService;
     }
 
+
     @PersistenceContext
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
@@ -91,12 +92,13 @@ public class TwilioService {
                 customerDetails.setOtp(otp);
                 customerDetails.setProfileStatus(ProfileStatus.PENDING);
                 entityManager.persist(customerDetails);
-                Player player = new Player();
+                /*Player player = new Player();
                 player.setPlayerId(customerDetails.getId());
                 player.setCustomer(customerDetails);
+                playerRepository.save(player);*/
 
 //                player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
-                entityManager.merge(player);
+//                entityManager.merge(player);
                 return ResponseEntity.ok(Map.of(
                         "otp", otp,
                         "message", ApiConstants.OTP_SENT_SUCCESSFULLY + maskedNumber

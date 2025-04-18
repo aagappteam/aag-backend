@@ -12,6 +12,7 @@ import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.ProfileStatus;
+import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.*;
 import aagapp_backend.services.admin.AdminService;
@@ -69,6 +70,9 @@ public class OtpEndpoint {
     public void setOtpservice(Otp otpservice) {
         this.otpservice = otpservice;
     }
+
+    @Autowired
+    private  PlayerRepository playerRepository;
 
     @Autowired
     public void setWalletRepository(WalletRepository walletRepository) {
@@ -272,6 +276,7 @@ public class OtpEndpoint {
                             player.setCreatedAt(LocalDateTime.now());
                             player.setUpdatedAt(LocalDateTime.now());
                             existingCustomer.setPlayer(player); // bidirectional link
+                            playerRepository.save(player);
                         }
 /*
                         sendOnboardingEmail(existingCustomer.getEmail(), existingCustomer.getName(), existingCustomer.getLastName());
