@@ -184,12 +184,13 @@ public class LeaderboardGame {
             if (playerDetails.isEmpty()) {
                 throw new RuntimeException("Player details not found for player ID: " + player.getPlayerId());
             }
-
+            Double winningammount = winner.getGame().getFee()*0.63;
             LeaderboardResponseDTO playerDTO = new LeaderboardResponseDTO();
             playerDTO.setPlayerId(player.getPlayerId());
             playerDTO.setPlayerName(playerDetails.get().getName());
             playerDTO.setProfilePicture(playerDetails.get().getProfilePic());
             playerDTO.setScore(winner.getScore());
+            playerDTO.setWinningammount(winningammount);
 
             playerList.add(playerDTO);
         }
