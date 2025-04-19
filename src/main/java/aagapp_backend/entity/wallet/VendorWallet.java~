@@ -18,8 +18,8 @@ import java.time.LocalDateTime;
         indexes = {
                 @Index(name = "idx_service_provider_id", columnList = "service_provider_id"),
                 @Index(name = "idx_winning_amount", columnList = "winning_amount"),
-//                @Index(name = "idx_created_at", columnList = "created_at"),
-//                @Index(name = "idx_updated_at", columnList = "updated_at")
+                @Index(name = "idx_created_at", columnList = "created_at"),
+                @Index(name = "idx_updated_at", columnList = "updated_at")
         }
 )
 @Data

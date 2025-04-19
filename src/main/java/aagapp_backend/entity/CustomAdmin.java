@@ -14,13 +14,22 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
 
-
 @Entity
+@Table(
+        name = "custom_admin",
+        indexes = {
+                @Index(name = "idx_user_name", columnList = "user_name"),
+//                @Index(name = "idx_mobile_number", columnList = "mobileNumber"),
+                @Index(name = "idx_country_code", columnList = "country_code"),
+//                @Index(name = "idx_created_at", columnList = "created_at"),
+//                @Index(name = "idx_updated_at", columnList = "updated_at")
+        }
+)
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
-@Table(name ="custom_admin")
+
 public class CustomAdmin
 {
     @Id
@@ -37,7 +46,7 @@ public class CustomAdmin
 
     @Nullable
     @Column(length = 512)
-    private String token;;
+    private String token;
     private int active=0;
 
     @CreationTimestamp
@@ -50,7 +59,7 @@ public class CustomAdmin
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private String updated_at;
 
-    public CustomAdmin(Long admin_id, int role, String password, String user_name, String mobileNumber, String country_code, int active, Date created_at, String created_by) {
+   /* public CustomAdmin(Long admin_id, int role, String password, String user_name, String mobileNumber, String country_code, int active, Date created_at, String created_by) {
         this.admin_id = admin_id;
         this.role = role;
         this.password = password;
@@ -61,5 +70,5 @@ public class CustomAdmin
         this.created_at = created_at;
         this.updated_at = updated_at;
 
-    }
+    }*/
 }

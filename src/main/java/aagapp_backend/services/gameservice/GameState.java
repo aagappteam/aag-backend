@@ -1,8 +1,9 @@
+/*
 package aagapp_backend.services.gameservice;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.game.GameRoom;
-import aagapp_backend.entity.game.Token;
+
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.enums.GameStatus;
@@ -13,7 +14,7 @@ import java.util.*;
 public class GameState {
     private Long gameId;
     private Long currentPlayerId;
-    private Map<Long, List<Token>> playerTokens; // Player ID -> List of Tokens
+//    private Map<Long, List<Token>> playerTokens; // Player ID -> List of Tokens
     private int boardSize = 100; // Example board size
     private Map<Long, Integer> finalHomePositions; // Player ID -> Final Home Position
     private Map<Long, Integer> playerTokensAtHome; // Player ID -> Number of tokens at home
@@ -161,3 +162,4 @@ private List<Player> players; //  Store players for easy lookup
     }
 
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package aagapp_backend.entity;
 import aagapp_backend.entity.league.League;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -31,4 +32,4 @@ public class Team {
     private ZonedDateTime updatedDate;
 
 
-}
+}*/

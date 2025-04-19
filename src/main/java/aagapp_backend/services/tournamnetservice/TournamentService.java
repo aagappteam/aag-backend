@@ -2,22 +2,14 @@ package aagapp_backend.services.tournamnetservice;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.*;
-import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
-import aagapp_backend.entity.league.League;
-import aagapp_backend.entity.league.LeagueResultRecord;
-import aagapp_backend.entity.league.LeagueRoom;
-import aagapp_backend.entity.league.LeagueRoomWinner;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.*;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
-import aagapp_backend.enums.LeagueRoomStatus;
-import aagapp_backend.enums.LeagueStatus;
-import aagapp_backend.enums.PlayerStatus;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
@@ -30,10 +22,7 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import jakarta.validation.constraints.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -611,7 +600,7 @@ public class TournamentService {
         Player winnerPlayer = winnerPlayerOpt.get();
 
 
-        TouranamentRoomWinner leagueRoomWinner = new TouranamentRoomWinner();
+        TournamentRoomWinner leagueRoomWinner = new TournamentRoomWinner();
 
         leagueRoomWinner.setTournament(tournament);  // Set the game
 

@@ -3,7 +3,6 @@ package aagapp_backend.entity.players;
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.game.GameRoom;
-import aagapp_backend.entity.game.Token;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.enums.PlayerStatus;

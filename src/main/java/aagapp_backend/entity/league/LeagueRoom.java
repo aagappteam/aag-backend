@@ -62,15 +62,15 @@ public class LeagueRoom {
 
 
 
-    private Long currentPlayerId; // ID of the current player's turn
+//    private Long currentPlayerId;
 
-    @Column(name = "turn_order")
-    private int turnOrder = 0;
+//    @Column(name = "turn_order")
+//    private int turnOrder = 0;
 
-    @ElementCollection
-    @CollectionTable(name = "ludo_game_room_winners", joinColumns = @JoinColumn(name = "game_room_id"))
-    @Column(name = "player_id")
-    private Set<Long> winners = new HashSet<>();
+//    @ElementCollection
+//    @CollectionTable(name = "ludo_game_room_winners", joinColumns = @JoinColumn(name = "game_room_id"))
+//    @Column(name = "player_id")
+//    private Set<Long> winners = new HashSet<>();
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

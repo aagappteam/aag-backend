@@ -12,7 +12,9 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tournament_result_record")
+@Table(
+        name = "tournament_result_record"
+)
 @Getter
 @Setter
 @NoArgsConstructor
