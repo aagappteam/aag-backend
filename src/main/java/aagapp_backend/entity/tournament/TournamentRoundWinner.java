@@ -1,15 +1,20 @@
 package aagapp_backend.entity.tournament;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
+@Table(
+        name = "tournament_round_winner",
+        indexes = {
+//                @Index(name = "idx_tournament_id", columnList = "tournamentId"),
+//                @Index(name = "idx_player_id", columnList = "playerId"),
+                @Index(name = "idx_round_number", columnList = "roundNumber")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

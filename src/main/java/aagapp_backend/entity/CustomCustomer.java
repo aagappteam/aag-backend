@@ -23,13 +23,21 @@ import java.util.Date;
 import java.util.Set;
 
 @Entity
-@Table(name = "CUSTOM_USER")
+@Table(
+        name = "CUSTOM_USER",
+        indexes = {
+//                @Index(name = "idx_mobile_number", columnList = "mobile_number"),
+                @Index(name = "idx_email", columnList = "email"),
+//                @Index(name = "idx_profile_status", columnList = "profile_status"),
+                @Index(name = "idx_kyc_status", columnList = "kyc_status"),
+//                @Index(name = "idx_created_date", columnList = "created_date")
+        }
+)
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 @ToString
-
 public class CustomCustomer {
 
     @Id
@@ -90,7 +98,7 @@ public class CustomCustomer {
     @Column(name = "otp")
     private String otp;
 
-    @Nullable
+    /*@Nullable
     @Column(name = "father_name")
     private String fathersName;
 
@@ -109,19 +117,19 @@ public class CustomCustomer {
 
     @Nullable
     @Column(name = "residential_address")
-    private String residentialAddress;
+    private String residentialAddress;*/
 
     @Nullable
     @Column(name = "state")
     private String state;
 
-    @Nullable
+   /* @Nullable
     @Column(name = "district")
     private String district;
 
     @Nullable
     @Column(name = "city")
-    private String city;
+    private String city;*/
 
     @Column(name = "fcm_token")
     private String fcmToken;

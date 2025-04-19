@@ -16,6 +16,8 @@ import java.util.List;
         name = "tournament_room",
         indexes = {
                 @Index(name = "idx_tournament_id", columnList = "tournamentId"),
+//                @Index(name = "idx_status", columnList = "status"),
+                @Index(name = "idx_gamepassword", columnList = "gamepassword")
         }
 )
 @Getter

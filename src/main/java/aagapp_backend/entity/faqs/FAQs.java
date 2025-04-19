@@ -1,15 +1,19 @@
 package aagapp_backend.entity.faqs;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
+@Table(
+        indexes = {
+                @Index(name = "idx_category", columnList = "category"),
+                @Index(name = "idx_question", columnList = "question"),
+                @Index(name = "idx_createdFor", columnList = "createdFor")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
