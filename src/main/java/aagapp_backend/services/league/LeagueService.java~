@@ -906,6 +906,7 @@ public class LeagueService {
     // Method to add the vendor share to the vendor's wallet
 
     @Transactional
+
     public void addToVendorWalletAndTotalBalance(Long vendorId, BigDecimal vendorShare) {
 
         // 1. Fetch Vendor
