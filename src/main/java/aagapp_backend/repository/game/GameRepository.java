@@ -26,6 +26,9 @@ public interface GameRepository extends JpaRepository<Game, Long> {
             @Param("startTime") ZonedDateTime startTime,
             @Param("endTime") ZonedDateTime endTime
     );
+    Page<Game> findByFeeBetween(int min, int max, Pageable pageable);
+    Page<Game> findByFeeGreaterThanEqual(int fee, Pageable pageable);
+    Page<Game> findByVendorEntityIsNotNull(Pageable pageable);
 
 /*    @Query("SELECT g FROM Game g WHERE g.vendorEntity = :vendorEntity AND g.scheduledAt >= :startTime AND g.scheduledAt <= :endTime")
     List<Game> findByVendorEntityAndScheduledAtWithin24Hours(VendorEntity vendorEntity, ZonedDateTime startTime, ZonedDateTime endTime);*/

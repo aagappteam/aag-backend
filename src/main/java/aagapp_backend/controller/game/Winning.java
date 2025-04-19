@@ -48,7 +48,6 @@ private GameRoomRepository gameRoomRepository;
             // Process game result (you may want to keep this as is, or include some additional logic here)
             List<PlayerDto> playersDetails =   matchService.processMatch(gameResult);
 
-
             // Prepare the response
             Map<String, Object> response = new HashMap<>();
             response.put("players", playersDetails);
@@ -100,9 +99,6 @@ private GameRoomRepository gameRoomRepository;
             );
         }
     }
-
-
-
 
 
 }

@@ -27,5 +27,8 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, Long> {
     @Query("SELECT SUM(g.maxPlayers) FROM GameRoom g WHERE g.game.id = :gameId")
     Long sumMaxPlayersByGameId(@Param("gameId") Long gameId);
 
+    @Query("SELECT gr.game, COUNT(gr.id) FROM GameRoom gr WHERE gr.status IN ('ONGOING', 'INITIALIZED') GROUP BY gr.game ORDER BY COUNT(gr.id) DESC")
+    List<Object[]> findPopularGames(Pageable pageable);
+
 }
 

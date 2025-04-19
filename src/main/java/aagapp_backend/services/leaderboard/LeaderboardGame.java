@@ -188,7 +188,6 @@ public class LeaderboardGame {
             BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(winner.getGame().getMaxPlayersPerTeam()));
             BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(0.63));
 
-            Double winningammount = winner.getGame().getFee()*0.63;
             LeaderboardResponseDTO playerDTO = new LeaderboardResponseDTO();
             playerDTO.setPlayerId(player.getPlayerId());
             playerDTO.setPlayerName(playerDetails.get().getName());
