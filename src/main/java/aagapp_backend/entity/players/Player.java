@@ -34,22 +34,13 @@ import java.util.List;
 @Setter
 public class Player {
     @Id
-    private Long playerId;  // Same as Customer ID
+    private Long playerId;
 
     @OneToOne
     @MapsId
-    @JoinColumn(name = "player_id") // Link to Customer's ID
+    @JoinColumn(name = "player_id")
     @JsonIgnore
     private CustomCustomer customer;
-
-    private String playerName;
-
-    private String playerProfilePic;
-
-    /*@NotNull(message = "Status cannot be null")
-    @Enumerated(EnumType.STRING)
-    @Column(name = "player_status", nullable = false)
-    private PlayerStatus playerStatus;*/
 
     @JsonIgnore
     @ManyToOne
@@ -67,11 +58,6 @@ public class Player {
     @JoinColumn(name = "tournament_room_id")
     private TournamentRoom tournamentRoom;
 
-    /*@ManyToOne
-    @JoinColumn(name = "customer_id")
-    @JsonIgnore
-    private CustomCustomer customer;*/
-
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -84,18 +70,14 @@ public class Player {
         this.updatedAt = LocalDateTime.now();
     }
     public String getPlayerProfilePic() {
-        if (playerProfilePic != null) {
-            return playerProfilePic;
-        } else if (customer != null && customer.getProfilePic() != null) {
+        if (customer != null && customer.getProfilePic() != null) {
             return customer.getProfilePic();
         }
         return Constant.PROFILE_IMAGE_URL;
     }
 
     public String getPlayerName() {
-        if (playerName != null) {
-            return playerName;
-        } else if (customer != null && customer.getName() != null) {
+        if (customer != null && customer.getName() != null) {
             return customer.getName();
         }
         return "Aag User";
@@ -104,9 +86,6 @@ public class Player {
 
     @PrePersist
     public void setDefaultStatus() {
-        /*if (this.playerStatus == null) {
-            this.playerStatus = PlayerStatus.READY_TO_PLAY;
-        }*/
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
