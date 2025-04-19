@@ -27,7 +27,10 @@ public class TournamentRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long tournamentId;
+    @ManyToOne
+    @JoinColumn(name = "tournament_id")
+    private Tournament tournament;
+
 
     private int maxParticipants;
     private int currentParticipants;
