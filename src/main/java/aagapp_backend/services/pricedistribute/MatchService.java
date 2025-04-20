@@ -213,6 +213,10 @@ public class MatchService {
 
         gameResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
 
+
+/*        gameRoom.setStatus(GameRoomStatus.COMPLETED);
+        gameRoomRepository.save(gameRoom);*/
+
         // Optional: Update AAG Wallet if needed
         // updateAAGWallet(platformShare, tax);
 
