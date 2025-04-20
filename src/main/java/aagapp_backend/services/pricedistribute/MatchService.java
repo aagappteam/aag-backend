@@ -213,11 +213,9 @@ public class MatchService {
 
         gameResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
 
+
 /*        gameRoom.setStatus(GameRoomStatus.COMPLETED);
         gameRoomRepository.save(gameRoom);*/
-
-
-
 
         // Optional: Update AAG Wallet if needed
         // updateAAGWallet(platformShare, tax);
@@ -395,13 +393,18 @@ public class MatchService {
 
     private LeaderboardDto mapToLeaderboardDto(GameResultRecord record) {
         Player player = record.getPlayer();
+        BigDecimal totalCollection = BigDecimal.valueOf(record.getGame().getFee()).multiply(BigDecimal.valueOf(record.getGame().getMaxPlayersPerTeam()));
+
+        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
 
         return new LeaderboardDto(
                 player.getPlayerId(),
                 player.getCustomer().getName(),
                 player.getCustomer().getProfilePic(),
                 record.getScore(),
-                record.getIsWinner()
+                record.getIsWinner(),
+                record.getIsWinner()? userWin.stripTrailingZeros().doubleValue() : 0  // If winner, return user win amount, else 0
+
         );
     }
 
