@@ -29,25 +29,24 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, Long> {
     @Query("SELECT SUM(g.maxPlayers) FROM GameRoom g WHERE g.game.id = :gameId")
     Long sumMaxPlayersByGameId(@Param("gameId") Long gameId);
 
-/*    @Query("SELECT gr.game, COUNT(gr.id) FROM GameRoom gr WHERE gr.status IN ('ONGOING', 'INITIALIZED') GROUP BY gr.game ORDER BY COUNT(gr.id) DESC")
-    List<Object[]> findPopularGames(Pageable pageable);*/
-@Query("""
-    SELECT gr.game, COUNT(p.id)
-    FROM Player p
-    JOIN p.gameRoom gr
-    WHERE gr.status IN (:statuses)
-      AND gr.game.status = :gameStatus
-      AND gr.game.endDate > :currentTime
-    GROUP BY gr.game
-    ORDER BY COUNT(p.id) DESC
-""")
-List<Object[]> findPopularGames(
-        @Param("statuses") List<GameRoomStatus> statuses,
-        @Param("gameStatus") GameStatus gameStatus,
-        @Param("currentTime") ZonedDateTime currentTime,
-        Pageable pageable
-);
-
+    /*    @Query("SELECT gr.game, COUNT(gr.id) FROM GameRoom gr WHERE gr.status IN ('ONGOING', 'INITIALIZED') GROUP BY gr.game ORDER BY COUNT(gr.id) DESC")
+        List<Object[]> findPopularGames(Pageable pageable);*/
+    @Query("""
+        SELECT gr.game, COUNT(p.id)
+        FROM Player p
+        JOIN p.gameRoom gr
+        WHERE gr.status IN (:statuses)
+          AND gr.game.status = :gameStatus
+          AND gr.game.endDate > :currentTime
+        GROUP BY gr.game
+        ORDER BY COUNT(p.id) DESC
+    """)
+    List<Object[]> findPopularGames(
+            @Param("statuses") List<GameRoomStatus> statuses,
+            @Param("gameStatus") GameStatus gameStatus,
+            @Param("currentTime") ZonedDateTime currentTime,
+            Pageable pageable
+    );
 
 }
 
