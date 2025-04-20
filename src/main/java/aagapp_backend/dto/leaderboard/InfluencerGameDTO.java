@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class InfluencerGameDTO {
-    private GetGameResponseDTO game;
+    private DashboardResponseDTO game;
     private String influencerName;
 }

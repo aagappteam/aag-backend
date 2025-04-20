@@ -9,8 +9,8 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DashboardResponse {
-    private PageDTO<GetGameResponseDTO> latestGames;
+    private PageDTO<DashboardResponseDTO> latestGames;
     private PageDTO<PopularGameDTO> popularGames;
-    private EntryFeeGamesDTO entryFeeGames;
+    private PageDTO<DashboardResponseDTO> entryFeeGames;
     private PageDTO<InfluencerGameDTO> influencerGames;
 }
