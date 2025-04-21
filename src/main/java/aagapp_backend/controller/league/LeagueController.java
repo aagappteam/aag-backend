@@ -359,7 +359,7 @@ public class LeagueController {
     @PostMapping("/joinLeague")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinLeagueRequest joinLeagueRequest) {
         try {
-            return leagueService.joinRoom(joinLeagueRequest.getPlayerId(), joinLeagueRequest.getLeagueId());
+            return leagueService.joinRoom(joinLeagueRequest.getPlayerId(), joinLeagueRequest.getLeagueId(), joinLeagueRequest.getTeamName());
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in joining game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -369,7 +369,7 @@ public class LeagueController {
     @PostMapping("/leftLeague")
     public ResponseEntity<?> leaveGameRoom(@RequestBody JoinLeagueRequest leaveRoomRequest) {
         try {
-            return leagueService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId());
+            return leagueService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId(), leaveRoomRequest.getTeamName());
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
