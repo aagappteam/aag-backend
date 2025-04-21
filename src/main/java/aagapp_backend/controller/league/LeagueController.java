@@ -203,7 +203,7 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Pageable pageable = PageRequest.of(page, size,Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         try {
             Page<Challenge> challenges = leagueService.getChallengesByOpponentVendorIds(
@@ -231,7 +231,7 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Pageable pageable = PageRequest.of(page, size,Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         try {
             Page<Challenge> challenges = leagueService.getByVendorIdInAndStatus(
@@ -267,7 +267,6 @@ public class LeagueController {
     @PostMapping("/publishLeague/{vendorId}/{challengeId}")
     public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @PathVariable Long challengeId) {
         try {
-
 
 
             Challenge challenge = challangeRepository.findById(challengeId)
@@ -352,6 +351,27 @@ public class LeagueController {
             return responseService.generateSuccessResponse("Vendors with available leagues fetched successfully", vendorDTOs, HttpStatus.OK);
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error fetching vendors with available leagues", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/buy-league-pass/{playerId}")
+    public ResponseEntity<?> buyLeaguePass(@PathVariable Long playerId) {
+        try {
+            // Call the service method
+            return leagueService.takePassForLeague(playerId);
+
+        } catch (RuntimeException e) {
+            // Handle known business logic errors
+            return responseService.generateErrorResponse(
+                    "Failed to purchase league pass: " + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        } catch (Exception e) {
+            // Handle unknown/internal errors
+            return responseService.generateErrorResponse(
+                    "An unexpected error occurred while purchasing league pass.",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
     }
 

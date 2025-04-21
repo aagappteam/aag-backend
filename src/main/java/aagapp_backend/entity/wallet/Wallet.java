@@ -41,7 +41,7 @@ public class Wallet {
 
 
     @Column(name = "unplayed_balance", nullable = false)
-    private Float unplayedBalance;
+    private Double unplayedBalance;
 
     @Column(name = "winning_amount", nullable = false)
     private BigDecimal winningAmount;

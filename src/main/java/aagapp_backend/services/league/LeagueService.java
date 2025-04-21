@@ -548,6 +548,49 @@ public class LeagueService {
     }
 
     @Transactional
+    public ResponseEntity<?> takePassForLeague(Long playerId) {
+        try {
+            // Step 1: Get Player
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            Wallet wallet = player.getCustomer().getWallet();
+            wallet.setUnplayedBalance(100.0);
+
+            // Step 3: Check wallet balance
+            Double currentBalance = wallet.getUnplayedBalance();
+            Double passCost = 7.0;
+
+            if (currentBalance < passCost) {
+                return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
+            }
+
+
+            // Step 4: Deduct ₹7 and add 3 league passes
+            wallet.setUnplayedBalance(currentBalance - passCost);
+            player.setLeaguePasses(player.getLeaguePasses() + 3);
+
+            // Step 5: Save updates
+            playerRepository.save(player);
+
+            // Step 6: Prepare response data
+            Map<String, Object> data = new HashMap<>();
+            data.put("walletBalance", wallet.getUnplayedBalance());
+            data.put("leaguePasses", player.getLeaguePasses());
+            data.put("playerName", player.getPlayerName());
+
+            return responseService.generateSuccessResponse("3 League passes added successfully", data, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error while processing league pass: " + e.getMessage(), e);
+        }
+    }
+
+
+
+
+    @Transactional
     public ResponseEntity<?> joinRoom(Long playerId, Long leagueId, String teamName) {
         try {
             Player player = playerRepository.findById(playerId)
@@ -555,6 +598,10 @@ public class LeagueService {
 
             League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+
+            if(player.getLeaguePasses()==0){
+                return responseService.generateErrorResponse("You have used all your passes. if you want to continue, buy more passes", HttpStatus.BAD_REQUEST);
+            }
 
             // Validate team name
             if (!teamName.equalsIgnoreCase(league.getTeamChallengingVendorName()) &&
@@ -638,13 +685,14 @@ public class LeagueService {
             leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
             player.setLeagueRoom(null);
             player.setTeamName(null);
+            leagueRoomRepository.save(leagueRoom);
 
             List<Player> remainingPlayers = playerRepository.findAllByLeagueRoom(leagueRoom);
             if (remainingPlayers.isEmpty()) {
                 leagueRoom.setStatus(LeagueRoomStatus.COMPLETED);
                 leagueRoomRepository.save(leagueRoom);
             }
-            playerRepository.save(player);
+            em.persist(player);
 
             return responseService.generateSuccessResponse("Player left the League Room ", league.getLeagueUrl(), HttpStatus.OK);
         } catch (Exception e) {
@@ -679,6 +727,7 @@ public class LeagueService {
 
             player.setLeagueRoom(leagueRoom);
             player.setTeamName(teamName);
+            player.setLeaguePasses(player.getLeaguePasses()-1);
 
 //            player.setPlayerStatus(PlayerStatus.PLAYING);
 
