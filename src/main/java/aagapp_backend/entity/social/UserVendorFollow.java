@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
         name = "user_vendor_follow",
         indexes = {
                 @Index(name = "idx_user_id", columnList = "user_id"),
-//                @Index(name = "idx_vendor_id", columnList = "vendor_id"),
+                @Index(name = "idx_vendor_id_user_vendor_follow", columnList = "vendor_id"),
                 @Index(name = "idx_followed_at", columnList = "followedAt")
         }
 )

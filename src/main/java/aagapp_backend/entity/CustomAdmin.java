@@ -19,10 +19,8 @@ import java.util.Date;
         name = "custom_admin",
         indexes = {
                 @Index(name = "idx_user_name", columnList = "user_name"),
-//                @Index(name = "idx_mobile_number", columnList = "mobileNumber"),
-                @Index(name = "idx_country_code", columnList = "country_code"),
-//                @Index(name = "idx_created_at", columnList = "created_at"),
-//                @Index(name = "idx_updated_at", columnList = "updated_at")
+                @Index(name = "idx_mobile_number_custom_admin", columnList = "mobileNumber"),
+                @Index(name = "idx_country_code", columnList = "country_code")
         }
 )
 @AllArgsConstructor
