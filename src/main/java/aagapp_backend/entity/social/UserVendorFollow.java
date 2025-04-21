@@ -33,7 +33,6 @@ public class UserVendorFollow {
     @JoinColumn(name = "user_id", referencedColumnName = "customerId")
     private CustomCustomer user;
 
-
     @ManyToOne
     @JoinColumn(name = "vendor_id", referencedColumnName = "service_provider_id")
     private VendorEntity vendor;

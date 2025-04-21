@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -135,12 +136,19 @@ public class LeaderBoardTournament {
     private LeaderboardDto mapToLeaderboardDto(LeagueResultRecord record) {
         Player player = record.getPlayer();
 
+        BigDecimal totalCollection = BigDecimal.valueOf(record.getLeague().getFee()).multiply(BigDecimal.valueOf(record.getLeague().getMaxPlayersPerTeam()));
+
+        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(0.63));
+
         return new LeaderboardDto(
                 player.getPlayerId(),
                 player.getCustomer().getName(),
                 player.getCustomer().getProfilePic(),
                 record.getScore(),
-                record.getIsWinner()
+                record.getIsWinner(),
+                userWin.stripTrailingZeros().doubleValue()
+
+
         );
     }
 }
