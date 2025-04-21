@@ -22,7 +22,6 @@ import java.util.List;
 @Table(
         name = "players",
         indexes = {
-//                @Index(name = "idx_player_status", columnList = "player_status"),
                 @Index(name = "idx_player_name", columnList = "playerName"),
                 @Index(name = "idx_game_room_id", columnList = "game_room_id"),
                 @Index(name = "idx_league_room_id", columnList = "league_room_id"),

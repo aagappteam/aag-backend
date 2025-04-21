@@ -15,11 +15,11 @@ import java.time.LocalDateTime;
 @Table(
         name = "wallet",
         indexes = {
-//                @Index(name = "idx_customer_id", columnList = "customerId"),
+                @Index(name = "idx_customer_id_wallet", columnList = "customerId"),
                 @Index(name = "idx_unplayed_balance", columnList = "unplayed_balance"),
-//                @Index(name = "idx_winning_amount", columnList = "winning_amount"),
-//                @Index(name = "idx_created_at", columnList = "created_at"),
-//                @Index(name = "idx_updated_at", columnList = "updated_at")
+                @Index(name = "idx_winning_amount_wallet", columnList = "winning_amount"),
+                @Index(name = "idx_created_at_wallet", columnList = "created_at"),
+                @Index(name = "idx_updated_at_wallet", columnList = "updated_at")
         }
 )
 @Data

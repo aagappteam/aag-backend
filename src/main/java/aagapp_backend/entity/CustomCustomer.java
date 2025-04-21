@@ -26,11 +26,11 @@ import java.util.Set;
 @Table(
         name = "CUSTOM_USER",
         indexes = {
-//                @Index(name = "idx_mobile_number", columnList = "mobile_number"),
+                @Index(name = "idx_mobile_number_CUSTOM_USER", columnList = "mobile_number"),
                 @Index(name = "idx_email", columnList = "email"),
-//                @Index(name = "idx_profile_status", columnList = "profile_status"),
+                @Index(name = "idx_profile_status_CUSTOM_USER", columnList = "profile_status"),
                 @Index(name = "idx_kyc_status", columnList = "kyc_status"),
-//                @Index(name = "idx_created_date", columnList = "created_date")
+                @Index(name = "idx_created_date_CUSTOM_USER", columnList = "created_date")
         }
 )
 @AllArgsConstructor
