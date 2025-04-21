@@ -15,5 +15,6 @@ public class LeaderboardDto {
     private String pictureUrl;
     private Integer score;
     private Boolean isWinner;
+    private Double winningAmount;
 }
 

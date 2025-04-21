@@ -14,7 +14,15 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.util.Date;
 
 @Entity
-@Table(name = "customer_bank_details")
+@Table(
+        name = "customer_bank_details",
+        indexes = {
+                @Index(name = "idx_customer_id", columnList = "customer_id"),
+                @Index(name = "idx_account_number", columnList = "account_number"),
+                @Index(name = "idx_ifsc_code", columnList = "ifsc_code"),
+                @Index(name = "idx_created_date_customer_bank_details", columnList = "created_date")
+        }
+)
 @Getter
 @Setter
 @AllArgsConstructor

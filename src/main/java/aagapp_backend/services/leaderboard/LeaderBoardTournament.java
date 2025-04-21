@@ -7,7 +7,7 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.players.Player;
-import aagapp_backend.entity.tournament.TouranamentRoomWinner;
+import aagapp_backend.entity.tournament.TournamentRoomWinner;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.ThemeRepository;
@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -63,15 +64,15 @@ public class LeaderBoardTournament {
         ThemeEntity theme = themeOpt.get();
 
         // 3. Fetch all winners (players with scores)
-        Page<TouranamentRoomWinner> winnersPage = tournamentRoomWinnerRepository.findByTournamentRoomId(tournamentId, pageable);
-        List<TouranamentRoomWinner> winners = winnersPage.getContent();
+        Page<TournamentRoomWinner> winnersPage = tournamentRoomWinnerRepository.findByTournamentRoomId(tournamentId, pageable);
+        List<TournamentRoomWinner> winners = winnersPage.getContent();
 
         // 4. Fetch total players in game rooms (sum of maxPlayers from GameRoom)
         long totalPlayers = tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId);
 
         // 5. Prepare player list
         List<LeaderboardResponseDTO> playerList = new ArrayList<>();
-        for (TouranamentRoomWinner winner : winners) {
+        for (TournamentRoomWinner winner : winners) {
             Player player = winner.getPlayer();
 
             Optional<CustomCustomer> playerDetails = customCustomerRepository.findById(player.getPlayerId());
@@ -135,12 +136,19 @@ public class LeaderBoardTournament {
     private LeaderboardDto mapToLeaderboardDto(LeagueResultRecord record) {
         Player player = record.getPlayer();
 
+        BigDecimal totalCollection = BigDecimal.valueOf(record.getLeague().getFee()).multiply(BigDecimal.valueOf(record.getLeague().getMaxPlayersPerTeam()));
+
+        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(0.63));
+
         return new LeaderboardDto(
                 player.getPlayerId(),
                 player.getCustomer().getName(),
                 player.getCustomer().getProfilePic(),
                 record.getScore(),
-                record.getIsWinner()
+                record.getIsWinner(),
+                userWin.stripTrailingZeros().doubleValue()
+
+
         );
     }
 }

@@ -1003,14 +1003,6 @@ public void updateDailylimit() {
             List<Game> games = query.getResultList();
 
 
-
-/*            games.forEach(game -> {
-                game.setCreatedDate(convertToKolkataTime(game.getCreatedDate()));
-                game.setUpdatedDate(convertToKolkataTime(game.getUpdatedDate()));
-                game.setScheduledAt(convertToKolkataTime(game.getScheduledAt()));
-
-            });*/
-
             List<GetGameResponseDTO> gameResponseDTOs = games.stream()
                     .map(game -> new GetGameResponseDTO(
                             game.getId(),
@@ -1100,7 +1092,39 @@ public void updateDailylimit() {
         }
         return null;  // Handle null cases
     }
+    @Transactional
+    private void updateGameStatusToActive(Long vendorId) {
+        try {
+            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
+            String sql = "SELECT * " +
+                    "FROM aag_ludo_game g WHERE g.vendor_id = :vendorId " +
+                    "AND g.scheduled_at <= :nowInKolkata AND g.status = :status";
+
+            String activeStatus = GameStatus.SCHEDULED.name();
+
+            Query query = em.createNativeQuery(sql, Game.class);
+            query.setParameter("vendorId", vendorId);
+            query.setParameter("nowInKolkata", nowInKolkata);
+            query.setParameter("status", activeStatus);
+
+            List<Game> games = query.getResultList();
+
+            for (Game game : games) {
+
+                game.setStatus(GameStatus.ACTIVE);
+                game.setScheduledAt(nowInKolkata);
+                game.setUpdatedDate(nowInKolkata);
+                gameRepository.save(game);
+                System.out.println("Game ID: " + game.getId() + " status updated to ACTIVE.");
+
+            }
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error updating game statuses: " + e.getMessage(), e);
+        }
+    }
 
     @Transactional
     @Async
@@ -1116,9 +1140,7 @@ public void updateDailylimit() {
             Query query = em.createNativeQuery(sql, League.class);
             query.setParameter("vendorId", vendorId);
             query.setParameter("scheduledStatus", Constant.SCHEDULED);
-/*
-            query.setParameter("activeStatus", Constant.ACTIVE);
-*/
+
 
             List<League> leagues = query.getResultList();
 
@@ -1139,40 +1161,7 @@ public void updateDailylimit() {
         }
     }
 
-    @Transactional
-    @Async
-    private void updateGameStatusToActive(Long vendorId) {
-        try {
-            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
-            String sql = "SELECT * " +
-                    "FROM aag_ludo_game g WHERE g.vendor_id = :vendorId " +
-                    "AND g.scheduled_at <= :nowInKolkata AND g.status = :status";
-
-            String activeStatus = GameStatus.SCHEDULED.name();
-
-            Query query = em.createNativeQuery(sql, Game.class);
-            query.setParameter("vendorId", vendorId);
-            query.setParameter("nowInKolkata", nowInKolkata);
-            query.setParameter("status", activeStatus);
-
-            List<Game> games = query.getResultList();
-
-            for (Game game : games) {
-
-                    game.setStatus(GameStatus.ACTIVE);
-                    game.setScheduledAt(nowInKolkata);
-                    game.setUpdatedDate(nowInKolkata);
-                    gameRepository.save(game);
-                    System.out.println("Game ID: " + game.getId() + " status updated to ACTIVE.");
-
-            }
-
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error updating game statuses: " + e.getMessage(), e);
-        }
-    }
 
     public ResponseEntity<?> getRoomById(Long roomId) {
         try {

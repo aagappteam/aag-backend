@@ -1,4 +1,3 @@
-/*
 package aagapp_backend.entity;
 
 import jakarta.annotation.Nullable;
@@ -29,4 +28,3 @@ public class Test {
     @Column(name = "mobile_number", unique = true)
     private String mobileNumber;
 }
-*/

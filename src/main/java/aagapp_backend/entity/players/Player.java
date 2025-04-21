@@ -3,7 +3,6 @@ package aagapp_backend.entity.players;
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.game.GameRoom;
-import aagapp_backend.entity.game.Token;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.enums.PlayerStatus;
@@ -23,7 +22,6 @@ import java.util.List;
 @Table(
         name = "players",
         indexes = {
-//                @Index(name = "idx_player_status", columnList = "player_status"),
                 @Index(name = "idx_player_name", columnList = "playerName"),
                 @Index(name = "idx_game_room_id", columnList = "game_room_id"),
                 @Index(name = "idx_league_room_id", columnList = "league_room_id"),
