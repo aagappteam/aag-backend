@@ -59,7 +59,10 @@ public class Tournament {
     @Nullable
     private int move;
 
+    @Enumerated(EnumType.STRING)
     private TournamentStatus status;
+
+
     private String shareableLink;
 
     @ManyToOne

@@ -1,11 +1,11 @@
 package aagapp_backend.repository.tournament;
 
-import aagapp_backend.entity.tournament.TouranamentRoomWinner;
+import aagapp_backend.entity.tournament.TournamentRoomWinner;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface TournamentRoomWinnerRepository extends JpaRepository<TouranamentRoomWinner, Long> {
+public interface TournamentRoomWinnerRepository extends JpaRepository<TournamentRoomWinner, Long> {
 
-    Page<TouranamentRoomWinner> findByTournamentRoomId(Long tournamentId, Pageable pageable);
+    Page<TournamentRoomWinner> findByTournamentRoomId(Long tournamentId, Pageable pageable);
 }

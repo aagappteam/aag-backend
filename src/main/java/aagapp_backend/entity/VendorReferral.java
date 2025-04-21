@@ -9,7 +9,13 @@ import lombok.Setter;
 
 
 @Entity
-@Table(name = "vendor_referral_table")
+@Table(
+        name = "vendor_referral_table",
+        indexes = {
+                @Index(name = "idx_vendor_referrer_id", columnList = "vendor_id"),
+                @Index(name = "idx_vendor_referred_id", columnList = "referred_id")
+        }
+)
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

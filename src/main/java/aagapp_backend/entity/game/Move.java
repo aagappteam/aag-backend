@@ -9,6 +9,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
+@Table(
+        indexes = {
+                @Index(name = "idx_gameId", columnList = "gameId"),
+                @Index(name = "idx_playerId", columnList = "playerId"),
+                @Index(name = "idx_moveNumber", columnList = "moveNumber"),
+                @Index(name = "idx_gameRoom", columnList = "game_room_id")
+        }
+)
 @Getter
 @Setter
 @AllArgsConstructor

@@ -2,38 +2,44 @@ package aagapp_backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.annotation.Nullable;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
 
 @Entity
 @Table(
-        name = "vendor_bank_details"
+        name = "customer_bank_details",
+        indexes = {
+                @Index(name = "idx_customer_id", columnList = "customer_id"),
+                @Index(name = "idx_account_number", columnList = "account_number"),
+                @Index(name = "idx_ifsc_code", columnList = "ifsc_code"),
+//                @Index(name = "idx_created_date", columnList = "created_date")
+        }
 )
-@AllArgsConstructor
-@NoArgsConstructor
 @Getter
 @Setter
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class VendorBankDetails {
+@AllArgsConstructor
+@NoArgsConstructor
+public class BankDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "service_provider_id")
-    @JsonBackReference
-    private VendorEntity vendorEntity;
 
-    @Column(name = "name", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "customer_id")
+    @JsonBackReference
+    private CustomCustomer customer;
+
+    @Column(name = "customer_name", nullable = false)
     private String customerName;
 
     @Column(name = "account_number", nullable = false, unique = true)
@@ -61,3 +67,4 @@ public class VendorBankDetails {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
 }
+

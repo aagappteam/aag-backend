@@ -7,7 +7,7 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.players.Player;
-import aagapp_backend.entity.tournament.TouranamentRoomWinner;
+import aagapp_backend.entity.tournament.TournamentRoomWinner;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.ThemeRepository;
@@ -64,15 +64,15 @@ public class LeaderBoardTournament {
         ThemeEntity theme = themeOpt.get();
 
         // 3. Fetch all winners (players with scores)
-        Page<TouranamentRoomWinner> winnersPage = tournamentRoomWinnerRepository.findByTournamentRoomId(tournamentId, pageable);
-        List<TouranamentRoomWinner> winners = winnersPage.getContent();
+        Page<TournamentRoomWinner> winnersPage = tournamentRoomWinnerRepository.findByTournamentRoomId(tournamentId, pageable);
+        List<TournamentRoomWinner> winners = winnersPage.getContent();
 
         // 4. Fetch total players in game rooms (sum of maxPlayers from GameRoom)
         long totalPlayers = tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId);
 
         // 5. Prepare player list
         List<LeaderboardResponseDTO> playerList = new ArrayList<>();
-        for (TouranamentRoomWinner winner : winners) {
+        for (TournamentRoomWinner winner : winners) {
             Player player = winner.getPlayer();
 
             Optional<CustomCustomer> playerDetails = customCustomerRepository.findById(player.getPlayerId());

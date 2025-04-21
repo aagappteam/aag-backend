@@ -14,7 +14,7 @@ import java.util.*;
 @Entity
 @Table(name = "game_room_winner",
         indexes = {
-//                @Index(name = "idx_game_id", columnList = "game_id"),  // Index on game_id
+                @Index(name = "idx_game_id_game_room_winner", columnList = "game_id"),  // Index on game_id
                 @Index(name = "idx_player_id", columnList = "player_id")  // Index on player_id
         })
 @Getter
