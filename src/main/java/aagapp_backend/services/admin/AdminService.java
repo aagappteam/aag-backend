@@ -54,6 +54,7 @@ public class AdminService
     private RateLimiterService rateLimiterService;
     private RoleService roleService;
 
+
     @PersistenceContext
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
@@ -107,6 +108,9 @@ public class AdminService
         this.roleService = roleService;
     }
     public CustomAdmin findAdminByPhone(String mobile_number, String countryCode) {
+        if (countryCode == null) {
+            countryCode = Constant.COUNTRY_CODE;
+        }
 
         return entityManager.createQuery(Constant.PHONE_QUERY_ADMIN, CustomAdmin.class)
                 .setParameter("mobileNumber", mobile_number)

@@ -38,7 +38,7 @@ public class JwtUtil {
                    RoleService roleService,
                    CustomCustomerService customCustomerService,
                    @Lazy TokenBlacklist tokenBlacklist
-                   ) {
+    ) {
         this.exceptionHandling = exceptionHandling;
         this.roleService = roleService;
         this.customCustomerService = customCustomerService;
@@ -84,9 +84,9 @@ public class JwtUtil {
                     .setIssuedAt(new Date())
                     .signWith(getSignInKey(), SignatureAlgorithm.HS256);
 
-            if (!isMobile) {
-                jwtBuilder.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)); // 10 hours
-            }
+            /*if (!isMobile) {
+               jwtBuilder.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)); // 10 hours
+            }*/
 
             return jwtBuilder.compact();
 
@@ -97,13 +97,13 @@ public class JwtUtil {
     }
 
     private boolean isMobileDevice(String userAgent) {
-       try{
-           String devicePattern = "android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini";
-           return userAgent != null && userAgent.toLowerCase().matches(".*(" + devicePattern + ").*");
-       }catch (Exception e){
-           exceptionHandling.handleException(e);
-           return false;
-       }
+        try{
+            String devicePattern = "android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini";
+            return userAgent != null && userAgent.toLowerCase().matches(".*(" + devicePattern + ").*");
+        }catch (Exception e){
+            exceptionHandling.handleException(e);
+            return false;
+        }
     }
 
 
@@ -141,6 +141,7 @@ public class JwtUtil {
             if (token == null || token.isEmpty()) {
                 throw new IllegalArgumentException("Token is required");
             }
+
 
             String userAgent = extractUserAgent(token);
 
@@ -202,11 +203,18 @@ public class JwtUtil {
                 return false;
             }
             int role=extractRoleId(token);
+            String roleName = roleService.findRoleName(role); // Get the role name from the role ID
+
+            System.out.println(roleName + " " + role);
             CustomCustomer existingCustomer=null;
             VendorEntity existingServiceProvider=null;
             CustomAdmin existingAdmin=null;
+            System.out.println(roleName + " " + id);
+
             if(roleService.findRoleName(role).equals(Constant.roleUser)){
-                existingCustomer = customCustomerService.readCustomerById(id);
+
+
+                    existingCustomer = customCustomerService.readCustomerById(id);
                 if (existingCustomer == null) {
                     return false;
                 }
@@ -224,11 +232,10 @@ public class JwtUtil {
                     return false;
                 }
             }
+            return true;
+/*            String storedIpAddress = claims.get("ipAddress", String.class);
 
-            String storedIpAddress = claims.get("ipAddress", String.class);
-
-
-            return ipAddress.trim().equals(storedIpAddress != null ? storedIpAddress.trim() : "");
+            return ipAddress.trim().equals(storedIpAddress != null ? storedIpAddress.trim() : "");*/
         } catch (ExpiredJwtException e) {
             logoutUser(token);
             return false;
@@ -259,22 +266,26 @@ public class JwtUtil {
             Date expiration = claims.getExpiration();
 
             if (isMobile && expiration == null) {
-                return false; // Mobile token doesn't have expiration
+                return false;
             }
             Long id = this.extractId(token);
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerById(id);
-            
-            if(expiration!=null){
-                if (existingCustomer != null) {
-                    existingCustomer.setToken(null);
-                    entityManager.persist(existingCustomer);
-                } 
 
-                return expiration != null && expiration.before(new Date());
+            if (expiration != null) {
+                boolean isExpired = expiration.before(new Date());
+
+                if (isExpired) {
+                    // If the customer exists and the token is expired, invalidate their token
+                    if (existingCustomer != null) {
+                        existingCustomer.setToken(null);
+                        entityManager.persist(existingCustomer);
+                    }
+                }
+
+                return isExpired;
             }
-            
-            return false;   
+            return false;
 
 
 

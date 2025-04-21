@@ -4,8 +4,11 @@ import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.otp.Otp;
 import com.twilio.Twilio;
 import com.twilio.exception.ApiException;
+import com.twilio.rest.api.v2010.account.Message;
+import com.twilio.type.PhoneNumber;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +29,7 @@ import java.util.Random;
     @Service
     public class TwilioServiceForAdmin {
 
-
+        private Otp otpservice;
         private ExceptionHandlingImplement exceptionHandling;
         private String accountSid;
         private String authToken;
@@ -34,6 +37,14 @@ import java.util.Random;
         private AdminService adminService;
         private ResponseService responseService;
         private EntityManager entityManager;
+        @Value("${service.provider.sid}")
+        private String serviceProviderSid;
+
+
+        @Autowired
+        public void setOtpservice(Otp otpservice) {
+            this.otpservice = otpservice;
+        }
 
         @Autowired
         public void setExceptionHandling(ExceptionHandlingImplement exceptionHandling) {
@@ -44,6 +55,7 @@ import java.util.Random;
         public void setAccountSid(String accountSid) {
             this.accountSid = accountSid;
         }
+
 
         @Value("${twilio.authToken}")
         public void setAuthToken(String authToken) {
@@ -84,11 +96,8 @@ import java.util.Random;
                 Twilio.init(accountSid, authToken);
                 String completeMobileNumber = countryCode + mobileNumber;
                 String otp = generateOTPForAdmin();
-        /*            Message message = Message.creator(
-                            new PhoneNumber(completeMobileNumber),
-                            new PhoneNumber(twilioPhoneNumber),
-                            messageBody
-                    ).create();*/
+                otpservice.sendOtp(countryCode,mobileNumber,otp);
+
 
                 CustomAdmin existingAdmin = adminService.findAdminByPhone(mobileNumber,countryCode);
 
@@ -103,10 +112,12 @@ import java.util.Random;
                     existingAdmin.setOtp(otp);
                     entityManager.merge(existingAdmin);
                 }
-                Map<String,Object> details=new HashMap<>();
-                details.put("status", ApiConstants.STATUS_SUCCESS);
-                details.put("otp",otp);
-                return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY,details, HttpStatus.OK);
+                String maskedNumber = this.genereateMaskednumber(mobileNumber);
+
+              String res =   ApiConstants.OTP_SENT_SUCCESSFULLY + " on " + maskedNumber;
+               /* Map<String,Object> details=new HashMap<>();
+                details.put("otp",otp);*/
+                return responseService.generateSuccessResponse(res,otp, HttpStatus.OK);
 
             } catch (ApiException e) {
                 exceptionHandling.handleApiException(e);
@@ -117,6 +128,21 @@ import java.util.Random;
             }
         }
 
+
+        public synchronized String genereateMaskednumber(String mobileNumber) {
+            String lastFourDigits = mobileNumber.substring(mobileNumber.length() - 4);
+
+            int numXs = mobileNumber.length() - 4;
+
+            StringBuilder maskBuilder = new StringBuilder();
+            for (int i = 0; i < numXs; i++) {
+                maskBuilder.append('x');
+            }
+            String mask = maskBuilder.toString();
+
+            String maskedNumber = mask + lastFourDigits;
+            return maskedNumber;
+        }
         private synchronized String generateOTPForAdmin() {
             Random random = new Random();
             int otp = 1000 + random.nextInt(8999);

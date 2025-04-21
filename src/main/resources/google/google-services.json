@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "642715568755",
+    "project_id": "aapka-apna-game",
+    "storage_bucket": "aapka-apna-game.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:642715568755:android:cc7b8a15de03759d873806",
+        "android_client_info": {
+          "package_name": "com.aag.vendor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaFxPpRmhygL0dnNl-U0HhDvVjwjOsZ_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

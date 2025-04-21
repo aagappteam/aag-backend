@@ -1,18 +1,29 @@
 package aagapp_backend.entity;
 
+import aagapp_backend.entity.devices.UserDevice;
+import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.KycStatus;
+import aagapp_backend.enums.ProfileStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.CurrentTimestamp;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
+import java.util.Set;
 
 @Entity
-@Table(name = "CUSTOM_CUSTOMER")
+@Table(name = "CUSTOM_USER")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -26,6 +37,10 @@ public class CustomCustomer {
     @Column(name = "customerId")
     private Long id;
 
+    @OneToMany(mappedBy = "user")
+    @JsonBackReference
+    private Set<UserDevice> devices;
+
     @Nullable
     private String name;
 
@@ -35,13 +50,33 @@ public class CustomCustomer {
     @Nullable
     private String password;
 
+    @Nullable // TODO-;
+    @Column(name = "profile_picture")
+    private String profilePic="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
+
+    @Nullable
+    @Column(name = "profile_status")
+    private ProfileStatus profileStatus;
+
+    @Nullable
+    @Column(name = "referral_code", unique = true)
+    private String referralCode;
 
 
     @Nullable
-    private String profilePic;
+    @Column(name = "referred_count")
+    private int referralCount;
 
     @Nullable
-    private String profileStatus;
+    @Column(name = "bonus_balance")
+    private BigDecimal bonusBalance = BigDecimal.ZERO;
+
+
+    @OneToOne(mappedBy = "customCustomer" ,cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @JsonManagedReference
+    private Wallet wallet;
+
 
     @NotNull(message = "Mobile number is required")
     @Column(name = "mobile_number", unique = true)
@@ -88,6 +123,9 @@ public class CustomCustomer {
     @Column(name = "city")
     private String city;
 
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
     @Nullable
     @Column(length = 512)
     private String token;
@@ -96,14 +134,27 @@ public class CustomCustomer {
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BankDetails> bankDetails = new ArrayList<>();
 
-    // Created Date with current timestamp
+    @Column(name = "kyc_status")
+    private KycStatus kycStatus = KycStatus.NOT_SUBMITTED;
+
+    @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Player player;
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdDate;
 
-    @Nullable
+    @CurrentTimestamp
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = new Date();
+    }
+
+
 }
