@@ -21,6 +21,7 @@ import java.util.Date;
                 @Index(name = "idx_user_name", columnList = "user_name"),
                 @Index(name = "idx_mobile_number_custom_admin", columnList = "mobileNumber"),
                 @Index(name = "idx_country_code", columnList = "country_code")
+
         }
 )
 @AllArgsConstructor

@@ -31,6 +31,7 @@ import java.util.Set;
                 @Index(name = "idx_profile_status_CUSTOM_USER", columnList = "profile_status"),
                 @Index(name = "idx_kyc_status", columnList = "kyc_status"),
                 @Index(name = "idx_created_date_CUSTOM_USER", columnList = "created_date")
+
         }
 )
 @AllArgsConstructor

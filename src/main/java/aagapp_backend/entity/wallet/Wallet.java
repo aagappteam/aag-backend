@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_winning_amount_wallet", columnList = "winning_amount"),
                 @Index(name = "idx_created_at_wallet", columnList = "created_at"),
                 @Index(name = "idx_updated_at_wallet", columnList = "updated_at")
+
         }
 )
 @Data
