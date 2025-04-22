@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class MatchService {
-
     private static final double TAX_PERCENT = 0.28;
     private static final double VENDOR_PERCENT = 0.05;
     private static final double PLATFORM_PERCENT = 0.04;

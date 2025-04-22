@@ -1,6 +1,8 @@
 package aagapp_backend.components;
 
 
+import java.math.BigDecimal;
+
 public class Constant {
 
 
@@ -10,6 +12,7 @@ public class Constant {
     public static final String REFERAL_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     public static final Integer TENMOVES =10;
     public static final Integer SIXTEENMOVES =16;
+    public static final BigDecimal USER_PERCENTAGE = new BigDecimal("0.63");
 
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";

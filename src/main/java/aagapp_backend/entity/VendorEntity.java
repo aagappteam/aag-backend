@@ -205,7 +205,6 @@ public class VendorEntity {
         this.isFollowing = isFollowing;
     }
 
-
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = new Date();

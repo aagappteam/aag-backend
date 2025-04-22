@@ -1,5 +1,6 @@
 package aagapp_backend.services.leaderboard;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.dto.GameLeaderboardResponseDTO;
 import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.LeaderboardResponseDTO;
@@ -142,7 +143,7 @@ public class LeaderBoardLeague {
         Player player = record.getPlayer();
         BigDecimal totalCollection = BigDecimal.valueOf(record.getLeague().getFee()).multiply(BigDecimal.valueOf(record.getLeague().getMaxPlayersPerTeam()));
 
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(0.63));
+        BigDecimal userWin = totalCollection.multiply(Constant.USER_PERCENTAGE);
 
         return new LeaderboardDto(
                 player.getPlayerId(),

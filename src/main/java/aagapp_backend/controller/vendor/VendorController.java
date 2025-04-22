@@ -258,7 +258,6 @@ public class VendorController {
             }
 
 
-
             // Return result
             return ResponseService.generateSuccessResponseWithCount("List of vendors", results, totalCount, HttpStatus.OK);
 

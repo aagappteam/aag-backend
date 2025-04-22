@@ -16,6 +16,7 @@ public class DashboardResponseDTO {
 
     private Long id;
     private String gamename;
+    private Double fee;
 
     private Long aaggameid;
     private String gameIcon;

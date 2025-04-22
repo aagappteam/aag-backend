@@ -54,6 +54,7 @@ public class FAQController {
             // Return the response
             return ResponseService.generateSuccessResponse("FAQs fetched successfully", responseList, HttpStatus.OK);
         } catch (Exception e) {
+
             return ResponseService.generateErrorResponse("Error fetching FAQs: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
