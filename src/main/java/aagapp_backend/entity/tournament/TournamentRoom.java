@@ -15,11 +15,9 @@ import java.util.List;
 @Table(
         name = "tournament_room",
         indexes = {
-<<<<<<< HEAD
                 @Index(name = "idx_tournament_id", columnList = "tournament_id"),
-=======
-                @Index(name = "idx_tournament_id", columnList = "tournamentId"),
->>>>>>> b0a8c46 (code improvements)
+
+
 //                @Index(name = "idx_status", columnList = "status"),
                 @Index(name = "idx_gamepassword", columnList = "gamepassword")
         }

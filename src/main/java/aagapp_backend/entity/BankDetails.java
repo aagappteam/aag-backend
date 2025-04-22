@@ -22,6 +22,7 @@ import java.util.Date;
                 @Index(name = "idx_ifsc_code", columnList = "ifsc_code"),
                 @Index(name = "idx_created_date_customer_bank_details", columnList = "created_date")
 
+
         }
 )
 @Getter
