@@ -117,28 +117,7 @@ public class VendorController {
         }
     }
 
-    @GetMapping("/get-vendor/{serviceProviderId}")
-    public ResponseEntity<?> getVendorDetailsById(@PathVariable Long serviceProviderId,  @RequestParam(required = false) Long userId) {
-        try {
-            VendorEntity serviceProviderEntity = vendorService.getServiceProviderById(serviceProviderId);
-            if (serviceProviderEntity == null) {
-                return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
-            }
-            Map<String, Object> responseBody = serviceProviderService.VendorDetails( serviceProviderEntity).getBody();
-            if (userId != null) {
-                boolean isFollowing = followService.isUserFollowing(userId, serviceProviderEntity.getService_provider_id());
-                System.out.println("Is following: " + isFollowing + " - User ID: " + userId + " - Service Provider ID: " + serviceProviderEntity.getService_provider_id());
-                serviceProviderEntity.setIsFollowing(isFollowing);
-            }
 
-            return ResponseEntity.ok(responseBody);
-//            return responseService.generateSuccessResponse("Service provider details are", responseBody, HttpStatus.OK);
-
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
 
     @Transactional
     @DeleteMapping("delete/{serviceProviderId}")
@@ -187,11 +166,7 @@ public class VendorController {
             int startPosition = page * limit;
 
             if (vendorId != null) {
-                VendorEntity serviceProvider = entityManager.find(VendorEntity.class, vendorId);
-                if (serviceProvider == null) {
-                    return ResponseService.generateErrorResponse("Service provider not found", HttpStatus.NOT_FOUND);
-                }
-                return ResponseService.generateSuccessResponse("Service provider details fetched successfully", serviceProvider, HttpStatus.OK);
+                   return this.getVendorDetailsById(vendorId,userId);
             }
 
             // Base query builders
@@ -200,6 +175,7 @@ public class VendorController {
 
             // Where conditions
             List<String> conditions = new ArrayList<>();
+
             if (status != null && !status.isEmpty()) {
                 boolean isActive = Boolean.parseBoolean(status); // "true" or "false" string to boolean
                 conditions.add("s.isActive = :status");
@@ -250,23 +226,51 @@ public class VendorController {
             // Execute queries
             Long totalCount = (Long) countQuery.getSingleResult();
             List<VendorEntity> results = query.getResultList();
-            if (userId != null) {
-                for (VendorEntity vendor : results) {
-                    boolean isFollowing = followService.isUserFollowing(userId, vendor.getService_provider_id());
-                    vendor.setIsFollowing(isFollowing);
+
+
+            List<Map<String, Object>> vendorDetailList = new ArrayList<>();
+
+            for (VendorEntity vendor : results) {
+
+
+                Map<String, Object> vendorDetailsData = serviceProviderService.VendorDetails(vendor,userId).getBody();
+                if (vendorDetailsData != null && vendorDetailsData.containsKey("data")) {
+                    vendorDetailList.add((Map<String, Object>) vendorDetailsData.get("data"));
                 }
             }
 
 
-
             // Return result
-            return ResponseService.generateSuccessResponseWithCount("List of vendors", results, totalCount, HttpStatus.OK);
+            return ResponseService.generateSuccessResponseWithCount("List of vendors", vendorDetailList, totalCount, HttpStatus.OK);
+
+//            return ResponseService.generateSuccessResponseWithCount("List of vendors", results, totalCount, HttpStatus.OK);
 
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+    @GetMapping("/get-vendor/{serviceProviderId}")
+    public ResponseEntity<?> getVendorDetailsById(@PathVariable Long serviceProviderId,  @RequestParam(required = false) Long userId) {
+        try {
+            VendorEntity serviceProviderEntity = vendorService.getServiceProviderById(serviceProviderId);
+            if (serviceProviderEntity == null) {
+                return responseService.generateErrorResponse("Service provider not found " + serviceProviderId, HttpStatus.BAD_REQUEST);
+            }
+            Map<String, Object> responseBody = serviceProviderService.VendorDetails( serviceProviderEntity,null).getBody();
+            if (userId != null) {
+                boolean isFollowing = followService.isUserFollowing(userId, serviceProviderEntity.getService_provider_id());
+                serviceProviderEntity.setIsFollowing(isFollowing);
+            }
+
+            return ResponseEntity.ok(responseBody);
+//            return responseService.generateSuccessResponse("Service provider details are", responseBody, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 

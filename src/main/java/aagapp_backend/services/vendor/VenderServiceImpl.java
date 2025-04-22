@@ -15,6 +15,7 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.payment.PaymentService;
 import aagapp_backend.services.referal.ReferralService;
+import aagapp_backend.services.social.UserVendorFollowService;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
@@ -43,6 +44,7 @@ import java.util.*;
 
 @Service
 public class VenderServiceImpl implements VenderService {
+    private UserVendorFollowService followService;
 
     private final EntityManager entityManager;
     private final ExceptionHandlingImplement exceptionHandling;
@@ -59,9 +61,9 @@ public class VenderServiceImpl implements VenderService {
     private final PaymentService paymentService;
     private final RateLimiterService rateLimiterService;
     private final PasswordEncoder passwordEncoder;
-
     @Autowired
     public VenderServiceImpl(
+            @Lazy UserVendorFollowService followService,
             EntityManager entityManager,
             @Lazy PaymentService paymentService,
             ExceptionHandlingImplement exceptionHandling,
@@ -78,6 +80,7 @@ public class VenderServiceImpl implements VenderService {
             @Lazy RateLimiterService rateLimiterService,
             PasswordEncoder passwordEncoder
     ) {
+        this.followService = followService;
         this.entityManager = entityManager;
         this.paymentService = paymentService;
         this.exceptionHandling = exceptionHandling;
@@ -313,8 +316,10 @@ public class VenderServiceImpl implements VenderService {
         return ResponseEntity.ok(responseBody);
     }
 
-    public ResponseEntity<Map<String, Object>> VendorDetails(VendorEntity vendorEntity) {
+    public ResponseEntity<Map<String, Object>> VendorDetails(VendorEntity vendorEntity, Long userId) {
         Map<String, Object> responseBody = new HashMap<>();
+
+
 
         List<ReferralDTO> sentReferrals = getSentReferrals(vendorEntity.getService_provider_id());
         ReferralDTO receivedReferral = getReceivedReferral(vendorEntity.getService_provider_id());
@@ -322,6 +327,11 @@ public class VenderServiceImpl implements VenderService {
         Map<String, Object> data = new HashMap<>();
         data.put("venderDetails", vendorEntity);
         data.put("sentReferrals", sentReferrals);
+        if (userId != null) {
+            boolean isFollowing = followService.isUserFollowing(userId, vendorEntity.getService_provider_id());
+            vendorEntity.setIsFollowing(isFollowing);
+
+        }
         data.put("receivedReferral", receivedReferral); // Assuming this is a single referral
         responseBody.put("status_code", HttpStatus.OK.value());
         responseBody.put("data", data);
