@@ -1,8 +1,8 @@
 package aagapp_backend.components;
+import java.math.BigDecimal;
 
 
 public class Constant {
-
 
     public static final String BEARER_CONST= "Bearer ";
     public static final String REFERRAL_CODE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.referralCode = :referralCode";
@@ -10,7 +10,7 @@ public class Constant {
     public static final String REFERAL_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     public static final Integer TENMOVES =10;
     public static final Integer SIXTEENMOVES =16;
-
+    public static final BigDecimal USER_PERCENTAGE = new BigDecimal("0.63");
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
