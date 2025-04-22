@@ -127,7 +127,7 @@ public class LeaderBoardTournament {
         }
 
         // Sort by score in descending order
-        results.sort(Comparator.comparing(LeagueResultRecord::getScore).reversed());
+        results.sort(Comparator.comparing(LeagueResultRecord::getTotalScore).reversed());
 
         return results.stream()
                 .map(this::mapToLeaderboardDto)
@@ -144,7 +144,7 @@ public class LeaderBoardTournament {
                 player.getPlayerId(),
                 player.getCustomer().getName(),
                 player.getCustomer().getProfilePic(),
-                record.getScore(),
+                record.getTotalScore(),
                 record.getIsWinner(),
                 userWin.stripTrailingZeros().doubleValue()
 
