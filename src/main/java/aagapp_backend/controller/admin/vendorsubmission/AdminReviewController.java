@@ -8,6 +8,7 @@ import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.faqs.FAQService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -227,7 +228,7 @@ public class AdminReviewController {
 
     // 2. Create a new FAQ
     @PostMapping("/createFaqs")
-    public ResponseEntity<?> createFAQ(@RequestBody FAQs faq) {
+    public ResponseEntity<?> createFAQ(@RequestBody @Valid FAQs faq) {
         try {
             FAQs createdFAQ = faqService.createFAQ(faq);
             return ResponseService.generateSuccessResponse("FAQ created successfully", createdFAQ, HttpStatus.CREATED);

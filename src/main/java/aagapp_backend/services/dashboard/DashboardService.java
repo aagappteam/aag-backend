@@ -129,15 +129,26 @@ public class DashboardService {
                 new PageDTO<>(influencerGames, influencerPage, 1, influencerGames.size())
         );
     }
-    private DashboardResponseDTO mapToDTO(Game game) {
-        return new DashboardResponseDTO(
+    private GetGameResponseDTO mapToDTO(Game game) {
+        return new GetGameResponseDTO(
                 game.getId(),
                 game.getName(),
+                game.getFee(),
+                game.getMove(),
+                game.getStatus(),
+                game.getShareableLink(),
                 game.getAaggameid(),
                 game.getImageUrl(),
                 game.getTheme() != null ? game.getTheme().getName() : null,
                 game.getTheme() != null ? game.getTheme().getImageUrl() : null,
-                game.getVendorEntity() != null ? game.getVendorEntity().getName() : null,
+                game.getCreatedDate() != null ? game.getCreatedDate() : null,
+
+                game.getScheduledAt() != null ? game.getScheduledAt() : null,
+
+                game.getEndDate() != null ? game.getEndDate() : null,
+                game.getMinPlayersPerTeam(),
+                game.getMaxPlayersPerTeam(),
+                game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
                 game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
         );
     }

@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class PopularGameDTO {
-    private DashboardResponseDTO game;
+    private GetGameResponseDTO game;
     private long roomCount;
 }
