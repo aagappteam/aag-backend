@@ -203,7 +203,7 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Pageable pageable = PageRequest.of(page, size,Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         try {
             Page<Challenge> challenges = leagueService.getChallengesByOpponentVendorIds(
@@ -231,7 +231,7 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Pageable pageable = PageRequest.of(page, size,Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         try {
             Page<Challenge> challenges = leagueService.getByVendorIdInAndStatus(
@@ -267,7 +267,6 @@ public class LeagueController {
     @PostMapping("/publishLeague/{vendorId}/{challengeId}")
     public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @PathVariable Long challengeId) {
         try {
-
 
 
             Challenge challenge = challangeRepository.findById(challengeId)
@@ -355,11 +354,32 @@ public class LeagueController {
         }
     }
 
+    @PostMapping("/buy-league-pass/{playerId}")
+    public ResponseEntity<?> buyLeaguePass(@PathVariable Long playerId) {
+        try {
+            // Call the service method
+            return leagueService.takePassForLeague(playerId);
+
+        } catch (RuntimeException e) {
+            // Handle known business logic errors
+            return responseService.generateErrorResponse(
+                    "Failed to purchase league pass: " + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        } catch (Exception e) {
+            // Handle unknown/internal errors
+            return responseService.generateErrorResponse(
+                    "An unexpected error occurred while purchasing league pass.",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
 
     @PostMapping("/joinLeague")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinLeagueRequest joinLeagueRequest) {
         try {
-            return leagueService.joinRoom(joinLeagueRequest.getPlayerId(), joinLeagueRequest.getLeagueId());
+            return leagueService.joinRoom(joinLeagueRequest.getPlayerId(), joinLeagueRequest.getLeagueId(), joinLeagueRequest.getTeamName());
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in joining game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -369,7 +389,7 @@ public class LeagueController {
     @PostMapping("/leftLeague")
     public ResponseEntity<?> leaveGameRoom(@RequestBody JoinLeagueRequest leaveRoomRequest) {
         try {
-            return leagueService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId());
+            return leagueService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId(), leaveRoomRequest.getTeamName());
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

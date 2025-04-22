@@ -45,6 +45,14 @@ public class League {
 
     private String gameName;
 
+    private String teamChallengingVendorName;
+
+    private Integer teamChallengingVendorScore;
+
+    private String teamOpponentVendorName;
+
+    private Integer teamOpponentVendorScore;
+
     @Column(name = "challenging_vendor_id")
     private Long challengingVendorId;
 

@@ -51,6 +51,12 @@ public class Player {
     @JoinColumn(name = "league_room_id")
     private LeagueRoom leagueRoom;
 
+    @Column(name = "team_name", nullable = true)
+    private String teamName;
+
+    @Column(name = "league_passes", nullable = false)
+    private int leaguePasses=0;
+
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "tournament_room_id")

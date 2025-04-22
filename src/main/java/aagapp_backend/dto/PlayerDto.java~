@@ -7,10 +7,10 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-
-public class PlayerDtoWinner {
+public class PlayerDto {
     private Long playerId;
+    private String name;
     private int score;
-    private String teamName;
+    private String pictureUrl;
 
 }
