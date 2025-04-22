@@ -12,13 +12,16 @@ import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.league.LeagueRoom;
-import aagapp_backend.entity.players.Player;
 
+import aagapp_backend.entity.league.LeagueRoomWinner;
+import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.repository.ChallangeRepository;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
@@ -102,6 +105,9 @@ public class LeagueService {
 
     @Autowired
     private LeagueResultRecordRepository leagueResultRecordRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     private ResponseService responseService;
@@ -202,6 +208,20 @@ public class LeagueService {
                     System.out.println("Error sending notification: " + e.getMessage());
                 }
             }
+            if (opponentVendor != null) {
+                Notification notification = new Notification();
+                notification.setRole("Vendor");
+
+                notification.setVendorId(opponentVendor.getService_provider_id());
+
+                notification.setDescription("League challenge");
+                notification.setDetails(vendor.getFirst_name() + " has challenged for a League");
+                notificationRepository.save(notification);
+
+            }
+
+
+
 
 
             return challenge;
