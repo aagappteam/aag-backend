@@ -1,7 +1,6 @@
-package aagapp_backend.controller.game;
+package aagapp_backend.controller.gamecomplete;
 
 import aagapp_backend.dto.*;
-import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -15,11 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/winning")
@@ -42,15 +39,16 @@ private GameRoomRepository gameRoomRepository;
     private  LeaderboardGame leaderboardService;
 
 
+//    process game result after game completion
     @PostMapping("/processGameResult")
     public ResponseEntity<?> processGameResult(@RequestBody GameResult gameResult) {
         try {
             // Process game result (you may want to keep this as is, or include some additional logic here)
-            List<PlayerDto> playersDetails =   matchService.processMatch(gameResult);
+               matchService.processMatch(gameResult);
 
             // Prepare the response
             Map<String, Object> response = new HashMap<>();
-            response.put("players", playersDetails);
+            response.put("players", gameResult);
             response.put("message", "Game results processed successfully.");
 
             return ResponseEntity.ok(response);
@@ -62,6 +60,7 @@ private GameRoomRepository gameRoomRepository;
     }
 
 
+//    if vendor wants to see leaderboard data for a specific game
     @GetMapping("/game/{gameId}")
     public ResponseEntity<?> getLeaderboard(
             @PathVariable Long gameId,
@@ -77,6 +76,7 @@ private GameRoomRepository gameRoomRepository;
         }
     }
 
+//    after game completion fetch leaderboard data and return it to client
     @GetMapping("/leaderboard")
     public ResponseEntity<?> getLeaderboard(
             @RequestParam Long gameId,
@@ -99,6 +99,5 @@ private GameRoomRepository gameRoomRepository;
             );
         }
     }
-
 
 }

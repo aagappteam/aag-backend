@@ -5,6 +5,7 @@ import aagapp_backend.dto.LeaderboardResponseDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.game.GameResultRecord;
 import aagapp_backend.entity.game.GameRoomWinner;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -35,6 +36,9 @@ public class LeaderboardGame {
     private GameRoomWinnerRepository gameRoomWinnerRepository;
 
     @Autowired
+    private GameResultRecordRepository gameResultRecordRepository;
+
+    @Autowired
     private PlayerRepository playerRepository;
 
     @Autowired
@@ -45,65 +49,7 @@ public class LeaderboardGame {
 
     @Autowired
     private CustomCustomerRepository customCustomerRepository;
-
-
-/*    public List<GameRoomWinner> getPaginatedWinners(Long gameId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<GameRoomWinner> winnerPage = gameRoomWinnerRepository.findByGame_Id(gameId, pageable);
-        return winnerPage.getContent();
-    }*/
-
-    /*public List<LeaderboardResponseDTO> getLeaderboard(Long gameId) {
-        // 1. Fetch the game details (gameName, gameFee, gameIcon)
-        Optional<Game> gameOpt = gameRepository.findById(gameId);
-        if (gameOpt.isEmpty()) {
-            throw new RuntimeException("Game not found with ID: " + gameId);
-        }
-        Game game = gameOpt.get();
-
-        // 2. Fetch the theme associated with the game
-        Optional<ThemeEntity> themeOpt = themeRepository.findById(game.getTheme().getId()); // Assuming Game has themeId
-        if (themeOpt.isEmpty()) {
-            throw new RuntimeException("Theme not found for game with ID: " + gameId);
-        }
-        ThemeEntity theme = themeOpt.get();
-
-        // 3. Fetch all winners (players with scores)
-        List<GameRoomWinner> winners =  gameRoomWinnerRepository.findByGame_Id(gameId);
-
-        // 4. Fetch total players in game rooms (sum of maxPlayers from GameRoom)
-        long totalPlayers = gameRoomRepository.sumMaxPlayersByGameId(gameId);
-
-        // 5. Prepare leaderboard response
-        List<LeaderboardResponseDTO> leaderboard = new ArrayList<>();
-        for (GameRoomWinner winner : winners) {
-            Player player = winner.getPlayer();
-
-            // Get player details from CustomCustomer
-            Optional<CustomCustomer> playerDetails = customCustomerRepository.findById(winner.getId());
-
-            if (playerDetails == null) {
-                throw new RuntimeException("Player details not found for player ID: " + player.getPlayerId());
-            }
-
-            // Populate the response DTO
-            LeaderboardResponseDTO response = new LeaderboardResponseDTO();
-            response.setPlayerId(player.getPlayerId());
-            response.setPlayerName(playerDetails.get().getName());
-            response.setProfilePicture(playerDetails.get().getProfilePic());
-            response.setScore(winner.getScore());
-            response.setGameName(game.getName());
-            response.setGameFee(game.getFee());
-            response.setGameIcon(game.getImageUrl());
-            response.setThemeName(theme.getName());
-            response.setTotalPlayers(totalPlayers);
-
-            leaderboard.add(response);
-        }
-
-        return leaderboard;
-    }*/
-   /* public GameLeaderboardResponseDTO getLeaderboard(Long gameId) {
+    public GameLeaderboardResponseDTO getLeaderboard(Long gameId, Pageable pageable) {
         // 1. Fetch the game details
         Optional<Game> gameOpt = gameRepository.findById(gameId);
         if (gameOpt.isEmpty()) {
@@ -118,16 +64,17 @@ public class LeaderboardGame {
         }
         ThemeEntity theme = themeOpt.get();
 
-        // 3. Fetch all winners (players with scores)
-        List<GameRoomWinner> winners = gameRoomWinnerRepository.findByGame_Id(gameId);
+        // 3. Fetch paginated winner records from GameResultRecord where isWinner = true
+        Page<GameResultRecord> winnersPage = gameResultRecordRepository
+                .findByGame_IdAndIsWinnerTrue(gameId, pageable);
 
         // 4. Fetch total players in game rooms (sum of maxPlayers from GameRoom)
         long totalPlayers = gameRoomRepository.sumMaxPlayersByGameId(gameId);
 
         // 5. Prepare player list
         List<LeaderboardResponseDTO> playerList = new ArrayList<>();
-        for (GameRoomWinner winner : winners) {
-            Player player = winner.getPlayer();
+        for (GameResultRecord result : winnersPage.getContent()) {
+            Player player = result.getPlayer();
 
             Optional<CustomCustomer> playerDetails = customCustomerRepository.findById(player.getPlayerId());
             if (playerDetails.isEmpty()) {
@@ -138,12 +85,15 @@ public class LeaderboardGame {
             playerDTO.setPlayerId(player.getPlayerId());
             playerDTO.setPlayerName(playerDetails.get().getName());
             playerDTO.setProfilePicture(playerDetails.get().getProfilePic());
-            playerDTO.setScore(winner.getScore());
+            playerDTO.setScore(result.getScore());
+            playerDTO.setWinningammount(
+                    result.getWinningammount() != null ? result.getWinningammount().stripTrailingZeros().doubleValue() : 0.0
+            );
 
             playerList.add(playerDTO);
         }
 
-        // 6. Return final wrapped DTO
+        // 6. Return final wrapped DTO with pagination metadata
         GameLeaderboardResponseDTO response = new GameLeaderboardResponseDTO();
         response.setGameName(game.getName());
         response.setGameFee(game.getFee());
@@ -151,10 +101,14 @@ public class LeaderboardGame {
         response.setThemeName(theme.getName());
         response.setTotalPlayers((int) totalPlayers);
         response.setPlayers(playerList);
+        response.setCurrentPage(winnersPage.getNumber());
+        response.setTotalPages(winnersPage.getTotalPages());
+        response.setTotalItems(winnersPage.getTotalElements());
 
         return response;
-    }*/
+    }
 
+/*
     public GameLeaderboardResponseDTO getLeaderboard(Long gameId, Pageable pageable) {
         // 1. Fetch the game details
         Optional<Game> gameOpt = gameRepository.findById(gameId);
@@ -213,7 +167,7 @@ public class LeaderboardGame {
 
         return response;
     }
-
+*/
 
 
 }
