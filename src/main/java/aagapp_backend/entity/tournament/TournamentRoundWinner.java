@@ -15,6 +15,7 @@ import lombok.Setter;
                 @Index(name = "idx_round_number", columnList = "roundNumber")
         }
 )
+
 @Getter
 @Setter
 @NoArgsConstructor
