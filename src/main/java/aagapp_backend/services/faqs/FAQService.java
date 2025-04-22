@@ -2,6 +2,8 @@ package aagapp_backend.services.faqs;
 
 import aagapp_backend.entity.faqs.FAQs;
 import aagapp_backend.repository.faqs.FAQRepository;
+import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,8 @@ public class FAQService {
 
     @Autowired
     private FAQRepository faqRepository;
+    @Autowired
+    private ExceptionHandlingImplement exceptionHandling;
 
     // Method to get FAQs by 'createdFor' (User or Vendor) with optional filters for question and answer
     public Map<String, List<FAQs>> getFAQsGroupedByCategoryForCreatedFor(String createdFor,
@@ -35,9 +39,12 @@ public class FAQService {
                 faqs = faqRepository.findByCreatedForIgnoreCase(createdFor);
             }
 
-            // Group FAQs by category
-            return faqs.stream().collect(Collectors.groupingBy(FAQs::getCategory));
+            return faqs.stream()
+                    .collect(Collectors.groupingBy(faq -> Optional.ofNullable(faq.getCategory()).orElse("Uncategorized")));
+
+//            return faqs.stream().collect(Collectors.groupingBy(FAQs::getCategory));
         } catch (Exception e) {
+            exceptionHandling.handleException(e);
             throw new RuntimeException("Error retrieving FAQs for " + createdFor + ": " + e.getMessage());
         }
     }
@@ -48,6 +55,8 @@ public class FAQService {
         try {
             return faqRepository.save(faq);
         } catch (Exception e) {
+            exceptionHandling.handleException(e);
+
             throw new RuntimeException("Error creating FAQ: " + e.getMessage());
         }
     }
@@ -57,6 +66,8 @@ public class FAQService {
         try {
             return faqRepository.findById(id);
         } catch (Exception e) {
+            exceptionHandling.handleException(e);
+
             throw new RuntimeException("Error retrieving FAQ by ID: " + e.getMessage());
         }
     }
@@ -74,6 +85,8 @@ public class FAQService {
             }
             return null;
         } catch (Exception e) {
+            exceptionHandling.handleException(e);
+
             throw new RuntimeException("Error updating FAQ: " + e.getMessage());
         }
     }
@@ -88,6 +101,7 @@ public class FAQService {
             }
             return false;
         } catch (Exception e) {
+            exceptionHandling.handleException(e);
             throw new RuntimeException("Error deleting FAQ: " + e.getMessage());
         }
     }
