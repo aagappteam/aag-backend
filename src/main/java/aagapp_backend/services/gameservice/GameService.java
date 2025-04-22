@@ -63,7 +63,7 @@ public class GameService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String baseUrl = "http://13.232.105.87:8082";
-
+    private final String snakebaseUrl = "http://13.232.105.87:8092";
     private final MoveRepository moveRepository;
     private MatchService matchService;
     private final VenderService venderService;
@@ -302,9 +302,8 @@ public void updateDailylimit() {
     public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
             // Construct the URL for the POST request, including query parameters
-            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move;
-
-            System.out.println("url: " + url);
+            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move ;
+            System.out.println("Creating new game on the server..." + url);
             // Create headers (optional, but good practice to include Content-Type for clarity)
             HttpHeaders headers = new HttpHeaders();
             headers.set("Content-Type", "application/json");
@@ -548,17 +547,6 @@ public void updateDailylimit() {
         gameRoomRepository.save(gameRoom);
     }
 
-    // Create a new empty room for a game
-/*    private GameRoom createNewEmptyRoom(Game game) {
-        GameRoom newRoom = new GameRoom();
-        newRoom.setMaxPlayers(game.getMaxPlayersPerTeam());
-        newRoom.setCurrentPlayers(new ArrayList<>());
-        newRoom.setStatus(GameRoomStatus.INITIALIZED);
-        newRoom.setCreatedAt(LocalDateTime.now());
-        newRoom.setRoomCode(generateRoomCode());
-        newRoom.setGame(game);
-        return newRoom;
-    }*/
 
     private GameRoom createNewEmptyRoom(Game game) {
         try{
@@ -572,11 +560,25 @@ public void updateDailylimit() {
 
             // Save the room first so it gets an ID
             newRoom = gameRoomRepository.save(newRoom); // Save and assign the generated ID
-        BigDecimal toalprize =    matchService.getWinningAmount(newRoom);
-        System.out.println("Total prize: " + toalprize);
-            Double total_prize = 3.2;
-            String gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), toalprize);
+            BigDecimal toalprize =    matchService.getWinningAmount(newRoom);
+            System.out.println("Total prize: " + toalprize);
 
+            String gamePassword = null;
+
+            // Calculate the total collection and shares
+            BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
+            BigDecimal totalPrize = totalCollection.multiply(Constant.USER_PERCENTAGE);
+
+
+            String gameName = game.getName().toLowerCase();
+
+            if (gameName.equals("ludo")) {
+                gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
+            } else if (gameName.equals("snake & ladder")) {
+                gamePassword = this.createNewGame(snakebaseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
+            } else {
+                throw new IllegalArgumentException("Unsupported game: " + gameName);
+            }
             newRoom.setGamepassword(gamePassword);
 
             return newRoom;
