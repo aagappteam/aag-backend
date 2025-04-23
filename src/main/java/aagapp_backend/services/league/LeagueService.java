@@ -711,14 +711,27 @@ public class LeagueService {
             if (gameRoom == null) {
                 return ResponseEntity.notFound().build();
             }
-            return ResponseEntity.ok(gameRoom);
+
+            return responseService.generateSuccessResponse("Room fetched successfully", gameRoom, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error retrieving game room by ID: " + roomId, e);
+            return responseService.generateErrorResponse("Error in getting game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
 
+    public ResponseEntity<?> getLeaguePasses(Long playerId) {
+        try {
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            return responseService.generateSuccessResponse("League passes fetched successfully", player.getLeaguePasses(), HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
         try {
@@ -753,6 +766,11 @@ public class LeagueService {
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
         }
 
+    }
+
+
+    public List<LeagueTeam> getTeamsByLeagueId(Long leagueId) {
+        return leagueTeamRepository.findByLeagueId(leagueId);
     }
 
     public LeagueRoom findAvailableGameRoom(League league) {
@@ -799,10 +817,11 @@ public class LeagueService {
     }
 
 
-    public List<PlayerDto> processMatch(GameResult gameResult) {
-        Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(gameResult.getRoomId());
+    @Transactional
+    public List<PlayerDto> processMatch(LeagueMatchProcess leagueMatchProcess) {
+        Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
         if (leagueRoomOpt.isEmpty()) {
-            throw new RuntimeException("League room not found with ID: " + gameResult.getRoomId());
+            throw new RuntimeException("League room not found with ID: " + leagueMatchProcess.getRoomId());
         }
         LeagueRoom leagueRoom = leagueRoomOpt.get();
         // Fetch the Game associated with the gameId
@@ -810,13 +829,21 @@ public class LeagueService {
         if (legueOpt.isEmpty()) {
             throw new RuntimeException("League not found with ID: " + leagueRoom.getLeague().getId());
         }
+
+
+
         League league = legueOpt.get();
-        PlayerDtoWinner winner = determineWinner(gameResult.getPlayers()); // Get the winner
+        LeaguePlayerDtoWinner winner = determineWinner(leagueMatchProcess.getPlayers()); // Get the winner
+        LeagueTeam winnerLeagueTeam = leagueTeamRepository.findById(winner.getTeamId())
+                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + winner.getTeamId()));
 
         // Identify the loser
-        PlayerDtoWinner loser = gameResult.getPlayers().stream()
+        LeaguePlayerDtoWinner loser = leagueMatchProcess.getPlayers().stream()
                 .filter(p -> !p.getPlayerId().equals(winner.getPlayerId()))
                 .findFirst().orElseThrow(() -> new RuntimeException("No loser found"));
+
+        LeagueTeam looserLeagueTeam = leagueTeamRepository.findById(loser.getTeamId())
+                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + loser.getTeamId()));
 
 
         leaveRoom(winner.getPlayerId(), league.getId());
@@ -837,6 +864,7 @@ public class LeagueService {
         winnerRecord.setLeague(league);
         winnerRecord.setPlayer(winnerPlayer); // already fetched
         winnerRecord.setTotalScore(winnerRecord.getTotalScore()+winner.getScore());
+        winnerLeagueTeam.setTotalScore(winnerLeagueTeam.getTotalScore()+winner.getScore());
         winnerRecord.setIsWinner(true);
         winnerRecord.setPlayedAt(LocalDateTime.now());
 
@@ -850,30 +878,31 @@ public class LeagueService {
         loserRecord.setLeague(league);
         loserRecord.setPlayer(loserPlayer);
         loserRecord.setTotalScore(loserRecord.getTotalScore()+loser.getScore());
+        looserLeagueTeam.setTotalScore(looserLeagueTeam.getTotalScore()+loser.getScore());
         loserRecord.setIsWinner(false);
         loserRecord.setPlayedAt(LocalDateTime.now());
 
         leagueResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
-        return getAllPlayersDetails(gameResult, leagueRoomOpt, league, winner, loser);
+        return getAllPlayersDetails(leagueMatchProcess, leagueRoomOpt, league, winner, loser);
 
     }
 
 
-    private PlayerDtoWinner determineWinner(List<PlayerDtoWinner> players) {
+    private LeaguePlayerDtoWinner determineWinner(List<LeaguePlayerDtoWinner> players) {
         return players.stream()
-                .max(Comparator.comparingInt(PlayerDtoWinner::getScore))  // Find the player with the highest score
+                .max(Comparator.comparingInt(LeaguePlayerDtoWinner::getScore))  // Find the player with the highest score
                 .orElseThrow(() -> new RuntimeException("No players found"));
     }
 
 
     // Get all players' details (including amount for the winner)
 
-    public List<PlayerDto> getAllPlayersDetails(GameResult gameResult, Optional<LeagueRoom> gameRoomOpt, League game, PlayerDtoWinner winner, PlayerDtoWinner loser) {
+    public List<PlayerDto> getAllPlayersDetails(LeagueMatchProcess gameResult, Optional<LeagueRoom> gameRoomOpt, League game, LeaguePlayerDtoWinner winner, LeaguePlayerDtoWinner loser) {
 
         List<PlayerDto> playersDetails = new ArrayList<>();
 
 
-        for (PlayerDtoWinner player : gameResult.getPlayers()) {
+        for (LeaguePlayerDtoWinner player : gameResult.getPlayers()) {
 
             PlayerDto playerDto = new PlayerDto();
 
