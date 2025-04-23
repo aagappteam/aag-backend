@@ -4,6 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.LeagueRoom;
+import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.enums.PlayerStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -51,8 +52,11 @@ public class Player {
     @JoinColumn(name = "league_room_id")
     private LeagueRoom leagueRoom;
 
-    @Column(name = "team_name", nullable = true)
-    private String teamName;
+    @ManyToOne
+    @JoinColumn(name = "team_id")
+//    @JsonBackReference(value = "teamPlayers")
+    private LeagueTeam team;
+
 
     @Column(name = "league_passes", nullable = false)
     private int leaguePasses=0;
