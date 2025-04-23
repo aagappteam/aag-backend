@@ -34,12 +34,21 @@ public interface GameRepository extends JpaRepository<Game, Long> {
     List<Game> findByVendorId(@Param("vendorId") Long vendorId, Pageable pageable);*/
 
     // Find games by ACTIVE status and endDate after the current date
-    @Query("SELECT g FROM Game g WHERE g.status = :status AND g.endDate > :endDate")
+/*    @Query("SELECT g FROM Game g WHERE g.status = :status AND g.endDate > :endDate")
+    Page<Game> findAllByStatusAndEndDateAfter(
+            @Param("status") GameStatus status,
+            @Param("endDate") ZonedDateTime endDate,
+            Pageable pageable
+    );*/
+
+    @Query("SELECT g FROM Game g WHERE g.status = :status AND g.endDate > :endDate ORDER BY g.createdDate DESC")
     Page<Game> findAllByStatusAndEndDateAfter(
             @Param("status") GameStatus status,
             @Param("endDate") ZonedDateTime endDate,
             Pageable pageable
     );
+
+
 
     @Query("SELECT g FROM Game g WHERE g.vendorEntity.id = :vendorId AND g.status = :status AND g.endDate > :endDate")
     List<Game> findByVendorIdAndStatusAndEndDateAfter(
@@ -48,9 +57,6 @@ public interface GameRepository extends JpaRepository<Game, Long> {
             @Param("endDate") ZonedDateTime endDate,
             Pageable pageable
     );
-
-
-
 
 /*    @Query("SELECT g FROM Game g WHERE g.vendorEntity = :vendorEntity AND g.scheduledAt >= :startTime AND g.scheduledAt <= :endTime")
     List<Game> findByVendorEntityAndScheduledAtWithin24Hours(VendorEntity vendorEntity, ZonedDateTime startTime, ZonedDateTime endTime);*/
