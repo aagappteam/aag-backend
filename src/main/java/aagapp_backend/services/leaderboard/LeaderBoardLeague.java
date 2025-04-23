@@ -146,7 +146,7 @@ public class LeaderBoardLeague {
                 player.getCustomer().getProfilePic(),
                 record.getTotalScore(),
                 record.getIsWinner(),
-                userWin.stripTrailingZeros().doubleValue()
+                userWin
 
         );
     }

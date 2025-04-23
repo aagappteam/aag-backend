@@ -146,7 +146,7 @@ public class LeaderBoardTournament {
                 player.getCustomer().getProfilePic(),
                 record.getTotalScore(),
                 record.getIsWinner(),
-                userWin.stripTrailingZeros().doubleValue()
+                userWin
 
 
         );
