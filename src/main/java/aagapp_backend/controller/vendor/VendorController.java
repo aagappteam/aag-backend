@@ -184,11 +184,24 @@ public class VendorController {
                 conditions.add("LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :email, '%'))");
             }
 
-            // Apply firstName filter for both first_name and last_name columns if the firstName parameter is provided
             if (firstName != null && !firstName.trim().isEmpty()) {
-                conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstName, '%')) " +
-                        "OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstName, '%')))");
+                String[] nameParts = firstName.split(" ");
+                String firstNamePart = nameParts[0].trim();
+                String lastNamePart = (nameParts.length > 1) ? nameParts[1].trim() : "";
+
+                // Case 1: If there is only one part in the input, try to match it to both first and last names
+                if (nameParts.length == 1) {
+                    conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
+                            "OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')))");
+                }
+                // Case 2: If there are two parts, filter by first and last name explicitly
+                else if (nameParts.length == 2) {
+                    conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')))");
+
+                    conditions.add("(LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%')))");
+                }
             }
+
 
             // Apply WHERE clause if there are any conditions
             if (!conditions.isEmpty()) {
