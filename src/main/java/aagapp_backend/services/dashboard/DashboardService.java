@@ -36,45 +36,7 @@ public class DashboardService {
     @Autowired
     private GameRoomRepository gameRoomRepository;
 
-/*
     public DashboardResponse getDashboard(int latestPage, int popularPage, int feePage, int influencerPage, int size) {
-
-        Pageable latestPageable = PageRequest.of(latestPage, size, Sort.by("createdDate").descending());
-        Page<Game> latest = gameRepo.findAll(latestPageable);
-
-        Pageable popPageable = PageRequest.of(popularPage, size);
-        List<Object[]> popularRaw = roomRepo.findPopularGames(popPageable);
-        List<PopularGameDTO> popularGames = popularRaw.stream()
-                .map(obj -> new PopularGameDTO(mapToDTO((Game) obj[0]), (Long) obj[1]))
-                .toList();
-
-        // Fee based - All games sorted by fee DESC
-        Page<Game> feeSortedGames = gameRepo.findAll(
-                PageRequest.of(feePage, size, Sort.by(Sort.Direction.DESC, "fee"))
-        );
-
-        // Influencer - Top vendor & their games
-        List<TopVendorDto> topVendors = vendorRepository.findTopVendorsWithFollowerCount(PageRequest.of(0, 1));
-        List<InfluencerGameDTO> influencerGames = new ArrayList<>();
-        if (!topVendors.isEmpty()) {
-            TopVendorDto top = topVendors.get(0);
-            List<Game> vendorGames = gameRepo.findByVendorId(top.getVendorId(), PageRequest.of(influencerPage, size));
-            influencerGames = vendorGames.stream()
-                    .map(g -> new InfluencerGameDTO(mapToDTO(g), top.getVendorName()))
-                    .toList();
-        }
-
-        return new DashboardResponse(
-                toPageDTO(latest.map(this::mapToDTO)),
-                new PageDTO<>(popularGames, popularPage, popPageable.getPageSize(), popularGames.size()),
-                toPageDTO(feeSortedGames.map(this::mapToDTO)),
-                new PageDTO<>(influencerGames, influencerPage, 1, influencerGames.size())
-        );
-    }
-*/
-
-    public DashboardResponse getDashboard(int latestPage, int popularPage, int feePage, int influencerPage, int size) {
-
         // Current timestamp for filtering expired games
         ZonedDateTime currentDate = ZonedDateTime.now();
 
@@ -142,9 +104,7 @@ public class DashboardService {
                 game.getTheme() != null ? game.getTheme().getName() : null,
                 game.getTheme() != null ? game.getTheme().getImageUrl() : null,
                 game.getCreatedDate() != null ? game.getCreatedDate() : null,
-
                 game.getScheduledAt() != null ? game.getScheduledAt() : null,
-
                 game.getEndDate() != null ? game.getEndDate() : null,
                 game.getMinPlayersPerTeam(),
                 game.getMaxPlayersPerTeam(),

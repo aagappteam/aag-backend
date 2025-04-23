@@ -258,8 +258,16 @@ public class MatchService {
                 .filter(p -> winners.stream().noneMatch(w -> w.getPlayerId().equals(p.getPlayerId())))
                 .collect(Collectors.toList());
 
-        // Divide the winning amount equally
-        BigDecimal individualWinningAmount = userWin.divide(BigDecimal.valueOf(winners.size()), RoundingMode.HALF_UP);
+
+        // If there is only one winner, assign the entire `userWin` to that player
+        BigDecimal individualWinningAmount;
+        if (winners.size() == 1) {
+            individualWinningAmount = userWin; // No division needed, the winner gets the full share
+        } else {
+            // If there are multiple winners, divide `userWin` by the number of winners
+
+            individualWinningAmount = userWin.divide(BigDecimal.valueOf(winners.size()), RoundingMode.HALF_UP);
+        }
 
         // Process each winner
         for (PlayerDtoWinner winner : winners) {
@@ -269,8 +277,8 @@ public class MatchService {
             }
             gameService.leaveRoom(winner.getPlayerId(), game.getId());
 
-            BigDecimal updatedWinning = wallet.getWinningAmount().add(individualWinningAmount);
-            wallet.setWinningAmount(updatedWinning);
+//            BigDecimal updatedWinning = wallet.getWinningAmount().add(individualWinningAmount);
+            wallet.setWinningAmount(individualWinningAmount);
             wallet.setUpdatedAt(LocalDateTime.now());
             walletRepo.save(wallet);
 
@@ -282,7 +290,7 @@ public class MatchService {
             winnerRecord.setGame(game);
             winnerRecord.setPlayer(winnerPlayer);
             winnerRecord.setScore(winner.getScore());
-            winnerRecord.setWinningammount(updatedWinning);
+            winnerRecord.setWinningammount(individualWinningAmount);
             winnerRecord.setIsWinner(true);
             winnerRecord.setPlayedAt(LocalDateTime.now());
             gameResultRecordRepository.save(winnerRecord);
@@ -499,7 +507,9 @@ public class MatchService {
         Player player = record.getPlayer();
         BigDecimal totalCollection = BigDecimal.valueOf(record.getGame().getFee()).multiply(BigDecimal.valueOf(record.getGame().getMaxPlayersPerTeam()));
 
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
+        BigDecimal amount = record.getIsWinner() ?
+                (record.getWinningammount() != null ? record.getWinningammount() : BigDecimal.ZERO)
+                : BigDecimal.ZERO;
 
         return new LeaderboardDto(
                 player.getPlayerId(),
@@ -507,8 +517,7 @@ public class MatchService {
                 player.getCustomer().getProfilePic(),
                 record.getScore(),
                 record.getIsWinner(),
-                record.getIsWinner()? userWin.stripTrailingZeros().doubleValue() : 0  // If winner, return user win amount, else 0
-
+                amount
         );
     }
 
