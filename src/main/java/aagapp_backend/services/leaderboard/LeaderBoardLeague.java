@@ -147,7 +147,6 @@ public class LeaderBoardLeague {
                 record.getTotalScore(),
                 record.getIsWinner(),
                 userWin
-
         );
     }
 }

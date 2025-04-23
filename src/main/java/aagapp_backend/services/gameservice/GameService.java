@@ -569,7 +569,6 @@ public void updateDailylimit() {
             BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
             BigDecimal totalPrize = totalCollection.multiply(Constant.USER_PERCENTAGE);
 
-
             String gameName = game.getName().toLowerCase();
 
             if (gameName.equals("ludo")) {
