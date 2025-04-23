@@ -9,4 +9,6 @@ import java.util.List;
 
 public interface LeagueTeamRepository extends JpaRepository<LeagueTeam, Long> {
     List<LeagueTeam> findByLeague(League savedLeague);
+
+    List<LeagueTeam> findByLeagueId(Long leagueId);
 }
