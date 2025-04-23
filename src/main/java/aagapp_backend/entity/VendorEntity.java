@@ -25,6 +25,7 @@ import java.util.List;
 
 
 @Entity
+
 @Table(name = "vendor_table", indexes = {
         @Index(name = "idx_vendor_id", columnList = "service_provider_id"),
         @Index(name = "idx_vendor_email", columnList = "primary_email"),
@@ -194,8 +195,13 @@ public class VendorEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
 
+/*    @Transient
+    private Boolean isFollowing;*/
+
+    @JsonProperty("isFollowing")
     @Transient
     private Boolean isFollowing;
+
 
     public Boolean getIsFollowing() {
         return isFollowing;
