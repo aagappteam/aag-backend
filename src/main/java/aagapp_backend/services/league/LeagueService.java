@@ -14,6 +14,7 @@ import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.players.Player;
 
+import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.LeagueRoomStatus;
@@ -22,10 +23,7 @@ import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
-import aagapp_backend.repository.league.LeagueRepository;
-import aagapp_backend.repository.league.LeagueResultRecordRepository;
-import aagapp_backend.repository.league.LeagueRoomRepository;
-import aagapp_backend.repository.league.LeagueRoomWinnerRepository;
+import aagapp_backend.repository.league.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.ResponseService;
@@ -45,6 +43,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.context.Theme;
 import org.springframework.web.client.RestTemplate;
 
 import javax.naming.LimitExceededException;
@@ -53,6 +52,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class LeagueService {
@@ -102,6 +102,9 @@ public class LeagueService {
 
     @Autowired
     private LeagueResultRecordRepository leagueResultRecordRepository;
+
+    @Autowired
+    private LeagueTeamRepository leagueTeamRepository;
 
     @Autowired
     private ResponseService responseService;
@@ -311,8 +314,8 @@ public class LeagueService {
             league.setName(opponentVendor.getFirst_name() + " v/s " + vendorEntity.getFirst_name());
             league.setVendorEntity(opponentVendor);
             league.setChallengingVendorId(opponentVendor.getService_provider_id());
-            league.setTeamChallengingVendorName("Team " + opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
-            league.setTeamOpponentVendorName("Team " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
+//            league.setTeamChallengingVendorName("Team " + opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
+//            league.setTeamOpponentVendorName("Team " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
             league.setChallengingVendorName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
             league.setChallengingVendorProfilePic(opponentVendor.getProfilePic());
             league.setOpponentVendorName(vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
@@ -356,8 +359,33 @@ public class LeagueService {
             league.setCreatedDate(nowInKolkata);
             league.setUpdatedDate(nowInKolkata);
 
+
             // Save the game to get the game ID
             League savedLeague = leagueRepository.save(league);
+
+// 👇 Add LeagueTeam creation here
+
+            LeagueTeam challengingTeam = new LeagueTeam();
+            challengingTeam.setTeamName("Team " + opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
+            challengingTeam.setVendor(opponentVendor);
+            challengingTeam.setProfilePic(opponentVendor.getProfilePic());
+            challengingTeam.setLeague(savedLeague);
+
+            LeagueTeam opponentTeam = new LeagueTeam();
+            opponentTeam.setTeamName("Team " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
+            opponentTeam.setVendor(vendorEntity);
+            opponentTeam.setProfilePic(vendorEntity.getProfilePic());
+            opponentTeam.setLeague(savedLeague);
+
+            leagueTeamRepository.saveAll(List.of(challengingTeam, opponentTeam));
+
+            List<LeagueTeam> teams = leagueTeamRepository.findByLeague(savedLeague);
+            savedLeague.setTeams(teams);
+
+// 🔄 Optional: Save their IDs in League entity for fast reference
+//            savedLeague.setChallengingTeamId(challengingTeam.getId());
+//            savedLeague.setOpponentTeamId(opponentTeam.getId());
+
 
             // Create the first GameRoom (initialized, 2 players max)
             LeagueRoom leagueRoom = createNewEmptyRoom(savedLeague);
@@ -465,21 +493,27 @@ public class LeagueService {
 
     public Page<League> getAllLeagues(Pageable pageable, LeagueStatus status, Long vendorId) {
         try {
-            // Check if 'status' and 'vendorId' are provided and build a query accordingly
+            // Fetch the leagues from the repository based on the parameters
+            Page<League> leagues;
+
             if (status != null && vendorId != null) {
-                return leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
+                leagues = leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
             } else if (status != null) {
-                return leagueRepository.findByStatus(status, pageable);
+                leagues = leagueRepository.findByStatus(status, pageable);
             } else if (vendorId != null) {
-                return leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
+                leagues = leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
             } else {
-                return leagueRepository.findAll(pageable);
+                leagues = leagueRepository.findAll(pageable);
             }
+
+            // Map the fetched leagues to LeagueResponse DTOs
+            return leagues;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
         }
     }
+
 
     public Page<League> getAllActiveLeaguesByVendor(Pageable pageable, Long vendorId) {
         try {
@@ -574,7 +608,7 @@ public class LeagueService {
 
 
     @Transactional
-    public ResponseEntity<?> joinRoom(Long playerId, Long leagueId, String teamName) {
+    public ResponseEntity<?> joinRoom(Long playerId, Long leagueId, Long teamId) {
         try {
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
@@ -583,41 +617,49 @@ public class LeagueService {
                     .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
 
             if (player.getLeaguePasses() == 0) {
-                return responseService.generateErrorResponse("You have used all your passes. if you want to continue, buy more passes", HttpStatus.BAD_REQUEST);
-            }
-
-            // Validate team name
-            if (!teamName.equalsIgnoreCase(league.getTeamChallengingVendorName()) &&
-                    !teamName.equalsIgnoreCase(league.getTeamOpponentVendorName())) {
-
                 return responseService.generateErrorResponse(
-                        "Invalid team name. Must be either '" + league.getTeamChallengingVendorName() + "' or '" + league.getTeamOpponentVendorName() + "'.",
+                        "You have used all your passes. Buy more to continue.",
                         HttpStatus.BAD_REQUEST
                 );
             }
 
             if (player.getLeagueRoom() != null) {
                 return responseService.generateErrorResponse(
-                        "Player already in room with this id: " + player.getPlayerId(),
+                        "Player already in room with ID: " + player.getPlayerId(),
                         HttpStatus.INTERNAL_SERVER_ERROR
+                );
+            }
+
+            // ✅ Get the team by teamId
+            LeagueTeam team = leagueTeamRepository.findById(teamId)
+                    .orElseThrow(() -> new RuntimeException("Team not found with ID: " + teamId));
+
+            // ✅ Validate team belongs to the league
+            if (!team.getLeague().getId().equals(leagueId)) {
+                return responseService.generateErrorResponse(
+                        "Team does not belong to this league.",
+                        HttpStatus.BAD_REQUEST
                 );
             }
 
             LeagueRoom leagueRoom = findAvailableGameRoom(league);
 
-            // Add player to room with the given team name
-            boolean playerJoined = addPlayerToRoom(leagueRoom, player, teamName);
+            // ✅ Assign team to player
+            player.setTeam(team);
+
+            // ✅ Use team.getTeamName() instead of passing string teamName
+            boolean playerJoined = addPlayerToRoom(leagueRoom, player, team.getTeamName());
             if (!playerJoined) {
                 return responseService.generateErrorResponse(
-                        "Room is already full with this id: " + leagueRoom.getRoomCode(),
+                        "Room is already full with ID: " + leagueRoom.getRoomCode(),
                         HttpStatus.INTERNAL_SERVER_ERROR
                 );
             }
 
-            // Room full? Mark as ongoing and create new one
             if (leagueRoom.getCurrentPlayers().size() == leagueRoom.getMaxPlayers()) {
                 leagueRoom.setStatus(LeagueRoomStatus.ONGOING);
                 leagueRoomRepository.save(leagueRoom);
+
                 LeagueRoom newRoom = createNewEmptyRoom(league);
                 leagueRoomRepository.save(newRoom);
             }
@@ -633,15 +675,29 @@ public class LeagueService {
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse(
-                    "Player cannot join the room because " + e.getMessage(),
+                    "Player cannot join the room because: " + e.getMessage(),
                     HttpStatus.NOT_FOUND
             );
         }
     }
 
 
+    public ResponseEntity<?> getRoomById(Long roomId) {
+        try {
+            LeagueRoom gameRoom = leagueRoomRepository.findById(roomId).orElse(null);
+            if (gameRoom == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(gameRoom);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error retrieving game room by ID: " + roomId, e);
+        }
+    }
+
+
     @Transactional
-    public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId, String teamName) {
+    public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
         try {
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
@@ -650,14 +706,6 @@ public class LeagueService {
                     .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
 
             LeagueRoom leagueRoom = player.getLeagueRoom();
-            if (!teamName.equalsIgnoreCase(league.getTeamChallengingVendorName()) &&
-                    !teamName.equalsIgnoreCase(league.getTeamOpponentVendorName())) {
-
-                return responseService.generateErrorResponse(
-                        "Invalid team name. Must be either '" + league.getTeamChallengingVendorName() + "' or '" + league.getTeamOpponentVendorName() + "'.",
-                        HttpStatus.BAD_REQUEST
-                );
-            }
 
             if (player.getLeagueRoom() == null || leagueRoom == null || !leagueRoom.getLeague().getId().equals(league.getId())) {
                 return responseService.generateErrorResponse("Player is not in league with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -667,7 +715,6 @@ public class LeagueService {
             leagueRoom.getCurrentPlayers().remove(player);
             leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
             player.setLeagueRoom(null);
-            player.setTeamName(null);
             leagueRoomRepository.save(leagueRoom);
 
             List<Player> remainingPlayers = playerRepository.findAllByLeagueRoom(leagueRoom);
@@ -677,7 +724,7 @@ public class LeagueService {
             }
             em.persist(player);
 
-            return responseService.generateSuccessResponse("Player left the League Room ", league.getLeagueUrl(), HttpStatus.OK);
+            return responseService.generateSuccessResponse("Player left the League Room ", leagueRoom, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
@@ -707,7 +754,7 @@ public class LeagueService {
         if (leagueRoom.getCurrentPlayers().size() < leagueRoom.getMaxPlayers()) {
             leagueRoom.getCurrentPlayers().add(player);
             player.setLeagueRoom(leagueRoom);
-            player.setTeamName(teamName);
+//            player.setTeamName(teamName);
             player.setLeaguePasses(player.getLeaguePasses() - 1);
             leagueRoomRepository.save(leagueRoom);
             playerRepository.save(player);
@@ -749,8 +796,8 @@ public class LeagueService {
                 .findFirst().orElseThrow(() -> new RuntimeException("No loser found"));
 
 
-        leaveRoom(winner.getPlayerId(), league.getId(), winner.getTeamName());
-        leaveRoom(loser.getPlayerId(), league.getId(), loser.getTeamName());
+        leaveRoom(winner.getPlayerId(), league.getId());
+        leaveRoom(loser.getPlayerId(), league.getId());
 
 
         Optional<Player> winnerPlayerOpt = playerRepository.findById(winner.getPlayerId());
@@ -766,18 +813,20 @@ public class LeagueService {
         winnerRecord.setRoomId(leagueRoom.getId());
         winnerRecord.setLeague(league);
         winnerRecord.setPlayer(winnerPlayer); // already fetched
-        winnerRecord.setTotalScore(winner.getScore());
+        winnerRecord.setTotalScore(winnerRecord.getTotalScore()+winner.getScore());
         winnerRecord.setIsWinner(true);
         winnerRecord.setPlayedAt(LocalDateTime.now());
 
         Player loserPlayer = playerRepository.findById(loser.getPlayerId())
                 .orElseThrow(() -> new RuntimeException("Player not found"));
 
+
+
         LeagueResultRecord loserRecord = new LeagueResultRecord();
         loserRecord.setRoomId(leagueRoom.getId());
         loserRecord.setLeague(league);
         loserRecord.setPlayer(loserPlayer);
-        loserRecord.setTotalScore(loser.getScore());
+        loserRecord.setTotalScore(loserRecord.getTotalScore()+loser.getScore());
         loserRecord.setIsWinner(false);
         loserRecord.setPlayedAt(LocalDateTime.now());
 

@@ -39,7 +39,6 @@ public class LeagueTeam {
 
     @ManyToOne
     @JoinColumn(name = "vendor_id")
-    @JsonIgnore
     private VendorEntity vendor;
 
     @ManyToOne
@@ -50,7 +49,6 @@ public class LeagueTeam {
 
     @OneToMany(mappedBy = "team")
     @JsonManagedReference(value = "teamPlayers")
-    @JsonIgnore
     private List<Player> players = new ArrayList<>();
 
     private LocalDateTime createdAt;

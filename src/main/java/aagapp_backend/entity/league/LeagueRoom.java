@@ -3,6 +3,7 @@ package aagapp_backend.entity.league;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.LeagueRoomStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -53,6 +54,7 @@ public class LeagueRoom {
 
     @ManyToOne
     @JoinColumn(name = "league_id", nullable = false)
+    @JsonIgnore
     private League league;
 
 

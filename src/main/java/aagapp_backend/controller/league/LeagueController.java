@@ -311,9 +311,9 @@ public class LeagueController {
             notificationRepository.save(notification);
 
             if (challenge.getScheduledAt() != null) {
-                return responseService.generateSuccessResponse("Game scheduled successfully", publishedLeague, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("League scheduled successfully", publishedLeague, HttpStatus.CREATED);
             } else {
-                return responseService.generateSuccessResponse("Game published successfully", publishedLeague, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("League published successfully", publishedLeague, HttpStatus.CREATED);
             }
         } catch (LimitExceededException e) {
             return responseService.generateErrorResponse("Exceeded maximum allowed games ", HttpStatus.TOO_MANY_REQUESTS);
@@ -328,7 +328,7 @@ public class LeagueController {
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Error publishing game" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("Error publishing league" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -379,17 +379,36 @@ public class LeagueController {
     @PostMapping("/joinLeague")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinLeagueRequest joinLeagueRequest) {
         try {
-            return leagueService.joinRoom(joinLeagueRequest.getPlayerId(), joinLeagueRequest.getLeagueId(), joinLeagueRequest.getTeamName());
+            return leagueService.joinRoom(
+                    joinLeagueRequest.getPlayerId(),
+                    joinLeagueRequest.getLeagueId(),
+                    joinLeagueRequest.getTeamId() // <-- Added
+            );
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Error in joining game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse(
+                    "Error in joining game room: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
+    }
+
+
+    @GetMapping("/room/{roomId}")
+    public ResponseEntity<?> getRoomById(@PathVariable Long roomId) {
+        try {
+            return leagueService.getRoomById(roomId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
     }
 
     @PostMapping("/leftLeague")
     public ResponseEntity<?> leaveGameRoom(@RequestBody JoinLeagueRequest leaveRoomRequest) {
         try {
-            return leagueService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId(), leaveRoomRequest.getTeamName());
+            return leagueService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId());
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
