@@ -430,6 +430,16 @@ public class LeagueController {
         }
     }
 
+    @GetMapping("/get-league-pasess/{playerId}")
+    public ResponseEntity<?> getLeaguePasses(@PathVariable Long playerId) {
+        try {
+            return leagueService.getLeaguePasses(playerId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/active-game-rooms")
     public ResponseEntity<?> getAllActiveGameRooms() {
         // Fetch all GameRooms with status ONGOING

@@ -720,6 +720,18 @@ public class LeagueService {
     }
 
 
+    public ResponseEntity<?> getLeaguePasses(Long playerId) {
+        try {
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            return responseService.generateSuccessResponse("League passes fetched successfully", player.getLeaguePasses(), HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
         try {
