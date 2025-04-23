@@ -6,6 +6,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
 
@@ -412,6 +413,30 @@ public class LeagueController {
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/by-league/{leagueId}")
+    public ResponseEntity<?> getTeamsByLeagueId(@PathVariable Long leagueId) {
+        try {
+            List<LeagueTeam> teams = leagueService.getTeamsByLeagueId(leagueId);
+            if (teams.isEmpty()) {
+                return ResponseEntity.noContent().build();
+            }
+            return responseService.generateSuccessResponse("Teams fetched successfully", teams, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching teams: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/get-league-pasess/{playerId}")
+    public ResponseEntity<?> getLeaguePasses(@PathVariable Long playerId) {
+        try {
+            return leagueService.getLeaguePasses(playerId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

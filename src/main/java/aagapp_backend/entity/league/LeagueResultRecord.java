@@ -39,7 +39,7 @@ public class LeagueResultRecord {
     @JoinColumn(name = "player_id", nullable = false)
     private Player player;
 
-    private Integer totalScore;
+    private Integer totalScore=0;
 
     private Boolean isWinner;
 
