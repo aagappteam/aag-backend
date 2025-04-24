@@ -1,6 +1,7 @@
 package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.team.LeagueTeam;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -40,6 +41,11 @@ public class LeagueResultRecord {
     private Player player;
 
     private Integer totalScore=0;
+
+    @ManyToOne
+    @JoinColumn(name = "league_team_id")
+    private LeagueTeam leagueTeam;
+
 
     private Boolean isWinner;
 
