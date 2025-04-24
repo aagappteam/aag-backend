@@ -116,7 +116,7 @@ public class AdminReviewService {
 
         try {
 
-            emailService.sendProfileVerificationEmail(vendorEntity, vendorSubmissionEntity,generatedPassword);
+            emailService.sendProfileVerificationEmail(vendorEntity,generatedPassword);
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(e);
         }

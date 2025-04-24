@@ -38,12 +38,11 @@ public class EmailService {
     }
     public void sendProfileVerificationEmail(
             VendorEntity vendorEntity,
-            VendorSubmissionEntity vendorSubmissionEntity,
             String generatedPassword
     ) throws IOException {
 
         // Load HTML template
-        String template = loadTemplate("email-templates/vendora-approved-mail.html");
+        String template = loadTemplate("email-templates/vendora-approve-mail.html");
 
         // Extract required data
         String firstName = vendorEntity.getFirst_name();
@@ -85,6 +84,7 @@ public class EmailService {
             throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
         }
     }
+
 
 
     public void sendEmail(String to, String subject, String body, boolean isHtml) throws MessagingException {
