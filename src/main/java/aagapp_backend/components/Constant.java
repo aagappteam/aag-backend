@@ -54,5 +54,8 @@ public class Constant {
 
     public static String PROFILE_IMAGE_URL = "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
     public static final String ONBOARDING_EMAIL_SUBJECT = "Welcome to AAg Application – Profile Verification in Progress";
+    public static final String APPROVED_EMAIL_SUBJECT = "AAG Veer - Vendor Account Approved";
+    public static final String REJCTED_EMAIL_SUBJECT = "AAG Veer - Vendor Account Rejected";
+
 
 }
