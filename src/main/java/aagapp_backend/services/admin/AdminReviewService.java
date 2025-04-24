@@ -6,6 +6,7 @@ import aagapp_backend.entity.VendorSubmissionEntity;
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.repository.admin.VendorSubmissionRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.services.EmailService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
 import jakarta.mail.MessagingException;
@@ -13,6 +14,7 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.persistence.EntityManager;
 import lombok.Getter;
 import lombok.Setter;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -32,6 +34,9 @@ public class AdminReviewService {
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandlingImplement;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private EntityManager entitymanager;
@@ -108,66 +113,20 @@ public class AdminReviewService {
 
 
     private void sendApprovalEmail(VendorEntity vendorEntity, VendorSubmissionEntity vendorSubmissionEntity, String generatedPassword) throws MessagingException {
-        // Create the email message
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
 
         try {
-            // Set the "From" field with a name
-            helper.setFrom(fromEmail, "AAG App Team");
 
-            // Set the recipient, subject, and body of the email
-            helper.setTo(vendorSubmissionEntity.getEmail());
-            helper.setSubject("Your Vendor Account has been Approved");
-
-            // Body text for the approval email
-            String emailBody = "Dear " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name() + ",\n\n" +
-                    "We are pleased to inform you that your vendor account has been approved.\n\n" +
-                    "You can now log in to your account using the following credentials:\n\n" +
-                    "Username: " + vendorEntity.getMobileNumber() + "\n" +
-                    "Password: " + generatedPassword + "\n\n" +
-                    "If you have any questions or need assistance, please don't hesitate to contact us.\n\n" +
-                    "Best regards,\n" +
-                    "AAG App Team\n\n" +
-                    "Please keep this information secure and do not share your password with anyone.";
-
-            helper.setText(emailBody);
-
-            // Send the email
-            mailSender.send(message);
+            emailService.sendProfileVerificationEmail(vendorEntity,generatedPassword);
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(e);
         }
     }
 
 
-
     private void sendRejectionEmail(VendorEntity vendorEntity, VendorSubmissionEntity vendorSubmissionEntity) throws MessagingException {
-        // Create the email message
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
 
         try {
-            // Set the "From" field with a name
-            helper.setFrom(fromEmail, "AAG App Team");
-
-            // Set the recipient, subject, and body of the email
-            helper.setTo(vendorSubmissionEntity.getEmail());
-            helper.setSubject("Your Vendor Account Submission Status");
-
-            // Body text for the rejection email
-            String emailBody = "Dear " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name() + ",\n\n" +
-                    "We regret to inform you that your vendor account submission has been rejected. After reviewing your application, it did not meet the necessary criteria at this time.\n\n" +
-                    "If you would like to receive more details or discuss the outcome of your submission, please feel free to reach out to us. We would be happy to assist you.\n\n" +
-                    "Thank you for your time and effort, and we wish you the best in your future endeavors.\n\n" +
-                    "Best regards,\n" +
-                    "AAG App Team\n\n" +
-                    "If you have any further questions or would like more information, please don't hesitate to contact us.";
-
-            helper.setText(emailBody);
-
-            // Send the email
-            mailSender.send(message);
+            emailService.sendProfileRejectionEmail(vendorEntity);
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(e);
         }
