@@ -317,44 +317,50 @@ public class TournamentService {
 
     @Transactional
     public TournamentRoom assignPlayerToRoom(Long playerId, Long tournamentId) {
-        List<TournamentRoom> openRooms = roomRepository.findByTournamentIdAndStatus(tournamentId, "OPEN");
-        Tournament tournament = tournamentRepository.findById(tournamentId).orElse(null);
+        try {
+            List<TournamentRoom> openRooms = roomRepository.findByTournamentIdAndStatus(tournamentId, "OPEN");
+            Tournament tournament = tournamentRepository.findById(tournamentId).orElse(null);
 
-        if (openRooms.isEmpty()) {
-            throw new RuntimeException("No open rooms available for tournament " + tournamentId);
-        }
-
-        Player player = playerRepository.findById(playerId).orElse(null);
-        if (player == null) {
-            throw new RuntimeException("Player not found with id " + playerId);
-        }
-
-        for (TournamentRoom room : openRooms) {
-
-            if (room.getCurrentParticipants() < room.getMaxParticipants()) {
-                if (player.getTournamentRoom() != null && player.getTournamentRoom().getId().equals(room.getId())) {
-                    throw new RuntimeException("Player is already in the requested room.");
-                }
-
-                if (player.getTournamentRoom() != null) {
-                    throw new RuntimeException("Player already in another room.");
-                }
-
-                if (room.getRound() == 1) {
-                    tournament.setCurrentJoinedPlayers(tournament.getCurrentJoinedPlayers() + 1);
-                }
-
-                player.setTournamentRoom(room);
-                room.getCurrentPlayers().add(player);
-                room.setCurrentParticipants(room.getCurrentParticipants() + 1);
-                roomRepository.save(room);
-                return room;
+            if (openRooms.isEmpty()) {
+                throw new RuntimeException("No open rooms available for tournament " + tournamentId);
             }
+
+            Player player = playerRepository.findById(playerId).orElse(null);
+            if (player == null) {
+                throw new RuntimeException("Player not found with id " + playerId);
+            }
+
+            for (TournamentRoom room : openRooms) {
+
+                if (room.getCurrentParticipants() < room.getMaxParticipants()) {
+                    if (player.getTournamentRoom() != null && player.getTournamentRoom().getId().equals(room.getId())) {
+                        throw new RuntimeException("Player is already in the requested room.");
+                    }
+
+                    if (player.getTournamentRoom() != null) {
+                        throw new RuntimeException("Player already in another room.");
+                    }
+
+                    if (room.getRound() == 1) {
+                        tournament.setCurrentJoinedPlayers(tournament.getCurrentJoinedPlayers() + 1);
+                    }
+
+                    player.setTournamentRoom(room);
+                    room.getCurrentPlayers().add(player);
+                    room.setCurrentParticipants(room.getCurrentParticipants() + 1);
+                    roomRepository.save(room);
+                    return room;
+                } else {
+                    throw new RuntimeException("Tournament Rooms are full. Cannot add more players");
+                }
+            }
+
+            throw new RuntimeException("All rooms are full for tournament " + tournamentId);
+
+        } catch (Exception e) {
+            throw new RuntimeException("An error occurred while assigning the player to the room.", e);
         }
-
-        throw new RuntimeException("All rooms are full for tournament " + tournamentId);
     }
-
 
 
     public TournamentRoundWinner addPlayerToRound(Long tournamentId, Long playerId, Integer roundNumber) {
