@@ -115,11 +115,6 @@ public class EmailService {
             }
             Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8.name());
             return scanner.useDelimiter("\\A").next();
-        }catch (
-                IOException |
-                NullPointerException e
-        ){
-            throw new RuntimeException("Error loading template: " + e.getMessage(), e);
         }
     }
 }
