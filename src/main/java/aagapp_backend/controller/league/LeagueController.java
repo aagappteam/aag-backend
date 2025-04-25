@@ -4,6 +4,7 @@ import aagapp_backend.dto.*;
 import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.team.LeagueTeam;
@@ -34,6 +35,7 @@ import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -460,6 +462,24 @@ public class LeagueController {
         // Return the response wrapped in a success response
         return responseService.generateSuccessResponse("Fetching active game rooms from all leagues", gameRoomResponseDTOS, HttpStatus.OK);
     }
+
+
+    @GetMapping("/player")
+    public Map<String, Object> getPlayerStats(
+            @RequestParam Long leagueId,
+            @RequestParam Long playerId
+    ) {
+        return leagueService.getPlayerStats(leagueId, playerId);
+    }
+
+    // All teams' scores in a league
+    @GetMapping("/teams")
+    public List<LeagueResultRecord> getTeamScores(
+            @RequestParam Long leagueId
+    ) {
+        return leagueService.getTeamScoresByLeague(leagueId);
+    }
+
 
 
 }

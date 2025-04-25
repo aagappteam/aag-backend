@@ -54,7 +54,8 @@ public class Player {
 
     @ManyToOne
     @JoinColumn(name = "team_id")
-//    @JsonBackReference(value = "teamPlayers")
+//    @JsonIgnore
+    @JsonBackReference(value = "teamPlayers")
     private LeagueTeam team;
 
 

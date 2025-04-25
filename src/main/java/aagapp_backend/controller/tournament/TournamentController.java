@@ -4,7 +4,9 @@ import aagapp_backend.dto.GameRoomResponseDTO;
 import aagapp_backend.dto.TournamentRequest;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.entity.tournament.TournamentPlayerRegistration;
 import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.entity.tournament.TournamentRoundWinner;
 import aagapp_backend.enums.LeagueRoomStatus;
@@ -197,6 +199,34 @@ public class TournamentController {
         }
     }
 
+    @PostMapping("/register/{tournamentId}/{playerId}")
+    public ResponseEntity<?> registerPlayer(
+            @PathVariable Long tournamentId,
+            @PathVariable Long playerId) {
+        try {
+
+            TournamentPlayerRegistration registration = tournamentService.registerPlayer(tournamentId, playerId);
+            return responseService.generateSuccessResponse("Player registered successfully", registration, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse("Error registering player: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+    @GetMapping("/players/{tournamentId}")
+    public ResponseEntity<?> getRegisteredPlayers(@PathVariable Long tournamentId) {
+        try {
+            //list of all players
+            List<Player> players = tournamentService.getRegisteredPlayers(tournamentId);
+            return responseService.generateSuccessResponse("Players fetched successfully", players, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse("Error fetching players: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
     @PostMapping("/startTournament/{tournamentId}")
     public ResponseEntity<?> startTournament(@PathVariable Long tournamentId) {
         try {
@@ -238,6 +268,13 @@ public class TournamentController {
         }
 
     }
+
+    @PostMapping("/leave-room/{playerId}/{tournamentId}")
+    public ResponseEntity<?> leaveTournamentRoom(@PathVariable Long playerId, @PathVariable Long tournamentId) {
+        // Delegate the request to the existing TournamentController
+        return tournamentService.leaveRoom(playerId, tournamentId);
+    }
+
 
     // Endpoint to add a player to a round
     @PostMapping("/add-player-next-round")

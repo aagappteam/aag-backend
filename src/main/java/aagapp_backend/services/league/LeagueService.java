@@ -940,4 +940,33 @@ public class LeagueService {
         return customCustomer.map(CustomCustomer::getProfilePic).orElse(null); // Return profile picture URL or null if not found
 
     }
+
+
+
+    // 1. Get player + team + score
+    public Map<String, Object> getPlayerStats(Long leagueId, Long playerId) {
+        Object[] result = leagueResultRecordRepository.getPlayerTeamAndScoreInLeague(leagueId, playerId);
+
+        if (result == null) return null;
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("teamName", result[0]);
+        map.put("totalScore", result[1]);
+        return map;
+    }
+
+    // 2. Get all teams' total scores
+    public List<LeagueResultRecord> getTeamScoresByLeague(Long leagueId) {
+        List results = leagueResultRecordRepository.getTeamTotalScoresByLeague(leagueId);
+        /*List<Map<String, Object>> mappedResults = new ArrayList<>();
+
+        for (Object[] row : results) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("teamName", row[0]);
+            map.put("totalScore", row[1]);
+            mappedResults.add(map);
+        }*/
+
+        return results;
+    }
 }

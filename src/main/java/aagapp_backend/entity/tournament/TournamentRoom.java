@@ -1,6 +1,7 @@
 package aagapp_backend.entity.tournament;
 
 import aagapp_backend.entity.players.Player;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -31,6 +32,7 @@ public class TournamentRoom {
 
     @ManyToOne
     @JoinColumn(name = "tournament_id")
+    @JsonIgnore
     private Tournament tournament;
 
 
