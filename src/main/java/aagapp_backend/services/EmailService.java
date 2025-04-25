@@ -29,13 +29,13 @@ public class EmailService {
         String messageBody = template
                 .replace("{firstName}", customerFirstName)
                 .replace("{lastName}", customerLastName);
-
         try {
             sendEmail(to, Constant.ONBOARDING_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending onboarding email: " + e.getMessage(), e);
         }
     }
+
     public void sendProfileVerificationEmail(
             VendorEntity vendorEntity,
             String generatedPassword
@@ -44,7 +44,6 @@ public class EmailService {
         // Load HTML template
         String template = loadTemplate("email-templates/vendora-approve-mail.html");
 
-        // Extract required data
         String firstName = vendorEntity.getFirst_name();
         String mobileNumber = vendorEntity.getMobileNumber();  // or from vendorSubmissionEntity if applicable
         String to = vendorEntity.getPrimary_email();
@@ -69,7 +68,6 @@ public class EmailService {
         // Load HTML template
         String template = loadTemplate("email-templates/vendor-rejection-mail.html");
 
-        // Extract required data
         String firstName = vendorEntity.getFirst_name();
         String to = vendorEntity.getPrimary_email();
 
@@ -117,6 +115,11 @@ public class EmailService {
             }
             Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8.name());
             return scanner.useDelimiter("\\A").next();
+        }catch (
+                IOException |
+                NullPointerException e
+        ){
+            throw new RuntimeException("Error loading template: " + e.getMessage(), e);
         }
     }
 }
