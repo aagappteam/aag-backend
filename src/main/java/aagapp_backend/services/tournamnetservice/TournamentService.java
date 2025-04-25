@@ -36,6 +36,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class TournamentService {
@@ -75,6 +76,9 @@ public class TournamentService {
 
     @Autowired
     private TournamentRoomWinnerRepository tournamentRoomWinnerRepository;
+
+    @Autowired
+    private TournamentPlayerRegistrationRepository tournamentPlayerRegistrationRepository;
 
     @Autowired
     private TournamentRoundWinnerRepository tournamentRoundWinnerRepository;
@@ -156,10 +160,10 @@ public class TournamentService {
             tournament.setCreatedDate(nowInKolkata);
 
             // Save tournament first to get its ID
-            Tournament savedTournament = tournamentRepository.save(tournament);
+//            Tournament savedTournament = tournamentRepository.save(tournament);
 
             // Create initial rooms
-            int numberOfRooms = (tournamentRequest.getParticipants() / 2);
+            /*int numberOfRooms = (tournamentRequest.getParticipants() / 2);
             for (int i = 0; i < numberOfRooms; i++) {
                 TournamentRoom room = new TournamentRoom();
                 room.setTournament(savedTournament);
@@ -173,7 +177,7 @@ public class TournamentService {
                 String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(), room.getMaxParticipants(), tournament.getMove(), total_prize);
 
                 room.setGamepassword(gamePassword);
-            }
+            }*/
 
             // Save the game to get the game ID
 //            Tournament savedTournament = tournamentRepository.save(tournament);
@@ -200,6 +204,85 @@ public class TournamentService {
             throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
         }
     }
+
+
+
+    @Transactional
+    public TournamentPlayerRegistration registerPlayer(Long tournamentId, Long playerId) {
+        try {
+            // Find the tournament by ID
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+            // Check if the tournament has reached the maximum participant limit
+            int currentRegistrations = tournamentPlayerRegistrationRepository
+                    .countByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.REGISTERED);
+
+            if (currentRegistrations >= tournament.getParticipants()) {
+                throw new RuntimeException("The tournament has already reached the maximum number of participants.");
+            }
+
+            // Find the player by ID
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found"));
+
+            // Ensure the player is not already registered for the tournament
+            Optional<TournamentPlayerRegistration> existingRegistration = tournamentPlayerRegistrationRepository
+                    .findByTournamentIdAndPlayer_PlayerId(tournamentId, playerId);
+
+            if (existingRegistration.isPresent()) {
+                throw new RuntimeException("Player is already registered for this tournament.");
+            }
+
+            // Register the player
+            TournamentPlayerRegistration registration = new TournamentPlayerRegistration();
+            registration.setTournament(tournament);
+            registration.setPlayer(player);
+            registration.setStatus(TournamentPlayerRegistration.RegistrationStatus.REGISTERED);
+
+            // Save the registration
+            tournamentPlayerRegistrationRepository.save(registration);
+
+            // Update the current number of players in the tournament
+            tournament.setCurrentJoinedPlayers(currentRegistrations + 1);
+            tournamentRepository.save(tournament);
+
+            // Check if the tournament is full and update the status if necessary
+            if (tournament.getCurrentJoinedPlayers() >= tournament.getParticipants()) {
+                tournament.setStatus(TournamentStatus.FULL);  // Mark the tournament as full
+                tournamentRepository.save(tournament);
+            }
+
+            return registration;
+
+        } catch (Exception e) {
+            // Log the exception (you can add custom logging here)
+            throw new RuntimeException("Error registering player for the tournament: " + e.getMessage(), e);
+        }
+    }
+
+
+    @Transactional
+    public List<Player> getRegisteredPlayers(Long tournamentId) {
+        try {
+            // Fetch the list of TournamentPlayerRegistration records where the player is registered
+            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
+                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.REGISTERED);
+
+            // Extract the players from the registrations
+            List<Player> players = registrations.stream()
+                    .map(TournamentPlayerRegistration::getPlayer)
+                    .collect(Collectors.toList());
+
+            return players; // Return the list of registered players
+
+        } catch (Exception e) {
+            // Log the exception (you can add custom logging here)
+            throw new RuntimeException("Error fetching registered players for tournament " + tournamentId + ": " + e.getMessage(), e);
+        }
+    }
+
+
 
     @Transactional
     public Page<Tournament> getAllTournaments(Pageable pageable, TournamentStatus status, Long vendorId) {
@@ -297,7 +380,7 @@ public class TournamentService {
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
 
             Tournament league = tournamentRepository.findById(tournamentId)
-                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + tournamentId));
+                    .orElseThrow(() -> new RuntimeException("Tournament not found with ID: " + tournamentId));
 
 
             if (player.getTournamentRoom() == null) {
@@ -307,7 +390,7 @@ public class TournamentService {
             player.setTournamentRoom(null);
             playerRepository.save(player);
 
-            return responseService.generateSuccessResponse("Player left the Game Room ", league.getName(), HttpStatus.OK);
+            return responseService.generateSuccessResponse("Player left the Tournament Room ", league.getName(), HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);

@@ -4,6 +4,8 @@ public enum TournamentStatus {
 
     SCHEDULED,
     ACTIVE,
+    FULL,
+    IN_PROGRESS,
     EXPIRED,
     CANCELLED,
     REJECTED,
