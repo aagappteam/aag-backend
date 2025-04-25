@@ -30,7 +30,6 @@ public class TournamentRoomWinner {
     @JoinColumn(name = "tournament_room_id", nullable = false)
     private TournamentRoom tournamentRoom;
 
-
     @ManyToOne
     @JoinColumn(name = "player_id", nullable = false)
     private Player player;
