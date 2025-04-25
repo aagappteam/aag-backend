@@ -107,7 +107,6 @@ public class EmailService {
         }
     }
 
-
     public String loadTemplate(String templateName) throws IOException {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(templateName)) {
             if (inputStream == null) {
