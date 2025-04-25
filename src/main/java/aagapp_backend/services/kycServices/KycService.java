@@ -126,13 +126,13 @@ public class KycService {
                 emailService.sendEmail(
                         email,
                         "Your KYC Verified from AAG Team",
-                        "Dear User,\n\nYour KYC has been successfully verified.\n\nRegards,\nAAG App Team"
+                        "Dear User,\n\nYour KYC has been successfully verified.\n\nRegards,\nAAG App Team",false
                 );
             } else if (isVerified == KycStatus.REJECTED) {
                 emailService.sendEmail(
                         email,
                         "Your KYC Rejected from AAG Team",
-                        "Dear User,\n\nUnfortunately, your KYC has been rejected. Please review your submitted documents and try again.\n\nRegards,\nAAG App Team"
+                        "Dear User,\n\nUnfortunately, your KYC has been rejected. Please review your submitted documents and try again.\n\nRegards,\nAAG App Team",false
                 );
             }
         } catch (MessagingException e) {

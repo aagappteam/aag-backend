@@ -27,4 +27,12 @@ public class FAQs {
     private String question;
     private String answer;
     private String createdFor;
+
+    public FAQs(String category, String question, String answer, String createdFor) {
+        this.category = category;
+        this.question = question;
+        this.answer = answer;
+        this.createdFor = createdFor;
+    }
+
 }

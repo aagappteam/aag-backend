@@ -7,6 +7,7 @@ import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.GameStatus;
 import aagapp_backend.repository.game.PriceRepository;
 import aagapp_backend.repository.game.ThemeRepository;
+import aagapp_backend.services.faqs.FAQService;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityManager;
@@ -30,6 +31,9 @@ public class CommandLineService implements CommandLineRunner {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Autowired
+    private FAQService faqService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -387,7 +391,11 @@ public class CommandLineService implements CommandLineRunner {
         ludo_league_roomsalterQueryquery.executeUpdate();*/
 
 
+        if (entityManager.createQuery("SELECT COUNT(f) FROM FAQs f", Long.class).getSingleResult() == 0) {
+            faqService.addFAQIfNeeded();
 
+
+        }
 
 
     }

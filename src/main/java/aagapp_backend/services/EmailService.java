@@ -1,5 +1,7 @@
 package aagapp_backend.services;
 import aagapp_backend.components.Constant;
+import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.VendorSubmissionEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
@@ -23,38 +25,84 @@ public class EmailService {
     private String fromEmail;
 
     public void sendOnboardingEmail(String to, String customerFirstName, String customerLastName) throws IOException {
-        String template = loadTemplate("email-templates/vendor-onboarding-email.txt");
+        String template = loadTemplate("email-templates/vendor-onboarding-email.html");
         String messageBody = template
                 .replace("{firstName}", customerFirstName)
                 .replace("{lastName}", customerLastName);
-
         try {
-            sendEmail(to, Constant.ONBOARDING_EMAIL_SUBJECT, messageBody);
+            sendEmail(to, Constant.ONBOARDING_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending onboarding email: " + e.getMessage(), e);
         }
     }
-    public void sendEmail(String to, String subject, String body) throws MessagingException {
-        // Create the MimeMessage for the email
+
+    public void sendProfileVerificationEmail(
+            VendorEntity vendorEntity,
+            String generatedPassword
+    ) throws IOException {
+
+        // Load HTML template
+        String template = loadTemplate("email-templates/vendora-approve-mail.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String mobileNumber = vendorEntity.getMobileNumber();  // or from vendorSubmissionEntity if applicable
+        String to = vendorEntity.getPrimary_email();
+        // Replace placeholders
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{mobileNumber}", mobileNumber)
+                .replace("{password}", generatedPassword);
+
+        try {
+            // Send email
+            sendEmail(to, Constant.APPROVED_EMAIL_SUBJECT, messageBody,true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendProfileRejectionEmail(
+            VendorEntity vendorEntity
+    ) throws IOException {
+
+        // Load HTML template
+        String template = loadTemplate("email-templates/vendor-rejection-mail.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+        // Replace placeholders
+        String messageBody = template
+                .replace("{firstName}", firstName  );
+
+
+        try {
+            // Send email
+            sendEmail(to, Constant.REJCTED_EMAIL_SUBJECT, messageBody,true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
+        }
+    }
+
+
+
+    public void sendEmail(String to, String subject, String body, boolean isHtml) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
 
         try {
-            // Set the "From" address (your company or no-reply email)
             helper.setFrom(fromEmail, "AAG App Team");
-
-            // Set the recipient email address
             helper.setTo(to);
-
-            // Set the subject of the email
             helper.setSubject(subject);
 
-            // Set the email body
-            helper.setText(body);
+            if (isHtml) {
+                message.setContent(body, "text/html; charset=utf-8");
+            } else {
+                message.setText(body);
+            }
 
-            // Send the email
             mailSender.send(message);
-        } catch (MessagingException | MailException  | UnsupportedEncodingException e) {
+        } catch (MessagingException | MailException | UnsupportedEncodingException e) {
             throw new MessagingException("Error while sending email: " + e.getMessage(), e);
         }
     }
