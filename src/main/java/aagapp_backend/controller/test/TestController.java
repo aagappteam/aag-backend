@@ -2,6 +2,7 @@ package aagapp_backend.controller.test;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.EmailService;
+import aagapp_backend.services.faqs.FAQService;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,9 @@ public class TestController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private FAQService faqService;
 
     @Autowired
     private EntityManager entityManager;
@@ -43,4 +47,9 @@ public class TestController {
             emailService.sendProfileRejectionEmail(vendorEntity);
         }
     }
+//    set faq data in the database
+    @PostMapping("/faquser")
+    public void setFaqData() {
+        faqService.addFAQIfNeeded();
+   }
 }
