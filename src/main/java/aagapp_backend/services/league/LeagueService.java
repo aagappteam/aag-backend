@@ -751,6 +751,7 @@ public class LeagueService {
             leagueRoom.getCurrentPlayers().remove(player);
             leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
             player.setLeagueRoom(null);
+//            playerRepository.save(player);
             leagueRoomRepository.save(leagueRoom);
 
             List<Player> remainingPlayers = playerRepository.findAllByLeagueRoom(leagueRoom);

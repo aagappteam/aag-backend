@@ -399,6 +399,29 @@ public class TournamentService {
     }
 
 
+    @Transactional
+    public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
+        try {
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            TournamentRoom room = player.getTournamentRoom();
+
+            if (room == null || room.getTournament() == null || !room.getTournament().getId().equals(tournamentId)) {
+                throw new RuntimeException("Player is not in a valid room for this tournament.");
+            }
+
+            return room;
+        } catch (Exception e) {
+            // Optionally log or handle deeper here
+            throw new RuntimeException("Failed to retrieve room details: " + e.getMessage(), e);
+        }
+    }
+
+
+
+
+
 
     @Transactional
     public TournamentRoom assignPlayerToRoom(Long playerId, Long tournamentId) {
