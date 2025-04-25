@@ -276,6 +276,21 @@ public class TournamentController {
     }
 
 
+
+    @GetMapping("/my-opponent/{playerId}/{tournamentId}")
+    public ResponseEntity<?> getMyRoom(@PathVariable Long playerId, @PathVariable Long tournamentId) {
+        try {
+            TournamentRoom room = tournamentService.getMyRoomDetails(playerId, tournamentId);
+            return responseService.generateSuccessResponse("Tournament Room fetched successfully", room, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching tournament room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+
     // Endpoint to add a player to a round
     @PostMapping("/add-player-next-round")
     public ResponseEntity<?> addPlayerToRound(

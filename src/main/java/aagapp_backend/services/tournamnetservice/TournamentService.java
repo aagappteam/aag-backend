@@ -399,6 +399,29 @@ public class TournamentService {
     }
 
 
+    @Transactional
+    public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
+        try {
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            TournamentRoom room = player.getTournamentRoom();
+
+            if (room == null || room.getTournament() == null || !room.getTournament().getId().equals(tournamentId)) {
+                throw new RuntimeException("Player is not in a valid room for this tournament.");
+            }
+
+            return room;
+        } catch (Exception e) {
+            // Optionally log or handle deeper here
+            throw new RuntimeException("Failed to retrieve room details: " + e.getMessage(), e);
+        }
+    }
+
+
+
+
+
 
     @Transactional
     public TournamentRoom assignPlayerToRoom(Long playerId, Long tournamentId) {
@@ -577,130 +600,69 @@ public class TournamentService {
     }
 
     public List<PlayerDto> processMatch(GameResult gameResult) {
-
         // Fetch the GameRoom based on roomId
+        TournamentRoom tournamentRoom = roomRepository.findById(gameResult.getRoomId())
+                .orElseThrow(() -> new RuntimeException("Game room not found with ID: " + gameResult.getRoomId()));
 
-        Optional<TournamentRoom> tournamentRoomOpt = roomRepository.findById(gameResult.getRoomId());
-
-        if (tournamentRoomOpt.isEmpty()) {
-
-            throw new RuntimeException("Game room not found with ID: " + gameResult.getRoomId());
-
-        }
-
-        TournamentRoom tournamentRoom = tournamentRoomOpt.get();
-
-
-        // Fetch the Game associated with the gameId
-
-        Optional<Tournament> tournamentOpt = tournamentRepository.findById(tournamentRoom.getTournament().getId());
-
-        if (tournamentOpt.isEmpty()) {
-
-            throw new RuntimeException("Game not found with ID: " + tournamentRoom.getTournament().getId());
-
-        }
-
-        Tournament tournament = tournamentOpt.get();
-
+        Tournament tournament = tournamentRepository.findById(tournamentRoom.getTournament().getId())
+                .orElseThrow(() -> new RuntimeException("Tournament not found with ID: " + tournamentRoom.getTournament().getId()));
 
         // Calculate the total collection and shares
-
         BigDecimal totalCollection = BigDecimal.valueOf(tournament.getTotalPrizePool()).multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
-
         BigDecimal tax = totalCollection.multiply(BigDecimal.valueOf(TAX_PERCENT));
-
         BigDecimal vendorShare = totalCollection.multiply(BigDecimal.valueOf(VENDOR_PERCENT));
-
         BigDecimal platformShare = totalCollection.multiply(BigDecimal.valueOf(PLATFORM_PERCENT));
-
         BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
-
-//        BigDecimal bonus = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(BONUS_PERCENT));
-
         BigDecimal finalAmountToUser = userWin;
 
-
         // Process the players to find the winner
-
         PlayerDtoWinner winner = determineWinner(gameResult.getPlayers()); // Get the winner
 
-
         // Identify the loser
-
         PlayerDtoWinner loser = gameResult.getPlayers().stream()
-
                 .filter(p -> !p.getPlayerId().equals(winner.getPlayerId()))
-
-                .findFirst().orElseThrow(() -> new RuntimeException("No loser found"));
-
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No loser found"));
 
         // Update winner's wallet with the prize amount
-
         Wallet wallet = walletRepo.findByCustomCustomer_Id(winner.getPlayerId());
-
         if (wallet == null) {
-
             throw new RuntimeException("Wallet not found for user ID: " + winner.getPlayerId());
-
         }
 
+        try {
+            wallet.setWinningAmount(wallet.getWinningAmount().add(finalAmountToUser));
+            wallet.setUpdatedAt(LocalDateTime.now());
+            walletRepo.save(wallet);
+        } catch (Exception e) {
+            throw new RuntimeException("Error updating wallet for player ID: " + winner.getPlayerId(), e);
+        }
 
+        // Leave both players from the room
         leaveRoom(winner.getPlayerId(), tournament.getId());
-
         leaveRoom(loser.getPlayerId(), tournament.getId());
 
-
-        // Add the prize to the winner's wallet
-
-        BigDecimal updatedWinning = wallet.getWinningAmount().add(finalAmountToUser);
-
-        wallet.setWinningAmount(updatedWinning);
-
-        wallet.setUpdatedAt(LocalDateTime.now());
-
-        walletRepo.save(wallet);
-
-
         // Add vendor share and update total balance
-
         this.addToVendorWalletAndTotalBalance(tournament.getVendorEntity().getService_provider_id(), vendorShare);
 
-
         // Fetch Player entity using playerId
+        Player winnerPlayer = playerRepository.findById(winner.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + winner.getPlayerId()));
 
-        Optional<Player> winnerPlayerOpt = playerRepository.findById(winner.getPlayerId());
+        // Save the winner record
+        TournamentRoomWinner tournamentRoomWinner = new TournamentRoomWinner();
+        tournamentRoomWinner.setTournament(tournament);
+        tournamentRoomWinner.setTournamentRoom(tournamentRoom);
+        tournamentRoomWinner.setPlayer(winnerPlayer);
+        tournamentRoomWinner.setScore(winner.getScore());
+        tournamentRoomWinner.setWinTimestamp(LocalDateTime.now());
+        tournamentRoomWinnerRepository.save(tournamentRoomWinner);
 
-        if (winnerPlayerOpt.isEmpty()) {
-
-            throw new RuntimeException("Player not found with ID: " + winner.getPlayerId());
-
-        }
-
-        Player winnerPlayer = winnerPlayerOpt.get();
-
-
-        TournamentRoomWinner leagueRoomWinner = new TournamentRoomWinner();
-
-        leagueRoomWinner.setTournament(tournament);  // Set the game
-
-        leagueRoomWinner.setTournamentRoom(tournamentRoom);
-
-        leagueRoomWinner.setPlayer(winnerPlayer);  // Set the player (winner)
-
-        leagueRoomWinner.setScore(winner.getScore());  // Set the score
-
-        leagueRoomWinner.setWinTimestamp(LocalDateTime.now());  // Set the win timestamp
-
-
-        // Save the winner record into the database
-
-        tournamentRoomWinnerRepository.save(leagueRoomWinner);
-
+        // Save the result record for both winner and loser
         TournamentResultRecord winnerRecord = new TournamentResultRecord();
         winnerRecord.setRoomId(tournamentRoom.getId());
         winnerRecord.setTournament(tournament);
-        winnerRecord.setPlayer(winnerPlayer); // already fetched
+        winnerRecord.setPlayer(winnerPlayer);
         winnerRecord.setScore(winner.getScore());
         winnerRecord.setIsWinner(true);
         winnerRecord.setPlayedAt(LocalDateTime.now());
@@ -718,17 +680,10 @@ public class TournamentService {
 
         tournamentResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
 
-
-        // Optional: Update AAG Wallet if needed
-
-        // updateAAGWallet(platformShare, tax);
-
-
         // Return all players' details (including updated amount for the winner)
-
-        return getAllPlayersDetails(gameResult, tournamentRoomOpt, tournament, winner, loser);
-
+        return getAllPlayersDetails(gameResult, Optional.of(tournamentRoom), tournament, winner, loser);
     }
+
 
 
     // Method to determine the winner based on score
