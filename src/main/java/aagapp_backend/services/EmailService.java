@@ -29,13 +29,13 @@ public class EmailService {
         String messageBody = template
                 .replace("{firstName}", customerFirstName)
                 .replace("{lastName}", customerLastName);
-
         try {
             sendEmail(to, Constant.ONBOARDING_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending onboarding email: " + e.getMessage(), e);
         }
     }
+
     public void sendProfileVerificationEmail(
             VendorEntity vendorEntity,
             String generatedPassword
@@ -44,10 +44,9 @@ public class EmailService {
         // Load HTML template
         String template = loadTemplate("email-templates/vendora-approve-mail.html");
 
-        // Extract required data
         String firstName = vendorEntity.getFirst_name();
         String mobileNumber = vendorEntity.getMobileNumber();  // or from vendorSubmissionEntity if applicable
-
+        String to = vendorEntity.getPrimary_email();
         // Replace placeholders
         String messageBody = template
                 .replace("{firstName}", firstName)
@@ -56,7 +55,7 @@ public class EmailService {
 
         try {
             // Send email
-            sendEmail(vendorEntity.getPrimary_email(), Constant.APPROVED_EMAIL_SUBJECT, messageBody,true);
+            sendEmail(to, Constant.APPROVED_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
         }
@@ -67,19 +66,19 @@ public class EmailService {
     ) throws IOException {
 
         // Load HTML template
-        String template = loadTemplate("email-templates/vendor-rejection.html");
+        String template = loadTemplate("email-templates/vendor-rejection-mail.html");
 
-        // Extract required data
         String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
 
         // Replace placeholders
         String messageBody = template
-                .replace("{firstName}", firstName);
+                .replace("{firstName}", firstName  );
 
 
         try {
             // Send email
-            sendEmail(vendorEntity.getPrimary_email(), Constant.REJCTED_EMAIL_SUBJECT, messageBody,true);
+            sendEmail(to, Constant.REJCTED_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
         }
@@ -107,7 +106,6 @@ public class EmailService {
             throw new MessagingException("Error while sending email: " + e.getMessage(), e);
         }
     }
-
 
     public String loadTemplate(String templateName) throws IOException {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(templateName)) {
