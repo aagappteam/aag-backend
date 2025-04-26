@@ -9,14 +9,11 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
-import aagapp_backend.entity.league.League;
-import aagapp_backend.entity.league.LeagueResultRecord;
-import aagapp_backend.entity.league.LeagueRoom;
+import aagapp_backend.entity.league.*;
 
 
 import aagapp_backend.entity.team.LeagueTeam;
 
-import aagapp_backend.entity.league.LeagueRoomWinner;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 
@@ -113,6 +110,9 @@ public class LeagueService {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private LeaguePassRepository leaguePassRepository;
 
 
     @Autowired
@@ -590,16 +590,21 @@ public class LeagueService {
     }
 
     @Transactional
-    public ResponseEntity<?> takePassForLeague(Long playerId) {
+    public ResponseEntity<?> takePassForLeague(Long playerId, Long leagueId) {
         try {
-            // Step 1: Get Player
+            // Step 1: Get Player and League
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
 
-            Wallet wallet = player.getCustomer().getWallet();
-            wallet.setUnplayedBalance(100.0);
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
 
-            // Step 3: Check wallet balance
+
+
+            // Step 2: Check wallet balance
+            Wallet wallet = player.getCustomer().getWallet();
+            //remove when live
+            wallet.setUnplayedBalance(100.0);
             Double currentBalance = wallet.getUnplayedBalance();
             Double passCost = 7.0;
 
@@ -607,19 +612,33 @@ public class LeagueService {
                 return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
             }
 
-
-            // Step 4: Deduct ₹7 and add 3 league passes
+            // Deduct wallet balance
             wallet.setUnplayedBalance(currentBalance - passCost);
-            player.setLeaguePasses(player.getLeaguePasses() + 3);
 
-            // Step 5: Save updates
-            playerRepository.save(player);
+            // Step 3: Check if LeaguePass already exists
+            LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league)
+                    .orElse(null);
 
-            // Step 6: Prepare response data
+            if (pass != null) {
+                // Update existing pass
+                pass.setPassCount(pass.getPassCount() + 3);
+            } else {
+                // Create new LeaguePass
+                pass = new LeaguePass();
+                pass.setPlayer(player);
+                pass.setLeague(league);
+                pass.setPassCount(3);
+            }
+
+            leaguePassRepository.save(pass);
+
+            // Step 4: Prepare response
             Map<String, Object> data = new HashMap<>();
             data.put("walletBalance", wallet.getUnplayedBalance());
-            data.put("leaguePasses", player.getLeaguePasses());
+            data.put("leaguePasses", pass.getPassCount());
             data.put("playerName", player.getPlayerName());
+            data.put("leagueId", league.getId());
+            data.put("leagueName", league.getName());
 
             return responseService.generateSuccessResponse("3 League passes added successfully", data, HttpStatus.OK);
 
@@ -628,6 +647,8 @@ public class LeagueService {
             throw new RuntimeException("Error while processing league pass: " + e.getMessage(), e);
         }
     }
+
+
 
 
     @Transactional
@@ -639,7 +660,10 @@ public class LeagueService {
             League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
 
-            if (player.getLeaguePasses() == 0) {
+            LeaguePass leaguePass = leaguePassRepository.findByPlayerAndLeague(player, league)
+                    .orElseThrow(() -> new RuntimeException("No league passes found for this player in the selected league"));
+
+            if (leaguePass.getPassCount() == 0) {
                 return responseService.generateErrorResponse(
                         "You have used all your passes. Buy more to continue.",
                         HttpStatus.BAD_REQUEST
@@ -678,6 +702,11 @@ public class LeagueService {
                         HttpStatus.INTERNAL_SERVER_ERROR
                 );
             }
+
+            // After player successfully joins the room
+            leaguePass.setPassCount(leaguePass.getPassCount() - 1);
+            leaguePassRepository.save(leaguePass);
+
 
             if (leagueRoom.getCurrentPlayers().size() == leagueRoom.getMaxPlayers()) {
                 leagueRoom.setStatus(LeagueRoomStatus.ONGOING);
@@ -720,18 +749,32 @@ public class LeagueService {
     }
 
 
-    public ResponseEntity<?> getLeaguePasses(Long playerId) {
+    @Transactional
+    public ResponseEntity<?> getLeaguePasses(Long playerId, Long leagueId) {
         try {
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
 
-            return responseService.generateSuccessResponse("League passes fetched successfully", player.getLeaguePasses(), HttpStatus.OK);
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+
+            LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league)
+                    .orElseThrow(() -> new RuntimeException("No league passes found for this player in the selected league"));
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("playerId", player.getPlayerId());
+            data.put("leagueId", league.getId());
+            data.put("leagueName", league.getName());
+            data.put("passCount", pass.getPassCount());
+
+            return responseService.generateSuccessResponse("League passes fetched successfully", data, HttpStatus.OK);
+
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in getting league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
     }
+
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
         try {
@@ -797,7 +840,7 @@ public class LeagueService {
             leagueRoom.getCurrentPlayers().add(player);
             player.setLeagueRoom(leagueRoom);
 //            player.setTeamName(teamName);
-            player.setLeaguePasses(player.getLeaguePasses() - 1);
+//            player.setLeaguePasses(player.getLeaguePasses() - 1);
             leagueRoomRepository.save(leagueRoom);
             playerRepository.save(player);
 

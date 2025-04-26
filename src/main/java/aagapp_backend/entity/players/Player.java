@@ -59,8 +59,8 @@ public class Player {
     private LeagueTeam team;
 
 
-    @Column(name = "league_passes", nullable = false)
-    private int leaguePasses=0;
+//    @Column(name = "league_passes", nullable = false)
+//    private int leaguePasses=0;
 
     @JsonIgnore
     @ManyToOne

@@ -1,0 +1,28 @@
+package aagapp_backend.entity.league;
+
+import aagapp_backend.entity.players.Player;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class LeaguePass {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    private Player player;
+
+    @ManyToOne
+    private League league;
+
+    private int passCount;
+
+}
