@@ -160,10 +160,10 @@ public class TournamentService {
             tournament.setCreatedDate(nowInKolkata);
 
             // Save tournament first to get its ID
-//            Tournament savedTournament = tournamentRepository.save(tournament);
+            Tournament savedTournament = tournamentRepository.save(tournament);
 
             // Create initial rooms
-            /*int numberOfRooms = (tournamentRequest.getParticipants() / 2);
+            int numberOfRooms = (tournamentRequest.getParticipants() / 2);
             for (int i = 0; i < numberOfRooms; i++) {
                 TournamentRoom room = new TournamentRoom();
                 room.setTournament(savedTournament);
@@ -177,7 +177,7 @@ public class TournamentService {
                 String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(), room.getMaxParticipants(), tournament.getMove(), total_prize);
 
                 room.setGamepassword(gamePassword);
-            }*/
+            }
 
             // Save the game to get the game ID
 //            Tournament savedTournament = tournamentRepository.save(tournament);
