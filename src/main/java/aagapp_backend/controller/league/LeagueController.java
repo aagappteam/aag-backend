@@ -16,6 +16,7 @@ import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -54,6 +55,9 @@ public class LeagueController {
     private LeagueRoomRepository leagueRoomRepository;
     @Autowired
     private MatchService matchService;
+
+    @Autowired
+    private ExceptionHandlingService exceptionHandlingImplement;
 
     @Autowired
     public void setChallangeRepository(@Lazy ChallangeRepository challangeRepository) {
@@ -470,13 +474,21 @@ public class LeagueController {
         return leagueService.getPlayerStats(leagueId, playerId);
     }
 
-    // All teams' scores in a league
     @GetMapping("/teams")
-    public List<LeagueResultRecord> getTeamScores(
-            @RequestParam Long leagueId
+    public ResponseEntity<?> getTeamScores(
+            @RequestParam Long leagueId,
+            @RequestParam(required = false) Long playerId
     ) {
-        return leagueService.getTeamScoresByLeague(leagueId);
+        try {
+            Map<String, Object> result = leagueService.getTeamScoresByLeague(leagueId, playerId);
+            return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", result);
+        } catch (Exception e) {
+            exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching leaderboard: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
+
+
 
 
 

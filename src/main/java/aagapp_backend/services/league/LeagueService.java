@@ -114,6 +114,9 @@ public class LeagueService {
     @Autowired
     private LeaguePassRepository leaguePassRepository;
 
+    @Autowired
+    private ExceptionHandlingService exceptionHandlingService;
+
 
     @Autowired
     private ResponseService responseService;
@@ -999,18 +1002,58 @@ public class LeagueService {
         return map;
     }
 
-    // 2. Get all teams' total scores
-    public List<LeagueResultRecord> getTeamScoresByLeague(Long leagueId) {
-        List results = leagueResultRecordRepository.getTeamTotalScoresByLeague(leagueId);
-        /*List<Map<String, Object>> mappedResults = new ArrayList<>();
+    @Transactional
+    public Map<String, Object> getTeamScoresByLeague(Long leagueId, Long playerId) {
+        Map<String, Object> response = new HashMap<>();
 
-        for (Object[] row : results) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("teamName", row[0]);
-            map.put("totalScore", row[1]);
-            mappedResults.add(map);
-        }*/
+        try {
+            List<Object[]> results = leagueResultRecordRepository.getTeamTotalScoresByLeague(leagueId);
+            List<Map<String, Object>> teamScores = new ArrayList<>();
+            int passCount = leaguePassRepository.getPlayerPassCountByLeague(leagueId, playerId);
 
-        return results;
+            for (Object[] row : results) {
+                String teamName = (String) row[0];
+                Long totalScore = (Long) row[1];
+
+                LeagueTeam team = leagueTeamRepository.findByTeamNameAndLeagueId(teamName, leagueId).orElse(null);
+
+                Map<String, Object> teamData = new HashMap<>();
+                teamData.put("teamName", teamName);
+                teamData.put("totalScore", totalScore);
+
+                if (team != null) {
+                    teamData.put("profilePic", team.getProfilePic());
+                    teamData.put("playerCount", playerRepository.countByTeamId(team.getId()));
+                } else {
+                    teamData.put("profilePic", null);
+                    teamData.put("playerCount", 0);
+                }
+
+                teamScores.add(teamData);
+            }
+
+            response.put("teamScores", teamScores);
+
+            if (playerId != null) {
+                Integer playerScore = leagueResultRecordRepository.getPlayerTotalScoreInLeague(leagueId, playerId);
+                Player player = playerRepository.findById(playerId).orElse(null);
+
+                Map<String, Object> playerData = new HashMap<>();
+                playerData.put("playerScore", playerScore != null ? playerScore : 0);
+                playerData.put("profilePic", player != null ? player.getPlayerProfilePic() : null);
+                playerData.put("pass", passCount);
+
+                response.put("player", playerData);
+            }
+
+        } catch (Exception e) {
+            exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw e; // Let controller handle final response
+        }
+
+        return response;
     }
+
+
+
 }
