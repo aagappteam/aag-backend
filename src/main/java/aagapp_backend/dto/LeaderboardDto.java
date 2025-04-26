@@ -18,5 +18,6 @@ public class LeaderboardDto {
     private Integer score;
     private Boolean isWinner;
     private BigDecimal winningAmount;
+
 }
 
