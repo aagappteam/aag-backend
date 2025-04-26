@@ -357,26 +357,23 @@ public class LeagueController {
         }
     }
 
-    @PostMapping("/buy-league-pass/{playerId}")
-    public ResponseEntity<?> buyLeaguePass(@PathVariable Long playerId) {
+    @PostMapping("/buy-league-pass/{playerId}/{leagueId}")
+    public ResponseEntity<?> buyLeaguePass(@PathVariable Long playerId, @PathVariable Long leagueId) {
         try {
-            // Call the service method
-            return leagueService.takePassForLeague(playerId);
-
+            return leagueService.takePassForLeague(playerId, leagueId);
         } catch (RuntimeException e) {
-            // Handle known business logic errors
             return responseService.generateErrorResponse(
                     "Failed to purchase league pass: " + e.getMessage(),
                     HttpStatus.BAD_REQUEST
             );
         } catch (Exception e) {
-            // Handle unknown/internal errors
             return responseService.generateErrorResponse(
                     "An unexpected error occurred while purchasing league pass.",
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
     }
+
 
 
     @PostMapping("/joinLeague")
@@ -432,15 +429,16 @@ public class LeagueController {
         }
     }
 
-    @GetMapping("/get-league-pasess/{playerId}")
-    public ResponseEntity<?> getLeaguePasses(@PathVariable Long playerId) {
+    @GetMapping("/get-league-passes/{playerId}/{leagueId}")
+    public ResponseEntity<?> getLeaguePasses(@PathVariable Long playerId, @PathVariable Long leagueId) {
         try {
-            return leagueService.getLeaguePasses(playerId);
+            return leagueService.getLeaguePasses(playerId, leagueId);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error fetching league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     @GetMapping("/active-game-rooms")
     public ResponseEntity<?> getAllActiveGameRooms() {
