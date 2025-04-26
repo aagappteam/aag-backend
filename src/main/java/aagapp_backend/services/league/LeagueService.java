@@ -1056,4 +1056,57 @@ public class LeagueService {
 
 
 
+    public ResponseEntity<?> getLeagueTeamDetails(Long leagueId, Long currentUserId) {
+        try {
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new RuntimeException("League not found"));
+
+            List<LeagueTeam> teams = leagueTeamRepository.findByLeague(league);
+            if (teams.size() != 2) throw new RuntimeException("Exactly two teams required.");
+
+            LeagueTeam winner = teams.get(0).getTotalScore() >= teams.get(1).getTotalScore() ? teams.get(0) : teams.get(1);
+
+            List<TeamDetailsDTO> teamDetails = new ArrayList<>();
+
+            for (LeagueTeam team : teams) {
+                List<LeagueResultRecord> records = leagueResultRecordRepository.findByLeagueAndLeagueTeam(league, team);
+
+                List<PlayerLeagueScoreDTO> players = records.stream().map(r -> {
+                    Player player = r.getPlayer();
+                    boolean isCurrentUser = player.getCustomer().getId().equals(currentUserId);
+                    return new PlayerLeagueScoreDTO(
+                            player.getPlayerName(),
+                            player.getPlayerProfilePic(), // ✅ real name only
+                            isCurrentUser,
+                            r.getTotalScore(),
+                            2,                            // TODO: Replace with real retry count if available
+                            team.equals(winner)
+                    );
+                }).collect(Collectors.toList());
+
+                teamDetails.add(new TeamDetailsDTO(
+                        team.getTeamName(),
+                        team.getProfilePic(),
+                        team.getTotalScore(),
+                        players
+                ));
+            }
+
+
+            LeagueTeamDetailsResponse leagueTeamDetailsResponse = new LeagueTeamDetailsResponse(
+                    league.getName(),
+                    winner.getTeamName(),
+                    teamDetails
+            );
+
+            return responseService.generateSuccessResponse("League team details fetched successfully.", leagueTeamDetailsResponse, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Failed to fetch league team details because " + e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+
+
+
 }

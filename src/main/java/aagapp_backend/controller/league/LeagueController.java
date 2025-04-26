@@ -489,6 +489,16 @@ public class LeagueController {
     }
 
 
+    @GetMapping("/team-details/{leagueId}")
+    public ResponseEntity<?> getTeamDetails(
+            @PathVariable Long leagueId,
+            @RequestParam Long playerId
+    ) {
+        return leagueService.getLeagueTeamDetails(leagueId, playerId);
+    }
+
+
+
 
 
 
