@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table
@@ -26,12 +28,14 @@ public class TournamentPlayerRegistration {
 
     @ManyToOne
     @JoinColumn(name = "player_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.NO_ACTION) // or CASCADE if you want auto delete
     private Player player;
+
 
     @Enumerated(EnumType.STRING)
     private RegistrationStatus status;
 
     public enum RegistrationStatus {
-        REGISTERED, CANCELLED
+        REGISTERED, CANCELLED,ACTIVE
     }
 }

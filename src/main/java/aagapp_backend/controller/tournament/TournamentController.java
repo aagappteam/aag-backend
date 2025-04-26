@@ -289,8 +289,6 @@ public class TournamentController {
     }
 
 
-
-
     // Endpoint to add a player to a round
     @PostMapping("/add-player-next-round")
     public ResponseEntity<?> addPlayerToRound(

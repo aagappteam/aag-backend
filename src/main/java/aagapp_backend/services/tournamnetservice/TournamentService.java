@@ -401,7 +401,6 @@ public class TournamentService {
 
     }
 
-
     @Transactional
     public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
         try {
@@ -422,10 +421,6 @@ public class TournamentService {
     }
 
 
-
-
-
-
     @Transactional
     public TournamentRoom assignPlayerToRoom(Long playerId, Long tournamentId) {
         List<TournamentRoom> openRooms = roomRepository.findByTournamentIdAndStatus(tournamentId, "OPEN");
@@ -439,7 +434,6 @@ public class TournamentService {
         if (player == null) {
             throw new RuntimeException("Player not found with id " + playerId);
         }
-
         for (TournamentRoom room : openRooms) {
 
             if (room.getCurrentParticipants() < room.getMaxParticipants()) {
@@ -465,7 +459,6 @@ public class TournamentService {
 
         throw new RuntimeException("All rooms are full for tournament " + tournamentId);
     }
-
 
 
     public TournamentRoundWinner addPlayerToRound(Long tournamentId, Long playerId, Integer roundNumber) {
@@ -514,7 +507,6 @@ public class TournamentService {
             throw new RuntimeException("An error occurred while retrieving players for tournament " + tournamentId + " and round " + roundNumber, e);
         }
     }
-
 
     public List<TournamentRoom> createRoomsForPlayersNextRoundAndAssign(Long tournamentId, Integer roundNumber) {
         try {
@@ -832,4 +824,27 @@ public class TournamentService {
         vendorRepository.save(vendor);
 
     }
+
+
+    @Transactional
+    public void reportMatchResult(Long roomId, Long winnerId, int score) {
+        TournamentRoom room = roomRepository.findById(roomId).orElseThrow();
+        Player winner = playerRepository.findById(winnerId).orElseThrow();
+
+        // Save winner record
+        TournamentResultRecord result = new TournamentResultRecord();
+        result.setTournament(room.getTournament());
+        result.setRoomId(roomId);
+        result.setPlayer(winner);
+        result.setIsWinner(true);
+        result.setScore(score);
+        result.setPlayedAt(LocalDateTime.now());
+        tournamentResultRecordRepository.save(result);
+
+        // Set status
+        room.setStatus("COMPLETED");
+        roomRepository.save(room);
+    }
+
+
 }
