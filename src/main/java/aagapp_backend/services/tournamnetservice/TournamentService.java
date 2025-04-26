@@ -249,7 +249,8 @@ public class TournamentService {
 
             // Check if the tournament is full and update the status if necessary
             if (tournament.getCurrentJoinedPlayers() >= tournament.getParticipants()) {
-                tournament.setStatus(TournamentStatus.FULL);  // Mark the tournament as full
+//                tournament.setStatus(TournamentStatus.FULL);  // Mark the tournament as full
+//                System.out.println("tournament fulll");
                 tournamentRepository.save(tournament);
             }
 
