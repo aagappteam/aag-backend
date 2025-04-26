@@ -218,9 +218,7 @@ public class TournamentService {
             int currentRegistrations = tournamentPlayerRegistrationRepository
                     .countByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.REGISTERED);
 
-            if (currentRegistrations >= tournament.getParticipants()) {
-                throw new RuntimeException("The tournament has already reached the maximum number of participants.");
-            }
+
 
             // Find the player by ID
             Player player = playerRepository.findById(playerId)
