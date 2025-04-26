@@ -38,5 +38,5 @@ public interface LeagueResultRecordRepository extends JpaRepository<LeagueResult
                                         @Param("playerId") Long playerId);
 
 
-
+    List<LeagueResultRecord> findByLeagueAndLeagueTeam(League league, LeagueTeam winnerTeam);
 }
