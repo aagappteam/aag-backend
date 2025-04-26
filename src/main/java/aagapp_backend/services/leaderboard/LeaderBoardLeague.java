@@ -3,6 +3,7 @@ package aagapp_backend.services.leaderboard;
 import aagapp_backend.dto.GameLeaderboardResponseDTO;
 import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.LeaderboardResponseDTO;
+import aagapp_backend.dto.LeagueLeaderboardDto;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.league.League;
@@ -106,8 +107,9 @@ public class LeaderBoardLeague {
     }
 
 
-    public List<LeaderboardDto> getLeaderboard(Long leagueId, Long roomId, Boolean winnerFlag) {
+    public List<LeagueLeaderboardDto> getLeaderboard(Long leagueId, Long roomId, Boolean winnerFlag) {
         List<LeagueResultRecord> results;
+
 
         if (roomId != null) {
             // Filter by both game and room
@@ -134,19 +136,18 @@ public class LeaderBoardLeague {
                 .map(this::mapToLeaderboardDto)
                 .collect(Collectors.toList());
     }
-    private LeaderboardDto mapToLeaderboardDto(LeagueResultRecord record) {
+    private LeagueLeaderboardDto mapToLeaderboardDto(LeagueResultRecord record) {
         Player player = record.getPlayer();
-        BigDecimal totalCollection = BigDecimal.valueOf(record.getLeague().getFee()).multiply(BigDecimal.valueOf(record.getLeague().getMaxPlayersPerTeam()));
+//        BigDecimal totalCollection = BigDecimal.valueOf(record.getLeague().getFee()).multiply(BigDecimal.valueOf(record.getLeague().getMaxPlayersPerTeam()));
 
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(0.63));
+//        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(0.63));
 
-        return new LeaderboardDto(
+        return new LeagueLeaderboardDto(
                 player.getPlayerId(),
                 player.getCustomer().getName(),
                 player.getCustomer().getProfilePic(),
                 record.getTotalScore(),
-                record.getIsWinner(),
-                userWin
+                record.getIsWinner()
         );
     }
 }

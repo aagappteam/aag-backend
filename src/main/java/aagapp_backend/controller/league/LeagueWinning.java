@@ -43,6 +43,7 @@ public class LeagueWinning {
             List<PlayerDto> playersDetails = leagueService.processMatch(gameResult);
 
 
+
             // Prepare the response
             Map<String, Object> response = new HashMap<>();
             response.put("players", playersDetails);
@@ -78,7 +79,7 @@ public class LeagueWinning {
             @RequestParam(required = false) Boolean winner  // Optional param
     ) {
         try {
-            List<LeaderboardDto> leaderboard = leaderBoardLeague.getLeaderboard(leagueId, roomId, winner);
+            List<LeagueLeaderboardDto> leaderboard = leaderBoardLeague.getLeaderboard(leagueId, roomId, winner);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         }catch (RuntimeException e){
             return responseService.generateErrorResponse(

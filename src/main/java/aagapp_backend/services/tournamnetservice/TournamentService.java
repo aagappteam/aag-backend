@@ -234,6 +234,10 @@ public class TournamentService {
                 throw new RuntimeException("Player is already registered for this tournament.");
             }
 
+            if (currentRegistrations >= tournament.getParticipants()) {
+                throw new RuntimeException("The tournament has already reached the maximum number of participants.");
+            }
+
             // Register the player
             TournamentPlayerRegistration registration = new TournamentPlayerRegistration();
             registration.setTournament(tournament);
