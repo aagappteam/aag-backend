@@ -881,16 +881,24 @@ public class LeagueService {
 
         League league = legueOpt.get();
         LeaguePlayerDtoWinner winner = determineWinner(leagueMatchProcess.getPlayers()); // Get the winner
-        LeagueTeam winnerLeagueTeam = leagueTeamRepository.findById(winner.getTeamId())
-                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + winner.getTeamId()));
+        Long winnerTeamId = playerRepository.findById(winner.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + winner.getPlayerId()))
+                .getTeam().getId();
+
+        LeagueTeam winnerLeagueTeam = leagueTeamRepository.findById(winnerTeamId)
+                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + winnerTeamId));
 
         // Identify the loser
         LeaguePlayerDtoWinner loser = leagueMatchProcess.getPlayers().stream()
                 .filter(p -> !p.getPlayerId().equals(winner.getPlayerId()))
                 .findFirst().orElseThrow(() -> new RuntimeException("No loser found"));
 
-        LeagueTeam looserLeagueTeam = leagueTeamRepository.findById(loser.getTeamId())
-                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + loser.getTeamId()));
+        Long looserTeamId = playerRepository.findById(loser.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + loser.getPlayerId()))
+                .getTeam().getId();
+
+        LeagueTeam looserLeagueTeam = leagueTeamRepository.findById(looserTeamId)
+                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + looserTeamId));
 
 
         leaveRoom(winner.getPlayerId(), league.getId());
