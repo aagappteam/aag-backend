@@ -50,6 +50,7 @@ public class Player {
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "league_room_id")
+    @JsonBackReference(value = "leagueRoomReference")
     private LeagueRoom leagueRoom;
 
     @ManyToOne
