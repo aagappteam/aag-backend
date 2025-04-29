@@ -911,8 +911,7 @@ public class LeagueService {
 
         }
 
-        leaveRoom(winner.getPlayerId(), league.getId());
-        leaveRoom(loser.getPlayerId(), league.getId());
+
 
         Player winnerPlayer = winnerPlayerOpt.get();
         LeagueResultRecord winnerRecord = new LeagueResultRecord();
@@ -941,6 +940,9 @@ public class LeagueService {
         loserRecord.setPlayedAt(LocalDateTime.now());
 
         leagueResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
+
+        leaveRoom(winner.getPlayerId(), league.getId());
+        leaveRoom(loser.getPlayerId(), league.getId());
 
         return getAllPlayersDetails(leagueMatchProcess, leagueRoomOpt, league, winner, loser);
 
