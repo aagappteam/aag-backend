@@ -37,7 +37,7 @@ public class LeagueResultRecord {
     private League league;
 
     @ManyToOne
-    @JoinColumn(name = "player_id", nullable = false)
+    @JoinColumn(name = "player_id")
     private Player player;
 
     private Integer totalScore=0;
