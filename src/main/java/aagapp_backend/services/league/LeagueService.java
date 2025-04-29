@@ -765,17 +765,17 @@ public class LeagueService {
             League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
 
-            LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league)
-                    .orElseThrow(() -> new RuntimeException("No league passes found for this player in the selected league"));
+            LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league).orElse(null);
 
             Map<String, Object> data = new HashMap<>();
             data.put("playerId", player.getPlayerId());
             data.put("leagueId", league.getId());
             data.put("leagueName", league.getName());
-            data.put("selectedTeamId", pass.getSelectedTeamId());
-            data.put("passCount", pass.getPassCount());
+            data.put("selectedTeamId", pass != null ? pass.getSelectedTeamId() : null);
+            data.put("passCount", pass != null ? pass.getPassCount() : 0);
 
             return responseService.generateSuccessResponse("League passes fetched successfully", data, HttpStatus.OK);
+
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
