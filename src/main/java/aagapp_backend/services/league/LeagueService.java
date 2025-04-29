@@ -665,6 +665,8 @@ public class LeagueService {
 
             LeaguePass leaguePass = leaguePassRepository.findByPlayerAndLeague(player, league)
                     .orElseThrow(() -> new RuntimeException("No league passes found for this player in the selected league"));
+            leaguePass.setSelectedTeamId(teamId);
+            leaguePassRepository.save(leaguePass);
 
             if (leaguePass.getPassCount() == 0) {
                 return responseService.generateErrorResponse(
@@ -691,6 +693,7 @@ public class LeagueService {
                         HttpStatus.BAD_REQUEST
                 );
             }
+
 
             LeagueRoom leagueRoom = findAvailableGameRoom(league);
 
@@ -768,6 +771,7 @@ public class LeagueService {
             data.put("playerId", player.getPlayerId());
             data.put("leagueId", league.getId());
             data.put("leagueName", league.getName());
+            data.put("selectedTeamId", pass.getSelectedTeamId());
             data.put("passCount", pass.getPassCount());
 
             return responseService.generateSuccessResponse("League passes fetched successfully", data, HttpStatus.OK);
