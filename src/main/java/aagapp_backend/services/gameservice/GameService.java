@@ -465,6 +465,7 @@ public void updateDailylimit() {
 
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long gameId) {
+
         try{
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));

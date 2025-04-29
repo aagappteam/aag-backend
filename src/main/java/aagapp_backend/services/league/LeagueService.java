@@ -783,7 +783,7 @@ public class LeagueService {
         }
     }
 
-//    @Transactional
+    @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
         try {
             Player player = playerRepository.findById(playerId)
@@ -800,14 +800,16 @@ public class LeagueService {
 
             player.setLeagueRoom(null);
             leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
+            playerRepository.save(player);
 
             List<Player> remainingPlayers = playerRepository.findAllByLeagueRoom(leagueRoom);
             if (remainingPlayers.isEmpty()) {
                 leagueRoom.setStatus(LeagueRoomStatus.COMPLETED);
                 leagueRoomRepository.save(leagueRoom);
             }
+            LeagueRoom updated= leagueRoomRepository.save(leagueRoom);
 
-            return responseService.generateSuccessResponse("Player left the League Room ", leagueRoom, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Player left the League Room ", updated, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);

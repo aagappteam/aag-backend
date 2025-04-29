@@ -2,6 +2,7 @@ package aagapp_backend.entity.game;
 
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.GameRoomStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -41,12 +42,14 @@ public class GameRoom {
 
     @ManyToOne
     @JoinColumn(name = "game_id", nullable = false)
+    @JsonIgnore
     private Game game;
 
 
     @ElementCollection
     @CollectionTable(name = "ludo_game_room_winners", joinColumns = @JoinColumn(name = "game_room_id"))
     @Column(name = "player_id")
+    @JsonIgnore
     private Set<Long> winners = new HashSet<>();
 
     @Column(name = "created_at", nullable = false)
