@@ -1,6 +1,7 @@
 package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.team.LeagueTeam;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,6 +20,8 @@ public class LeaguePass {
 
     @ManyToOne
     private Player player;
+
+    private Long selectedTeamId;
 
     @ManyToOne
     private League league;
