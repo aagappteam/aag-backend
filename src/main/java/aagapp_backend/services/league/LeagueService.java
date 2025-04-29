@@ -9,6 +9,7 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
+import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.*;
 
 
@@ -764,17 +765,17 @@ public class LeagueService {
             League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
 
-            LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league)
-                    .orElseThrow(() -> new RuntimeException("No league passes found for this player in the selected league"));
+            LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league).orElse(null);
 
             Map<String, Object> data = new HashMap<>();
             data.put("playerId", player.getPlayerId());
             data.put("leagueId", league.getId());
             data.put("leagueName", league.getName());
-            data.put("selectedTeamId", pass.getSelectedTeamId());
-            data.put("passCount", pass.getPassCount());
+            data.put("selectedTeamId", pass != null ? pass.getSelectedTeamId() : null);
+            data.put("passCount", pass != null ? pass.getPassCount() : 0);
 
             return responseService.generateSuccessResponse("League passes fetched successfully", data, HttpStatus.OK);
+
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -782,7 +783,7 @@ public class LeagueService {
         }
     }
 
-    @Transactional
+//    @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
         try {
             Player player = playerRepository.findById(playerId)
@@ -797,19 +798,14 @@ public class LeagueService {
                 return responseService.generateErrorResponse("Player is not in league with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
-
-            leagueRoom.getCurrentPlayers().remove(player);
-            leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
             player.setLeagueRoom(null);
-//            playerRepository.save(player);
-            leagueRoomRepository.save(leagueRoom);
+            leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
 
             List<Player> remainingPlayers = playerRepository.findAllByLeagueRoom(leagueRoom);
             if (remainingPlayers.isEmpty()) {
                 leagueRoom.setStatus(LeagueRoomStatus.COMPLETED);
                 leagueRoomRepository.save(leagueRoom);
             }
-            em.persist(player);
 
             return responseService.generateSuccessResponse("Player left the League Room ", leagueRoom, HttpStatus.OK);
         } catch (Exception e) {
