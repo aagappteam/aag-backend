@@ -68,9 +68,6 @@ public class Challenge {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;
 
-    /*@NotNull(message = "End date can not be null")
-    private ZonedDateTime endDate;*/
-
     @Column(updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime createdAt;
