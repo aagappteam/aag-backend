@@ -130,21 +130,16 @@ public class LeagueService {
 
             AagAvailableGames game = aagGameRepository.findById(leagueRequest.getExistinggameId()).orElse(null);
             if (leagueRequest.getFee() <= 0) throw new IllegalArgumentException("Fee must be positive.");
-            if (leagueRequest.getFee() > Constant.MAX_FEE) throw new IllegalArgumentException("Fee exceeds maximum allowed limit.");
+            if (leagueRequest.getFee() > Constant.MAX_FEE)
+                throw new IllegalArgumentException("Fee exceeds maximum allowed limit.");
 
             if (leagueRequest.getMinPlayersPerTeam() > leagueRequest.getMaxPlayersPerTeam()) {
                 throw new IllegalArgumentException("Min players per team cannot be more than max players.");
             }
-            if (leagueRequest.getScheduledAt().isBefore(ZonedDateTime.now())) {
-                throw new IllegalArgumentException("Scheduled time must be in the future.");
+            if (leagueRequest.getScheduledAt() != null &&
+                    leagueRequest.getScheduledAt().isBefore(ZonedDateTime.now().plusHours(4))) {
+                throw new IllegalArgumentException("Scheduled time must be at least 4 hours in the future.");
             }
-            if (leagueRequest.getEndDate() != null && leagueRequest.getEndDate().isBefore(leagueRequest.getScheduledAt())) {
-                throw new IllegalArgumentException("End time must be after scheduled time.");
-            }
-
-
-
-
 
             Challenge challenge = new Challenge();
             if (game == null) {
@@ -195,13 +190,13 @@ public class LeagueService {
             }
 
             challenge.setName(game.getGameName());
-
-//            challenge.setFee(leagueRequest.getFee());
             challenge.setThemeId(leagueRequest.getThemeId());
             challenge.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
             challenge.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
-            challenge.setScheduledAt(leagueRequest.getScheduledAt());
-//            challenge.setEndDate(leagueRequest.getEndDate());
+            if (leagueRequest.getScheduledAt() != null) {
+                challenge.setScheduledAt(leagueRequest.getScheduledAt());
+            }
+
             challenge.setVendorName(vendor.getFirst_name() + " " + vendor.getLast_name());
             challenge.setVendorProfilePic(vendor.getProfilePic());
             challenge.setName(game.getGameName());
@@ -248,9 +243,6 @@ public class LeagueService {
                 notificationRepository.save(notification);
 
             }
-
-
-
 
 
             return challenge;
@@ -377,18 +369,14 @@ public class LeagueService {
             }
 
             // Get current time in Kolkata timezone
-            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusMinutes(15);
             if (leagueRequest.getScheduledAt() != null) {
-                ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
-                    throw new IllegalArgumentException("The game must be scheduled at least 4 hours in advance.");
-                }
                 league.setStatus(LeagueStatus.SCHEDULED);
-                league.setScheduledAt(scheduledInKolkata);
+                league.setScheduledAt(leagueRequest.getScheduledAt());
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             } else {
                 league.setStatus(LeagueStatus.SCHEDULED);
-                league.setScheduledAt(nowInKolkata.plusMinutes(15));
+                league.setScheduledAt(nowInKolkata);
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             }
 
@@ -623,7 +611,6 @@ public class LeagueService {
                     .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
 
 
-
             // Step 2: Check wallet balance
             Wallet wallet = player.getCustomer().getWallet();
             //remove when live
@@ -670,8 +657,6 @@ public class LeagueService {
             throw new RuntimeException("Error while processing league pass: " + e.getMessage(), e);
         }
     }
-
-
 
 
     @Transactional
@@ -827,7 +812,7 @@ public class LeagueService {
                 leagueRoom.setStatus(LeagueRoomStatus.COMPLETED);
                 leagueRoomRepository.save(leagueRoom);
             }
-            LeagueRoom updated= leagueRoomRepository.save(leagueRoom);
+            LeagueRoom updated = leagueRoomRepository.save(leagueRoom);
 
             return responseService.generateSuccessResponse("Player left the League Room ", updated, HttpStatus.OK);
         } catch (Exception e) {
@@ -857,7 +842,7 @@ public class LeagueService {
             player.setTeam(null);
             leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
             playerRepository.save(player);
-            LeagueRoom updated= leagueRoomRepository.save(leagueRoom);
+            LeagueRoom updated = leagueRoomRepository.save(leagueRoom);
 
             return responseService.generateSuccessResponse("Player left the League Room ", updated, HttpStatus.OK);
         } catch (Exception e) {
@@ -930,7 +915,6 @@ public class LeagueService {
         }
 
 
-
         League league = legueOpt.get();
         LeaguePlayerDtoWinner winner = determineWinner(leagueMatchProcess.getPlayers()); // Get the winner
         Long winnerTeamId = playerRepository.findById(winner.getPlayerId())
@@ -962,15 +946,14 @@ public class LeagueService {
         }
 
 
-
         Player winnerPlayer = winnerPlayerOpt.get();
         LeagueResultRecord winnerRecord = new LeagueResultRecord();
         winnerRecord.setRoomId(leagueRoom.getId());
         winnerRecord.setLeague(league);
         winnerRecord.setPlayer(winnerPlayer); // already fetched
         winnerRecord.setLeagueTeam(winnerLeagueTeam);
-        winnerRecord.setTotalScore(winnerRecord.getTotalScore()+winner.getScore());
-        winnerLeagueTeam.setTotalScore(winnerLeagueTeam.getTotalScore()+winner.getScore());
+        winnerRecord.setTotalScore(winnerRecord.getTotalScore() + winner.getScore());
+        winnerLeagueTeam.setTotalScore(winnerLeagueTeam.getTotalScore() + winner.getScore());
         winnerRecord.setIsWinner(true);
         winnerRecord.setPlayedAt(LocalDateTime.now());
 
@@ -978,14 +961,13 @@ public class LeagueService {
                 .orElseThrow(() -> new RuntimeException("Player not found"));
 
 
-
         LeagueResultRecord loserRecord = new LeagueResultRecord();
         loserRecord.setRoomId(leagueRoom.getId());
         loserRecord.setLeague(league);
         loserRecord.setPlayer(loserPlayer);
         loserRecord.setLeagueTeam(looserLeagueTeam);
-        loserRecord.setTotalScore(loserRecord.getTotalScore()+loser.getScore());
-        looserLeagueTeam.setTotalScore(looserLeagueTeam.getTotalScore()+loser.getScore());
+        loserRecord.setTotalScore(loserRecord.getTotalScore() + loser.getScore());
+        looserLeagueTeam.setTotalScore(looserLeagueTeam.getTotalScore() + loser.getScore());
         loserRecord.setIsWinner(false);
         loserRecord.setPlayedAt(LocalDateTime.now());
 
@@ -1053,7 +1035,6 @@ public class LeagueService {
     }
 
 
-
     // 1. Get player + team + score
     public Map<String, Object> getPlayerStats(Long leagueId, Long playerId) {
         Object[] result = leagueResultRecordRepository.getPlayerTeamAndScoreInLeague(leagueId, playerId);
@@ -1119,7 +1100,6 @@ public class LeagueService {
     }
 
 
-
     public ResponseEntity<?> getLeagueTeamDetails(Long leagueId, Long currentUserId) {
         try {
             League league = leagueRepository.findById(leagueId)
@@ -1174,8 +1154,6 @@ public class LeagueService {
             return responseService.generateErrorResponse("Failed to fetch league team details because " + e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
-
-
 
 
 }
