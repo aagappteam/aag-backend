@@ -412,7 +412,7 @@ public class LeagueController {
     @PostMapping("/leftLeague")
     public ResponseEntity<?> leaveGameRoom(@RequestBody JoinLeagueRequest leaveRoomRequest) {
         try {
-            return leagueService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId());
+            return leagueService.leaveLeague(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId());
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

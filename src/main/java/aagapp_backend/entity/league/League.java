@@ -136,9 +136,9 @@ public class League {
         if (this.maxPlayersPerTeam == null) {
             this.maxPlayersPerTeam = 2; // Default value for maxPlayersPerTeam
         }
-        if (this.endDate == null) {
+        /*if (this.endDate == null) {
             this.endDate = ZonedDateTime.now();
-        }
+        }*/
 
         if (this.move == null) {
             this.move = 12; // Default value for move if not provided

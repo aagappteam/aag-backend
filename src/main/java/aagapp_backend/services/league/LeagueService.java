@@ -129,6 +129,22 @@ public class LeagueService {
         try {
 
             AagAvailableGames game = aagGameRepository.findById(leagueRequest.getExistinggameId()).orElse(null);
+            if (leagueRequest.getFee() <= 0) throw new IllegalArgumentException("Fee must be positive.");
+            if (leagueRequest.getFee() > Constant.MAX_FEE) throw new IllegalArgumentException("Fee exceeds maximum allowed limit.");
+
+            if (leagueRequest.getMinPlayersPerTeam() > leagueRequest.getMaxPlayersPerTeam()) {
+                throw new IllegalArgumentException("Min players per team cannot be more than max players.");
+            }
+            if (leagueRequest.getScheduledAt().isBefore(ZonedDateTime.now())) {
+                throw new IllegalArgumentException("Scheduled time must be in the future.");
+            }
+            if (leagueRequest.getEndDate() != null && leagueRequest.getEndDate().isBefore(leagueRequest.getScheduledAt())) {
+                throw new IllegalArgumentException("End time must be after scheduled time.");
+            }
+
+
+
+
 
             Challenge challenge = new Challenge();
             if (game == null) {
@@ -154,6 +170,9 @@ public class LeagueService {
                 throw new IllegalArgumentException("A vendor cannot challenge themselves");
             }
 
+            if (vendor.getLeagueStatus() != LeagueStatus.AVAILABLE) {
+                throw new IllegalArgumentException("You are not available to challenge others.");
+            }
 
             if (leagueRequest.getOpponentVendorId() == null) {
                 Long oppnentvendorid = getRandomAvailableVendor(vendorId).getService_provider_id();
@@ -799,6 +818,7 @@ public class LeagueService {
             }
 
             player.setLeagueRoom(null);
+            player.setTeam(null);
             leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
             playerRepository.save(player);
 
@@ -807,6 +827,36 @@ public class LeagueService {
                 leagueRoom.setStatus(LeagueRoomStatus.COMPLETED);
                 leagueRoomRepository.save(leagueRoom);
             }
+            LeagueRoom updated= leagueRoomRepository.save(leagueRoom);
+
+            return responseService.generateSuccessResponse("Player left the League Room ", updated, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+
+    }
+
+
+    @Transactional
+    public ResponseEntity<?> leaveLeague(Long playerId, Long leagueId) {
+        try {
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+
+            LeagueRoom leagueRoom = player.getLeagueRoom();
+
+            if (player.getLeagueRoom() == null || leagueRoom == null || !leagueRoom.getLeague().getId().equals(league.getId())) {
+                return responseService.generateErrorResponse("Player is not in league with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            player.setLeagueRoom(null);
+            player.setTeam(null);
+            leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
+            playerRepository.save(player);
             LeagueRoom updated= leagueRoomRepository.save(leagueRoom);
 
             return responseService.generateSuccessResponse("Player left the League Room ", updated, HttpStatus.OK);

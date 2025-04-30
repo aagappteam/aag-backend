@@ -50,21 +50,25 @@ public class Challenge {
     @Enumerated(EnumType.STRING)
     private ChallengeStatus challengeStatus;
 
+    @NotNull(message = "Game id can not be null")
     private Long existinggameId;
 
+    @NotNull(message = "Theme id can not be null")
     private Long themeId;
 
     private Integer minPlayersPerTeam;
     private Integer maxPlayersPerTeam;
 
-    @NotNull
+    @NotNull(message = "Fee can not be null")
     private Double fee;
 
+    @NotNull(message = "Move can not be null")
     private Integer move;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;
 
+    @NotNull(message = "End date can not be null")
     private ZonedDateTime endDate;
 
     @Column(updatable = false)
