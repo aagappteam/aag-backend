@@ -8,12 +8,14 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.*;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.PlayerStatus;
 import aagapp_backend.enums.TournamentStatus;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
@@ -62,6 +64,9 @@ public class TournamentService {
 
     @Autowired
     private EntityManager em;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     private AagGameRepository aagGameRepository;
@@ -1192,6 +1197,13 @@ public class TournamentService {
         BigDecimal prizePerWinner = roundPrize.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
 
         for (TournamentResultRecord winner : winners) {
+            Notification notification = new Notification();
+            notification.setAmount(prizePerWinner.doubleValue());
+            notification.setDetails("You won $" + prizePerWinner + " in Round " + round);
+            notification.setDescription("Round Prize");
+            notification.setRole("Customer");
+            notification.setCustomerId(winner.getPlayer().getCustomer().getId());
+            notificationRepository.save(notification);
             winner.setAmmount(prizePerWinner);
             tournamentResultRecordRepository.save(winner);
         }
@@ -1285,9 +1297,8 @@ public class TournamentService {
             assignPlayerToSpecificRoom(player1, tournamentId, room);
             assignPlayerToSpecificRoom(player2, tournamentId, room);
 
-            // Remove the participants from the tournament result record
-            tournamentResultRecordRepository.delete(participants.get(playerIndex));
-            tournamentResultRecordRepository.delete(participants.get(playerIndex + 1));
+/*            tournamentResultRecordRepository.delete(participants.get(playerIndex));
+            tournamentResultRecordRepository.delete(participants.get(playerIndex + 1));*/
 
             // Update the index for the next pair
             playerIndex += 2;
