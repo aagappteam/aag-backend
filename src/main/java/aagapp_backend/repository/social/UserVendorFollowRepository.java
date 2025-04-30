@@ -33,6 +33,14 @@ public interface UserVendorFollowRepository extends JpaRepository<UserVendorFoll
             "FROM VendorEntity v LEFT JOIN UserVendorFollow f ON f.vendor.service_provider_id = v.service_provider_id " +
             "GROUP BY v.service_provider_id, v.first_name ORDER BY COUNT(f.id) DESC")
     List<TopVendorDto> findTopVendorsWithFollowerCount();
+/*@Query("SELECT new aagapp_backend.dto.TopVendorDto(" +
+        "v.service_provider_id, v.first_name, COUNT(f.id), " +
+        "v.user_name, v.first_name, v.last_name, v.profilePic, v.primary_email) " +
+        "FROM VendorEntity v " +
+        "LEFT JOIN UserVendorFollow f ON f.vendor.service_provider_id = v.service_provider_id " +
+        "GROUP BY v.service_provider_id, v.first_name, v.user_name, v.last_name, v.profilePic, v.primary_email " +
+        "ORDER BY COUNT(f.id) DESC")
+List<TopVendorDto> findTopVendorsWithFollowerCount();*/
 
     @Query("SELECT COUNT(f.id) " +
             "FROM UserVendorFollow f " +

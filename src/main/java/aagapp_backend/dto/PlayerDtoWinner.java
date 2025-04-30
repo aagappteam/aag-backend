@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 public class PlayerDtoWinner {
     private Long playerId;
     private int score;
+/*
     private String teamName;
+*/
 
 }

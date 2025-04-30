@@ -22,10 +22,18 @@ public class FAQs {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @NotNull(message = "Category cannot be null")
+    @Column(length = 100)
     private String category;
+
+    @Column(length = 1000)
     private String question;
+
+    @Column(length = 2000)  // Adjust this size based on your requirements
     private String answer;
+
+    @Column(length = 8)
     private String createdFor;
 
     public FAQs(String category, String question, String answer, String createdFor) {
@@ -34,5 +42,5 @@ public class FAQs {
         this.answer = answer;
         this.createdFor = createdFor;
     }
-
 }
+

@@ -17,6 +17,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.CurrentTimestamp;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.Date;
 
@@ -44,6 +45,14 @@ public class Tournament {
     private String name;
 
     private Double totalPrizePool;
+
+    @Column(nullable = false, columnDefinition = "integer default 1")
+    private int round = 1;
+
+    @Column(nullable = false, columnDefinition = "integer default 1")
+    private int totalrounds = 1;
+
+    private BigDecimal roomprize;
 
     @ManyToOne
     @JoinColumn(name = "theme_id", nullable = true)

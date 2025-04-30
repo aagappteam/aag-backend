@@ -390,14 +390,6 @@ public class CommandLineService implements CommandLineRunner {
         Query ludo_league_roomsalterQueryquery = entityManager.createNativeQuery(ludo_league_roomsalterQuery);
         ludo_league_roomsalterQueryquery.executeUpdate();*/
 
-
-        if (entityManager.createQuery("SELECT COUNT(f) FROM FAQs f", Long.class).getSingleResult() == 0) {
-            faqService.addFAQIfNeeded();
-
-
-        }
-
-
     }
 
 }

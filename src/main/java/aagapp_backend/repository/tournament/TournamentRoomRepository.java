@@ -21,4 +21,11 @@ public interface TournamentRoomRepository extends JpaRepository<TournamentRoom ,
     long sumMaxParticipantsByTournamentId(@Param("tournamentId") Long tournamentId);
 
 
+    List<TournamentRoom> findByTournamentIdAndRoundAndStatus(Long tournamentId, int round, String status);
+
+    long countByTournamentIdAndRoundAndStatus(Long tournamentId, int round, String status);
+
+    long countByTournamentIdAndRound(Long tournamentId, int round);
+
+    List<TournamentRoom> findByTournamentIdAndRound(Long tournamentId, int round);
 }
