@@ -454,13 +454,7 @@ public class LeagueService {
         newRoom.setLeague(league);
 
         // Save the room first so it gets an ID
-        newRoom = leagueRoomRepository.save(newRoom);
-        BigDecimal toalprize = matchService.getWinningAmountLeague(newRoom);
-
-        String gamePassword = this.createNewGame(baseUrl, league.getId(), newRoom.getId(), newRoom.getMaxPlayers(), league.getMove(), toalprize);
-
-        newRoom.setGamepassword(gamePassword);
-
+        leagueRoomRepository.save(newRoom);
         return newRoom;
     }
 
@@ -720,8 +714,16 @@ public class LeagueService {
 
 
             if (leagueRoom.getCurrentPlayers().size() == leagueRoom.getMaxPlayers()) {
+
+                BigDecimal toalprize = matchService.getWinningAmountLeague(leagueRoom);
+
+                String gamePassword = this.createNewGame(baseUrl, league.getId(), leagueRoom.getId(), leagueRoom.getMaxPlayers(), league.getMove(), toalprize);
+
+                leagueRoom.setGamepassword(gamePassword);
+
                 leagueRoom.setStatus(LeagueRoomStatus.ONGOING);
                 leagueRoomRepository.save(leagueRoom);
+
 
                 LeagueRoom newRoom = createNewEmptyRoom(league);
                 leagueRoomRepository.save(newRoom);
