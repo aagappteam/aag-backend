@@ -59,8 +59,7 @@ public class TournamentService {
     @Autowired
     private TournamentRepository tournamentRepository;
 
-    @Autowired
-   private TournamentRoundParticipantRepository tournamentRoundParticipantRepository;
+
 
     @Autowired
     private EntityManager em;
@@ -1319,52 +1318,6 @@ public class TournamentService {
     public List<TournamentResultRecord> getReadyPlayersByTournamentAndRound(Long tournamentId, int roundNumber) {
         return tournamentResultRecordRepository.findByTournamentIdAndRoundAndStatus(tournamentId, roundNumber, "READY_TO_PLAY");
     }
-
-
-
-/*    @Transactional
-    public void processNextRoundMatches(Long tournamentId, Integer roundNumber) {
-        Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
-
-        List<TournamentRoundParticipant> participants = tournamentRoundParticipantRepository
-                .findByTournamentIdAndRoundNumber(tournamentId, roundNumber);
-
-        while (participants.size() >= 2) {
-            Player player1 = playerRepository.findById(participants.get(0).getPlayerId())
-                    .orElseThrow(() -> new RuntimeException("Player1 not found"));
-            Player player2 = playerRepository.findById(participants.get(1).getPlayerId())
-                    .orElseThrow(() -> new RuntimeException("Player2 not found"));
-
-            TournamentRoom room = new TournamentRoom();
-            room.setTournament(tournament);
-            room.setRound(roundNumber);
-            room.setMaxParticipants(2);
-            room.setCurrentParticipants(2);
-            room.setStatus("OPEN");
-            room.getCurrentPlayers().add(player1);
-            room.getCurrentPlayers().add(player2);
-            roomRepository.save(room);
-
-            tournamentRoundParticipantRepository.delete(participants.get(0));
-            tournamentRoundParticipantRepository.delete(participants.get(1));
-
-            participants = tournamentRoundParticipantRepository
-                    .findByTournamentIdAndRoundNumber(tournamentId, roundNumber);
-        }
-
-        if (participants.size() == 1) {
-            TournamentResultRecord freePassRecord = new TournamentResultRecord();
-            freePassRecord.setTournament(tournament);
-            freePassRecord.setPlayer(playerRepository.findById(participants.get(0).getPlayerId())
-                    .orElseThrow(() -> new RuntimeException("Free pass player not found")));
-            freePassRecord.setRound(roundNumber);
-            freePassRecord.setIsWinner(true);
-            freePassRecord.setScore(0);
-            tournamentResultRecordRepository.save(freePassRecord);
-            tournamentRoundParticipantRepository.delete(participants.get(0));
-        }
-    }*/
 
 
 }
