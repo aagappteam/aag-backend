@@ -38,5 +38,9 @@ public interface LeagueResultRecordRepository extends JpaRepository<LeagueResult
                                         @Param("playerId") Long playerId);
 
 
-    List<LeagueResultRecord> findByLeagueAndLeagueTeam(League league, LeagueTeam winnerTeam);
+    @Query("SELECT r FROM LeagueResultRecord r WHERE r.league.id = :leagueId AND r.leagueTeam.id = :teamId")
+    List<LeagueResultRecord> findByLeagueIdAndLeagueTeamId(@Param("leagueId") Long leagueId, @Param("teamId") Long teamId);
+
+
+
 }

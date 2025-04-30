@@ -903,10 +903,6 @@ public class LeagueService {
                 .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + looserTeamId));
 
 
-        leaveRoom(winner.getPlayerId(), league.getId());
-        leaveRoom(loser.getPlayerId(), league.getId());
-
-
         Optional<Player> winnerPlayerOpt = playerRepository.findById(winner.getPlayerId());
 
         if (winnerPlayerOpt.isEmpty()) {
@@ -915,11 +911,14 @@ public class LeagueService {
 
         }
 
+
+
         Player winnerPlayer = winnerPlayerOpt.get();
         LeagueResultRecord winnerRecord = new LeagueResultRecord();
         winnerRecord.setRoomId(leagueRoom.getId());
         winnerRecord.setLeague(league);
         winnerRecord.setPlayer(winnerPlayer); // already fetched
+        winnerRecord.setLeagueTeam(winnerLeagueTeam);
         winnerRecord.setTotalScore(winnerRecord.getTotalScore()+winner.getScore());
         winnerLeagueTeam.setTotalScore(winnerLeagueTeam.getTotalScore()+winner.getScore());
         winnerRecord.setIsWinner(true);
@@ -934,12 +933,17 @@ public class LeagueService {
         loserRecord.setRoomId(leagueRoom.getId());
         loserRecord.setLeague(league);
         loserRecord.setPlayer(loserPlayer);
+        loserRecord.setLeagueTeam(looserLeagueTeam);
         loserRecord.setTotalScore(loserRecord.getTotalScore()+loser.getScore());
         looserLeagueTeam.setTotalScore(looserLeagueTeam.getTotalScore()+loser.getScore());
         loserRecord.setIsWinner(false);
         loserRecord.setPlayedAt(LocalDateTime.now());
 
         leagueResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
+
+        leaveRoom(winner.getPlayerId(), league.getId());
+        leaveRoom(loser.getPlayerId(), league.getId());
+
         return getAllPlayersDetails(leagueMatchProcess, leagueRoomOpt, league, winner, loser);
 
     }
@@ -1079,17 +1083,22 @@ public class LeagueService {
             List<TeamDetailsDTO> teamDetails = new ArrayList<>();
 
             for (LeagueTeam team : teams) {
-                List<LeagueResultRecord> records = leagueResultRecordRepository.findByLeagueAndLeagueTeam(league, team);
+                List<LeagueResultRecord> records = leagueResultRecordRepository.findByLeagueIdAndLeagueTeamId(league.getId(), team.getId());
+                Map<Long, List<LeagueResultRecord>> groupedByPlayer = records.stream()
+                        .collect(Collectors.groupingBy(r -> r.getPlayer().getPlayerId()));
 
-                List<PlayerLeagueScoreDTO> players = records.stream().map(r -> {
-                    Player player = r.getPlayer();
+                List<PlayerLeagueScoreDTO> players = groupedByPlayer.values().stream().map(playerRecords -> {
+                    LeagueResultRecord firstRecord = playerRecords.get(0);
+                    Player player = firstRecord.getPlayer();
+                    int totalScore = playerRecords.stream().mapToInt(LeagueResultRecord::getTotalScore).sum();
                     boolean isCurrentUser = player.getCustomer().getId().equals(currentUserId);
+
                     return new PlayerLeagueScoreDTO(
                             player.getPlayerName(),
-                            player.getPlayerProfilePic(), // ✅ real name only
+                            player.getPlayerProfilePic(),
                             isCurrentUser,
-                            r.getTotalScore(),
-                            2,                            // TODO: Replace with real retry count if available
+                            totalScore,
+                            2, // You can replace this with actual retry count if available
                             team.equals(winner)
                     );
                 }).collect(Collectors.toList());
