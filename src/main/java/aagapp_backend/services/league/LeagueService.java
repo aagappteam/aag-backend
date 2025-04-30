@@ -201,7 +201,7 @@ public class LeagueService {
             challenge.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
             challenge.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
             challenge.setScheduledAt(leagueRequest.getScheduledAt());
-            challenge.setEndDate(leagueRequest.getEndDate());
+//            challenge.setEndDate(leagueRequest.getEndDate());
             challenge.setVendorName(vendor.getFirst_name() + " " + vendor.getLast_name());
             challenge.setVendorProfilePic(vendor.getProfilePic());
             challenge.setName(game.getGameName());
@@ -385,11 +385,11 @@ public class LeagueService {
                 }
                 league.setStatus(LeagueStatus.SCHEDULED);
                 league.setScheduledAt(scheduledInKolkata);
-                league.setEndDate(leagueRequest.getEndDate());
+                league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             } else {
-                league.setStatus(LeagueStatus.ACTIVE);
+                league.setStatus(LeagueStatus.SCHEDULED);
                 league.setScheduledAt(nowInKolkata.plusMinutes(15));
-                league.setEndDate(leagueRequest.getEndDate());
+                league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             }
 
             // Set the minimum and maximum players
