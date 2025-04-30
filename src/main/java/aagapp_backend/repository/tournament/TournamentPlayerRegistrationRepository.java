@@ -21,6 +21,5 @@ public interface TournamentPlayerRegistrationRepository extends JpaRepository<To
     // Get the number of registered players for a specific tournament
     int countByTournamentIdAndStatus(Long tournamentId, TournamentPlayerRegistration.RegistrationStatus status);
 
-
     List<TournamentPlayerRegistration> findByTournamentIdAndStatus(Long tournamentId, TournamentPlayerRegistration.RegistrationStatus registrationStatus);
 }

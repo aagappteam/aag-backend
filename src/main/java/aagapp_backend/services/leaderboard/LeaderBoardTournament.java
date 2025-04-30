@@ -3,10 +3,12 @@ package aagapp_backend.services.leaderboard;
 import aagapp_backend.dto.GameLeaderboardResponseDTO;
 import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.LeaderboardResponseDTO;
+import aagapp_backend.dto.leaderboard.TournamentLeaderboardDto;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.tournament.TournamentResultRecord;
 import aagapp_backend.entity.tournament.TournamentRoomWinner;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -48,7 +50,7 @@ public class LeaderBoardTournament {
     @Autowired
     private TournamentResultRecordRepository tournamentResultRecordRepository;
 
-    public GameLeaderboardResponseDTO getLeaderboard(Long tournamentId, Pageable pageable) {
+    public GameLeaderboardResponseDTO getLeaderboardforvendor(Long tournamentId, Pageable pageable) {
         // 1. Fetch the game details
         Optional<Tournament> gameOpt = tournamentRepository.findById(tournamentId);
         if (gameOpt.isEmpty()) {
@@ -63,18 +65,20 @@ public class LeaderBoardTournament {
         }
         ThemeEntity theme = themeOpt.get();
 
-        // 3. Fetch all winners (players with scores)
-        Page<TournamentRoomWinner> winnersPage = tournamentRoomWinnerRepository.findByTournamentRoomId(tournamentId, pageable);
-        List<TournamentRoomWinner> winners = winnersPage.getContent();
+        // 3. Fetch all tournament results (players with scores, only winners)
+        Page<TournamentResultRecord> resultPage = tournamentResultRecordRepository
+                .findByTournamentIdAndIsWinnerTrue(tournamentId, pageable);
+        List<TournamentResultRecord> results = resultPage.getContent();
 
         // 4. Fetch total players in game rooms (sum of maxPlayers from GameRoom)
         long totalPlayers = tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId);
 
         // 5. Prepare player list
         List<LeaderboardResponseDTO> playerList = new ArrayList<>();
-        for (TournamentRoomWinner winner : winners) {
-            Player player = winner.getPlayer();
+        for (TournamentResultRecord result : results) {
+            Player player = result.getPlayer();
 
+            // Fetch player details
             Optional<CustomCustomer> playerDetails = customCustomerRepository.findById(player.getPlayerId());
             if (playerDetails.isEmpty()) {
                 throw new RuntimeException("Player details not found for player ID: " + player.getPlayerId());
@@ -84,37 +88,38 @@ public class LeaderBoardTournament {
             playerDTO.setPlayerId(player.getPlayerId());
             playerDTO.setPlayerName(playerDetails.get().getName());
             playerDTO.setProfilePicture(playerDetails.get().getProfilePic());
-            playerDTO.setScore(winner.getScore());
+            playerDTO.setScore(result.getScore());
+            playerDTO.setWinningammount(result.getAmmount() != null ? result.getAmmount().doubleValue() : 0.0);
 
             playerList.add(playerDTO);
         }
 
-        // 6. Return final wrapped DTO
+        // 6. Return final wrapped DTO with pagination
         GameLeaderboardResponseDTO response = new GameLeaderboardResponseDTO();
         response.setGameName(game.getName());
-        response.setGameFee(game.getTotalPrizePool());
+        response.setGameFee((double) game.getEntryFee());
         response.setGameIcon(game.getGameUrl());
         response.setThemeName(theme.getName());
         response.setTotalPlayers((int) totalPlayers);
         response.setPlayers(playerList);
-        response.setTotalPages(winnersPage.getTotalPages());
-        response.setTotalItems(winnersPage.getNumberOfElements());
-        response.setCurrentPage(winnersPage.getNumber());
+        response.setTotalPages(resultPage.getTotalPages());
+        response.setTotalItems(resultPage.getNumberOfElements());
+        response.setCurrentPage(resultPage.getNumber());
 
         return response;
     }
 
 
-    public List<LeaderboardDto> getLeaderboard(Long leagueId, Long roomId, Boolean winnerFlag) {
-        List<LeagueResultRecord> results;
+
+    public List<TournamentLeaderboardDto> getLeaderboard(Long leagueId, Long roomId, Boolean winnerFlag) {
+        List<TournamentResultRecord> results;
 
         if (roomId != null) {
-            // Filter by both game and room
             results = tournamentResultRecordRepository.findByTournament_IdAndRoomId(leagueId, roomId);
         } else {
-            // Filter only by game
             results = tournamentResultRecordRepository.findByTournament_Id(leagueId);
         }
+
         if (results.isEmpty()) {
             throw new RuntimeException("No game results found for this room and game.");
         }
@@ -122,33 +127,35 @@ public class LeaderBoardTournament {
         // Filter based on winner param
         if (winnerFlag != null) {
             results = results.stream()
-                    .filter(record -> record.getIsWinner().equals(winnerFlag))
+                    .filter(record -> winnerFlag.equals(record.getIsWinner()))
                     .collect(Collectors.toList());
         }
 
-        // Sort by score in descending order
-        results.sort(Comparator.comparing(LeagueResultRecord::getTotalScore).reversed());
+        results.sort(Comparator.comparing(TournamentResultRecord::getScore).reversed());
 
         return results.stream()
-                .map(this::mapToLeaderboardDto)
+                .map(this::mapToTournamentLeaderboardDto)
                 .collect(Collectors.toList());
     }
-    private LeaderboardDto mapToLeaderboardDto(LeagueResultRecord record) {
+
+    private TournamentLeaderboardDto mapToTournamentLeaderboardDto(TournamentResultRecord record) {
         Player player = record.getPlayer();
 
-        BigDecimal totalCollection = BigDecimal.valueOf(record.getLeague().getFee()).multiply(BigDecimal.valueOf(record.getLeague().getMaxPlayersPerTeam()));
+       /* BigDecimal totalCollection = BigDecimal.valueOf(record.getTournament().getEntryFee())
+                .multiply(BigDecimal.valueOf(record.getTournament().getCurrentJoinedPlayers()));*/
+        BigDecimal userWin = record.getAmmount();
 
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(0.63));
-
-        return new LeaderboardDto(
+        return new TournamentLeaderboardDto(
                 player.getPlayerId(),
                 player.getCustomer().getName(),
                 player.getCustomer().getProfilePic(),
-                record.getTotalScore(),
+                record.getScore(),
                 record.getIsWinner(),
-                userWin
-
-
+                userWin,
+                record.getRound(),
+                record.getRoomId() != null ? record.getRoomId() : null
         );
     }
+
+
 }

@@ -25,7 +25,6 @@ import org.springframework.core.io.ClassPathResource;
 @Service
 public class NotoficationFirebase {
 
-
     private Logger logger = LoggerFactory.getLogger(NotoficationFirebase.class);
 
 public void sendNotificationToAll(String title, String body) throws FirebaseMessagingException {
@@ -46,17 +45,30 @@ public void sendNotificationToAll(String title, String body) throws FirebaseMess
         e.printStackTrace();
         throw new RuntimeException("Error sending notification: " + e.getMessage());
     }
+
 }
 
+public void sendNotification(String token, String title, String body) {
+        NotificationRequest request = new NotificationRequest();
+        request.setToken(token);
+        request.setTitle(title);
+        request.setBody(body);
+        request.setTopic("general"); // or any topic you want; just needs to be non-null
 
+        try {
+            sendMessageToToken(request);
+        } catch (Exception e) {
+            logger.error("Failed to send notification to token: {}", token, e);
+        }
+}
 
-    public void sendMessageToToken(NotificationRequest request)
+public void sendMessageToToken(NotificationRequest request)
             throws InterruptedException, ExecutionException {
         Message message = getPreconfiguredMessageToToken(request);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         String jsonOutput = gson.toJson(message);
         String response = sendAndGetResponse(message);
-    }
+}
 
     private String sendAndGetResponse(Message message) throws InterruptedException, ExecutionException {
         return FirebaseMessaging.getInstance().sendAsync(message).get();

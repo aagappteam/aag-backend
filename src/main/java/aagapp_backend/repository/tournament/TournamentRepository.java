@@ -16,7 +16,10 @@ import java.util.List;
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     Page<Tournament> findTournamentByStatusAndVendorId(TournamentStatus status, Long vendorId, Pageable pageable);
 
+    List<Tournament> findByStatusAndScheduledAtBetween(TournamentStatus status, ZonedDateTime start, ZonedDateTime end);
+
     Page<Tournament> findByStatus(TournamentStatus status, Pageable pageable);
+    List<Tournament> findByStatus(TournamentStatus status);
 
     Page<Tournament> findByVendorId(Long vendorId, Pageable pageable);
     Page<Tournament> findByVendorIdAndStatusAndScheduledAtBetween(
@@ -39,4 +42,5 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
             @Param("startTime") ZonedDateTime startTime,
             @Param("endTime") ZonedDateTime endTime
     );
+
 }

@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,6 +27,8 @@ public class TournamentResultRecord {
     private Long id;
 
     private Long roomId;
+    private String status = "READY_TO_PLAY";
+
 
     @ManyToOne
     @JoinColumn(name = "tournament_id", nullable = false)
@@ -35,9 +38,14 @@ public class TournamentResultRecord {
     @JoinColumn(name = "player_id", nullable = false)
     private Player player;
 
+    @Column(name = "amount", precision = 10, scale = 2)
+    private BigDecimal ammount;
+
     private Integer score;
 
     private Boolean isWinner;
+
+    private Integer round;
 
     private LocalDateTime playedAt;
 }

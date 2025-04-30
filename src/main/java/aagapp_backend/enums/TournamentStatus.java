@@ -15,5 +15,6 @@ public enum TournamentStatus {
     DECLINED,
     CHALLENGED,
     ENGAGED,
-    LIVE
+    LIVE,
+    COMPLETED
 }

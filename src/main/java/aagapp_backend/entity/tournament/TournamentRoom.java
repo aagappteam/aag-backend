@@ -35,7 +35,6 @@ public class TournamentRoom {
     @JsonIgnore
     private Tournament tournament;
 
-
     private int maxParticipants;
     private int currentParticipants;
     private int round=1;

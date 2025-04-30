@@ -65,6 +65,11 @@ public class Player {
     @JoinColumn(name = "tournament_room_id")
     private TournamentRoom tournamentRoom;
 
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    private PlayerStatus status;
+
+
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
