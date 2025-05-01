@@ -608,7 +608,7 @@ public class LeagueService {
             // Step 2: Check wallet balance
             Wallet wallet = player.getCustomer().getWallet();
             //remove when live
-            wallet.setUnplayedBalance(100.0);
+//            wallet.setUnplayedBalance(100.0);
             Double currentBalance = wallet.getUnplayedBalance();
             Double passCost = 7.0;
 
