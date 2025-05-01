@@ -2,8 +2,10 @@ package aagapp_backend.controller.tournament;
 
 import aagapp_backend.dto.GameResult;
 import aagapp_backend.dto.GameRoomResponseDTO;
+import aagapp_backend.dto.JoinLeagueRequest;
 import aagapp_backend.dto.TournamentRequest;
 import aagapp_backend.dto.tournament.MatchResultRequest;
+import aagapp_backend.dto.tournament.TournamentJoinRequest;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
@@ -260,8 +262,17 @@ public class TournamentController {
     }
 
 
-    @PostMapping("/join-room/{tournamentId}")
-    public ResponseEntity<?> joinTournament(@PathVariable Long tournamentId, @RequestParam Long playerId) {
+    @PostMapping("/join-room")
+    public ResponseEntity<?> joinTournament(@RequestBody TournamentJoinRequest tournamentJoinRequest ) {
+
+        Long tournamentId = tournamentJoinRequest.getGameid();
+        Long playerId = tournamentJoinRequest.getPlayerId();
+
+        if (tournamentId == null || playerId == null) {
+            return ResponseEntity.badRequest().body("Tournament ID and Player ID are required.");
+        }
+
+
         TournamentPlayerRegistration registration = tournamentPlayerRegistration
                 .findByTournamentIdAndPlayer_PlayerId(tournamentId, playerId)
                 .orElseThrow(() -> new RuntimeException("Player not registered for this tournament"));
@@ -283,8 +294,17 @@ public class TournamentController {
 
 
 
-    @PostMapping("/leave-room/{playerId}/{tournamentId}")
-    public ResponseEntity<?> leaveTournamentRoom(@PathVariable Long playerId, @PathVariable Long tournamentId) {
+    @PostMapping("/leave-room")
+    public ResponseEntity<?> leaveTournamentRoom(@RequestBody TournamentJoinRequest tournamentJoinRequest) {
+
+
+        Long tournamentId = tournamentJoinRequest.getGameid();
+        Long playerId = tournamentJoinRequest.getPlayerId();
+
+        if (tournamentId == null || playerId == null) {
+            return ResponseEntity.badRequest().body("Tournament ID and Player ID are required.");
+        }
+
         // Delegate the request to the existing TournamentController
         return tournamentService.leaveRoom(playerId, tournamentId);
     }
@@ -382,18 +402,32 @@ public class TournamentController {
         }
     }
 
-/*    @PostMapping("/add-player-next-round")
+    @PostMapping("/add-player-next-round")
     public ResponseEntity<?> playAgain(
             @RequestParam Long tournamentId,
-            @RequestParam Long playerId,
-            @RequestParam Integer roundNumber) {
-        try {
-            TournamentRoundParticipant participant = tournamentService.addPlayerToNextRound(tournamentId, playerId, roundNumber);
-            return responseService.generateSuccessResponse("Player added to next round.", participant, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return responseService.generateErrorResponse("Error: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            @RequestParam Integer roundNumber,
+            @RequestParam Long playerId
+    ) {
+        TournamentResultRecord record = tournamentResultRecordRepository
+                .findByTournamentIdAndPlayerIdAndRoundAndIsWinnerTrue(
+                        tournamentId, playerId, roundNumber)
+                .orElse(null);
+
+        if (record == null) {
+            return responseService.generateErrorResponse(
+                    "No winner record found for the player in this round", HttpStatus.NOT_FOUND);
         }
-    }*/
+
+        TournamentResultRecord nextRoundRecord = tournamentService.addPlayerToNextRound(
+                tournamentId,
+                roundNumber,
+                record.getPlayer());
+
+        return responseService.generateSuccessResponse(
+                "Player added to next round.", nextRoundRecord, HttpStatus.OK);
+    }
+
+
 
 
     // Endpoint to create rooms for players (called when creating rooms for tournament and round)

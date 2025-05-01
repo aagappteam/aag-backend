@@ -390,7 +390,7 @@ public class LeagueService {
             // Save the game to get the game ID
             League savedLeague = leagueRepository.save(league);
 
-// 👇 Add LeagueTeam creation here
+        // 👇 Add LeagueTeam creation here
 
             LeagueTeam challengingTeam = new LeagueTeam();
             challengingTeam.setTeamName("Team " + opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());

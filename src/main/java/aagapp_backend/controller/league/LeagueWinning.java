@@ -21,7 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/leagues/winning")
-public class LeagueWinning {
+public class  LeagueWinning {
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandlingImplement;
