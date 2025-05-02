@@ -3,6 +3,7 @@ package aagapp_backend.entity.league;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.LeagueRoomStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -21,10 +22,6 @@ import java.util.Set;
         indexes = {
                 @Index(name = "idx_room_code", columnList = "room_code"),
                 @Index(name = "idx_status", columnList = "status"),
-/*
-                @Index(name = "idx_game_id_league", columnList = "game_id"),
-*/
-                /*@Index(name = "idx_current_player_id", columnList = "current_player_id"),*/
                 @Index(name = "idx_created_at_league", columnList = "created_at"),
                 @Index(name = "idx_league_id_status", columnList = "league_id, status")
         }
@@ -57,20 +54,21 @@ public class LeagueRoom {
 
     @ManyToOne
     @JoinColumn(name = "league_id", nullable = false)
+    @JsonIgnore
     private League league;
 
 
 
 
-    private Long currentPlayerId; // ID of the current player's turn
+//    private Long currentPlayerId;
 
-    @Column(name = "turn_order")
-    private int turnOrder = 0;
+//    @Column(name = "turn_order")
+//    private int turnOrder = 0;
 
-    @ElementCollection
-    @CollectionTable(name = "ludo_game_room_winners", joinColumns = @JoinColumn(name = "game_room_id"))
-    @Column(name = "player_id")
-    private Set<Long> winners = new HashSet<>();
+//    @ElementCollection
+//    @CollectionTable(name = "ludo_game_room_winners", joinColumns = @JoinColumn(name = "game_room_id"))
+//    @Column(name = "player_id")
+//    private Set<Long> winners = new HashSet<>();
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

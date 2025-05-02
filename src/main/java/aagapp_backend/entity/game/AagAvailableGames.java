@@ -50,6 +50,9 @@ public class AagAvailableGames {
     @JsonManagedReference
     private List<ThemeEntity> themes;
 
+
+
+
     // Cascading all operations on prices: persist, merge, remove, refresh, detach
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinTable(

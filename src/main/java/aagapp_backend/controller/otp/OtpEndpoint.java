@@ -287,7 +287,7 @@ public class OtpEndpoint {
                         // Create a new wallet for the referrer if it doesn't exist
                         referrerWallet = new Wallet();
                         referrerWallet.setCustomCustomer(existingCustomer);
-                        referrerWallet.setUnplayedBalance(0F);  // Set default value
+                        referrerWallet.setUnplayedBalance(0.0);  // Set default value
                         referrerWallet.setWinningAmount(BigDecimal.ZERO);  // Set default value
                         existingCustomer.setBonusBalance(BigDecimal.ZERO);  // Set default value
                         referrerWallet.setIsTest(false);  // Set default value (assuming it's not a test account)

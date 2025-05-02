@@ -2,10 +2,13 @@ package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.enums.ChallengeStatus;
 import aagapp_backend.enums.LeagueStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -15,6 +18,8 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -45,6 +50,11 @@ public class League {
 
     private String gameName;
 
+    @OneToMany(mappedBy = "league", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<LeagueTeam> teams;
+
+
     @Column(name = "challenging_vendor_id")
     private Long challengingVendorId;
 
@@ -70,7 +80,7 @@ public class League {
 
     @ManyToOne
     @JoinColumn(name = "vendor_id", nullable = false)
-    @JsonBackReference
+    @JsonIgnore
     private VendorEntity vendorEntity;
 
 
@@ -105,7 +115,7 @@ public class League {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime createdDate;
 
-    private Integer totalplayerscount;
+//    private Integer totalplayerscount;
 
 
     @Nullable

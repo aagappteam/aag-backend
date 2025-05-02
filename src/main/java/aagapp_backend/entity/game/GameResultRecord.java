@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,6 +31,9 @@ public class GameResultRecord {
     @ManyToOne
     @JoinColumn(name = "player_id", nullable = false)
     private Player player;
+
+    @Column(name = "winning_ammount", nullable = true)
+    private BigDecimal winningammount;
 
     private Integer score;
 

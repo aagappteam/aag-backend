@@ -10,7 +10,15 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "league_result_record")
+@Table(
+        name = "league_result_record",
+        indexes = {
+                @Index(name = "idx_league_id", columnList = "league_id"),
+                @Index(name = "idx_player_id_league_result_record", columnList = "player_id"),
+                @Index(name = "idx_room_id", columnList = "roomId"),
+                @Index(name = "idx_played_at", columnList = "playedAt")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,7 +39,7 @@ public class LeagueResultRecord {
     @JoinColumn(name = "player_id", nullable = false)
     private Player player;
 
-    private Integer score;
+    private Integer totalScore=0;
 
     private Boolean isWinner;
 

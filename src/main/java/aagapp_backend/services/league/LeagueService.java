@@ -9,26 +9,27 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
-import aagapp_backend.entity.game.GameResultRecord;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.league.LeagueRoom;
+
+
+import aagapp_backend.entity.team.LeagueTeam;
+
 import aagapp_backend.entity.league.LeagueRoomWinner;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
-import aagapp_backend.enums.PlayerStatus;
 import aagapp_backend.repository.ChallangeRepository;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
-import aagapp_backend.repository.league.LeagueRepository;
-import aagapp_backend.repository.league.LeagueResultRecordRepository;
-import aagapp_backend.repository.league.LeagueRoomRepository;
-import aagapp_backend.repository.league.LeagueRoomWinnerRepository;
+import aagapp_backend.repository.league.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.ResponseService;
@@ -42,13 +43,13 @@ import com.google.gson.GsonBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.context.Theme;
 import org.springframework.web.client.RestTemplate;
 
 import javax.naming.LimitExceededException;
@@ -57,9 +58,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class LeagueService {
+
     @Autowired
     private NotoficationFirebase notificationFirebase;
 
@@ -80,7 +83,6 @@ public class LeagueService {
     private EntityManager em;
 
     @Autowired
-
     private LeagueRoomWinnerRepository leagueRoomWinnerRepository;
 
     @Autowired
@@ -94,7 +96,6 @@ public class LeagueService {
     private WalletRepository walletRepo;
 
     @Autowired
-
     private CustomCustomerRepository customCustomerRepository;
 
 
@@ -108,18 +109,16 @@ public class LeagueService {
     private LeagueResultRecordRepository leagueResultRecordRepository;
 
     @Autowired
+    private LeagueTeamRepository leagueTeamRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+
+    @Autowired
     private ResponseService responseService;
     private final String baseUrl = "http://13.232.105.87:8082";
 
-    private static final double TAX_PERCENT = 0.28;
-
-    private static final double VENDOR_PERCENT = 0.05;
-
-    private static final double PLATFORM_PERCENT = 0.04;
-
-    private static final double USER_WIN_PERCENT = 0.63;
-
-    private static final double BONUS_PERCENT = 0.20;
 
     @Transactional
     public Challenge createChallenge(LeagueRequest leagueRequest, Long vendorId) {
@@ -215,6 +214,20 @@ public class LeagueService {
                     System.out.println("Error sending notification: " + e.getMessage());
                 }
             }
+            if (opponentVendor != null) {
+                Notification notification = new Notification();
+                notification.setRole("Vendor");
+
+                notification.setVendorId(opponentVendor.getService_provider_id());
+
+                notification.setDescription("League challenge");
+                notification.setDetails(vendor.getFirst_name() + " has challenged for a League");
+                notificationRepository.save(notification);
+
+            }
+
+
+
 
 
             return challenge;
@@ -324,6 +337,8 @@ public class LeagueService {
             league.setName(opponentVendor.getFirst_name() + " v/s " + vendorEntity.getFirst_name());
             league.setVendorEntity(opponentVendor);
             league.setChallengingVendorId(opponentVendor.getService_provider_id());
+//            league.setTeamChallengingVendorName("Team " + opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
+//            league.setTeamOpponentVendorName("Team " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
             league.setChallengingVendorName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
             league.setChallengingVendorProfilePic(opponentVendor.getProfilePic());
             league.setOpponentVendorName(vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
@@ -367,8 +382,33 @@ public class LeagueService {
             league.setCreatedDate(nowInKolkata);
             league.setUpdatedDate(nowInKolkata);
 
+
             // Save the game to get the game ID
             League savedLeague = leagueRepository.save(league);
+
+// 👇 Add LeagueTeam creation here
+
+            LeagueTeam challengingTeam = new LeagueTeam();
+            challengingTeam.setTeamName("Team " + opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
+            challengingTeam.setVendor(opponentVendor);
+            challengingTeam.setProfilePic(opponentVendor.getProfilePic());
+            challengingTeam.setLeague(savedLeague);
+
+            LeagueTeam opponentTeam = new LeagueTeam();
+            opponentTeam.setTeamName("Team " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
+            opponentTeam.setVendor(vendorEntity);
+            opponentTeam.setProfilePic(vendorEntity.getProfilePic());
+            opponentTeam.setLeague(savedLeague);
+
+            leagueTeamRepository.saveAll(List.of(challengingTeam, opponentTeam));
+
+            List<LeagueTeam> teams = leagueTeamRepository.findByLeague(savedLeague);
+            savedLeague.setTeams(teams);
+
+// 🔄 Optional: Save their IDs in League entity for fast reference
+//            savedLeague.setChallengingTeamId(challengingTeam.getId());
+//            savedLeague.setOpponentTeamId(opponentTeam.getId());
+
 
             // Create the first GameRoom (initialized, 2 players max)
             LeagueRoom leagueRoom = createNewEmptyRoom(savedLeague);
@@ -404,9 +444,8 @@ public class LeagueService {
 
         // Save the room first so it gets an ID
         newRoom = leagueRoomRepository.save(newRoom);
-        BigDecimal toalprize =    matchService.getWinningAmountLeague(newRoom);
+        BigDecimal toalprize = matchService.getWinningAmountLeague(newRoom);
 
-        Double total_prize = 3.2;
         String gamePassword = this.createNewGame(baseUrl, league.getId(), newRoom.getId(), newRoom.getMaxPlayers(), league.getMove(), toalprize);
 
         newRoom.setGamepassword(gamePassword);
@@ -477,21 +516,27 @@ public class LeagueService {
 
     public Page<League> getAllLeagues(Pageable pageable, LeagueStatus status, Long vendorId) {
         try {
-            // Check if 'status' and 'vendorId' are provided and build a query accordingly
+            // Fetch the leagues from the repository based on the parameters
+            Page<League> leagues;
+
             if (status != null && vendorId != null) {
-                return leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
+                leagues = leagueRepository.findLeaguesByStatusAndVendorId(status, vendorId, pageable);
             } else if (status != null) {
-                return leagueRepository.findByStatus(status, pageable);
+                leagues = leagueRepository.findByStatus(status, pageable);
             } else if (vendorId != null) {
-                return leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
+                leagues = leagueRepository.findByVendorServiceProviderId(vendorId, pageable);
             } else {
-                return leagueRepository.findAll(pageable);
+                leagues = leagueRepository.findAll(pageable);
             }
+
+            // Map the fetched leagues to LeagueResponse DTOs
+            return leagues;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
         }
     }
+
 
     public Page<League> getAllActiveLeaguesByVendor(Pageable pageable, Long vendorId) {
         try {
@@ -545,47 +590,148 @@ public class LeagueService {
     }
 
     @Transactional
-    public ResponseEntity<?> joinRoom(Long playerId, Long leagueId) {
+    public ResponseEntity<?> takePassForLeague(Long playerId) {
+        try {
+            // Step 1: Get Player
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            Wallet wallet = player.getCustomer().getWallet();
+            wallet.setUnplayedBalance(100.0);
+
+            // Step 3: Check wallet balance
+            Double currentBalance = wallet.getUnplayedBalance();
+            Double passCost = 7.0;
+
+            if (currentBalance < passCost) {
+                return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
+            }
+
+
+            // Step 4: Deduct ₹7 and add 3 league passes
+            wallet.setUnplayedBalance(currentBalance - passCost);
+            player.setLeaguePasses(player.getLeaguePasses() + 3);
+
+            // Step 5: Save updates
+            playerRepository.save(player);
+
+            // Step 6: Prepare response data
+            Map<String, Object> data = new HashMap<>();
+            data.put("walletBalance", wallet.getUnplayedBalance());
+            data.put("leaguePasses", player.getLeaguePasses());
+            data.put("playerName", player.getPlayerName());
+
+            return responseService.generateSuccessResponse("3 League passes added successfully", data, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error while processing league pass: " + e.getMessage(), e);
+        }
+    }
+
+
+    @Transactional
+    public ResponseEntity<?> joinRoom(Long playerId, Long leagueId, Long teamId) {
         try {
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
 
-
-            League game = leagueRepository.findById(leagueId)
+            League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
 
+            if (player.getLeaguePasses() == 0) {
+                return responseService.generateErrorResponse(
+                        "You have used all your passes. Buy more to continue.",
+                        HttpStatus.BAD_REQUEST
+                );
+            }
 
             if (player.getLeagueRoom() != null) {
-                return responseService.generateErrorResponse("Player already in room with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
+                return responseService.generateErrorResponse(
+                        "Player already in room with ID: " + player.getPlayerId(),
+                        HttpStatus.INTERNAL_SERVER_ERROR
+                );
             }
 
-            LeagueRoom leagueRoom = findAvailableGameRoom(game);
+            // ✅ Get the team by teamId
+            LeagueTeam team = leagueTeamRepository.findById(teamId)
+                    .orElseThrow(() -> new RuntimeException("Team not found with ID: " + teamId));
 
-            // 4. Attempt to add the player to the room
-            boolean playerJoined = addPlayerToRoom(leagueRoom, player);
+            // ✅ Validate team belongs to the league
+            if (!team.getLeague().getId().equals(leagueId)) {
+                return responseService.generateErrorResponse(
+                        "Team does not belong to this league.",
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+            LeagueRoom leagueRoom = findAvailableGameRoom(league);
+
+            // ✅ Assign team to player
+            player.setTeam(team);
+
+            // ✅ Use team.getTeamName() instead of passing string teamName
+            boolean playerJoined = addPlayerToRoom(leagueRoom, player, team.getTeamName());
             if (!playerJoined) {
-                return responseService.generateErrorResponse("Room is Already full with this id: " + leagueRoom.getRoomCode(), HttpStatus.INTERNAL_SERVER_ERROR);
+                return responseService.generateErrorResponse(
+                        "Room is already full with ID: " + leagueRoom.getRoomCode(),
+                        HttpStatus.INTERNAL_SERVER_ERROR
+                );
             }
 
-            // 5. If the room is full, change status to ONGOING and create a new room
             if (leagueRoom.getCurrentPlayers().size() == leagueRoom.getMaxPlayers()) {
                 leagueRoom.setStatus(LeagueRoomStatus.ONGOING);
                 leagueRoomRepository.save(leagueRoom);
-                LeagueRoom newRoom = createNewEmptyRoom(game);
-                leagueRoomRepository.save(newRoom); // Save the new room
+
+                LeagueRoom newRoom = createNewEmptyRoom(league);
+                leagueRoomRepository.save(newRoom);
             }
 
-//            player.setPlayerStatus(PlayerStatus.PLAYING);
             playerRepository.save(player);
 
-            return responseService.generateSuccessResponse("Player join in the Game Room ", leagueRoom, HttpStatus.OK);
+            return responseService.generateSuccessResponse(
+                    "Player joined the Game Room",
+                    leagueRoom,
+                    HttpStatus.OK
+            );
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Player can not joined in the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
+            return responseService.generateErrorResponse(
+                    "Player cannot join the room because: " + e.getMessage(),
+                    HttpStatus.NOT_FOUND
+            );
         }
     }
 
+
+    public ResponseEntity<?> getRoomById(Long roomId) {
+        try {
+            LeagueRoom gameRoom = leagueRoomRepository.findById(roomId).orElse(null);
+            if (gameRoom == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return responseService.generateSuccessResponse("Room fetched successfully", gameRoom, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    public ResponseEntity<?> getLeaguePasses(Long playerId) {
+        try {
+            Player player = playerRepository.findById(playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+
+            return responseService.generateSuccessResponse("League passes fetched successfully", player.getLeaguePasses(), HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
         try {
@@ -595,23 +741,36 @@ public class LeagueService {
             League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
 
-            LeagueRoom leagueRoom = findAvailableGameRoom(league);
+            LeagueRoom leagueRoom = player.getLeagueRoom();
 
-            if (player.getLeagueRoom() == null) {
+            if (player.getLeagueRoom() == null || leagueRoom == null || !leagueRoom.getLeague().getId().equals(league.getId())) {
                 return responseService.generateErrorResponse("Player is not in league with this id: " + player.getPlayerId(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
-            player.setLeagueRoom(null);
-//            player.setPlayerStatus(PlayerStatus.READY_TO_PLAY);
-            player.setLeagueRoom(null);
-            playerRepository.save(player);
 
-            return responseService.generateSuccessResponse("Player left the Game Room ", leagueRoom.getRoomCode(), HttpStatus.OK);
+            leagueRoom.getCurrentPlayers().remove(player);
+            leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
+            player.setLeagueRoom(null);
+            leagueRoomRepository.save(leagueRoom);
+
+            List<Player> remainingPlayers = playerRepository.findAllByLeagueRoom(leagueRoom);
+            if (remainingPlayers.isEmpty()) {
+                leagueRoom.setStatus(LeagueRoomStatus.COMPLETED);
+                leagueRoomRepository.save(leagueRoom);
+            }
+            em.persist(player);
+
+            return responseService.generateSuccessResponse("Player left the League Room ", leagueRoom, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
         }
 
+    }
+
+
+    public List<LeagueTeam> getTeamsByLeagueId(Long leagueId) {
+        return leagueTeamRepository.findByLeagueId(leagueId);
     }
 
     public LeagueRoom findAvailableGameRoom(League league) {
@@ -631,15 +790,13 @@ public class LeagueService {
     }
 
 
-    public boolean addPlayerToRoom(LeagueRoom leagueRoom, Player player) {
+    public boolean addPlayerToRoom(LeagueRoom leagueRoom, Player player, String teamName) {
         // Check if the game room has space for the player
         if (leagueRoom.getCurrentPlayers().size() < leagueRoom.getMaxPlayers()) {
             leagueRoom.getCurrentPlayers().add(player);
-
             player.setLeagueRoom(leagueRoom);
-
-//            player.setPlayerStatus(PlayerStatus.PLAYING);
-
+//            player.setTeamName(teamName);
+            player.setLeaguePasses(player.getLeaguePasses() - 1);
             leagueRoomRepository.save(leagueRoom);
             playerRepository.save(player);
 
@@ -660,98 +817,38 @@ public class LeagueService {
     }
 
 
-    public List<PlayerDto> processMatch(GameResult gameResult) {
-
-        // Fetch the GameRoom based on roomId
-
-        Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(gameResult.getRoomId());
-
+    @Transactional
+    public List<PlayerDto> processMatch(LeagueMatchProcess leagueMatchProcess) {
+        Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
         if (leagueRoomOpt.isEmpty()) {
-
-            throw new RuntimeException("Game room not found with ID: " + gameResult.getRoomId());
-
+            throw new RuntimeException("League room not found with ID: " + leagueMatchProcess.getRoomId());
         }
-
         LeagueRoom leagueRoom = leagueRoomOpt.get();
-
-
         // Fetch the Game associated with the gameId
-
         Optional<League> legueOpt = leagueRepository.findById(leagueRoom.getLeague().getId());
-
         if (legueOpt.isEmpty()) {
-
-            throw new RuntimeException("Game not found with ID: " + leagueRoom.getLeague().getId());
-
+            throw new RuntimeException("League not found with ID: " + leagueRoom.getLeague().getId());
         }
+
+
 
         League league = legueOpt.get();
-
-
-        // Calculate the total collection and shares
-
-        BigDecimal totalCollection = BigDecimal.valueOf(league.getFee()).multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
-
-        BigDecimal tax = totalCollection.multiply(BigDecimal.valueOf(TAX_PERCENT));
-
-        BigDecimal vendorShare = totalCollection.multiply(BigDecimal.valueOf(VENDOR_PERCENT));
-
-        BigDecimal platformShare = totalCollection.multiply(BigDecimal.valueOf(PLATFORM_PERCENT));
-
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
-
-//        BigDecimal bonus = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(BONUS_PERCENT));
-
-        BigDecimal finalAmountToUser = userWin;
-
-
-        // Process the players to find the winner
-
-        PlayerDtoWinner winner = determineWinner(gameResult.getPlayers()); // Get the winner
-
+        LeaguePlayerDtoWinner winner = determineWinner(leagueMatchProcess.getPlayers()); // Get the winner
+        LeagueTeam winnerLeagueTeam = leagueTeamRepository.findById(winner.getTeamId())
+                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + winner.getTeamId()));
 
         // Identify the loser
-
-        PlayerDtoWinner loser = gameResult.getPlayers().stream()
-
+        LeaguePlayerDtoWinner loser = leagueMatchProcess.getPlayers().stream()
                 .filter(p -> !p.getPlayerId().equals(winner.getPlayerId()))
-
                 .findFirst().orElseThrow(() -> new RuntimeException("No loser found"));
 
-
-        // Update winner's wallet with the prize amount
-
-        Wallet wallet = walletRepo.findByCustomCustomer_Id(winner.getPlayerId());
-
-        if (wallet == null) {
-
-            throw new RuntimeException("Wallet not found for user ID: " + winner.getPlayerId());
-
-        }
+        LeagueTeam looserLeagueTeam = leagueTeamRepository.findById(loser.getTeamId())
+                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + loser.getTeamId()));
 
 
         leaveRoom(winner.getPlayerId(), league.getId());
-
         leaveRoom(loser.getPlayerId(), league.getId());
 
-
-        // Add the prize to the winner's wallet
-
-        BigDecimal updatedWinning = wallet.getWinningAmount().add(finalAmountToUser);
-
-        wallet.setWinningAmount(updatedWinning);
-
-        wallet.setUpdatedAt(LocalDateTime.now());
-
-        walletRepo.save(wallet);
-
-
-        // Add vendor share and update total balance
-
-        this.addToVendorWalletAndTotalBalance(league.getVendorEntity().getService_provider_id(), vendorShare);
-
-
-        // Fetch Player entity using playerId
 
         Optional<Player> winnerPlayerOpt = playerRepository.findById(winner.getPlayerId());
 
@@ -762,121 +859,63 @@ public class LeagueService {
         }
 
         Player winnerPlayer = winnerPlayerOpt.get();
-
-
-        LeagueRoomWinner leagueRoomWinner = new LeagueRoomWinner();
-
-        leagueRoomWinner.setLeague(league);  // Set the game
-
-        leagueRoomWinner.setLeagueRoom(leagueRoom);
-
-        leagueRoomWinner.setPlayer(winnerPlayer);  // Set the player (winner)
-
-        leagueRoomWinner.setScore(winner.getScore());  // Set the score
-
-        leagueRoomWinner.setWinTimestamp(LocalDateTime.now());  // Set the win timestamp
-
-
-        // Save the winner record into the database
-
-        leagueRoomWinnerRepository.save(leagueRoomWinner);
-
         LeagueResultRecord winnerRecord = new LeagueResultRecord();
         winnerRecord.setRoomId(leagueRoom.getId());
         winnerRecord.setLeague(league);
         winnerRecord.setPlayer(winnerPlayer); // already fetched
-        winnerRecord.setScore(winner.getScore());
+        winnerRecord.setTotalScore(winnerRecord.getTotalScore()+winner.getScore());
+        winnerLeagueTeam.setTotalScore(winnerLeagueTeam.getTotalScore()+winner.getScore());
         winnerRecord.setIsWinner(true);
         winnerRecord.setPlayedAt(LocalDateTime.now());
 
         Player loserPlayer = playerRepository.findById(loser.getPlayerId())
                 .orElseThrow(() -> new RuntimeException("Player not found"));
 
+
+
         LeagueResultRecord loserRecord = new LeagueResultRecord();
         loserRecord.setRoomId(leagueRoom.getId());
         loserRecord.setLeague(league);
         loserRecord.setPlayer(loserPlayer);
-        loserRecord.setScore(loser.getScore());
+        loserRecord.setTotalScore(loserRecord.getTotalScore()+loser.getScore());
+        looserLeagueTeam.setTotalScore(looserLeagueTeam.getTotalScore()+loser.getScore());
         loserRecord.setIsWinner(false);
         loserRecord.setPlayedAt(LocalDateTime.now());
 
         leagueResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
-
-
-        // Optional: Update AAG Wallet if needed
-
-        // updateAAGWallet(platformShare, tax);
-
-
-        // Return all players' details (including updated amount for the winner)
-
-        return getAllPlayersDetails(gameResult, leagueRoomOpt, league, winner, loser);
+        return getAllPlayersDetails(leagueMatchProcess, leagueRoomOpt, league, winner, loser);
 
     }
 
 
-    // Method to determine the winner based on score
-
-    private PlayerDtoWinner determineWinner(List<PlayerDtoWinner> players) {
-
+    private LeaguePlayerDtoWinner determineWinner(List<LeaguePlayerDtoWinner> players) {
         return players.stream()
-
-                .max(Comparator.comparingInt(PlayerDtoWinner::getScore))  // Find the player with the highest score
-
+                .max(Comparator.comparingInt(LeaguePlayerDtoWinner::getScore))  // Find the player with the highest score
                 .orElseThrow(() -> new RuntimeException("No players found"));
-
     }
 
 
     // Get all players' details (including amount for the winner)
 
-    public List<PlayerDto> getAllPlayersDetails(GameResult gameResult, Optional<LeagueRoom> gameRoomOpt, League game, PlayerDtoWinner winner, PlayerDtoWinner loser) {
+    public List<PlayerDto> getAllPlayersDetails(LeagueMatchProcess gameResult, Optional<LeagueRoom> gameRoomOpt, League game, LeaguePlayerDtoWinner winner, LeaguePlayerDtoWinner loser) {
 
         List<PlayerDto> playersDetails = new ArrayList<>();
 
 
-        // Calculate the total collection first
-
-        BigDecimal totalCollection = BigDecimal.valueOf(game.getFee())
-
-                .multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
-
-
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
-
-//        BigDecimal bonus = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(BONUS_PERCENT));
-
-
-        // Iterate over all players and set their details
-
-        for (PlayerDtoWinner player : gameResult.getPlayers()) {
+        for (LeaguePlayerDtoWinner player : gameResult.getPlayers()) {
 
             PlayerDto playerDto = new PlayerDto();
 
             // Set player details based on whether they are the winner or loser
 
             if (player.getPlayerId().equals(winner.getPlayerId())) {
-
-                // Winner gets the prize
-
                 playerDto.setPlayerId(player.getPlayerId());
-
                 playerDto.setScore(player.getScore());
-
-                playerDto.setAmount(userWin);  // Set prize for winner
-
                 playerDto.setPictureUrl(fetchPlayerPicture(player.getPlayerId()));
 
             } else {
-
-                // Loser gets no prize (amount = 0)
-
                 playerDto.setPlayerId(player.getPlayerId());
-
                 playerDto.setScore(player.getScore());
-
-                playerDto.setAmount(BigDecimal.ZERO);  // No prize for loser
-
                 playerDto.setPictureUrl(fetchPlayerPicture(player.getPlayerId()));
 
             }
@@ -899,62 +938,6 @@ public class LeagueService {
         Optional<CustomCustomer> customCustomer = customCustomerRepository.findById(playerId);
 
         return customCustomer.map(CustomCustomer::getProfilePic).orElse(null); // Return profile picture URL or null if not found
-
-    }
-
-
-    // Method to add the vendor share to the vendor's wallet
-
-    @Transactional
-    public void addToVendorWalletAndTotalBalance(Long vendorId, BigDecimal vendorShare) {
-
-        // 1. Fetch Vendor
-
-        VendorEntity vendor = vendorRepository.findById(vendorId)
-
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
-
-
-        // 2. Get or create wallet for vendor
-
-        VendorWallet wallet = vendor.getWallet();
-
-        if (wallet == null) {
-
-            wallet = new VendorWallet();
-
-            wallet.setVendorEntity(vendor);
-
-            wallet.setWinningAmount(BigDecimal.ZERO);  // Initializing as BigDecimal
-
-            wallet.setIsTest(false);
-
-            vendor.setWallet(wallet); // Set wallet in vendor
-
-        }
-
-
-        // 3. Update the vendor's wallet with the new share
-
-        BigDecimal currentWinningAmount = wallet.getWinningAmount();
-
-        BigDecimal newWinningAmount = currentWinningAmount.add(vendorShare);
-
-        wallet.setWinningAmount(newWinningAmount);
-
-        wallet.setUpdatedAt(LocalDateTime.now());
-
-
-        // 4. Update the total wallet balance
-
-        BigDecimal updatedBalance = vendor.getTotalWalletBalance().add(vendorShare);
-
-        vendor.setTotalWalletBalance(updatedBalance);
-
-
-        // 5. Save the vendor (wallet will be saved due to cascading)
-
-        vendorRepository.save(vendor);
 
     }
 }

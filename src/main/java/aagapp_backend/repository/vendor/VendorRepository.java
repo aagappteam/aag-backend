@@ -1,8 +1,11 @@
 package aagapp_backend.repository.vendor;
 
+import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.LeagueStatus;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -33,6 +36,11 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     void updateDailyLimitForVendors(@Param("vendorIds") List<Long> vendorIds);
 
 
+    @Query("SELECT new aagapp_backend.dto.TopVendorDto(v.service_provider_id, v.first_name, COUNT(f.id)) " +
+            "FROM VendorEntity v LEFT JOIN UserVendorFollow f ON f.vendor.service_provider_id = v.service_provider_id " +
+            "GROUP BY v.service_provider_id, v.first_name " +
+            "ORDER BY COUNT(f.id) DESC")
+    List<TopVendorDto> findTopVendorsWithFollowerCount(Pageable pageable);
 
 
 }

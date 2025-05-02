@@ -5,6 +5,8 @@ import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.game.PriceEntity;
 import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.GameStatus;
+import aagapp_backend.repository.game.PriceRepository;
+import aagapp_backend.repository.game.ThemeRepository;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityManager;
@@ -19,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;  // Import for LocalDateTime
+import java.util.ArrayList;
 import java.util.Date;          // Import for Date
 import java.util.List;
 
@@ -30,6 +33,12 @@ public class CommandLineService implements CommandLineRunner {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PriceRepository priceRepository;
+
+    @Autowired
+    private ThemeRepository themeRepository;
 
 
     @Override
@@ -254,7 +263,6 @@ public class CommandLineService implements CommandLineRunner {
 // Insert predefined games if not already present
         if (entityManager.createQuery("SELECT COUNT(g) FROM AagAvailableGames g", Long.class).getSingleResult() == 0) {
 
-
             // --- Create Snakes & Ladders Game ---
             AagAvailableGames snakesAndLaddersGame = new AagAvailableGames();
             snakesAndLaddersGame.setGameName("Snakes & Ladders Ultimate");
@@ -262,30 +270,47 @@ public class CommandLineService implements CommandLineRunner {
             snakesAndLaddersGame.setMinRange(1);
             snakesAndLaddersGame.setMaxRange(100);
             snakesAndLaddersGame.setGameStatus(GameStatus.ACTIVE);
-            entityManager.persist(snakesAndLaddersGame);
 
+            // Create themes for Snakes & Ladders Game
             List<ThemeEntity> snakeThemes = List.of(
-                    new ThemeEntity("Standard", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+and+ladders-01.png", currentTimestamp),
-                    new ThemeEntity("Forest", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/forest+theame+%5BRecovered%5D-01.png", currentTimestamp),
-                    new ThemeEntity("Ninja", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+nd+ladder+ice+theme+final-01.png", currentTimestamp),
-                    new ThemeEntity("Underwater", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+ladders+under+water+final-01.png", currentTimestamp),
-                    new ThemeEntity("Ice", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/snake+nd+ladder+ice+theme+final-01.png", currentTimestamp),
-                    new ThemeEntity("Heaven", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/heaven+snake+ladders-01.png", currentTimestamp),
-                    new ThemeEntity("Hell", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/snakes+%26+ladder/hell+snake+ladder+final+2-01.png", currentTimestamp)
+                    new ThemeEntity("Standard", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/snakes+%26+ladder/Standard+Snakes+%26+Ladder.png", currentTimestamp),
+                    new ThemeEntity("Forest", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/snakes+%26+ladder/snakes+%26+ladder+final-01.png", currentTimestamp),
+                    new ThemeEntity("Underwater", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/snakes+%26+ladder/Under+water+Snakes+%26+Ladder.png", currentTimestamp),
+                    new ThemeEntity("Ice", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/snakes+%26+ladder/Ice+Snakes+%26+Ladder.png", currentTimestamp),
+                    new ThemeEntity("Ninja", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/snakes+%26+ladder/Jungle+Snakes+%26+Ladder.png", currentTimestamp),
+                    new ThemeEntity("Hell", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/snakes+%26+ladder/Hell+Snakes+%26+Ladder.png", currentTimestamp),
+                    new ThemeEntity("Heaven", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/snakes+%26+ladder/Heaven+Snakes+%26+Ladder.png", currentTimestamp)
             );
 
+            // Associate the game with themes
             for (ThemeEntity theme : snakeThemes) {
-                theme.getGames().add(snakesAndLaddersGame);
-                entityManager.persist(theme);
+                theme.getGames().add(snakesAndLaddersGame);  // Adding game to each theme
             }
 
+            // Save themes in batch
+            themeRepository.saveAll(snakeThemes);  // Save all themes at once
+
+            // Set the themes to the game entity
+            snakesAndLaddersGame.setThemes(snakeThemes);
+
+            // Create prices for Snakes & Ladders Game
             List<Double> snakePrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
+            List<PriceEntity> snakePriceEntities = new ArrayList<>();
             for (Double priceValue : snakePrices) {
                 PriceEntity price = new PriceEntity();
                 price.setPriceValue(priceValue);
-                price.getGames().add(snakesAndLaddersGame);
-                entityManager.persist(price);
+                price.getGames().add(snakesAndLaddersGame);  // Adding game to price entity
+                snakePriceEntities.add(price);
             }
+
+            // Save prices in batch
+            priceRepository.saveAll(snakePriceEntities);  // Save all prices at once
+
+            // Set the prices to the game entity
+            snakesAndLaddersGame.setPrice(snakePriceEntities);
+
+            // Finally, save the game entity
+            entityManager.persist(snakesAndLaddersGame);
 
             // --- Create Ludo Game ---
             AagAvailableGames ludoGame = new AagAvailableGames();
@@ -306,18 +331,35 @@ public class CommandLineService implements CommandLineRunner {
                     new ThemeEntity("Heaven", "https://aag-data.s3.ap-south-1.amazonaws.com/all+themes/all+themes/ludo/Heaven+Ludo.png", currentTimestamp)
             );
 
+            // Associate the game with themes
             for (ThemeEntity theme : ludoThemes) {
-                theme.getGames().add(ludoGame);
-                entityManager.persist(theme);
+                theme.getGames().add(ludoGame);  // Adding game to each theme
             }
 
+            // Save themes in batch
+            themeRepository.saveAll(ludoThemes);  // Save all themes at once
+
+            // Set the themes to the game entity
+            ludoGame.setThemes(ludoThemes);
+
+            // Create prices for Ludo Game
             List<Double> ludoPrices = List.of(3.0, 5.0, 7.0, 10.0, 25.0, 50.0);
+            List<PriceEntity> ludoPriceEntities = new ArrayList<>();
             for (Double priceValue : ludoPrices) {
                 PriceEntity price = new PriceEntity();
                 price.setPriceValue(priceValue);
-                price.getGames().add(ludoGame);
-                entityManager.persist(price);
+                price.getGames().add(ludoGame);  // Adding game to price entity
+                ludoPriceEntities.add(price);
             }
+
+            // Save prices in batch
+            priceRepository.saveAll(ludoPriceEntities);  // Save all prices at once
+
+            // Set the prices to the game entity
+            ludoGame.setPrice(ludoPriceEntities);
+
+            // Finally, save the game entity
+            entityManager.persist(ludoGame);
 
             System.out.println("Predefined games, themes, and prices inserted into the database.");
         }

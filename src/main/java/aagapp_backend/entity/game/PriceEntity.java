@@ -16,7 +16,12 @@ import java.util.Date;
 import java.util.List;
 
 @Entity
-@Table(name = "price_table_aag_game")
+@Table(
+        name = "price_table_aag_game",
+        indexes = {
+                @Index(name = "idx_priceValue", columnList = "priceValue")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,17 +35,12 @@ public class PriceEntity {
     @Column(nullable = false)
     private Double priceValue;
 
-
-/*    @ManyToMany(mappedBy = "price")
-    @JsonBackReference
-    private List<AagAvailableGames> games;  // Initialize the list here*/
-
     @ManyToMany(mappedBy = "price")
     @JsonBackReference
-    private List<AagAvailableGames> games = new ArrayList<>();  // Ensure it's initialized
+    private List<AagAvailableGames> games = new ArrayList<>();
 
 
-    @CreationTimestamp
+    /*@CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdDate;
@@ -48,5 +48,5 @@ public class PriceEntity {
     @Nullable
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date updatedDate;
+    private Date updatedDate;*/
 }

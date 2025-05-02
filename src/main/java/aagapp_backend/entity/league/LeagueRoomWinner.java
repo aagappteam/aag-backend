@@ -11,11 +11,14 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-/*@Table(name = "game_room_winner",
+@Table(
         indexes = {
-//                @Index(name = "idx_game_id", columnList = "game_id"),  // Index on game_id
-                @Index(name = "idx_player_id", columnList = "player_id")  // Index on player_id
-        })*/
+                @Index(name = "idx_league_id_league_room_winner", columnList = "league_id"),
+                @Index(name = "idx_league_room_id_league_room_winner", columnList = "league_room_id"),
+                @Index(name = "idx_player_id_league_room_winner", columnList = "player_id"),
+                @Index(name = "idx_win_timestamp", columnList = "win_timestamp")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

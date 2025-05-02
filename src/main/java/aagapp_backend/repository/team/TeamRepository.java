@@ -1,3 +1,4 @@
+/*
 package aagapp_backend.repository.team;
 
 import aagapp_backend.entity.Team;
@@ -24,3 +25,4 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     @Query("DELETE FROM Team t WHERE t.id = :id")
     void deleteTeam(@Param("id") Long id);
 }
+*/

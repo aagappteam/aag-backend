@@ -1,9 +1,6 @@
 package aagapp_backend.controller.league;
 
-import aagapp_backend.dto.GameLeaderboardResponseDTO;
-import aagapp_backend.dto.GameResult;
-import aagapp_backend.dto.LeaderboardDto;
-import aagapp_backend.dto.PlayerDto;
+import aagapp_backend.dto.*;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.leaderboard.LeaderBoardLeague;
@@ -40,7 +37,7 @@ public class LeagueWinning {
 
 
     @PostMapping("/processGameResult")
-    public ResponseEntity<?> processGameResult(@RequestBody GameResult gameResult) {
+    public ResponseEntity<?> processGameResult(@RequestBody LeagueMatchProcess gameResult) {
         try {
             // Process game result (you may want to keep this as is, or include some additional logic here)
             List<PlayerDto> playersDetails = leagueService.processMatch(gameResult);

@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -15,5 +17,6 @@ public class LeaderboardDto {
     private String pictureUrl;
     private Integer score;
     private Boolean isWinner;
+    private BigDecimal winningAmount;
 }
 

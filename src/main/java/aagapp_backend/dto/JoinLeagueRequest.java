@@ -15,4 +15,9 @@ public class JoinLeagueRequest {
 
     @NotNull(message="League id can not be null")
     private Long leagueId;
+
+    @NotNull(message="Team id can not be null")
+    private Long teamId;
+
+
 }

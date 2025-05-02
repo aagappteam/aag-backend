@@ -6,6 +6,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
 
@@ -203,7 +204,7 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Pageable pageable = PageRequest.of(page, size,Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         try {
             Page<Challenge> challenges = leagueService.getChallengesByOpponentVendorIds(
@@ -231,7 +232,7 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Pageable pageable = PageRequest.of(page, size,Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         try {
             Page<Challenge> challenges = leagueService.getByVendorIdInAndStatus(
@@ -267,7 +268,6 @@ public class LeagueController {
     @PostMapping("/publishLeague/{vendorId}/{challengeId}")
     public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @PathVariable Long challengeId) {
         try {
-
 
 
             Challenge challenge = challangeRepository.findById(challengeId)
@@ -312,9 +312,9 @@ public class LeagueController {
             notificationRepository.save(notification);
 
             if (challenge.getScheduledAt() != null) {
-                return responseService.generateSuccessResponse("Game scheduled successfully", publishedLeague, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("League scheduled successfully", publishedLeague, HttpStatus.CREATED);
             } else {
-                return responseService.generateSuccessResponse("Game published successfully", publishedLeague, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("League published successfully", publishedLeague, HttpStatus.CREATED);
             }
         } catch (LimitExceededException e) {
             return responseService.generateErrorResponse("Exceeded maximum allowed games ", HttpStatus.TOO_MANY_REQUESTS);
@@ -329,7 +329,7 @@ public class LeagueController {
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Error publishing game" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("Error publishing league" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -355,15 +355,55 @@ public class LeagueController {
         }
     }
 
+    @PostMapping("/buy-league-pass/{playerId}")
+    public ResponseEntity<?> buyLeaguePass(@PathVariable Long playerId) {
+        try {
+            // Call the service method
+            return leagueService.takePassForLeague(playerId);
+
+        } catch (RuntimeException e) {
+            // Handle known business logic errors
+            return responseService.generateErrorResponse(
+                    "Failed to purchase league pass: " + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        } catch (Exception e) {
+            // Handle unknown/internal errors
+            return responseService.generateErrorResponse(
+                    "An unexpected error occurred while purchasing league pass.",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
 
     @PostMapping("/joinLeague")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinLeagueRequest joinLeagueRequest) {
         try {
-            return leagueService.joinRoom(joinLeagueRequest.getPlayerId(), joinLeagueRequest.getLeagueId());
+            return leagueService.joinRoom(
+                    joinLeagueRequest.getPlayerId(),
+                    joinLeagueRequest.getLeagueId(),
+                    joinLeagueRequest.getTeamId() // <-- Added
+            );
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Error in joining game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse(
+                    "Error in joining game room: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
+    }
+
+
+    @GetMapping("/room/{roomId}")
+    public ResponseEntity<?> getRoomById(@PathVariable Long roomId) {
+        try {
+            return leagueService.getRoomById(roomId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error in getting game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
     }
 
     @PostMapping("/leftLeague")
@@ -373,6 +413,30 @@ public class LeagueController {
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/by-league/{leagueId}")
+    public ResponseEntity<?> getTeamsByLeagueId(@PathVariable Long leagueId) {
+        try {
+            List<LeagueTeam> teams = leagueService.getTeamsByLeagueId(leagueId);
+            if (teams.isEmpty()) {
+                return ResponseEntity.noContent().build();
+            }
+            return responseService.generateSuccessResponse("Teams fetched successfully", teams, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching teams: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/get-league-pasess/{playerId}")
+    public ResponseEntity<?> getLeaguePasses(@PathVariable Long playerId) {
+        try {
+            return leagueService.getLeaguePasses(playerId);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

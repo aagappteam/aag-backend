@@ -20,7 +20,13 @@ import java.util.Date;
 import java.util.List;
 
 @Entity
-@Table(name = "themes")
+@Table(
+        name = "themes",
+        indexes = {
+                @Index(name = "idx_theme_name", columnList = "name"),
+                @Index(name = "idx_theme_created_date", columnList = "created_date")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

@@ -1,3 +1,4 @@
+/*
 package aagapp_backend.controller.Team;
 import aagapp_backend.entity.Team;
 import aagapp_backend.repository.team.TeamRepository;
@@ -32,7 +33,8 @@ public class TeamController {
     @Autowired
     private ExceptionHandlingService exceptionHandling;
 
-   /* @GetMapping("/getAllTeams")
+   */
+/* @GetMapping("/getAllTeams")
     public ResponseEntity<?> getAllTeams() {
         try {
             List<Team> teams = teamRepository.findAll();
@@ -41,7 +43,8 @@ public class TeamController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching teams", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }*/
+    }*//*
+
 
     @GetMapping("/getTeamById")
     public ResponseEntity<?> getTeamById(@RequestParam Long id) {
@@ -122,3 +125,4 @@ public class TeamController {
         }
     }
 }
+*/

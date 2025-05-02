@@ -1,3 +1,4 @@
+/*
 package aagapp_backend.entity.game;
 import aagapp_backend.entity.players.Player;
 import jakarta.persistence.*;
@@ -52,3 +53,4 @@ public class Token {
 
     }
 }
+*/

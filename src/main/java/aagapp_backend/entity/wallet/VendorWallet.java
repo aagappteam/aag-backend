@@ -13,7 +13,15 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "vendor_wallet")
+@Table(
+        name = "vendor_wallet",
+        indexes = {
+                @Index(name = "idx_service_provider_id", columnList = "service_provider_id"),
+                @Index(name = "idx_winning_amount", columnList = "winning_amount"),
+                @Index(name = "idx_created_at_vendor_wallet", columnList = "created_at"),
+                @Index(name = "idx_updated_at_vendor_wallet", columnList = "updated_at")
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

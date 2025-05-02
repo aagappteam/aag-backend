@@ -3,8 +3,8 @@ package aagapp_backend.entity.players;
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.game.GameRoom;
-import aagapp_backend.entity.game.Token;
 import aagapp_backend.entity.league.LeagueRoom;
+import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.entity.tournament.TournamentRoom;
 import aagapp_backend.enums.PlayerStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -23,7 +23,6 @@ import java.util.List;
 @Table(
         name = "players",
         indexes = {
-//                @Index(name = "idx_player_status", columnList = "player_status"),
                 @Index(name = "idx_player_name", columnList = "playerName"),
                 @Index(name = "idx_game_room_id", columnList = "game_room_id"),
                 @Index(name = "idx_league_room_id", columnList = "league_room_id"),
@@ -52,6 +51,15 @@ public class Player {
     @ManyToOne
     @JoinColumn(name = "league_room_id")
     private LeagueRoom leagueRoom;
+
+    @ManyToOne
+    @JoinColumn(name = "team_id")
+//    @JsonBackReference(value = "teamPlayers")
+    private LeagueTeam team;
+
+
+    @Column(name = "league_passes", nullable = false)
+    private int leaguePasses=0;
 
     @JsonIgnore
     @ManyToOne
