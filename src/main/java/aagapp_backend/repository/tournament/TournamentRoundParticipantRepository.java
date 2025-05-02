@@ -18,4 +18,6 @@ public interface TournamentRoundParticipantRepository extends JpaRepository<Tour
     long countByTournamentIdAndRoundNumber(Long tournamentId, Integer roundNumber);
 
     void deleteByTournamentIdAndPlayerIdAndRoundNumber(Long tournamentId, Long playerId, Integer roundNumber);
+
+    List<TournamentRoundParticipant> findByTournamentIdAndRoundNumberAndStatus(Long tournamentId, Integer roundNumber, String readyToPlay);
 }

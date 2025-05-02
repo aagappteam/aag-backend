@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,7 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
     List<TournamentResultRecord> findByTournamentIdAndIsWinnerTrueAndRound(Long tournamentId, int round);
     List<TournamentResultRecord> findByTournamentIdAndRound(Long tournamentId, int round);
     Page<TournamentResultRecord> findByTournamentIdAndIsWinnerTrue(Long tournamentId, Pageable pageable);
+
 
     List<TournamentResultRecord> findByTournamentIdAndRoundAndIsWinnerTrue(Long id, int round);
 
@@ -50,4 +52,17 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
             "AND tr.score = 0")
     long countFreePassWinners(@Param("tournamentId") Long tournamentId,
                               @Param("round") Integer round);
+
+
+
+    @Query("SELECT r FROM TournamentResultRecord r " +
+            "WHERE r.tournament.id = :tournamentId " +
+            "AND r.player.id = :playerId " +
+            "AND r.round = :round " +
+            "AND r.isWinner = true")
+    Optional<TournamentResultRecord> findWinnerRecord(
+            @Param("tournamentId") Long tournamentId,
+            @Param("playerId") Long playerId,
+            @Param("round") Integer round);
+
 }

@@ -8,7 +8,6 @@ import java.util.List;
 
 @Getter
 @Setter
-
 public class GameResult {
 
     private Long gameId;
