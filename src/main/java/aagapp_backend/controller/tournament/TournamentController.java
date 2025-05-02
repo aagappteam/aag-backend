@@ -23,6 +23,8 @@ import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.tournamnetservice.TournamentService;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -47,6 +49,8 @@ public class TournamentController {
     private PaymentFeatures paymentFeatures;
     private TournamentService tournamentService;
     private NotificationRepository notificationRepository;
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private TournamentResultRecordRepository tournamentResultRecordRepository;
@@ -261,11 +265,41 @@ public class TournamentController {
         }
     }
 
-
+    @Transactional
     @PostMapping("/join-room")
+
+    public ResponseEntity<?> joinTournament(@RequestBody TournamentJoinRequest tournamentJoinRequest ) {
+        Long tournamentId = tournamentJoinRequest.getGameId();
+        Long playerId = tournamentJoinRequest.getPlayerId();
+
+        if (tournamentId == null || playerId == null) {
+            return ResponseEntity.badRequest().body("Tournament ID and Player ID are required.");
+        }
+
+        TournamentPlayerRegistration registration = tournamentPlayerRegistration
+                .findByTournamentIdAndPlayer_PlayerId(tournamentId, playerId)
+                .orElseThrow(() -> new RuntimeException("Player not registered for this tournament"));
+
+        if (registration.getStatus() == TournamentPlayerRegistration.RegistrationStatus.CANCELLED) {
+            return ResponseEntity.badRequest().body("Player cancelled registration earlier.");
+        }
+
+        if (registration.getStatus() == TournamentPlayerRegistration.RegistrationStatus.ACTIVE) {
+            return ResponseEntity.badRequest().body("Player is already active in the tournament.");
+        }
+
+        registration.setStatus(TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
+        entityManager.merge(registration);  // Use merge to update the existing entity
+
+        return ResponseEntity.ok("Player successfully joined the tournament room.");
+    }
+
+
+
+/*    @PostMapping("/join-room")
     public ResponseEntity<?> joinTournament(@RequestBody TournamentJoinRequest tournamentJoinRequest ) {
 
-        Long tournamentId = tournamentJoinRequest.getGameid();
+        Long tournamentId = tournamentJoinRequest.getGameId();
         Long playerId = tournamentJoinRequest.getPlayerId();
 
         if (tournamentId == null || playerId == null) {
@@ -282,15 +316,9 @@ public class TournamentController {
         }
 
         registration.setStatus(TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
-        tournamentPlayerRegistration.save(registration);
-
-        Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found with id " + tournamentId));
-
-
-
+        entityManager.persist(registration);
         return ResponseEntity.ok("Player successfully joined the tournament room.");
-    }
+    }*/
 
 
 
@@ -298,7 +326,7 @@ public class TournamentController {
     public ResponseEntity<?> leaveTournamentRoom(@RequestBody TournamentJoinRequest tournamentJoinRequest) {
 
 
-        Long tournamentId = tournamentJoinRequest.getGameid();
+        Long tournamentId = tournamentJoinRequest.getGameId();
         Long playerId = tournamentJoinRequest.getPlayerId();
 
         if (tournamentId == null || playerId == null) {
@@ -408,20 +436,27 @@ public class TournamentController {
             @RequestParam Integer roundNumber,
             @RequestParam Long playerId
     ) {
-        TournamentResultRecord record = tournamentResultRecordRepository
-                .findByTournamentIdAndPlayerIdAndRoundAndIsWinnerTrue(
-                        tournamentId, playerId, roundNumber)
-                .orElse(null);
 
-        if (record == null) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        if (tournament.getRound() > roundNumber) {
             return responseService.generateErrorResponse(
-                    "No winner record found for the player in this round", HttpStatus.NOT_FOUND);
+                    "Too late to join this round. You are disqualified.", HttpStatus.FORBIDDEN);
         }
 
-        TournamentResultRecord nextRoundRecord = tournamentService.addPlayerToNextRound(
+        Optional<TournamentResultRecord> record = tournamentResultRecordRepository.findWinnerRecord(
+                        tournamentId, playerId, roundNumber);
+
+        if (record.isEmpty()) {
+            return responseService.generateErrorResponse(
+                    "You are not a winner or eligible for next round", HttpStatus.FORBIDDEN);
+        }
+
+        TournamentRoundParticipant nextRoundRecord = tournamentService.addPlayerToNextRound(
                 tournamentId,
                 roundNumber,
-                record.getPlayer());
+                record.get());
 
         return responseService.generateSuccessResponse(
                 "Player added to next round.", nextRoundRecord, HttpStatus.OK);

@@ -53,6 +53,16 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
     long countFreePassWinners(@Param("tournamentId") Long tournamentId,
                               @Param("round") Integer round);
 
-    Optional<TournamentResultRecord> findByTournamentIdAndPlayerIdAndRoundAndIsWinnerTrue(
-            Long tournamentId, Long playerId, Integer round);
+
+
+    @Query("SELECT r FROM TournamentResultRecord r " +
+            "WHERE r.tournament.id = :tournamentId " +
+            "AND r.player.id = :playerId " +
+            "AND r.round = :round " +
+            "AND r.isWinner = true")
+    Optional<TournamentResultRecord> findWinnerRecord(
+            @Param("tournamentId") Long tournamentId,
+            @Param("playerId") Long playerId,
+            @Param("round") Integer round);
+
 }

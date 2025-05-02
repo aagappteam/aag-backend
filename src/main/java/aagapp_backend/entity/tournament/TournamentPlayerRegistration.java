@@ -38,4 +38,7 @@ public class TournamentPlayerRegistration {
     public enum RegistrationStatus {
         REGISTERED, CANCELLED,ACTIVE
     }
+
+
+
 }

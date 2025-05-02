@@ -14,6 +14,6 @@ public class TournamentJoinRequest {
     private Long playerId;
 
     @NotNull(message="tournamentId  can not be null")
-    private Long gameid;
+    private Long gameId;
 
 }
