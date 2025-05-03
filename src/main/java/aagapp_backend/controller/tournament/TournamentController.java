@@ -364,7 +364,7 @@ public class TournamentController {
         }
     }
 
-    @GetMapping("/waiting-room-status")
+    /*@GetMapping("/waiting-room-status")
     public ResponseEntity<?> getWaitingRoomStatus(
             @RequestParam Long tournamentId,
             @RequestParam Integer roundNumber) {
@@ -396,7 +396,6 @@ public class TournamentController {
             // 5. Decide if next round can be started
             boolean canStartNextRound = allRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
 
-            // 6. Build response
             Map<String, Object> response = new HashMap<>();
             response.put("waitingCount", waitingCount);
             response.put("expectedPlayers", expectedPlayers);
@@ -410,8 +409,62 @@ public class TournamentController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error occurred while retrieving waiting status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
+    @GetMapping("/waiting-room-status")
+    public ResponseEntity<?> getWaitingRoomStatus(
+            @RequestParam Long tournamentId,
+            @RequestParam Integer roundNumber) {
+        try {
+            // 1. Get all READY_TO_PLAY players in this round
+            List<TournamentResultRecord> readyPlayers = tournamentService
+                    .getPlayersForNextRound(tournamentId, roundNumber);
+            int waitingCount = readyPlayers.size();
+
+            // 2. Fetch all rooms from the current and previous rounds
+            List<TournamentRoom> previousRoundRooms = tournamentRoomRepository
+                    .findByTournamentIdAndRound(tournamentId, roundNumber - 1);
+
+            List<TournamentRoom> currentRoundRooms = tournamentRoomRepository
+                    .findByTournamentIdAndRound(tournamentId, roundNumber);
+
+            boolean allPreviousRoundRoomsCompleted = previousRoundRooms.stream()
+                    .allMatch(room -> room.getStatus().equalsIgnoreCase("COMPLETED"));
+
+            boolean allRoundsCompleted = currentRoundRooms.stream()
+                    .allMatch(room -> room.getStatus().equalsIgnoreCase("COMPLETED"));
+
+            // 4. Calculate expected players:
+            // - One winner per completed room
+            // - Add free pass count (assumed to be stored as FREE_PASS in TournamentResultRecord)
+            long completedRoomCount = previousRoundRooms.stream()
+                    .filter(room -> room.getStatus().equalsIgnoreCase("COMPLETED"))
+                    .count();
+
+            long freePassCount = tournamentResultRecordRepository
+                    .countFreePassWinners(tournamentId, roundNumber); // You must implement this method
+
+            long expectedPlayers = completedRoomCount + freePassCount;
+
+            boolean canStartNextRound = allPreviousRoundRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
+
+            boolean playAgainEnabled = allRoundsCompleted || allPreviousRoundRoomsCompleted;
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("waitingCount", waitingCount);
+            response.put("expectedPlayers", expectedPlayers);
+            response.put("freePassCount", freePassCount);
+            response.put("players", readyPlayers);
+            response.put("canStartNextRound", canStartNextRound);
+            response.put("playAgainEnabled", playAgainEnabled);  // Add this flag to the response
+
+            return responseService.generateSuccessResponse("Waiting room status fetched", response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error occurred while retrieving waiting status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 
     // Endpoint to retrieve players by tournamentId and roundNumber

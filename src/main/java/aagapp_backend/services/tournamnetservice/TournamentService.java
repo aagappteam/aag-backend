@@ -1599,8 +1599,13 @@ public class TournamentService {
 
 
 
-    public List<TournamentResultRecord> getReadyPlayersByTournamentAndRound(Long tournamentId, int roundNumber) {
-        return tournamentResultRecordRepository.findByTournamentIdAndRoundAndStatus(tournamentId, roundNumber, "ACTIVE");
+    public List<TournamentResultRecord> getPlayersForNextRound(Long tournamentId, int roundNumber) {
+        // Fetch players who are winners or have a free pass for the previous round
+        return tournamentResultRecordRepository.findByTournamentIdAndRoundAndStatusIn(
+                tournamentId,
+                roundNumber,
+                Arrays.asList("WINNER", "FREE_PASS")
+        );
     }
 
 

@@ -70,4 +70,6 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
     List<TournamentResultRecord> findByTournamentIdAndRoundNumberAndStatus(Long tournamentId, int nextRound, String readyToPlay);
 
     Optional<TournamentResultRecord> findByTournamentIdAndPlayerIdAndRound(Long tournamentId, Long playerId, int round);
+
+    List<TournamentResultRecord> findByTournamentIdAndRoundAndStatusIn(Long tournamentId, int roundNumber, List<String> list);
 }
