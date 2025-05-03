@@ -1,9 +1,6 @@
 package aagapp_backend.controller.tournament;
 
-import aagapp_backend.dto.GameResult;
-import aagapp_backend.dto.GameRoomResponseDTO;
-import aagapp_backend.dto.JoinLeagueRequest;
-import aagapp_backend.dto.TournamentRequest;
+import aagapp_backend.dto.*;
 import aagapp_backend.dto.tournament.MatchResultRequest;
 import aagapp_backend.dto.tournament.TournamentJoinRequest;
 import aagapp_backend.entity.league.LeagueRoom;
@@ -249,7 +246,14 @@ public class TournamentController {
     ) {
         try {
             Page<Player> playersPage = tournamentService.getRegisteredPlayers(tournamentId, page, size);
-            return responseService.generateSuccessResponse("Players fetched successfully", playersPage, HttpStatus.OK);
+
+            long totalCount = playersPage.getTotalElements();
+            List<Player> gameList = playersPage.getContent();
+
+//            return ResponseService.generateSuccessResponseWithCount("List of vendors", vendorDetailList, totalCount, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithCount("Players fetched successfully", gameList,totalCount, HttpStatus.OK);
+
+//            return responseService.generateSuccessResponse("Players fetched successfully", gameList, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
             return responseService.generateErrorResponse("Error fetching players: " + e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -257,7 +261,7 @@ public class TournamentController {
     }
 
 
-        @GetMapping("/api/tournament/{tournamentId}")
+        @GetMapping("/tournament/{tournamentId}")
         public ResponseEntity<?> getTournamentProgress(@PathVariable Long tournamentId) {
             List<Map<String, Object>> rounds = tournamentService.generateTournamentRounds(tournamentId);
 
