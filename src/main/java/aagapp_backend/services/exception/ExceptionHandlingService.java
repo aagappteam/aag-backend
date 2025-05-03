@@ -1,16 +1,25 @@
 
 package aagapp_backend.services.exception;
 
+import aagapp_backend.services.EmailService;
 import com.twilio.exception.ApiException;
+import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 @Service
 public class ExceptionHandlingService implements ExceptionHandlingImplement {
+
+    @Autowired
+    private EmailService emailService;
     private static final Logger logger = LoggerFactory.getLogger(ExceptionHandlingService.class);
 
     @Override
@@ -63,7 +72,16 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
 
     }
 
+    private String getStackTraceAsString(Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
+    }
     public String handleException(HttpStatus status, Exception e) {
+        String errorDetails = "Status: " + status + "\nMessage: " + e.getMessage() + "\nStackTrace: " + getStackTraceAsString(e);
+
+        emailService.sendErrorEmail("Error Occurred in Application", errorDetails);
+
 
         if(status.equals(HttpStatus.BAD_REQUEST)){
             logger.error("Bad request " + status + " " + e.getMessage());

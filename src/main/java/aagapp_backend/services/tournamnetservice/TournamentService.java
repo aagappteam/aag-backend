@@ -416,26 +416,40 @@ public class TournamentService {
             throw new RuntimeException("Error fetching registered players for tournament " + tournamentId + ": " + e.getMessage(), e);
         }
     }
-    @Transactional
-    public List<Player> getRegisteredPlayers(Long tournamentId) {
-        try {
-            // Fetch the list of TournamentPlayerRegistration records where the player is registered
-            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
-                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.REGISTERED);
+    public Page<Player> getRegisteredPlayers(Long tournamentId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
 
-            // Extract the players from the registrations
-            List<Player> players = registrations.stream()
-                    .map(TournamentPlayerRegistration::getPlayer)
-                    .collect(Collectors.toList());
+        Page<TournamentPlayerRegistration> registrationPage =
+                tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
+                        tournamentId,
+                        TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                        pageable
+                );
 
-            return players; // Return the list of registered players
-
-        } catch (Exception e) {
-            // Log the exception (you can add custom logging here)
-            throw new RuntimeException("Error fetching registered players for tournament " + tournamentId + ": " + e.getMessage(), e);
-        }
+        return registrationPage.map(TournamentPlayerRegistration::getPlayer);
     }
 
+
+//tournment id and player id find regsiter user list
+
+    public Boolean findTournamentResultRecordByTournamentIdAndPlayerId(Long tournamentId, Long playerId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+        List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
+                tournament.getId(), TournamentPlayerRegistration.RegistrationStatus.REGISTERED
+        );
+
+        registeredPlayers = registeredPlayers.stream()
+                .filter(reg -> reg.getPlayer().getPlayerId().equals(playerId))
+                .collect(Collectors.toList());
+
+        if (registeredPlayers.isEmpty()) {
+            return false;
+        } else {
+            return true;
+        }
+
+    }
 
 
     @Transactional
@@ -509,7 +523,7 @@ public class TournamentService {
 
 
     @Transactional
-    public void startTournament(Long tournamentId) {
+    public Tournament startTournament(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
@@ -542,14 +556,14 @@ public class TournamentService {
             result.setPlayer(winner);
             result.setScore(0);
             result.setIsWinner(true);
-            result.setStatus("AUTO_WIN");
+            result.setStatus("WINNER");
             result.setRound(1);
             result.setPlayedAt(LocalDateTime.now());
             tournamentResultRecordRepository.save(result);
 
             System.out.println("🎉 Only one player. Tournament " + tournament.getId()
                     + " completed. User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
-            return;
+            return tournament;
         }
         System.out.println("Number of active players: " + activePlayers.size());
 
@@ -613,6 +627,8 @@ public class TournamentService {
                 + (totalPlayers + freePassCount) + " players, "
                 + totalRounds + " rounds, "
                 + "User Prize Pool: " + userPrizePool);
+        return tournament;
+
     }
 
     public void assignFreePassToPlayer(Player player, Long tournamentId, int round) {
@@ -774,7 +790,7 @@ public class TournamentService {
         TournamentResultRecord nextRoundRecord = new TournamentResultRecord();
         nextRoundRecord.setTournament(tournament);
         nextRoundRecord.setPlayer(player);
-        nextRoundRecord.setRound(roundNumber + 1);
+        nextRoundRecord.setRound(roundNumber);
         nextRoundRecord.setStatus("READY_TO_PLAY");
         nextRoundRecord.setScore(0);
         return tournamentResultRecordRepository.save(nextRoundRecord);
@@ -1607,6 +1623,42 @@ public class TournamentService {
                 Arrays.asList("WINNER", "FREE_PASS")
         );
     }
+
+
+    public List<Map<String, Object>> generateTournamentRounds(Long tournamentId) {
+        Tournament tournament= tournamentRepository.findById(tournamentId).orElseThrow();
+
+        int totalPlayers = tournament.getParticipants();
+
+        List<Map<String, Object>> rounds = new ArrayList<>();
+        int roundNumber = 1;
+        int currentPlayers = totalPlayers;
+
+        while (currentPlayers >= 2) {
+            int winners = currentPlayers / 2;
+            Map<String, Object> roundInfo = new HashMap<>();
+
+            roundInfo.put("round", roundNumber + " Round");
+            roundInfo.put("progress", currentPlayers == 2 ? "WINNER" : "Completed");
+            roundInfo.put("numberOfWinners", currentPlayers == 2 ? "1" : String.valueOf(winners));
+            roundInfo.put("totalPlayers", String.valueOf(currentPlayers));
+            roundInfo.put("prize", getDynamicPrize(currentPlayers, tournament));
+
+            rounds.add(0, roundInfo);
+
+            currentPlayers = winners;
+            roundNumber++;
+        }
+
+        return rounds;
+    }
+
+    private BigDecimal getDynamicPrize(int currentPlayers, Tournament tournament) {
+        int winners = currentPlayers / 2;
+        return BigDecimal.valueOf(winners).multiply(tournament.getRoomprize());
+    }
+
+
 
 
 }

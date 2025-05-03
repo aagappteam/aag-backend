@@ -5,6 +5,7 @@ import aagapp_backend.entity.VendorSubmissionEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -116,4 +117,26 @@ public class EmailService {
             return scanner.useDelimiter("\\A").next();
         }
     }
+
+    public void sendErrorEmail(String subject, String body) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
+
+            helper.setFrom(fromEmail, "AAG App Team");
+            helper.setTo(new String[] {
+                    "anilkant.mishra@celestialitverse.com",
+                    "juned.idreesh@celestialitverse.com"
+            });
+            helper.setSubject(subject);
+
+            message.setText(body, "utf-8");
+
+            mailSender.send(message);
+        } catch (MessagingException | MailException | UnsupportedEncodingException e) {
+            System.err.println("Failed to send error email: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 }

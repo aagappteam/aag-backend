@@ -1,9 +1,6 @@
 package aagapp_backend.controller.tournament;
 
-import aagapp_backend.dto.GameResult;
-import aagapp_backend.dto.GameRoomResponseDTO;
-import aagapp_backend.dto.JoinLeagueRequest;
-import aagapp_backend.dto.TournamentRequest;
+import aagapp_backend.dto.*;
 import aagapp_backend.dto.tournament.MatchResultRequest;
 import aagapp_backend.dto.tournament.TournamentJoinRequest;
 import aagapp_backend.entity.league.LeagueRoom;
@@ -109,6 +106,17 @@ public class TournamentController {
             long totalCount = games.getTotalElements();
 
             return responseService.generateSuccessResponseWithCount("Tournament fetched successfully", gameList, totalCount, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/get-registered-players-by-tournament/{tournamentId}/{playerId}")
+    public ResponseEntity<?> getRegisteredPlayersByTournamentId(@PathVariable Long tournamentId, @PathVariable Long playerId) {
+        try {
+            Boolean registeredPlayers = tournamentService.findTournamentResultRecordByTournamentIdAndPlayerId(tournamentId, playerId);
+            return responseService.generateSuccessResponse("Players fetched successfully", registeredPlayers, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -231,11 +239,21 @@ public class TournamentController {
 
 
     @GetMapping("/players/{tournamentId}")
-    public ResponseEntity<?> getRegisteredPlayers(@PathVariable Long tournamentId) {
+    public ResponseEntity<?> getRegisteredPlayers(
+            @PathVariable Long tournamentId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         try {
-            //list of all players
-            List<Player> players = tournamentService.getRegisteredPlayers(tournamentId);
-            return responseService.generateSuccessResponse("Players fetched successfully", players, HttpStatus.OK);
+            Page<Player> playersPage = tournamentService.getRegisteredPlayers(tournamentId, page, size);
+
+            long totalCount = playersPage.getTotalElements();
+            List<Player> gameList = playersPage.getContent();
+
+//            return ResponseService.generateSuccessResponseWithCount("List of vendors", vendorDetailList, totalCount, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithCount("Players fetched successfully", gameList,totalCount, HttpStatus.OK);
+
+//            return responseService.generateSuccessResponse("Players fetched successfully", gameList, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
             return responseService.generateErrorResponse("Error fetching players: " + e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -243,11 +261,25 @@ public class TournamentController {
     }
 
 
+        @GetMapping("/tournament/{tournamentId}")
+        public ResponseEntity<?> getTournamentProgress(@PathVariable Long tournamentId) {
+            List<Map<String, Object>> rounds = tournamentService.generateTournamentRounds(tournamentId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Tournament Progress");
+            response.put("rounds", rounds);
+
+            return ResponseEntity.ok(response);
+        }
+
+
     @PostMapping("/startTournament/{tournamentId}")
     public ResponseEntity<?> startTournament(@PathVariable Long tournamentId) {
         try {
-            tournamentService.startTournament(tournamentId);
-            return ResponseEntity.ok("🏆 Tournament Started Successfully!");
+          Tournament tournament=  tournamentService.startTournament(tournamentId);
+            return responseService.generateSuccessResponse("🏆 Tournament Started Successfully!",tournament,HttpStatus.OK);
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error starting tournament: " + e.getMessage());
@@ -267,7 +299,6 @@ public class TournamentController {
 
     @Transactional
     @PostMapping("/join-room")
-
     public ResponseEntity<?> joinTournament(@RequestBody TournamentJoinRequest tournamentJoinRequest ) {
         Long tournamentId = tournamentJoinRequest.getGameId();
         Long playerId = tournamentJoinRequest.getPlayerId();
@@ -290,8 +321,8 @@ public class TournamentController {
 
         registration.setStatus(TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
         entityManager.merge(registration);
+        return responseService.generateSuccessResponse("Player successfully joined the tournament room.",registration,HttpStatus.OK);
 
-        return ResponseEntity.ok("Player successfully joined the tournament room.");
     }
 
 
@@ -337,8 +368,6 @@ public class TournamentController {
         return tournamentService.leaveRoom(playerId, tournamentId);
     }
 
-
-
     @GetMapping("/my-opponent/{playerId}/{tournamentId}")
     public ResponseEntity<?> getMyRoom(@PathVariable Long playerId, @PathVariable Long tournamentId) {
         try {
@@ -350,7 +379,6 @@ public class TournamentController {
         }
     }
 
-
     // Endpoint to add a player to a round
     @PostMapping("/process-next-round")
     public ResponseEntity<?> processNextRound(
@@ -358,6 +386,7 @@ public class TournamentController {
             @RequestParam Integer roundNumber) {
         try {
             tournamentService.processNextRoundMatches(tournamentId, roundNumber);
+
             return responseService.generateSuccessResponse("Next round processing completed.", null, HttpStatus.OK);
         } catch (RuntimeException e) {
             return responseService.generateErrorResponse("Error: " + e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -604,6 +633,7 @@ public class TournamentController {
     public ResponseEntity<?> updateMatchResult(@RequestBody  GameResult gameResult) {
         try{
             tournamentService.processMatchResults(gameResult);
+
             return ResponseEntity.ok("Match result updated");
         }catch (RuntimeException e){
             return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.BAD_REQUEST);
