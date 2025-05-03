@@ -592,7 +592,7 @@ public class TournamentController {
         }
 
         Optional<TournamentResultRecord> record = tournamentResultRecordRepository.findWinnerRecord(
-                        tournamentId, playerId, roundNumber);
+                        tournamentId, playerId, roundNumber-1);
 
         if (record.isEmpty()) {
             return responseService.generateErrorResponse(
