@@ -411,14 +411,14 @@ public class TournamentController {
         }
     }*/
 
-    @GetMapping("/waiting-room-status")
+   /* @GetMapping("/waiting-room-status")
     public ResponseEntity<?> getWaitingRoomStatus(
             @RequestParam Long tournamentId,
             @RequestParam Integer roundNumber) {
         try {
             // 1. Get all READY_TO_PLAY players in this round
             List<TournamentResultRecord> readyPlayers = tournamentService
-                    .getPlayersForNextRound(tournamentId, roundNumber);
+                    .getPlayersForNextRound(tournamentId, roundNumber-1);
             int waitingCount = readyPlayers.size();
 
             // 2. Fetch all rooms from the current and previous rounds
@@ -464,7 +464,73 @@ public class TournamentController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error occurred while retrieving waiting status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
+   @GetMapping("/waiting-room-status")
+   public ResponseEntity<?> getWaitingRoomStatus(
+           @RequestParam Long tournamentId,
+           @RequestParam Integer roundNumber) {
+       try {
+           // 1. Get all players who are winners or have a free pass from the previous round
+           List<TournamentResultRecord> readyPlayers = tournamentService
+                   .getPlayersForNextRound(tournamentId, roundNumber - 1);  // Fetch players for the previous round
+           int waitingCount = readyPlayers.size();
+
+           // 2. Fetch all rooms from the current and previous rounds
+           List<TournamentRoom> previousRoundRooms = tournamentRoomRepository
+                   .findByTournamentIdAndRound(tournamentId, roundNumber - 1);
+
+           List<TournamentRoom> currentRoundRooms = tournamentRoomRepository
+                   .findByTournamentIdAndRound(tournamentId, roundNumber);
+
+           // Handle cases where no previous round rooms are created
+           if (previousRoundRooms.isEmpty()) {
+               // If no previous round rooms exist, it means no tournament progression has happened
+               return responseService.generateErrorResponse("No previous round rooms found. Tournament may not have started.", HttpStatus.BAD_REQUEST);
+           }
+
+           // Handle the case where only one player exists (already a winner)
+           if (waitingCount == 1) {
+               // If only one player is left and they've won, consider the tournament as completed
+               return responseService.generateSuccessResponse("Tournament completed with 1 winner.", null, HttpStatus.OK);
+           }
+
+           boolean allPreviousRoundRoomsCompleted = previousRoundRooms.stream()
+                   .allMatch(room -> room.getStatus().equalsIgnoreCase("COMPLETED"));
+
+           boolean allRoundsCompleted = currentRoundRooms.stream()
+                   .allMatch(room -> room.getStatus().equalsIgnoreCase("COMPLETED"));
+
+           long completedRoomCount = previousRoundRooms.stream()
+                   .filter(room -> room.getStatus().equalsIgnoreCase("COMPLETED"))
+                   .count();
+
+           long freePassCount = tournamentResultRecordRepository
+                   .countFreePassWinners(tournamentId, roundNumber); // You must implement this method
+
+           long expectedPlayers = completedRoomCount + freePassCount;
+
+           // 5. Decide if next round can be started
+           boolean canStartNextRound = allPreviousRoundRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
+
+           // 6. Enable Play Again button if all rounds are completed
+           boolean playAgainEnabled = allRoundsCompleted || allPreviousRoundRoomsCompleted;
+
+           Map<String, Object> response = new HashMap<>();
+           response.put("waitingCount", waitingCount);
+           response.put("expectedPlayers", expectedPlayers);
+           response.put("freePassCount", freePassCount);
+           response.put("players", readyPlayers);
+           response.put("canStartNextRound", canStartNextRound);
+           response.put("playAgainEnabled", playAgainEnabled);
+
+           return responseService.generateSuccessResponse("Waiting room status fetched", response, HttpStatus.OK);
+
+       } catch (Exception e) {
+           exceptionHandling.handleException(e);
+           return responseService.generateErrorResponse("Error occurred while retrieving waiting status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+       }
+   }
+
 
 
     // Endpoint to retrieve players by tournamentId and roundNumber
