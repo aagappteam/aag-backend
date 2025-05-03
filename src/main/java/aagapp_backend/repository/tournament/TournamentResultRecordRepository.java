@@ -32,7 +32,7 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
     @Query("SELECT CASE WHEN COUNT(trr) > 0 THEN TRUE ELSE FALSE END " +
             "FROM TournamentResultRecord trr " +
             "WHERE trr.tournament.id = :tournamentId " +
-            "AND trr.player.id = :playerId " +
+            "AND trr.player.playerId = :playerId " +
             "AND trr.round = :round " +
             "AND trr.isWinner = TRUE")
     boolean existsByTournamentIdAndPlayerIdAndRoundAndIsWinnerTrue(@Param("tournamentId") Long tournamentId,
@@ -57,7 +57,7 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
 
     @Query("SELECT r FROM TournamentResultRecord r " +
             "WHERE r.tournament.id = :tournamentId " +
-            "AND r.player.id = :playerId " +
+            "AND r.player.playerId = :playerId " +
             "AND r.round = :round " +
             "AND r.isWinner = true")
     Optional<TournamentResultRecord> findWinnerRecord(
