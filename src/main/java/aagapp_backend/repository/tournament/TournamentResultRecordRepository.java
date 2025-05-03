@@ -70,7 +70,7 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
 
     @Query("SELECT r FROM TournamentResultRecord r " +
             "WHERE r.tournament.id = :tournamentId " +
-            "AND r.player.id = :playerId " +
+            "AND r.player.playerId = :playerId " +
             "AND r.round = :round")
     Optional<TournamentResultRecord> findByTournamentIdAndPlayerIdAndRound(
             @Param("tournamentId") Long tournamentId,
