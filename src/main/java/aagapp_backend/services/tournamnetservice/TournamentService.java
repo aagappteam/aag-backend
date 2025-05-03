@@ -212,15 +212,13 @@ public class TournamentService {
             // Convert the current time (now) to UTC for the database comparison
             ZonedDateTime nowInUTC = now.withZoneSameInstant(ZoneOffset.UTC);
             // Debugging: Log both times
-            System.out.println("Current Time in UTC: " + nowInUTC);
-            System.out.println("Current Time in Asia/Kolkata: " + now);
             List<Tournament> tournamentsToStart = tournamentRepository.findByStatusAndScheduledAtGreaterThanEqual(
                     TournamentStatus.SCHEDULED,
                     nowInUTC
             );
             for (Tournament tournament : tournamentsToStart) {
                 if (tournament.getStatus() == TournamentStatus.SCHEDULED) {
-                    System.out.println(tournament.getId() + " has been scheduled");
+
                     startTournament(tournament.getId());
 
                     System.out.println(tournament.getId() + " has been activated now");
@@ -236,7 +234,7 @@ public class TournamentService {
 
 
 
-    private void notifyRegisteredPlayers(Tournament tournament) {
+    /*private void notifyRegisteredPlayers(Tournament tournament) {
         try{
             List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
                     tournament.getId(), TournamentPlayerRegistration.RegistrationStatus.REGISTERED
@@ -260,7 +258,42 @@ public class TournamentService {
 
         }
     }
+*/
+    private void notifyRegisteredPlayers(Tournament tournament) {
+        int page = 0;
+        int size = 50; // you can adjust this size as needed
+        Page<TournamentPlayerRegistration> registrationPage;
 
+        do {
+            Pageable pageable = PageRequest.of(page, size);
+            registrationPage = tournamentPlayerRegistrationRepository.findRegisteredPlayersByTournamentId(
+                    tournament.getId(),
+                    TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                    pageable
+            );
+
+            for (TournamentPlayerRegistration registration : registrationPage.getContent()) {
+                Player player = registration.getPlayer();
+
+                if (player != null && player.getCustomer() != null) {
+                    String fcmToken = player.getCustomer().getFcmToken();
+                    if (fcmToken != null) {
+                        notoficationFirebase.sendNotification(
+                                fcmToken,
+                                "Tournament starting soon!",
+                                "Tournament '" + tournament.getName() + "' will start in 5 minutes. Please join now!"
+                        );
+                    } else {
+                        System.out.println("No FCM token for player: " + player.getCustomer().getId());
+                    }
+                } else {
+                    System.out.println("Invalid player or customer for registration ID: " + registration.getId());
+                }
+            }
+
+            page++;
+        } while (registrationPage.hasNext());
+    }
 
 
     @Transactional
@@ -436,8 +469,9 @@ public class TournamentService {
         try{
             Pageable pageable = PageRequest.of(page, size);
 
+
             Page<TournamentPlayerRegistration> registrationPage =
-                    tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
+                    tournamentPlayerRegistrationRepository.findRegisteredPlayersByTournamentId(
                             tournamentId,
                             TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
                             pageable
@@ -566,6 +600,8 @@ public class TournamentService {
         if(activePlayers.size() == 0) {
             throw new IllegalStateException("Tournament has no active players");
         }
+
+        System.out.println("activePlayers: " + activePlayers.size()  + tournamentId + " Tournament ID: " + tournamentId);
         if (activePlayers.size() == 1) {
             Player winner = activePlayers.get(0);
 
@@ -1315,8 +1351,8 @@ public class TournamentService {
 
     @Scheduled(fixedRate = 30000)
     public void checkAndStartNextRoundsForAllTournaments() {
-        int page = 0;
-        int size = 10; // Tune this value as per load and performance testing
+/*        int page = 0;
+        int size = 10;
 
         Page<Tournament> tournamentPage;
         do {
@@ -1329,10 +1365,19 @@ public class TournamentService {
                 int currentRound = tournament.getRound();
 
                 startNextRound(tournament.getId(), currentRound);
+                em.flush();
+                em.clear();
             }
 
             page++;
-        } while (tournamentPage.hasNext());
+        } while (tournamentPage.hasNext());*/
+
+        List<Tournament> activeTournaments = tournamentRepository.findByStatus(TournamentStatus.ACTIVE);
+        System.out.println("Active Tournaments: " + activeTournaments.size());
+        for (Tournament tournament : activeTournaments) {
+            startNextRound(tournament.getId(), tournament.getRound());
+        }
+
     }
 
     public void startNextRound(Long tournamentId, int currentRound) {
@@ -1340,7 +1385,6 @@ public class TournamentService {
             Tournament tournament = tournamentRepository.findById(tournamentId)
                     .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-            // Check if the current round is completed
             if (isRoundCompleted(tournamentId, currentRound)) {
                 int nextRound = currentRound + 1;
                 distributeRoundPrize(tournament, currentRound);
@@ -1409,33 +1453,6 @@ public class TournamentService {
         }
     }
 
-   /* @Transactional
-    public void storeMatchResult(Long tournamentId, Long roomId, PlayerDtoWinner player, boolean isWinner) {
-        TournamentRoom room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Room not found"));
-
-        Player playerEntity = playerRepository.findById(player.getPlayerId())
-                .orElseThrow(() -> new RuntimeException("Player not found"));
-
-        TournamentResultRecord result = new TournamentResultRecord();
-        result.setTournament(room.getTournament());
-        result.setRoomId(roomId);
-        result.setPlayer(playerEntity);
-        result.setScore(player.getScore());
-        result.setIsWinner(isWinner);
-        if(isWinner){
-            result.setStatus("WINNER");
-        }else{
-            result.setStatus("ELIMINATED");
-
-        }
-        result.setPlayedAt(LocalDateTime.now());
-        result.setRound(room.getTournament().getRound());
-        tournamentResultRecordRepository.save(result);
-        room.setStatus("COMPLETED");
-        roomRepository.save(room);
-    }*/
-
     @Transactional
     public void storeMatchResult(Long tournamentId, Long roomId, PlayerDtoWinner player, boolean isWinner) {
         TournamentRoom room = roomRepository.findById(roomId)
@@ -1468,18 +1485,23 @@ public class TournamentService {
     }
 
     public boolean isRoundCompleted(Long tournamentId, int roundNumber) {
+
+        System.out.println("Round Number: " + roundNumber  + " Tournament ID: " + tournamentId);
         // Count only rooms that actually had participants
         long validRoomsCount = roomRepository.countByTournamentIdAndRoundAndCurrentParticipantsGreaterThan(
                 tournamentId, roundNumber, 0);
 
+        System.out.println("Valid rooms count: " + validRoomsCount);
         if (validRoomsCount == 0) {
             long freePassCount = tournamentResultRecordRepository
                     .countByTournamentIdAndRoundAndStatus(tournamentId, roundNumber, "FREE_PASS");
             return freePassCount > 0;
         }
 
+
         long completedRoomsCount = roomRepository.countByTournamentIdAndRoundAndStatusAndCurrentParticipantsGreaterThan(
                 tournamentId, roundNumber, "COMPLETED", 0);
+        System.out.println("completedRoomsCount rooms count: " + completedRoomsCount);
 
         return completedRoomsCount == validRoomsCount;
     }

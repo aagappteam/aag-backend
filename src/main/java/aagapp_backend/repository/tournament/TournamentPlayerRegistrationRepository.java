@@ -5,6 +5,9 @@ import aagapp_backend.entity.tournament.TournamentPlayerRegistration;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -21,8 +24,21 @@ public interface TournamentPlayerRegistrationRepository extends JpaRepository<To
 
     // Get the number of registered players for a specific tournament
     int countByTournamentIdAndStatus(Long tournamentId, TournamentPlayerRegistration.RegistrationStatus status);
-    Page<TournamentPlayerRegistration> findByTournamentIdAndStatus(Long tournamentId, TournamentPlayerRegistration.RegistrationStatus status, Pageable pageable);
+    @Query("SELECT r FROM TournamentPlayerRegistration r " +
+            "WHERE r.tournament.id = :tournamentId AND r.status = :status")
+    Page<TournamentPlayerRegistration> findRegisteredPlayersByTournamentId(
+            @Param("tournamentId") Long tournamentId,
+            @Param("status") TournamentPlayerRegistration.RegistrationStatus status,
+            Pageable pageable
+    );
 
-    List<TournamentPlayerRegistration> findByTournamentIdAndStatus(Long tournamentId, TournamentPlayerRegistration.RegistrationStatus registrationStatus);
+
+
+    @Query("SELECT r FROM TournamentPlayerRegistration r " +
+            "WHERE r.tournament.id = :tournamentId AND r.status = :status")
+    List<TournamentPlayerRegistration> findByTournamentIdAndStatus(
+            @Param("tournamentId") Long tournamentId,
+            @Param("status") TournamentPlayerRegistration.RegistrationStatus status
+    );
 
 }
