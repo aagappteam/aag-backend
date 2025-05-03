@@ -289,7 +289,7 @@ public class TournamentController {
         }
 
         registration.setStatus(TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
-        entityManager.merge(registration);  // Use merge to update the existing entity
+        entityManager.merge(registration);
 
         return ResponseEntity.ok("Player successfully joined the tournament room.");
     }
@@ -378,7 +378,6 @@ public class TournamentController {
             List<TournamentRoom> previousRoundRooms = tournamentRoomRepository
                     .findByTournamentIdAndRound(tournamentId, roundNumber - 1);
 
-            // 3. Check if all previous round rooms are completed
             boolean allRoomsCompleted = previousRoundRooms.stream()
                     .allMatch(room -> room.getStatus().equalsIgnoreCase("COMPLETED"));
 
@@ -453,7 +452,7 @@ public class TournamentController {
                     "You are not a winner or eligible for next round", HttpStatus.FORBIDDEN);
         }
 
-        TournamentRoundParticipant nextRoundRecord = tournamentService.addPlayerToNextRound(
+        TournamentResultRecord nextRoundRecord = tournamentService.addPlayerToNextRound(
                 tournamentId,
                 roundNumber,
                 record.get());
