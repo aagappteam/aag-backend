@@ -302,8 +302,8 @@ public class TournamentService {
 
             } else {
                 tournament.setStatus(TournamentStatus.SCHEDULED);
-//                tournament.setScheduledAt(nowInKolkata.plusHours(1));
-                tournament.setScheduledAt(nowInKolkata.plusMinutes(2));
+               tournament.setScheduledAt(nowInKolkata.plusHours(1));
+//                tournament.setScheduledAt(nowInKolkata.plusMinutes(2));
 
             }
 
