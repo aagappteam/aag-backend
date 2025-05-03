@@ -1301,7 +1301,7 @@ public class TournamentService {
                 if (nextRound <= tournament.getTotalrounds()) {
                     // Check the number of players available for the next round
                     List<TournamentResultRecord> readyPlayers = tournamentResultRecordRepository
-                            .findByTournamentIdAndRoundNumberAndStatus(tournamentId, nextRound, "READY_TO_PLAY");
+                            .findByTournamentIdAndRoundAndStatus(tournamentId, nextRound, "READY_TO_PLAY");
 
                     if (readyPlayers.size() <= 1) {
                         System.out.println("🏁 Only one player remains — finishing tournament.");
@@ -1473,7 +1473,7 @@ public class TournamentService {
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
         List<TournamentResultRecord> participants = tournamentResultRecordRepository
-                .findByTournamentIdAndRoundNumberAndStatus(tournamentId, roundNumber, "READY_TO_PLAY");
+                .findByTournamentIdAndRoundAndStatus(tournamentId, roundNumber, "READY_TO_PLAY");
 
         if (participants.size() < 2) {
             throw new IllegalStateException("Not enough players to start the round (minimum 2 needed)");
