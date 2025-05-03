@@ -93,24 +93,23 @@ public class TournamentController {
     public ResponseEntity<?> getAllGames(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestParam(value = "status", required = false) TournamentStatus status,
+            @RequestParam(value = "status", required = false) List<TournamentStatus> status,
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {
             Pageable pageable = PageRequest.of(page, size);
-            // Assuming your service returns Page<GetGameResponseDTO>
             Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId);
 
-            // Extract only the content (list of games) and return it
             List<Tournament> gameList = games.getContent();
             long totalCount = games.getTotalElements();
 
-            return responseService.generateSuccessResponseWithCount("Tournament fetched successfully", gameList, totalCount, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithCount("Tournaments fetched successfully", gameList, totalCount, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     @GetMapping("/get-registered-players-by-tournament/{tournamentId}/{playerId}")
     public ResponseEntity<?> getRegisteredPlayersByTournamentId(@PathVariable Long tournamentId, @PathVariable Long playerId) {

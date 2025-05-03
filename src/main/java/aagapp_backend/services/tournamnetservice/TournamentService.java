@@ -196,35 +196,40 @@ public class TournamentService {
 
     @Scheduled(cron = "0 * * * * *")
     public void autoStartScheduledTournaments() {
-/*
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
 
-        // Convert `now` to UTC for consistency with stored `scheduledAt` (assuming it's stored in Asia/Kolkata)
-        ZonedDateTime nowInUTC = now.withZoneSameInstant(ZoneOffset.UTC);
-*/
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS); // Truncate to seconds
+        try{
+            /*
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
 
-        // Debugging: Log the current time in Asia/Kolkata
-        System.out.println("Current Time in Asia/Kolkata: " + now);
+            // Convert `now` to UTC for consistency with stored `scheduledAt` (assuming it's stored in Asia/Kolkata)
+            ZonedDateTime nowInUTC = now.withZoneSameInstant(ZoneOffset.UTC);
+    */
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS); // Truncate to seconds
 
-        // Convert the current time (now) to UTC for the database comparison
-        ZonedDateTime nowInUTC = now.withZoneSameInstant(ZoneOffset.UTC);
-        // Debugging: Log both times
-        System.out.println("Current Time in UTC: " + nowInUTC);
-        System.out.println("Current Time in Asia/Kolkata: " + now);
-        List<Tournament> tournamentsToStart = tournamentRepository.findByStatusAndScheduledAtGreaterThanEqual(
-                TournamentStatus.SCHEDULED,
-                nowInUTC
-        );
-        System.out.println(tournamentsToStart.size() + " tournaments to start");
+            // Debugging: Log the current time in Asia/Kolkata
+            System.out.println("Current Time in Asia/Kolkata: " + now);
 
-        for (Tournament tournament : tournamentsToStart) {
-            if (tournament.getStatus() == TournamentStatus.SCHEDULED) {
-                System.out.println(tournament.getId() + " has been scheduled");
-                startTournament(tournament.getId());
+            // Convert the current time (now) to UTC for the database comparison
+            ZonedDateTime nowInUTC = now.withZoneSameInstant(ZoneOffset.UTC);
+            // Debugging: Log both times
+            System.out.println("Current Time in UTC: " + nowInUTC);
+            System.out.println("Current Time in Asia/Kolkata: " + now);
+            List<Tournament> tournamentsToStart = tournamentRepository.findByStatusAndScheduledAtGreaterThanEqual(
+                    TournamentStatus.SCHEDULED,
+                    nowInUTC
+            );
+            for (Tournament tournament : tournamentsToStart) {
+                if (tournament.getStatus() == TournamentStatus.SCHEDULED) {
+                    System.out.println(tournament.getId() + " has been scheduled");
+                    startTournament(tournament.getId());
 
-                System.out.println(tournament.getId() + " has been activated now");
+                    System.out.println(tournament.getId() + " has been activated now");
+                }
             }
+        }
+        catch (Exception e) {
+            exceptionHandling.handleException(e);
+
         }
     }
 
@@ -232,22 +237,27 @@ public class TournamentService {
 
 
     private void notifyRegisteredPlayers(Tournament tournament) {
-        List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
-                tournament.getId(), TournamentPlayerRegistration.RegistrationStatus.REGISTERED
-        );
+        try{
+            List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
+                    tournament.getId(), TournamentPlayerRegistration.RegistrationStatus.REGISTERED
+            );
 
-        for (TournamentPlayerRegistration registration : registeredPlayers) {
-            Player player = registration.getPlayer();
-            String fcmToken = player.getCustomer().getFcmToken();
-            if (fcmToken != null) {
-                notoficationFirebase.sendNotification(
-                        fcmToken,
-                        "Tournament starting soon!",
-                        "Tournament '" + tournament.getName() + "' will start in 5 minutes. Please join now!"
-                );
-            } else {
-                System.out.println("No FCM token available for player: " + player.getCustomer().getId());
+            for (TournamentPlayerRegistration registration : registeredPlayers) {
+                Player player = registration.getPlayer();
+                String fcmToken = player.getCustomer().getFcmToken();
+                if (fcmToken != null) {
+                    notoficationFirebase.sendNotification(
+                            fcmToken,
+                            "Tournament starting soon!",
+                            "Tournament '" + tournament.getName() + "' will start in 5 minutes. Please join now!"
+                    );
+                } else {
+                    System.out.println("No FCM token available for player: " + player.getCustomer().getId());
+                }
             }
+        }     catch (Exception e) {
+            exceptionHandling.handleException(e);
+
         }
     }
 
@@ -393,9 +403,12 @@ public class TournamentService {
 
             return registration;
 
-        } catch (Exception e) {
-            // Log the exception (you can add custom logging here)
+        }
+        catch (Exception e) {
+            exceptionHandling.handleException(e);
             throw new RuntimeException("Error registering player for the tournament: " + e.getMessage(), e);
+
+
         }
     }
 
@@ -411,55 +424,72 @@ public class TournamentService {
 
             return players;
 
-        } catch (Exception e) {
-            // Log the exception (you can add custom logging here)
+        }
+        catch (Exception e) {
+            exceptionHandling.handleException(e);
             throw new RuntimeException("Error fetching registered players for tournament " + tournamentId + ": " + e.getMessage(), e);
+
+
         }
     }
     public Page<Player> getRegisteredPlayers(Long tournamentId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        try{
+            Pageable pageable = PageRequest.of(page, size);
 
-        Page<TournamentPlayerRegistration> registrationPage =
-                tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
-                        tournamentId,
-                        TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
-                        pageable
-                );
+            Page<TournamentPlayerRegistration> registrationPage =
+                    tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
+                            tournamentId,
+                            TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                            pageable
+                    );
 
-        return registrationPage.map(TournamentPlayerRegistration::getPlayer);
+            return registrationPage.map(TournamentPlayerRegistration::getPlayer);
+        }
+
+         catch (Exception e) {
+            exceptionHandling.handleException(e);
+            throw new RuntimeException("Error fetching registered players for tournament " + tournamentId + ": " + e.getMessage(), e);
+
+
+        }
     }
 
 
 //tournment id and player id find regsiter user list
 
     public Boolean findTournamentResultRecordByTournamentIdAndPlayerId(Long tournamentId, Long playerId) {
-        Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
-        List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
-                tournament.getId(), TournamentPlayerRegistration.RegistrationStatus.REGISTERED
-        );
+        try {
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new RuntimeException("Tournament not found"));
+            List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
+                    tournament.getId(), TournamentPlayerRegistration.RegistrationStatus.REGISTERED
+            );
 
-        registeredPlayers = registeredPlayers.stream()
-                .filter(reg -> reg.getPlayer().getPlayerId().equals(playerId))
-                .collect(Collectors.toList());
+            registeredPlayers = registeredPlayers.stream()
+                    .filter(reg -> reg.getPlayer().getPlayerId().equals(playerId))
+                    .collect(Collectors.toList());
 
-        if (registeredPlayers.isEmpty()) {
-            return false;
-        } else {
-            return true;
+            if (registeredPlayers.isEmpty()) {
+                return false;
+            } else {
+                return true;
+            }
+        }catch (Exception e) {
+            exceptionHandling.handleException(e);
+            throw new RuntimeException("Error fetching registered players for tournament " + tournamentId + ": " + e.getMessage(), e);
+
+
         }
 
     }
 
-
     @Transactional
-    public Page<Tournament> getAllTournaments(Pageable pageable, TournamentStatus status, Long vendorId) {
+    public Page<Tournament> getAllTournaments(Pageable pageable, List<TournamentStatus> statuses, Long vendorId) {
         try {
-            // Check if 'status' and 'vendorId' are provided and build a query accordingly
-            if (status != null && vendorId != null) {
-                return tournamentRepository.findTournamentByStatusAndVendorId(status, vendorId, pageable);
-            } else if (status != null) {
-                return tournamentRepository.findByStatus(status, pageable);
+            if (statuses != null && !statuses.isEmpty() && vendorId != null) {
+                return tournamentRepository.findByStatusInAndVendorId(statuses, vendorId, pageable);
+            } else if (statuses != null && !statuses.isEmpty()) {
+                return tournamentRepository.findByStatusIn(statuses, pageable);
             } else if (vendorId != null) {
                 return tournamentRepository.findByVendorId(vendorId, pageable);
             } else {
@@ -467,9 +497,10 @@ public class TournamentService {
             }
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
+            throw new RuntimeException("Error fetching tournaments: " + e.getMessage(), e);
         }
     }
+
 
     @Transactional
     public Page<Tournament> getAllActiveTournamentsByVendor(Pageable pageable, Long vendorId) {
