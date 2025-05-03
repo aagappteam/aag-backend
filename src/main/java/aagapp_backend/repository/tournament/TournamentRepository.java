@@ -49,4 +49,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
             @Param("currentTime") ZonedDateTime currentTime
     );
 
+    Page<Tournament> findByStatusIn(List<TournamentStatus> statuses, Pageable pageable);
+
+    Page<Tournament> findByStatusInAndVendorId(List<TournamentStatus> statuses, Long vendorId, Pageable pageable);
 }
