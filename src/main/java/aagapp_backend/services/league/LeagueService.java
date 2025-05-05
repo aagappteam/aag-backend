@@ -376,7 +376,6 @@ public class LeagueService {
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusMinutes(15);
             if (leagueRequest.getScheduledAt() != null) {
-
                 ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
                 if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
                     throw new BusinessException("The game must be scheduled at least 4 hours in advance." , HttpStatus.BAD_REQUEST);
