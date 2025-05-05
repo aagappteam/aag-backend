@@ -17,6 +17,7 @@ import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
 import aagapp_backend.repository.tournament.TournamentRoomRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.tournamnetservice.TournamentService;
@@ -118,7 +119,7 @@ public class TournamentController {
             return responseService.generateSuccessResponse("Players fetched successfully", registeredPlayers, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse(ApiConstants.SxOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -279,6 +280,8 @@ public class TournamentController {
           Tournament tournament=  tournamentService.startTournament(tournamentId);
             return responseService.generateSuccessResponse("🏆 Tournament Started Successfully!",tournament,HttpStatus.OK);
 
+        }catch (BusinessException ex) {
+            throw ex;
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error starting tournament: " + e.getMessage());
@@ -290,6 +293,8 @@ public class TournamentController {
         try {
             List<TournamentRoom> rooms = tournamentService.getAllRoomsByTournamentId(tournamentId);
             return responseService.generateSuccessResponse("Rooms fetched successfully", rooms, HttpStatus.OK);
+        }catch (BusinessException ex) {
+            throw ex;
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching rooms: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
