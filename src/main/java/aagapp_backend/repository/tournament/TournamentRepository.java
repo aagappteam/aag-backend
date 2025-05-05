@@ -43,7 +43,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
             @Param("endTime") ZonedDateTime endTime
     );
 
-    @Query("SELECT t FROM Tournament t WHERE t.status = :status AND t.scheduledAt >= :currentTime")
+    @Query("SELECT t FROM Tournament t WHERE t.status = :status AND t.scheduledAt <= :currentTime")
     List<Tournament> findByStatusAndScheduledAtGreaterThanEqual(
             @Param("status") TournamentStatus status,
             @Param("currentTime") ZonedDateTime currentTime

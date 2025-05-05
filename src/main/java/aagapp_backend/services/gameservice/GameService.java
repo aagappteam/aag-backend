@@ -310,14 +310,11 @@ public void updateDailylimit() {
                     + "&prize=" + prize
                     + "&moves=" + move;
             System.out.println("Creating new game on the server..." + url);
-            // Create headers (optional, but good practice to include Content-Type for clarity)
             HttpHeaders headers = new HttpHeaders();
             headers.set("Content-Type", "application/json");
 
-            // Create the HttpEntity with headers (no body needed for query parameters)
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            // Send POST request to the external service
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
