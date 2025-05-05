@@ -1,6 +1,7 @@
 package aagapp_backend.services.social;
 
 import aagapp_backend.dto.TopVendorDto;
+import aagapp_backend.dto.TopVendorWeekDto;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.social.UserVendorFollow;
@@ -264,11 +265,16 @@ public class UserVendorFollowService {
         // Implementation to send notification using Firebase or other service
     }
 
-    public List<TopVendorDto> getTopVendorsThisWeek() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
-        LocalDateTime endOfWeek = startOfWeek.plusDays(7).minusSeconds(1);
-        return followRepo.findTopVendorsThisWeek(startOfWeek, endOfWeek);
+    public List<TopVendorWeekDto> getTopVendorsThisWeek() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
+            LocalDateTime endOfWeek = startOfWeek.plusDays(7).minusSeconds(1);
+            return followRepo.findTopVendorsThisWeek(startOfWeek, endOfWeek);
+        } catch (Exception e) {
+            throw new RuntimeException("Error occurred while fetching top vendors this week: " + e.getMessage(), e);
+        }
     }
+
 
 }

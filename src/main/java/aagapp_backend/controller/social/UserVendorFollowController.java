@@ -1,5 +1,6 @@
 package aagapp_backend.controller.social;
 import aagapp_backend.dto.TopVendorDto;
+import aagapp_backend.dto.TopVendorWeekDto;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.social.UserVendorFollowService;
@@ -108,8 +109,16 @@ public class UserVendorFollowController {
 
     @GetMapping("/top-vendors-this-week")
     public ResponseEntity<?> getTopVendorsThisWeek() {
-        List<TopVendorDto> topVendors = followService.getTopVendorsThisWeek();
-        return responseService.generateSuccessResponse("Top vendors this week", topVendors, HttpStatus.OK);
+        try {
+            List<TopVendorWeekDto> topVendors = followService.getTopVendorsThisWeek();
+            return responseService.generateSuccessResponse("Top vendors this week", topVendors, HttpStatus.OK);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "Error fetching top vendors: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
     }
+
 
 }

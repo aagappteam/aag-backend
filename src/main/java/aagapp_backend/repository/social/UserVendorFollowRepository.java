@@ -1,6 +1,7 @@
 package aagapp_backend.repository.social;
 
 import aagapp_backend.dto.TopVendorDto;
+import aagapp_backend.dto.TopVendorWeekDto;
 import aagapp_backend.entity.social.UserVendorFollow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,16 +51,19 @@ List<TopVendorDto> findTopVendorsWithFollowerCount();*/
 
 
 
-    @Query("SELECT new aagapp_backend.dto.TopVendorDto(" +
+    @Query("SELECT new aagapp_backend.dto.TopVendorWeekDto(" +
             "uvf.vendor.service_provider_id, " +
             "CONCAT(uvf.vendor.first_name, ' ', uvf.vendor.last_name), " +
-            "COUNT(uvf)) " +
+            "COUNT(uvf), " +
+            "uvf.vendor.primary_email, " +
+            "uvf.vendor.profilePic) " +
             "FROM UserVendorFollow uvf " +
             "WHERE uvf.followedAt >= :startOfWeek AND uvf.followedAt <= :endOfWeek " +
-            "GROUP BY uvf.vendor.service_provider_id, uvf.vendor.first_name, uvf.vendor.last_name " +
+            "GROUP BY uvf.vendor.service_provider_id, uvf.vendor.first_name, uvf.vendor.last_name, uvf.vendor.primary_email, uvf.vendor.profilePic " +
             "ORDER BY COUNT(uvf) DESC")
-    List<TopVendorDto> findTopVendorsThisWeek(@Param("startOfWeek") LocalDateTime startOfWeek,
-                                              @Param("endOfWeek") LocalDateTime endOfWeek);
+    List<TopVendorWeekDto> findTopVendorsThisWeek(@Param("startOfWeek") LocalDateTime startOfWeek,
+                                                  @Param("endOfWeek") LocalDateTime endOfWeek);
+
 
 
 
