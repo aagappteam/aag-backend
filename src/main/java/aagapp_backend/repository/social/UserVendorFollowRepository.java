@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +47,21 @@ List<TopVendorDto> findTopVendorsWithFollowerCount();*/
             "FROM UserVendorFollow f " +
             "WHERE f.vendor.service_provider_id = :vendorId")
     Long countFollowersByVendorId(@Param("vendorId") Long vendorId);
+
+
+
+    @Query("SELECT new aagapp_backend.dto.TopVendorDto(" +
+            "uvf.vendor.service_provider_id, " +
+            "CONCAT(uvf.vendor.first_name, ' ', uvf.vendor.last_name), " +
+            "COUNT(uvf)) " +
+            "FROM UserVendorFollow uvf " +
+            "WHERE uvf.followedAt >= :startOfWeek AND uvf.followedAt <= :endOfWeek " +
+            "GROUP BY uvf.vendor.service_provider_id, uvf.vendor.first_name, uvf.vendor.last_name " +
+            "ORDER BY COUNT(uvf) DESC")
+    List<TopVendorDto> findTopVendorsThisWeek(@Param("startOfWeek") LocalDateTime startOfWeek,
+                                              @Param("endOfWeek") LocalDateTime endOfWeek);
+
+
 
 }
 
