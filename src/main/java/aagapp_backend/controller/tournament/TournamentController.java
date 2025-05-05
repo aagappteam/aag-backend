@@ -119,7 +119,7 @@ public class TournamentController {
             return responseService.generateSuccessResponse("Players fetched successfully", registeredPlayers, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse(ApiConstants.SxOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -266,6 +266,7 @@ public class TournamentController {
             List<Map<String, Object>> rounds = tournamentService.generateTournamentRounds(tournamentId);
 
             Map<String, Object> response = new HashMap<>();
+            response.put("status_code", 200);
             response.put("status", "success");
             response.put("message", "Tournament Progress");
             response.put("rounds", rounds);
@@ -304,29 +305,39 @@ public class TournamentController {
     @Transactional
     @PostMapping("/join-room")
     public ResponseEntity<?> joinTournament(@RequestBody TournamentJoinRequest tournamentJoinRequest ) {
-        Long tournamentId = tournamentJoinRequest.getGameId();
-        Long playerId = tournamentJoinRequest.getPlayerId();
 
-        if (tournamentId == null || playerId == null) {
-            return ResponseEntity.badRequest().body("Tournament ID and Player ID are required.");
+        try {
+            Long tournamentId = tournamentJoinRequest.getGameId();
+            Long playerId = tournamentJoinRequest.getPlayerId();
+
+            if (tournamentId == null || playerId == null) {
+                return ResponseEntity.badRequest().body("Tournament ID and Player ID are required.");
+            }
+
+            TournamentPlayerRegistration registration = tournamentPlayerRegistration
+                    .findByTournamentIdAndPlayer_PlayerId(tournamentId, playerId)
+                    .orElseThrow(() -> new RuntimeException("Player not registered for this tournament"));
+
+            if (registration.getStatus() == TournamentPlayerRegistration.RegistrationStatus.CANCELLED) {
+                return ResponseEntity.badRequest().body("Player cancelled registration earlier.");
+            }
+
+            if (registration.getStatus() == TournamentPlayerRegistration.RegistrationStatus.ACTIVE) {
+                return ResponseEntity.badRequest().body("Player is already active in the tournament.");
+            }
+
+            registration.setStatus(TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
+            entityManager.merge(registration);
+            return responseService.generateSuccessResponse("Player successfully joined the tournament room.",registration,HttpStatus.OK);
         }
+        catch (BusinessException ex) {
+            exceptionHandling.handleException(ex);
 
-        TournamentPlayerRegistration registration = tournamentPlayerRegistration
-                .findByTournamentIdAndPlayer_PlayerId(tournamentId, playerId)
-                .orElseThrow(() -> new RuntimeException("Player not registered for this tournament"));
-
-        if (registration.getStatus() == TournamentPlayerRegistration.RegistrationStatus.CANCELLED) {
-            return ResponseEntity.badRequest().body("Player cancelled registration earlier.");
+            return responseService.generateErrorResponse("Error joining tournament room: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error joining tournament room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        if (registration.getStatus() == TournamentPlayerRegistration.RegistrationStatus.ACTIVE) {
-            return ResponseEntity.badRequest().body("Player is already active in the tournament.");
-        }
-
-        registration.setStatus(TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
-        entityManager.merge(registration);
-        return responseService.generateSuccessResponse("Player successfully joined the tournament room.",registration,HttpStatus.OK);
-
     }
 
 
@@ -377,6 +388,9 @@ public class TournamentController {
         try {
             TournamentRoom room = tournamentService.getMyRoomDetails(playerId, tournamentId);
             return responseService.generateSuccessResponse("Tournament Room fetched successfully", room, HttpStatus.OK);
+        }catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error fetching tournament room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -572,13 +586,10 @@ public class TournamentController {
             @RequestParam Long tournamentId,
             @RequestParam(value = "iswinner", required = false) Boolean iswinner,
             @RequestParam Integer roundNumber) {
-        try {
+
             List<TournamentResultRecord> players = tournamentService.getPlayersByTournamentAndRound(tournamentId, roundNumber,iswinner);
             return responseService.generateSuccessResponse("Players retrieved successfully", players, HttpStatus.OK);
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Error occurred while retrieving players: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+
     }
 
     @PostMapping("/add-player-next-round")
@@ -587,30 +598,40 @@ public class TournamentController {
             @RequestParam Integer roundNumber,
             @RequestParam Long playerId
     ) {
+        try {
 
-        Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-        if (tournament.getRound() > roundNumber) {
-            return responseService.generateErrorResponse(
-                    "Too late to join this round. You are disqualified.", HttpStatus.FORBIDDEN);
+            if (tournament.getRound() > roundNumber) {
+                return responseService.generateErrorResponse(
+                        "Too late to join this round. You are disqualified.", HttpStatus.FORBIDDEN);
+            }
+
+            Optional<TournamentResultRecord> record = tournamentResultRecordRepository.findWinnerRecord(
+                    tournamentId, playerId, roundNumber-1);
+
+            if (record.isEmpty()) {
+                return responseService.generateErrorResponse(
+                        "You are not a winner or eligible for next round", HttpStatus.FORBIDDEN);
+            }
+
+            TournamentResultRecord nextRoundRecord = tournamentService.addPlayerToNextRound(
+                    tournamentId,
+                    roundNumber,
+                    record.get());
+
+            return responseService.generateSuccessResponse(
+                    "Player added to next round.", nextRoundRecord, HttpStatus.OK);
+        }catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
 
-        Optional<TournamentResultRecord> record = tournamentResultRecordRepository.findWinnerRecord(
-                        tournamentId, playerId, roundNumber-1);
-
-        if (record.isEmpty()) {
-            return responseService.generateErrorResponse(
-                    "You are not a winner or eligible for next round", HttpStatus.FORBIDDEN);
+        catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error occurred while retrieving waiting status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        TournamentResultRecord nextRoundRecord = tournamentService.addPlayerToNextRound(
-                tournamentId,
-                roundNumber,
-                record.get());
-
-        return responseService.generateSuccessResponse(
-                "Player added to next round.", nextRoundRecord, HttpStatus.OK);
     }
 
 
@@ -639,8 +660,11 @@ public class TournamentController {
             tournamentService.processMatchResults(gameResult);
 
             return ResponseEntity.ok("Match result updated");
-        }catch (RuntimeException e){
-            return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+        catch (BusinessException e) {
+            // Handle BusinessException here
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         }catch (Exception e){
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

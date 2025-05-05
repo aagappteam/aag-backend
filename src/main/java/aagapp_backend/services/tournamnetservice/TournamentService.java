@@ -168,10 +168,10 @@ public class TournamentService {
 
     @Scheduled(cron = "0 * * * * *")
     @Transactional
-    public ResponseEntity<?> sendNotificationToUserBefore5Min() {
+    public ResponseEntity<?> sendNotificationToUserBefore3Min() {
         try {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-            ZonedDateTime fiveMinutesLater = now.plusMinutes(5);
+            ZonedDateTime fiveMinutesLater = now.plusMinutes(2);
 
             List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAtBetween(
                     TournamentStatus.SCHEDULED, now, fiveMinutesLater
@@ -191,7 +191,7 @@ public class TournamentService {
 
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
+            return null;
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -323,8 +323,8 @@ public class TournamentService {
 
             } else {
                 tournament.setStatus(TournamentStatus.SCHEDULED);
-               tournament.setScheduledAt(nowInKolkata.plusHours(1));
-//                tournament.setScheduledAt(nowInKolkata.plusMinutes(2));
+//               tournament.setScheduledAt(nowInKolkata.plusHours(1));
+              tournament.setScheduledAt(nowInKolkata.plusMinutes(3));
 
             }
 
@@ -414,6 +414,9 @@ public class TournamentService {
 
             return registration;
 
+        }catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return null;
         }
         catch (Exception e) {
             exceptionHandling.handleException(e);
@@ -510,7 +513,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
+            return null;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching tournaments: " + e.getMessage(), e);
@@ -530,7 +533,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
+            return null;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
@@ -543,7 +546,7 @@ public class TournamentService {
             return roomRepository.findByTournamentId(tournamentId);
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
+            return null;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching rooms: " + e.getMessage(), e);
@@ -560,7 +563,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
+            return null;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
@@ -765,35 +768,47 @@ public class TournamentService {
             return responseService.generateSuccessResponse("Player left the Tournament Room", tournament.getName(), HttpStatus.OK);
 
         }catch (BusinessException ex) {
-            throw ex;
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, ex);
+
+return responseService.generateErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player cannot leave the room because: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
+    private TournamentRoom convertTournamentResultToRoom(TournamentResultRecord result) {
+        // Convert TournamentResult to a TournamentRoom if necessary
+        TournamentRoom room = new TournamentRoom();
+        room.setMaxParticipants(result.getTournament().getParticipants());
+        room.setGamepassword(null
+        );
+        room.setTournament(result.getTournament());
+        room.setCurrentPlayers((List<Player>) result.getPlayer());
+        room.setStatus("Free Pass");
+        return room;
+    }
 
     @Transactional
     public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
-        try {
+
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
 
             TournamentRoom room = player.getTournamentRoom();
+            System.out.println("Room: " + room);
+        if (room == null ) {
+            TournamentResultRecord result = (TournamentResultRecord) tournamentResultRecordRepository.findByPlayerIdAndTournamentId(playerId, tournamentId)
+                    .orElseThrow(() -> new BusinessException("Player does not have valid tournament result for this tournament.", HttpStatus.BAD_REQUEST));
 
-            if (room == null || room.getTournament() == null || !room.getTournament().getId().equals(tournamentId)) {
+            System.out.println("Result: " + result.getTournament().getName());
+            return convertTournamentResultToRoom(result);
+        }
+            if (room.getTournament() == null || !room.getTournament().getId().equals(tournamentId)) {
                 throw new BusinessException("Player is not in a valid room for this tournament.", HttpStatus.BAD_REQUEST);
             }
 
             return room;
-        } catch (BusinessException e){
-            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
-        }catch (Exception e) {
-            // Optionally log or handle deeper here
-            throw new RuntimeException("Failed to retrieve room details: " + e.getMessage(), e);
-        }
+
     }
 
     @Transactional
@@ -939,7 +954,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
+            return null;
         } catch (Exception e) {
             throw new RuntimeException("An error occurred while retrieving players for tournament " + tournamentId + " and round " + roundNumber, e);
         }
@@ -984,7 +999,7 @@ public class TournamentService {
 
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
+            return null;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
@@ -1003,136 +1018,6 @@ public class TournamentService {
 
     }
 
-
-    // Get all players' details (including amount for the winner)
-
-    public List<PlayerDto> getAllPlayersDetails(GameResult gameResult, Optional<TournamentRoom> gameRoomOpt, Tournament game, PlayerDtoWinner winner, PlayerDtoWinner loser) {
-
-        List<PlayerDto> playersDetails = new ArrayList<>();
-
-
-        // Calculate the total collection first
-
-        BigDecimal totalCollection = BigDecimal.valueOf(game.getTotalPrizePool())
-
-                .multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
-
-
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
-
-//        BigDecimal bonus = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(BONUS_PERCENT));
-
-
-        // Iterate over all players and set their details
-
-        for (PlayerDtoWinner player : gameResult.getPlayers()) {
-
-            PlayerDto playerDto = new PlayerDto();
-
-            // Set player details based on whether they are the winner or loser
-
-            if (player.getPlayerId().equals(winner.getPlayerId())) {
-
-                // Winner gets the prize
-
-                playerDto.setPlayerId(player.getPlayerId());
-
-                playerDto.setScore(player.getScore());
-
-                playerDto.setAmount(userWin);  // Set prize for winner
-
-                playerDto.setPictureUrl(fetchPlayerPicture(player.getPlayerId()));
-
-            } else {
-
-                // Loser gets no prize (amount = 0)
-
-                playerDto.setPlayerId(player.getPlayerId());
-
-                playerDto.setScore(player.getScore());
-
-                playerDto.setAmount(BigDecimal.ZERO);  // No prize for loser
-
-                playerDto.setPictureUrl(fetchPlayerPicture(player.getPlayerId()));
-
-            }
-
-
-            playersDetails.add(playerDto);
-
-        }
-
-
-        return playersDetails;
-
-    }
-
-
-    // Fetch player's picture URL based on player ID
-
-    private String fetchPlayerPicture(Long playerId) {
-
-        Optional<CustomCustomer> customCustomer = customCustomerRepository.findById(playerId);
-
-        return customCustomer.map(CustomCustomer::getProfilePic).orElse(null); // Return profile picture URL or null if not found
-
-    }
-
-
-    // Method to add the vendor share to the vendor's wallet
-
-    @Transactional
-    public void addToVendorWalletAndTotalBalance(Long vendorId, BigDecimal vendorShare) {
-
-        // 1. Fetch Vendor
-
-        VendorEntity vendor = vendorRepository.findById(vendorId)
-
-                .orElseThrow(() -> new BusinessException("Vendor not found" , HttpStatus.BAD_REQUEST));
-
-
-        // 2. Get or create wallet for vendor
-
-        VendorWallet wallet = vendor.getWallet();
-
-        if (wallet == null) {
-
-            wallet = new VendorWallet();
-
-            wallet.setVendorEntity(vendor);
-
-            wallet.setWinningAmount(BigDecimal.ZERO);  // Initializing as BigDecimal
-
-            wallet.setIsTest(false);
-
-            vendor.setWallet(wallet); // Set wallet in vendor
-
-        }
-
-
-        // 3. Update the vendor's wallet with the new share
-
-        BigDecimal currentWinningAmount = wallet.getWinningAmount();
-
-        BigDecimal newWinningAmount = currentWinningAmount.add(vendorShare);
-
-        wallet.setWinningAmount(newWinningAmount);
-
-        wallet.setUpdatedAt(LocalDateTime.now());
-
-
-        // 4. Update the total wallet balance
-
-        BigDecimal updatedBalance = vendor.getTotalWalletBalance().add(vendorShare);
-
-        vendor.setTotalWalletBalance(updatedBalance);
-
-
-        // 5. Save the vendor (wallet will be saved due to cascading)
-
-        vendorRepository.save(vendor);
-
-    }
     private void updateWinnerWallet(Long customerId) {
 
         CustomCustomer customCustomer = em.find(CustomCustomer.class,customerId);
@@ -1230,7 +1115,6 @@ public class TournamentService {
     }
     @Transactional
     public void processMatchResults(GameResult gameResult) {
-        try {
             List<PlayerDtoWinner> players = gameResult.getPlayers();
 
             System.out.println("Players: " + gameResult.getGameId());
@@ -1267,12 +1151,7 @@ public class TournamentService {
 
             int currentRound = tournament.getRound();
            startNextRound( tournament.getId(),  currentRound);
-        }catch (BusinessException e){
-            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
-        } catch (Exception e) {
-            System.out.println("Error occurred: " + e.getMessage());
-        }
+
     }
 
     @Scheduled(fixedRate = 30000)
@@ -1299,7 +1178,6 @@ public class TournamentService {
         } while (tournamentPage.hasNext());*/
 
         List<Tournament> activeTournaments = tournamentRepository.findByStatus(TournamentStatus.ACTIVE);
-        System.out.println("Active Tournaments: " + activeTournaments.size());
         for (Tournament tournament : activeTournaments) {
             startNextRound(tournament.getId(), tournament.getRound());
         }
@@ -1343,7 +1221,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
+
         }
         catch (IllegalStateException e) {
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
@@ -1573,7 +1451,7 @@ public class TournamentService {
             return rounds;
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw  e;
+            return null;
         }catch (Exception e){
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
 
