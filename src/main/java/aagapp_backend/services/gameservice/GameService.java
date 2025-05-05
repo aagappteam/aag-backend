@@ -17,6 +17,7 @@ import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.pricedistribute.MatchService;
@@ -204,14 +205,14 @@ public void updateDailylimit() {
 
     @Transactional
     public Game publishLudoGame(GameRequest gameRequest, Long vendorId,Long existinggameId) throws LimitExceededException {
-        try {
+
             // Create a new Game entity
             Game game = new Game();
 
             boolean isAvailable = isGameAvailableById(existinggameId);
 
             if (!isAvailable) {
-                throw new RuntimeException("game is not available");
+                throw new BusinessException("game is not available" , HttpStatus.BAD_REQUEST);
             }
 //        check from gamerequestgamename that existing game exists or not for same vendor
             Optional<AagAvailableGames> gameAvailable= aagGameRepository.findById(existinggameId);
@@ -224,11 +225,11 @@ public void updateDailylimit() {
             // Fetch Vendor and Theme Entities
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
             if (vendorEntity == null) {
-                throw new RuntimeException("No records found for vendor");
+                throw new BusinessException("No records found for vendor" , HttpStatus.BAD_REQUEST);
             }
             ThemeEntity theme = em.find(ThemeEntity.class, gameRequest.getThemeId());
             if (theme == null) {
-                throw new RuntimeException("No theme found with the provided ID");
+                throw new BusinessException("No theme found with the provided ID " + gameRequest.getThemeId() , HttpStatus.BAD_REQUEST);
             }
 
             // Set Vendor and Theme to the Game
@@ -249,7 +250,7 @@ public void updateDailylimit() {
             if (gameRequest.getScheduledAt() != null) {
                 ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
                 if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
-                    throw new IllegalArgumentException("The game must be scheduled at least 4 hours in advance.");
+                    throw new BusinessException("The game must be scheduled at least 4 hours in advance." , HttpStatus.BAD_REQUEST);
                 }
                 game.setStatus(GameStatus.SCHEDULED);
                 game.setScheduledAt(scheduledInKolkata);
@@ -291,10 +292,7 @@ public void updateDailylimit() {
             // Return the saved game with the shareable link
             return gameRepository.save(savedGame);
 
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
-        }
+
     }
 
 
@@ -337,11 +335,11 @@ public void updateDailylimit() {
     }
     @Transactional
     public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
-        try {
+
             Player player = playerRepository.findById(playerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId , HttpStatus.BAD_REQUEST));
             Game game = gameRepository.findById(gameId)
-                    .orElseThrow(() -> new RuntimeException("Game not found with ID: " + gameId));
+                    .orElseThrow(() -> new BusinessException("Game not found with ID: " + gameId , HttpStatus.BAD_REQUEST));
 
 
             if (isPlayerInRoom(player)) {
@@ -375,18 +373,15 @@ public void updateDailylimit() {
             // Return the saved game with the shareable link
             return responseService.generateSuccessResponse("Player join in the Game Room ", gameRoom, HttpStatus.OK);
 
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Player can not joined in the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
-        }
+
     }
 
     @Transactional
     public VendorGameResponse getVendorPublishedGames(Long vendorId) {
-        try {
+
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
             if (vendorEntity == null) {
-                throw new RuntimeException("No records found for vendor with ID: " + vendorId);
+                throw new BusinessException("No records found for vendor with ID: " + vendorId , HttpStatus.BAD_REQUEST);
             }
 
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
@@ -458,19 +453,15 @@ public void updateDailylimit() {
 
             return response;
 
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while fetching games: " + e.getMessage(), e);
-        }
+
     }
 
 
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long gameId) {
 
-        try{
             Player player = playerRepository.findById(playerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId , HttpStatus.BAD_REQUEST));
             Game game = gameRepository.findById(gameId)
                     .orElseThrow(() -> new RuntimeException("Game not found with ID: " + gameId));
 
@@ -488,10 +479,6 @@ public void updateDailylimit() {
 
 
             return responseService.generateSuccessResponse("Player left the Game Room ", gameRoom, HttpStatus.OK);
-        } catch (Exception e){
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
-        }
 
     }
 

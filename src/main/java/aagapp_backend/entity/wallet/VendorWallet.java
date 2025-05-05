@@ -52,4 +52,6 @@ public class VendorWallet {
 
     @Column(name = "updated_at", updatable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+
 }

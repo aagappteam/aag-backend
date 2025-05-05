@@ -15,6 +15,7 @@ import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.games.GameLeagueTournamentService;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.ResponseService;
@@ -223,7 +224,11 @@ public class GameController {
             } else {
                 return responseService.generateSuccessResponse("Game published successfully", publishedGame, HttpStatus.CREATED);
             }
-        } catch (LimitExceededException e) {
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
+        catch (LimitExceededException e) {
             return responseService.generateErrorResponse("Exceeded maximum allowed games ", HttpStatus.TOO_MANY_REQUESTS);
 
         } catch (NoSuchElementException e) {
@@ -247,7 +252,9 @@ public class GameController {
 
             return ResponseService.generateSuccessResponse("Game updated successfully", gameRequest, HttpStatus.OK);
 
-        } catch (IllegalStateException e) {
+        } catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }catch (IllegalStateException e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -261,6 +268,8 @@ public class GameController {
         try {
 
             return gameService.joinRoom(joinRoomRequest.getPlayerId(), joinRoomRequest.getGameId(), joinRoomRequest.getGametype());
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in joining game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -271,6 +280,8 @@ public class GameController {
     public ResponseEntity<?> leaveGameRoom(@RequestBody LeaveRoomRequest leaveRoomRequest) {
         try {
             return gameService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getGameId());
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -284,6 +295,8 @@ public class GameController {
     public ResponseEntity<?> getRoomById(@PathVariable Long roomId) {
         try {
             return gameService.getRoomById(roomId);
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in getting game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -296,7 +309,9 @@ public class GameController {
         try {
 
             return gameService.getRoomById(roomId);
-        } catch (Exception e) {
+        } catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in getting game room data: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -312,7 +327,9 @@ public class GameController {
             // Directly pass the vendorGameResponse to generateSuccessResponse
             return responseService.generateSuccessResponse("Games fetched successfully", vendorGameResponse, HttpStatus.OK);
 
-        } catch (RuntimeException e) {
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error fetching games by vendor: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -375,6 +392,8 @@ public class GameController {
             }
 
             return responseService.generateSuccessResponse("Scheduled events fetched successfully", response, HttpStatus.OK);
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

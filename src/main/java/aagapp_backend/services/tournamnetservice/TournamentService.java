@@ -749,7 +749,6 @@ public class TournamentService {
             player.setTournamentRoom(null);
             playerRepository.save(player);
 
-            // If no players remain in the room, mark it as completed
             List<Player> remainingPlayers = playerRepository.findAllByTournamentRoom(tournamentRoom);
             if (remainingPlayers.isEmpty()) {
                 tournamentRoom.setStatus("COMPLETED");
@@ -772,7 +771,7 @@ public class TournamentService {
         }catch (BusinessException ex) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, ex);
 
-return responseService.generateErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return responseService.generateErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player cannot leave the room because: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
