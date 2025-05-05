@@ -206,7 +206,10 @@ public class TournamentController {
             } else {
                 return responseService.generateSuccessResponse("Tournament published successfully", publishedGame, HttpStatus.CREATED);
             }
-        } catch (LimitExceededException e) {
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+        catch (LimitExceededException e) {
             return responseService.generateErrorResponse("Exceeded maximum allowed Tournaments ", HttpStatus.TOO_MANY_REQUESTS);
 
         } catch (NoSuchElementException e) {

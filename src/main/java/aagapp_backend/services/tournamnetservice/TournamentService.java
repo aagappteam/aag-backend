@@ -349,7 +349,9 @@ public class TournamentService {
             // Return the saved game with the shareable link
             return tournamentRepository.save(tournament);
 
-        }
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return null;        }
         catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
@@ -777,13 +779,14 @@ return responseService.generateErrorResponse(ex.getMessage(), HttpStatus.INTERNA
         }
     }
     private TournamentRoom convertTournamentResultToRoom(TournamentResultRecord result) {
-        // Convert TournamentResult to a TournamentRoom if necessary
         TournamentRoom room = new TournamentRoom();
-        room.setMaxParticipants(result.getTournament().getParticipants());
-        room.setGamepassword(null
-        );
+        room.setMaxParticipants(2); // Assuming a 2-player room, you can adjust this logic if needed
+        room.setGamepassword(null); // Set the game password or leave it as null if not applicable
         room.setTournament(result.getTournament());
-        room.setCurrentPlayers((List<Player>) result.getPlayer());
+
+        // Wrap the single Player into a List
+        room.setCurrentPlayers(Collections.singletonList(result.getPlayer())); // Wrap single player in a List
+
         room.setStatus("Free Pass");
         return room;
     }
@@ -796,13 +799,15 @@ return responseService.generateErrorResponse(ex.getMessage(), HttpStatus.INTERNA
 
             TournamentRoom room = player.getTournamentRoom();
             System.out.println("Room: " + room);
-        if (room == null ) {
-            TournamentResultRecord result = (TournamentResultRecord) tournamentResultRecordRepository.findByPlayerIdAndTournamentId(playerId, tournamentId)
-                    .orElseThrow(() -> new BusinessException("Player does not have valid tournament result for this tournament.", HttpStatus.BAD_REQUEST));
+            if (room == null ) {
+                List<TournamentResultRecord> records = tournamentResultRecordRepository.findAllByPlayerIdAndTournamentIdOrderByIdDesc(playerId, tournamentId);
+                if (records.isEmpty()) {
+                    throw new BusinessException("No tournament result found for player in this tournament.", HttpStatus.BAD_REQUEST);
+                }
+                TournamentResultRecord latestRecord = records.get(0);
+                return convertTournamentResultToRoom(latestRecord);
 
-            System.out.println("Result: " + result.getTournament().getName());
-            return convertTournamentResultToRoom(result);
-        }
+            }
             if (room.getTournament() == null || !room.getTournament().getId().equals(tournamentId)) {
                 throw new BusinessException("Player is not in a valid room for this tournament.", HttpStatus.BAD_REQUEST);
             }
