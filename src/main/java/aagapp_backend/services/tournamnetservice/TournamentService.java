@@ -21,6 +21,7 @@ import aagapp_backend.repository.tournament.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -221,6 +222,7 @@ public class TournamentService {
 
                     startTournament(tournament.getId());
 
+
                     System.out.println(tournament.getId() + " has been activated now");
                 }
             }
@@ -231,34 +233,6 @@ public class TournamentService {
         }
     }
 
-
-
-
-    /*private void notifyRegisteredPlayers(Tournament tournament) {
-        try{
-            List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
-                    tournament.getId(), TournamentPlayerRegistration.RegistrationStatus.REGISTERED
-            );
-
-            for (TournamentPlayerRegistration registration : registeredPlayers) {
-                Player player = registration.getPlayer();
-                String fcmToken = player.getCustomer().getFcmToken();
-                if (fcmToken != null) {
-                    notoficationFirebase.sendNotification(
-                            fcmToken,
-                            "Tournament starting soon!",
-                            "Tournament '" + tournament.getName() + "' will start in 5 minutes. Please join now!"
-                    );
-                } else {
-                    System.out.println("No FCM token available for player: " + player.getCustomer().getId());
-                }
-            }
-        }     catch (Exception e) {
-            exceptionHandling.handleException(e);
-
-        }
-    }
-*/
     private void notifyRegisteredPlayers(Tournament tournament) {
         int page = 0;
         int size = 50; // you can adjust this size as needed
@@ -301,7 +275,6 @@ public class TournamentService {
         try {
 
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
-            // Create a new Game entity
             Tournament tournament = new Tournament();
 
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(tournamentRequest.getExistinggameId());
@@ -309,7 +282,7 @@ public class TournamentService {
 
             ThemeEntity theme = em.find(ThemeEntity.class, tournamentRequest.getThemeId());
             if (theme == null) {
-                throw new RuntimeException("No theme found with the provided ID");
+                throw new BusinessException("No theme found with the provided ID" , HttpStatus.BAD_REQUEST);
             }
 
             Double totalPrize = (double) tournamentRequest.getEntryFee() * tournamentRequest.getParticipants();
@@ -371,7 +344,8 @@ public class TournamentService {
             // Return the saved game with the shareable link
             return tournamentRepository.save(tournament);
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
         }
@@ -382,12 +356,11 @@ public class TournamentService {
     @Transactional
     public TournamentPlayerRegistration registerPlayer(Long tournamentId, Long playerId) {
         try {
-            // Find the tournament by ID
             Tournament tournament = tournamentRepository.findById(tournamentId)
-                    .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                    .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
 
             if(tournament.getStatus() == TournamentStatus.ACTIVE) {
-                throw new RuntimeException("Tournament is already active");
+                throw new BusinessException("Tournament is already active" , HttpStatus.BAD_REQUEST);
 
             }
 
@@ -399,18 +372,18 @@ public class TournamentService {
 
             // Find the player by ID
             Player player = playerRepository.findById(playerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found"));
+                    .orElseThrow(() -> new BusinessException("Player not found" , HttpStatus.BAD_REQUEST));
 
             // Ensure the player is not already registered for the tournament
             Optional<TournamentPlayerRegistration> existingRegistration = tournamentPlayerRegistrationRepository
                     .findByTournamentIdAndPlayer_PlayerId(tournamentId, playerId);
 
             if (existingRegistration.isPresent()) {
-                throw new RuntimeException("Player is already registered for this tournament.");
+                throw new BusinessException("Player is already registered for this tournament.", HttpStatus.BAD_REQUEST);
             }
 
             if (currentRegistrations >= tournament.getParticipants()) {
-                throw new RuntimeException("The tournament has already reached the maximum number of participants.");
+                throw new BusinessException("The tournament has already reached the maximum number of participants.", HttpStatus.BAD_REQUEST);
             }
 
             // Register the player
@@ -494,7 +467,7 @@ public class TournamentService {
     public Boolean findTournamentResultRecordByTournamentIdAndPlayerId(Long tournamentId, Long playerId) {
         try {
             Tournament tournament = tournamentRepository.findById(tournamentId)
-                    .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                    .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
             List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
                     tournament.getId(), TournamentPlayerRegistration.RegistrationStatus.REGISTERED
             );
@@ -590,7 +563,7 @@ public class TournamentService {
     @Transactional
     public Tournament startTournament(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
 
         if (tournament.getStatus() != TournamentStatus.SCHEDULED) {
             throw new IllegalStateException("Tournament is not in SCHEDULED status");
@@ -689,6 +662,16 @@ public class TournamentService {
         tournament.setStatus(TournamentStatus.ACTIVE);
         tournamentRepository.save(tournament);
 
+        String fcmToken = tournament.getVendorEntity().getFcmToken();
+        if (fcmToken != null) {
+            notoficationFirebase.sendNotification(
+                    fcmToken,
+                    "\uD83C\uDF89 Your Tournament Has Begun!",
+                    "Congratulations! The tournament '" + tournament.getName() + "' you hosted is now live. Monitor the progress and enjoy the event!"
+            );
+
+        }
+
         System.out.println("🏆 Tournament " + tournament.getId() + " is now ACTIVE with "
                 + rooms.size() + " rooms, "
                 + (totalPlayers + freePassCount) + " players, "
@@ -728,10 +711,10 @@ public class TournamentService {
     public ResponseEntity<?> leaveRoom(Long playerId, Long tournamentId) {
         try {
             Player player = playerRepository.findById(playerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId , HttpStatus.BAD_REQUEST));
 
             Tournament tournament = tournamentRepository.findById(tournamentId)
-                    .orElseThrow(() -> new RuntimeException("Tournament not found with ID: " + tournamentId));
+                    .orElseThrow(() -> new BusinessException("Tournament not found with ID: " + tournamentId , HttpStatus.BAD_REQUEST));
 
             TournamentRoom tournamentRoom = player.getTournamentRoom();
 
@@ -775,12 +758,12 @@ public class TournamentService {
     public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
         try {
             Player player = playerRepository.findById(playerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
 
             TournamentRoom room = player.getTournamentRoom();
 
             if (room == null || room.getTournament() == null || !room.getTournament().getId().equals(tournamentId)) {
-                throw new RuntimeException("Player is not in a valid room for this tournament.");
+                throw new BusinessException("Player is not in a valid room for this tournament.", HttpStatus.BAD_REQUEST);
             }
 
             return room;
@@ -793,10 +776,10 @@ public class TournamentService {
     @Transactional
     public TournamentRoom assignPlayerToRoom(Long playerId, Long tournamentId) {
         Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new RuntimeException("Player not found with id " + playerId));
+                .orElseThrow(() -> new BusinessException("Player not found with id " + playerId , HttpStatus.BAD_REQUEST));
 
         if (player.getTournamentRoom() != null) {
-            throw new RuntimeException("Player already assigned to a room.");
+            throw new BusinessException("Player already assigned to a room." , HttpStatus.BAD_REQUEST);
         }
 
         // Find an available room using the helper method
@@ -811,7 +794,7 @@ public class TournamentService {
             // If the room is the first round, update the tournament's joined players count
             if (room.getRound() == 1) {
                 Tournament tournament = tournamentRepository.findById(tournamentId)
-                        .orElseThrow(() -> new RuntimeException("Tournament not found with id " + tournamentId));
+                        .orElseThrow(() -> new BusinessException("Tournament not found with id " + tournamentId , HttpStatus.BAD_REQUEST));
                 tournament.setCurrentJoinedPlayers(tournament.getCurrentJoinedPlayers() + 1);
             }
 
@@ -821,7 +804,7 @@ public class TournamentService {
 
         // If no available room is found, create a new room
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found with id " + tournamentId));
+                .orElseThrow(() -> new BusinessException("Tournament not found with id " + tournamentId , HttpStatus.BAD_REQUEST));
 
         TournamentRoom newRoom = new TournamentRoom();
         newRoom.setTournament(tournament);
@@ -843,7 +826,7 @@ public class TournamentService {
     public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer roundNumber, TournamentResultRecord record) {
 
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
 
         Player player = record.getPlayer();
       /*  TournamentRoundParticipant tournamentRoundParticipant = new TournamentRoundParticipant();
@@ -979,96 +962,7 @@ public class TournamentService {
         }
     }
 
-/*
-    public List<PlayerDto> processMatch(GameResult gameResult) {
-        // Fetch the GameRoom based on roomId
-        TournamentRoom tournamentRoom = roomRepository.findById(gameResult.getRoomId())
-                .orElseThrow(() -> new RuntimeException("Game room not found with ID: " + gameResult.getRoomId()));
 
-        Tournament tournament = tournamentRepository.findById(tournamentRoom.getTournament().getId())
-                .orElseThrow(() -> new RuntimeException("Tournament not found with ID: " + tournamentRoom.getTournament().getId()));
-
-        // Calculate the total collection and shares
-        BigDecimal totalCollection = BigDecimal.valueOf(tournament.getTotalPrizePool()).multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
-        BigDecimal tax = totalCollection.multiply(BigDecimal.valueOf(TAX_PERCENT));
-        BigDecimal vendorShare = totalCollection.multiply(BigDecimal.valueOf(VENDOR_PERCENT));
-        BigDecimal platformShare = totalCollection.multiply(BigDecimal.valueOf(PLATFORM_PERCENT));
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
-        BigDecimal finalAmountToUser = userWin;
-
-        // Process the players to find the winner
-        PlayerDtoWinner winner = determineWinner(gameResult.getPlayers()); // Get the winner
-
-        // Identify the loser
-        PlayerDtoWinner loser = gameResult.getPlayers().stream()
-                .filter(p -> !p.getPlayerId().equals(winner.getPlayerId()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No loser found"));
-
-        // Update winner's wallet with the prize amount
-        Wallet wallet = walletRepo.findByCustomCustomer_Id(winner.getPlayerId());
-        if (wallet == null) {
-            throw new RuntimeException("Wallet not found for user ID: " + winner.getPlayerId());
-        }
-
-        try {
-            wallet.setWinningAmount(wallet.getWinningAmount().add(finalAmountToUser));
-            wallet.setUpdatedAt(LocalDateTime.now());
-            walletRepo.save(wallet);
-        } catch (Exception e) {
-            throw new RuntimeException("Error updating wallet for player ID: " + winner.getPlayerId(), e);
-        }
-
-        // Leave both players from the room
-        leaveRoom(winner.getPlayerId(), tournament.getId());
-        leaveRoom(loser.getPlayerId(), tournament.getId());
-
-        // Add vendor share and update total balance
-        this.addToVendorWalletAndTotalBalance(tournament.getVendorEntity().getService_provider_id(), vendorShare);
-
-        // Fetch Player entity using playerId
-        Player winnerPlayer = playerRepository.findById(winner.getPlayerId())
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + winner.getPlayerId()));
-
-        // Save the winner record
-        TournamentRoomWinner tournamentRoomWinner = new TournamentRoomWinner();
-        tournamentRoomWinner.setTournament(tournament);
-        tournamentRoomWinner.setTournamentRoom(tournamentRoom);
-        tournamentRoomWinner.setPlayer(winnerPlayer);
-        tournamentRoomWinner.setScore(winner.getScore());
-        tournamentRoomWinner.setWinTimestamp(LocalDateTime.now());
-        tournamentRoomWinnerRepository.save(tournamentRoomWinner);
-
-        // Save the result record for both winner and loser
-        TournamentResultRecord winnerRecord = new TournamentResultRecord();
-        winnerRecord.setRoomId(tournamentRoom.getId());
-        winnerRecord.setTournament(tournament);
-        winnerRecord.setPlayer(winnerPlayer);
-        winnerRecord.setScore(winner.getScore());
-        winnerRecord.setIsWinner(true);
-        winnerRecord.setPlayedAt(LocalDateTime.now());
-
-        Player loserPlayer = playerRepository.findById(loser.getPlayerId())
-                .orElseThrow(() -> new RuntimeException("Player not found"));
-
-        TournamentResultRecord loserRecord = new TournamentResultRecord();
-        loserRecord.setRoomId(tournamentRoom.getId());
-        loserRecord.setTournament(tournament);
-        loserRecord.setPlayer(loserPlayer);
-        loserRecord.setScore(loser.getScore());
-        loserRecord.setIsWinner(false);
-        loserRecord.setPlayedAt(LocalDateTime.now());
-
-        tournamentResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
-
-        // Return all players' details (including updated amount for the winner)
-        return getAllPlayersDetails(gameResult, Optional.of(tournamentRoom), tournament, winner, loser);
-    }
-*/
-
-
-
-    // Method to determine the winner based on score
 
     private PlayerDtoWinner determineWinner(List<PlayerDtoWinner> players) {
 
@@ -1076,7 +970,7 @@ public class TournamentService {
 
                 .max(Comparator.comparingInt(PlayerDtoWinner::getScore))  // Find the player with the highest score
 
-                .orElseThrow(() -> new RuntimeException("No players found"));
+                .orElseThrow(() -> new BusinessException("No players found", HttpStatus.BAD_REQUEST));
 
     }
 
@@ -1165,7 +1059,7 @@ public class TournamentService {
 
         VendorEntity vendor = vendorRepository.findById(vendorId)
 
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new BusinessException("Vendor not found" , HttpStatus.BAD_REQUEST));
 
 
         // 2. Get or create wallet for vendor
@@ -1244,7 +1138,7 @@ public class TournamentService {
 
         // Handle no players case
         if (nextRoundPlayers.isEmpty()) {
-            throw new RuntimeException("No players found for the next round.");
+            throw new BusinessException("No players found for the next round." , HttpStatus.BAD_REQUEST);
         }
 
         // Shuffle players to randomize matchups
@@ -1292,7 +1186,7 @@ public class TournamentService {
 
     public void finishTournament(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
         tournament.setStatus(TournamentStatus.COMPLETED);
         setvendorShare(tournament);
         tournamentRepository.save(tournament);
@@ -1315,7 +1209,7 @@ public class TournamentService {
             // Check if players list is null or empty
             if (players == null || players.size() < 2) {
                 System.out.println("Players list is null or doesn't contain enough players");
-                throw new RuntimeException("Players list is null or doesn't contain enough players");
+                throw new BusinessException("Players list is null or doesn't contain enough players" , HttpStatus.BAD_REQUEST);
                 }
 
             PlayerDtoWinner player1 = players.get(0);
@@ -1325,7 +1219,7 @@ public class TournamentService {
             PlayerDtoWinner loser = null;
 
             Tournament tournament = tournamentRepository.findById(gameResult.getGameId())
-                    .orElseThrow(() -> new RuntimeException("Game not found"));
+                    .orElseThrow(() -> new BusinessException("Game not found" , HttpStatus.BAD_REQUEST));
 
             // Handle tie or determine winner and loser based on score comparison
             if (player1.getScore() > player2.getScore()) {
@@ -1383,7 +1277,7 @@ public class TournamentService {
     public void startNextRound(Long tournamentId, int currentRound) {
         try {
             Tournament tournament = tournamentRepository.findById(tournamentId)
-                    .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                    .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
 
             if (isRoundCompleted(tournamentId, currentRound)) {
                 int nextRound = currentRound + 1;
@@ -1456,10 +1350,10 @@ public class TournamentService {
     @Transactional
     public void storeMatchResult(Long tournamentId, Long roomId, PlayerDtoWinner player, boolean isWinner) {
         TournamentRoom room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Room not found"));
+                .orElseThrow(() -> new BusinessException("Room not found" , HttpStatus.BAD_REQUEST));
 
         Player playerEntity = playerRepository.findById(player.getPlayerId())
-                .orElseThrow(() -> new RuntimeException("Player not found"));
+                .orElseThrow(() -> new BusinessException("Player not found" , HttpStatus.BAD_REQUEST));
 
         int round = room.getTournament().getRound();
 
@@ -1539,7 +1433,7 @@ public class TournamentService {
     @Transactional
     public void processNextRoundMatches(Long tournamentId, Integer roundNumber) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+                .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
 
         List<TournamentResultRecord> participants = tournamentResultRecordRepository
                 .findByTournamentIdAndRoundAndStatus(tournamentId, roundNumber, "READY_TO_PLAY");
@@ -1597,75 +1491,6 @@ public class TournamentService {
             tournamentResultRecordRepository.save(freePassParticipant);
         }
     }
-
-
-/*
-    @Transactional
-    public void processNextRoundMatches(Long tournamentId, Integer roundNumber) {
-        Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
-
-        List<TournamentRoundParticipant> participants = tournamentRoundParticipantRepository
-                .findByTournamentIdAndRoundNumberAndStatus(tournamentId, roundNumber, "READY_TO_PLAY");
-
-        if (participants.size() < 2) {
-            throw new IllegalStateException("Not enough players to start the round (minimum 2 needed)");
-        }
-
-        Collections.shuffle(participants);
-
-        int numberOfPairs = participants.size() / 2;
-        int freePassCount = participants.size() % 2;
-        int playerIndex = 0;
-
-        for (int i = 0; i < numberOfPairs; i++) {
-            TournamentRoundParticipant p1 = participants.get(playerIndex);
-            TournamentRoundParticipant p2 = participants.get(playerIndex + 1);
-
-            Player player1 = playerRepository.findById(p1.getPlayerId())
-                    .orElseThrow(() -> new RuntimeException("Player 1 not found"));
-            Player player2 = playerRepository.findById(p2.getPlayerId())
-                    .orElseThrow(() -> new RuntimeException("Player 2 not found"));
-
-            TournamentRoom room = new TournamentRoom();
-            room.setTournament(tournament);
-            room.setRound(roundNumber);
-            room.setMaxParticipants(2);
-            room.setCurrentParticipants(2);
-            room.setStatus("OPEN");
-            roomRepository.save(room);
-
-            String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(),
-                    room.getMaxParticipants(), tournament.getMove(), 3.2);
-            room.setGamepassword(gamePassword);
-            room.setStatus("IN_PROGRESS");
-            roomRepository.save(room);
-
-            assignPlayerToSpecificRoom(player1, tournamentId, room);
-            assignPlayerToSpecificRoom(player2, tournamentId, room);
-
-            // Remove participants from queue after assigning to room
-            tournamentRoundParticipantRepository.delete(p1);
-            tournamentRoundParticipantRepository.delete(p2);
-
-            playerIndex += 2;
-        }
-
-        // Handle free pass
-        if (freePassCount == 1) {
-            TournamentRoundParticipant freePassParticipant = participants.get(playerIndex);
-            Player freePassPlayer = playerRepository.findById(freePassParticipant.getPlayerId())
-                    .orElseThrow(() -> new RuntimeException("Free pass player not found"));
-
-            assignFreePassToPlayer(freePassPlayer, tournamentId, roundNumber);
-
-            tournamentRoundParticipantRepository.delete(freePassParticipant);
-        }
-
-
-    }
-*/
-
 
 
     public List<TournamentResultRecord> getPlayersForNextRound(Long tournamentId, int roundNumber) {

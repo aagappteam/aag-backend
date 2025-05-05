@@ -1,5 +1,6 @@
 package aagapp_backend.controller;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.VendorSubmissionException;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,15 +23,25 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import jakarta.validation.ConstraintViolationException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+
+import java.util.*;
 
 @ControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<?> handleBusinessException(BusinessException ex) {
+        return ResponseEntity
+                .status(ex.getStatus())
+                .body(Map.of(
+                        "message", ex.getMessage(),
+                        "status", ex.getStatus().getReasonPhrase(),
+                        "statusCode", ex.getStatusCode()
+                ));
+    }
+
 
     @ExceptionHandler(value = { HttpRequestMethodNotSupportedException.class })
     public ResponseEntity<ErrorResponse> handleNotFoundRequests(Exception ex, WebRequest request) {
@@ -81,6 +92,7 @@ public class GlobalExceptionHandler {
         return generateErrorResponse("Invalid request body", HttpStatus.BAD_REQUEST,ex.getMessage());
     }
 
+    @ExceptionHandler(value = Exception.class)
     public ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatus status, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setMessage("Internal Server Error");

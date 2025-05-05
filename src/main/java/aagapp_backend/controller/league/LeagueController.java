@@ -16,6 +16,7 @@ import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.ResponseService;
@@ -322,7 +323,11 @@ public class LeagueController {
             } else {
                 return responseService.generateSuccessResponse("League published successfully", publishedLeague, HttpStatus.CREATED);
             }
-        } catch (LimitExceededException e) {
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
+        catch (LimitExceededException e) {
             return responseService.generateErrorResponse("Exceeded maximum allowed games ", HttpStatus.TOO_MANY_REQUESTS);
 
         } catch (NoSuchElementException e) {
@@ -382,19 +387,11 @@ public class LeagueController {
 
     @PostMapping("/joinLeague")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinLeagueRequest joinLeagueRequest) {
-        try {
-            return leagueService.joinRoom(
-                    joinLeagueRequest.getPlayerId(),
-                    joinLeagueRequest.getLeagueId(),
-                    joinLeagueRequest.getTeamId() // <-- Added
-            );
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse(
-                    "Error in joining game room: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return leagueService.joinRoom(
+                joinLeagueRequest.getPlayerId(),
+                joinLeagueRequest.getLeagueId(),
+                joinLeagueRequest.getTeamId() // <-- Added
+        );
     }
 
 
@@ -417,6 +414,7 @@ public class LeagueController {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
     }
 
     @GetMapping("/by-league/{leagueId}")
@@ -435,12 +433,8 @@ public class LeagueController {
 
     @GetMapping("/get-league-passes/{playerId}/{leagueId}")
     public ResponseEntity<?> getLeaguePasses(@PathVariable Long playerId, @PathVariable Long leagueId) {
-        try {
             return leagueService.getLeaguePasses(playerId, leagueId);
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Error fetching league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+
     }
 
 
@@ -494,7 +488,9 @@ public class LeagueController {
             @PathVariable Long leagueId,
             @RequestParam Long playerId
     ) {
-        return leagueService.getLeagueTeamDetails(leagueId, playerId);
+            return leagueService.getLeagueTeamDetails(leagueId, playerId);
+
+
     }
 
 
