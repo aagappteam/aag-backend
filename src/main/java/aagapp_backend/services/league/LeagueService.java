@@ -31,6 +31,7 @@ import aagapp_backend.repository.league.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.pricedistribute.MatchService;
@@ -143,23 +144,23 @@ public class LeagueService {
 
             Challenge challenge = new Challenge();
             if (game == null) {
-                throw new RuntimeException("Game not found with ID: " + leagueRequest.getExistinggameId());
+                throw new BusinessException("Game not found with ID: " + leagueRequest.getExistinggameId(),HttpStatus.BAD_REQUEST);
             }
             if (leagueRequest.getOpponentVendorId() != null) {
                 // Check if the opponent vendor exists
                 VendorEntity opponentVendor = vendorRepository.findById(leagueRequest.getOpponentVendorId())
-                        .orElseThrow(() -> new RuntimeException("Opponent Vendor not found"));
+                        .orElseThrow(() -> new BusinessException("Opponent Vendor not found",HttpStatus.BAD_REQUEST));
                 challenge.setOpponentVendorName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
                 challenge.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
 
                 // Check if the opponent vendor's league status is available
                 if (opponentVendor.getLeagueStatus() != LeagueStatus.AVAILABLE) {
-                    throw new RuntimeException("The opponent vendor's league status is not available.");
+                    throw new BusinessException("The opponent vendor's league status is not available.",HttpStatus.BAD_REQUEST);
                 }
             }
 
             VendorEntity vendor = vendorRepository.findById(vendorId)
-                    .orElseThrow(() -> new RuntimeException("Vendor not found with this id: " + vendorId));
+                    .orElseThrow(() -> new BusinessException("Vendor not found with this id: " + vendorId,HttpStatus.BAD_REQUEST));
 
             if (leagueRequest.getOpponentVendorId() != null && leagueRequest.getOpponentVendorId().equals(vendorId)) {
                 throw new IllegalArgumentException("A vendor cannot challenge themselves");
@@ -209,7 +210,7 @@ public class LeagueService {
             Long receiverVendorId = challenge.getOpponentVendorId();
 
             VendorEntity opponentVendor = vendorRepository.findById(receiverVendorId)
-                    .orElseThrow(() -> new RuntimeException("Opponent Vendor not found"));
+                    .orElseThrow(() -> new BusinessException("Opponent Vendor not found",HttpStatus.BAD_REQUEST));
             String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
 
             if (fcmToken != null && !fcmToken.isEmpty()) {
@@ -247,7 +248,11 @@ public class LeagueService {
 
             return challenge;
 
-        } catch (Exception e) {
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(e.getStatus(), e);
+            throw new RuntimeException("Error creating challenge: " + e.getMessage(), e);
+
+        }catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error creating challenge: " + e.getMessage(), e);
         }
@@ -337,7 +342,7 @@ public class LeagueService {
             boolean isAvailable = isGameAvailableById(leagueRequest.getExistinggameId());
 
             if (!isAvailable) {
-                throw new RuntimeException("game is not available");
+                throw new BusinessException("game is not available" + leagueRequest.getExistinggameId(), HttpStatus.BAD_REQUEST);
             }
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(leagueRequest.getExistinggameId());
             league.setLeagueUrl(gameAvailable.get().getGameImage());
@@ -345,7 +350,7 @@ public class LeagueService {
 
             ThemeEntity theme = em.find(ThemeEntity.class, leagueRequest.getThemeId());
             if (theme == null) {
-                throw new RuntimeException("No theme found with the provided ID");
+                throw new BusinessException("No theme found with the provided ID" , HttpStatus.BAD_REQUEST);
             }
 
             // Set Vendor and Theme to the Game
@@ -371,6 +376,10 @@ public class LeagueService {
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusMinutes(15);
             if (leagueRequest.getScheduledAt() != null) {
+                ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
+                    throw new BusinessException("The game must be scheduled at least 4 hours in advance." , HttpStatus.BAD_REQUEST);
+                }
                 league.setStatus(LeagueStatus.SCHEDULED);
                 league.setScheduledAt(leagueRequest.getScheduledAt());
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
@@ -437,7 +446,8 @@ public class LeagueService {
             // Return the saved game with the shareable link
             return leagueRepository.save(savedLeague);
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
         }
@@ -596,13 +606,12 @@ public class LeagueService {
 
     @Transactional
     public ResponseEntity<?> takePassForLeague(Long playerId, Long leagueId) {
-        try {
             // Step 1: Get Player and League
             Player player = playerRepository.findById(playerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
 
             League league = leagueRepository.findById(leagueId)
-                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+                    .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId ,  HttpStatus.BAD_REQUEST));
 
 
             // Step 2: Check wallet balance
@@ -646,10 +655,7 @@ public class LeagueService {
 
             return responseService.generateSuccessResponse("3 League passes added successfully", data, HttpStatus.OK);
 
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error while processing league pass: " + e.getMessage(), e);
-        }
+
     }
 
 
@@ -657,13 +663,13 @@ public class LeagueService {
     public ResponseEntity<?> joinRoom(Long playerId, Long leagueId, Long teamId) {
         try {
             Player player = playerRepository.findById(playerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
 
             League league = leagueRepository.findById(leagueId)
-                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+                    .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId , HttpStatus.BAD_REQUEST));
 
             LeaguePass leaguePass = leaguePassRepository.findByPlayerAndLeague(player, league)
-                    .orElseThrow(() -> new RuntimeException("No league passes found for this player in the selected league"));
+                    .orElseThrow(() -> new BusinessException("No league passes found for this player in the selected league", HttpStatus.BAD_REQUEST));
             leaguePass.setSelectedTeamId(teamId);
             leaguePassRepository.save(leaguePass);
 
@@ -683,7 +689,7 @@ public class LeagueService {
 
             // ✅ Get the team by teamId
             LeagueTeam team = leagueTeamRepository.findById(teamId)
-                    .orElseThrow(() -> new RuntimeException("Team not found with ID: " + teamId));
+                    .orElseThrow(() -> new BusinessException("Team not found with ID: " + teamId , HttpStatus.BAD_REQUEST));
 
             // ✅ Validate team belongs to the league
             if (!team.getLeague().getId().equals(leagueId)) {
@@ -737,6 +743,10 @@ public class LeagueService {
                     HttpStatus.OK
             );
 
+        }catch (BusinessException e) {
+            exceptionHandling.handleException(e.getStatus(), e);
+            return responseService.generateErrorResponse(e.getMessage(), e.getStatus());
+
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse(
@@ -766,10 +776,10 @@ public class LeagueService {
     public ResponseEntity<?> getLeaguePasses(Long playerId, Long leagueId) {
         try {
             Player player = playerRepository.findById(playerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId , HttpStatus.BAD_REQUEST));
 
             League league = leagueRepository.findById(leagueId)
-                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+                    .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId , HttpStatus.BAD_REQUEST));
 
             LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league).orElse(null);
 
@@ -783,7 +793,11 @@ public class LeagueService {
             return responseService.generateSuccessResponse("League passes fetched successfully", data, HttpStatus.OK);
 
 
-        } catch (Exception e) {
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(e.getStatus(), e);
+            return responseService.generateErrorResponse(e.getMessage(), e.getStatus());
+
+        }catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in getting league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -793,10 +807,10 @@ public class LeagueService {
     public ResponseEntity<?> leaveRoom(Long playerId, Long leagueId) {
         try {
             Player player = playerRepository.findById(playerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
 
             League league = leagueRepository.findById(leagueId)
-                    .orElseThrow(() -> new RuntimeException("League not found with ID: " + leagueId));
+                    .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId , HttpStatus.BAD_REQUEST));
 
             LeagueRoom leagueRoom = player.getLeagueRoom();
 
@@ -847,6 +861,10 @@ public class LeagueService {
             LeagueRoom updated = leagueRoomRepository.save(leagueRoom);
 
             return responseService.generateSuccessResponse("Player left the League Room ", updated, HttpStatus.OK);
+        }catch (BusinessException e) {
+            exceptionHandling.handleException(e.getStatus(), e);
+            return responseService.generateErrorResponse(e.getMessage(), e.getStatus());
+
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
@@ -1102,13 +1120,15 @@ public class LeagueService {
     }
 
 
-    public ResponseEntity<?> getLeagueTeamDetails(Long leagueId, Long currentUserId) {
+
+
+    public ResponseEntity<?> getLeagueTeamDetails(Long leagueId, Long currentUserId)  {
         try {
             League league = leagueRepository.findById(leagueId)
-                    .orElseThrow(() -> new RuntimeException("League not found"));
+                    .orElseThrow(() -> new BusinessException("League not found" , HttpStatus.BAD_REQUEST));
 
             List<LeagueTeam> teams = leagueTeamRepository.findByLeague(league);
-            if (teams.size() != 2) throw new RuntimeException("Exactly two teams required.");
+            if (teams.size() != 2) throw new BusinessException("Exactly two teams required."    , HttpStatus.BAD_REQUEST);
 
             LeagueTeam winner = teams.get(0).getTotalScore() >= teams.get(1).getTotalScore() ? teams.get(0) : teams.get(1);
 
@@ -1151,6 +1171,10 @@ public class LeagueService {
             );
 
             return responseService.generateSuccessResponse("League team details fetched successfully.", leagueTeamDetailsResponse, HttpStatus.OK);
+        }catch (BusinessException e) {
+            exceptionHandling.handleException(e.getStatus(), e);
+            return responseService.generateErrorResponse(e.getMessage(), e.getStatus());
+
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Failed to fetch league team details because " + e.getMessage(), HttpStatus.NOT_FOUND);

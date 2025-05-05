@@ -80,18 +80,16 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     public String handleException(HttpStatus status, Exception e) {
         String errorDetails = "Status: " + status + "\nMessage: " + e.getMessage() + "\nStackTrace: " + getStackTraceAsString(e);
 
-        emailService.sendErrorEmail("Error Occurred in Application", errorDetails);
-
+        if (!(e instanceof BusinessException)) {
+            emailService.sendErrorEmail("Error Occurred in Application", errorDetails);
+        }
 
         if(status.equals(HttpStatus.BAD_REQUEST)){
-            logger.error("Bad request " + status + " " + e.getMessage());
             return status + " " + e.getMessage();
         }else if(status.equals(HttpStatus.INTERNAL_SERVER_ERROR)){
 
-            logger.error("Internal server error " + status + " " + e.getMessage());
             return status + " " + e.getMessage();
         }else{
-            logger.error("Unhandled exception " + status + " " + e);
             return "Something went wrong: " + e.getMessage();
         }
 
