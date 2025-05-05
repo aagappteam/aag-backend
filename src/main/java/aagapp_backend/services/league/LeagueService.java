@@ -471,8 +471,14 @@ public class LeagueService {
     public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
             // Construct the URL for the POST request, including query parameters
-            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move + "gametype=LEAGUE";
+//            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move + "&gametype=LEAGUE";
 
+            String url = baseUrl + "/CreateNewGame?gametype=LEAGUE"
+                    + "&gameid=" + gameId
+                    + "&roomid=" + roomId
+                    + "&players=" + players
+                    + "&prize=" + prize
+                    + "&moves=" + move;
             System.out.println("url: " + url);
             // Create headers (optional, but good practice to include Content-Type for clarity)
             HttpHeaders headers = new HttpHeaders();
