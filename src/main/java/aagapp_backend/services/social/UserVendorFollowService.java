@@ -263,4 +263,12 @@ public class UserVendorFollowService {
     private void sendPushNotification(String token, String title, String body) {
         // Implementation to send notification using Firebase or other service
     }
+
+    public List<TopVendorDto> getTopVendorsThisWeek() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
+        LocalDateTime endOfWeek = startOfWeek.plusDays(7).minusSeconds(1);
+        return followRepo.findTopVendorsThisWeek(startOfWeek, endOfWeek);
+    }
+
 }
