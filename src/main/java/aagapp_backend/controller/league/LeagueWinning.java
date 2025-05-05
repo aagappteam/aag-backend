@@ -21,7 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/leagues/winning")
-public class LeagueWinning {
+public class  LeagueWinning {
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandlingImplement;
@@ -41,6 +41,7 @@ public class LeagueWinning {
         try {
             // Process game result (you may want to keep this as is, or include some additional logic here)
             List<PlayerDto> playersDetails = leagueService.processMatch(gameResult);
+
 
 
             // Prepare the response
@@ -78,7 +79,7 @@ public class LeagueWinning {
             @RequestParam(required = false) Boolean winner  // Optional param
     ) {
         try {
-            List<LeaderboardDto> leaderboard = leaderBoardLeague.getLeaderboard(leagueId, roomId, winner);
+            List<LeagueLeaderboardDto> leaderboard = leaderBoardLeague.getLeaderboard(leagueId, roomId, winner);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         }catch (RuntimeException e){
             return responseService.generateErrorResponse(

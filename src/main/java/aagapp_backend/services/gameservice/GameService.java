@@ -302,7 +302,7 @@ public void updateDailylimit() {
     public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
             // Construct the URL for the POST request, including query parameters
-            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move ;
+            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move + "gametype=GAME";
             System.out.println("Creating new game on the server..." + url);
             // Create headers (optional, but good practice to include Content-Type for clarity)
             HttpHeaders headers = new HttpHeaders();
@@ -339,12 +339,11 @@ public void updateDailylimit() {
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
             Game game = gameRepository.findById(gameId)
                     .orElseThrow(() -> new RuntimeException("Game not found with ID: " + gameId));
-            if(game.getStatus()==GameStatus.EXPIRED){
-                return responseService.generateErrorResponse("Game is expired", HttpStatus.BAD_REQUEST);
-            }
+
 
             if (isPlayerInRoom(player)) {
-                return responseService.generateErrorResponse("Player + " +player.getPlayerId() +" already in room with this game "  + player.getGameRoom().getGame().getId(), HttpStatus.BAD_REQUEST);
+
+              return responseService.generateErrorResponse("Player + " +player.getPlayerId() +" already in room with this game "  + player.getGameRoom().getGame().getId(), HttpStatus.BAD_REQUEST);
 
             }
 
@@ -465,6 +464,7 @@ public void updateDailylimit() {
 
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long gameId) {
+
         try{
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new RuntimeException("Player not found with ID: " + playerId));
@@ -542,9 +542,32 @@ public void updateDailylimit() {
 
 
     // Transition room status to ONGOING when it's full
-    private void transitionRoomToOngoing(GameRoom gameRoom) {
-        gameRoom.setStatus(GameRoomStatus.ONGOING);
-        gameRoomRepository.save(gameRoom);
+    private void transitionRoomToOngoing(GameRoom newRoom) {
+
+        BigDecimal toalprize =    matchService.getWinningAmount(newRoom);
+        System.out.println("Total prize: " + toalprize);
+
+        Game game = newRoom.getGame();
+
+        String gamePassword = null;
+
+        // Calculate the total collection and shares
+        BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
+        BigDecimal totalPrize = totalCollection.multiply(Constant.USER_PERCENTAGE);
+
+        String gameName = game.getName().toLowerCase();
+
+        if (gameName.equals("ludo")) {
+            gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
+        } else if (gameName.equals("snake & ladder")) {
+            gamePassword = this.createNewGame(snakebaseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
+        } else {
+            throw new IllegalArgumentException("Unsupported game: " + gameName);
+        }
+        newRoom.setGamepassword(gamePassword);
+
+        newRoom.setStatus(GameRoomStatus.ONGOING);
+        gameRoomRepository.save(newRoom);
     }
 
 
@@ -559,26 +582,8 @@ public void updateDailylimit() {
             newRoom.setGame(game);
 
             // Save the room first so it gets an ID
-            newRoom = gameRoomRepository.save(newRoom); // Save and assign the generated ID
-            BigDecimal toalprize =    matchService.getWinningAmount(newRoom);
-            System.out.println("Total prize: " + toalprize);
+            gameRoomRepository.save(newRoom); // Save and assign the generated ID
 
-            String gamePassword = null;
-
-            // Calculate the total collection and shares
-            BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
-            BigDecimal totalPrize = totalCollection.multiply(Constant.USER_PERCENTAGE);
-
-            String gameName = game.getName().toLowerCase();
-
-            if (gameName.equals("ludo")) {
-                gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
-            } else if (gameName.equals("snake & ladder")) {
-                gamePassword = this.createNewGame(snakebaseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
-            } else {
-                throw new IllegalArgumentException("Unsupported game: " + gameName);
-            }
-            newRoom.setGamepassword(gamePassword);
 
             return newRoom;
         }catch (Exception e){

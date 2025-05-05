@@ -1,11 +1,11 @@
 package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.team.LeagueTeam;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -29,10 +29,12 @@ public class LeagueResultRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull(message = "Room id can not be null")
     private Long roomId;
 
     @ManyToOne
     @JoinColumn(name = "league_id", nullable = false)
+    @NotNull
     private League league;
 
     @ManyToOne
@@ -40,6 +42,12 @@ public class LeagueResultRecord {
     private Player player;
 
     private Integer totalScore=0;
+
+    @ManyToOne
+    @JoinColumn(name = "league_team_id")
+    @NotNull(message = "Team id can not be null")
+    private LeagueTeam leagueTeam;
+
 
     private Boolean isWinner;
 

@@ -41,7 +41,7 @@ public class ThemeEntity {
     private String name;
 
     @Column(name = "image_url")
-    private String imageUrl; // URL or path to the theme's image/icon
+    private String imageUrl;
 
     @ManyToMany(mappedBy = "themes")
     @JsonBackReference
@@ -53,16 +53,15 @@ public class ThemeEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdDate;
 
-    @Nullable
+   /* @Nullable
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date updatedDate;
+    private Date updatedDate;*/
 
     public ThemeEntity(String aDefault, String url, LocalDateTime currentTimestamp) {
         this.name = aDefault;
         this.imageUrl = url;
         this.createdDate = Date.from(currentTimestamp.atZone(ZoneId.of("Asia/Kolkata")).toInstant());
-        this.updatedDate = null;
         this.games = new ArrayList<>();
     }
 }

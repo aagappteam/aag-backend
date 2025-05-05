@@ -1,4 +1,6 @@
 package aagapp_backend.controller.social;
+import aagapp_backend.dto.TopVendorDto;
+import aagapp_backend.dto.TopVendorWeekDto;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.social.UserVendorFollowService;
@@ -6,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -102,4 +106,19 @@ public class UserVendorFollowController {
         boolean isFollowing = followService.isUserFollowing(userId, vendorId);
         return ResponseEntity.ok(Map.of("isFollowing", isFollowing));
     }
+
+    @GetMapping("/top-vendors-this-week")
+    public ResponseEntity<?> getTopVendorsThisWeek() {
+        try {
+            List<TopVendorWeekDto> topVendors = followService.getTopVendorsThisWeek();
+            return responseService.generateSuccessResponse("Top vendors this week", topVendors, HttpStatus.OK);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "Error fetching top vendors: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+
 }

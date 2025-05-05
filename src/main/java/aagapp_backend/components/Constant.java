@@ -1,4 +1,6 @@
 package aagapp_backend.components;
+import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 
 
@@ -11,6 +13,8 @@ public class Constant {
     public static final Integer TENMOVES =10;
     public static final Integer SIXTEENMOVES =16;
     public static final BigDecimal USER_PERCENTAGE = new BigDecimal("0.63");
+    public static final Double MAX_FEE = 100.0;
+    public static final long LEAGUE_SESSION_TIME = 1;
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
@@ -53,7 +57,7 @@ public class Constant {
     public static Integer TOKEN_SIZE = 2;
 
     public static String PROFILE_IMAGE_URL = "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
-    public static final String ONBOARDING_EMAIL_SUBJECT = "Welcome to AAg Application – Profile Verification in Progress";
+    public static final String ONBOARDING_EMAIL_SUBJECT = "Welcome to AAG Application – Profile Verification in Progress";
     public static final String APPROVED_EMAIL_SUBJECT = "AAG Veer - Vendor Account Approved";
     public static final String REJCTED_EMAIL_SUBJECT = "AAG Veer - Vendor Account Rejected";
 

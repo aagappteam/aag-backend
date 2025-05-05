@@ -4,6 +4,7 @@ import aagapp_backend.dto.GameLeaderboardResponseDTO;
 import aagapp_backend.dto.GameResult;
 import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.PlayerDto;
+import aagapp_backend.dto.leaderboard.TournamentLeaderboardDto;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.leaderboard.LeaderBoardTournament;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/tournament/winnings")
+@RequestMapping("/tournamentwinning")
 public class TournamentWinning {
 
     @Autowired
@@ -40,7 +41,7 @@ public class TournamentWinning {
     public ResponseEntity<?> processGameResult(@RequestBody GameResult gameResult) {
         try {
             // Process game result (you may want to keep this as is, or include some additional logic here)
-            List<PlayerDto> playersDetails = tournamentService.processMatch(gameResult);
+           /* List<PlayerDto> playersDetails = tournamentService.processMatch(gameResult);
 
 
             // Prepare the response
@@ -48,21 +49,22 @@ public class TournamentWinning {
             response.put("players", playersDetails);
             response.put("message", "Tournament results processed successfully.");
 
-            return ResponseEntity.ok(response);
-
+            return ResponseEntity.ok(response);*/
+            tournamentService.processMatchResults(gameResult);
+            return ResponseEntity.ok("Match result updated");
         } catch (RuntimeException e) {
             exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @GetMapping("/game/{leagueId}")
-    public ResponseEntity<?> getLeaderboard(@PathVariable Long leagueId, @RequestParam(defaultValue = "0") int page,
+    @GetMapping("/game/{tournamentId}")
+    public ResponseEntity<?> getLeaderboard(@PathVariable Long tournamentId, @RequestParam(defaultValue = "0") int page,
                                             @RequestParam(defaultValue = "10") int size) {
         try {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by("score").descending());
-            GameLeaderboardResponseDTO leaderboard = leaderBoardTournament.getLeaderboard(leagueId, pageable);
+            GameLeaderboardResponseDTO leaderboard = leaderBoardTournament.getLeaderboardforvendor(tournamentId, pageable);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -73,12 +75,12 @@ public class TournamentWinning {
 
     @GetMapping("/leaderboard")
     public ResponseEntity<?> getLeaderboard(
-            @RequestParam Long leagueId,
+            @RequestParam Long tournamentId,
             @RequestParam(required = false) Long roomId,
             @RequestParam(required = false) Boolean winner  // Optional param
     ) {
         try {
-            List<LeaderboardDto> leaderboard = leaderBoardTournament.getLeaderboard(leagueId, roomId, winner);
+            List<TournamentLeaderboardDto> leaderboard = leaderBoardTournament.getLeaderboard(tournamentId, roomId, winner);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         }catch (RuntimeException e){
             return responseService.generateErrorResponse(

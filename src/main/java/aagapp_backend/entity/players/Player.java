@@ -50,21 +50,25 @@ public class Player {
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "league_room_id")
+    @JsonBackReference(value = "leagueRoomReference")
     private LeagueRoom leagueRoom;
 
     @ManyToOne
     @JoinColumn(name = "team_id")
-//    @JsonBackReference(value = "teamPlayers")
+//    @JsonIgnore
+    @JsonBackReference(value = "teamPlayers")
     private LeagueTeam team;
 
-
-    @Column(name = "league_passes", nullable = false)
-    private int leaguePasses=0;
 
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "tournament_room_id")
     private TournamentRoom tournamentRoom;
+
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    private PlayerStatus status;
+
 
 
     @Column(name = "created_at", nullable = false)
