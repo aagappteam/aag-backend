@@ -80,6 +80,9 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
     List<TournamentResultRecord> findByTournamentIdAndRoundAndStatusIn(Long tournamentId, int roundNumber, List<String> list);
     @Query("SELECT r FROM TournamentResultRecord r " +
             "WHERE r.tournament.id = :tournamentId " +
-            "AND r.player.playerId = :playerId ")
-    Optional<Object> findByPlayerIdAndTournamentId(Long playerId, Long tournamentId);
+            "AND r.player.playerId = :playerId " +
+            "ORDER BY r.id DESC")
+    List<TournamentResultRecord> findAllByPlayerIdAndTournamentIdOrderByIdDesc(Long playerId, Long tournamentId);
+
+
 }
