@@ -109,8 +109,16 @@ public class UserVendorFollowController {
 
     @GetMapping("/top-vendors-this-week")
     public ResponseEntity<?> getTopVendorsThisWeek() {
-        List<TopVendorWeekDto> topVendors = followService.getTopVendorsThisWeek();
-        return responseService.generateSuccessResponse("Top vendors this week", topVendors, HttpStatus.OK);
+        try {
+            List<TopVendorWeekDto> topVendors = followService.getTopVendorsThisWeek();
+            return responseService.generateSuccessResponse("Top vendors this week", topVendors, HttpStatus.OK);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "Error fetching top vendors: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
     }
+
 
 }

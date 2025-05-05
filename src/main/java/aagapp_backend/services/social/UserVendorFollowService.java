@@ -266,10 +266,15 @@ public class UserVendorFollowService {
     }
 
     public List<TopVendorWeekDto> getTopVendorsThisWeek() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
-        LocalDateTime endOfWeek = startOfWeek.plusDays(7).minusSeconds(1);
-        return followRepo.findTopVendorsThisWeek(startOfWeek, endOfWeek);
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
+            LocalDateTime endOfWeek = startOfWeek.plusDays(7).minusSeconds(1);
+            return followRepo.findTopVendorsThisWeek(startOfWeek, endOfWeek);
+        } catch (Exception e) {
+            throw new RuntimeException("Error occurred while fetching top vendors this week: " + e.getMessage(), e);
+        }
     }
+
 
 }
