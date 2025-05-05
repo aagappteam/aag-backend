@@ -302,7 +302,13 @@ public void updateDailylimit() {
     public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
             // Construct the URL for the POST request, including query parameters
-            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move + "gametype=GAME";
+//            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move + "&gametype=GAME";
+            String url = baseUrl + "/CreateNewGame?gametype=GAME"
+                    + "&gameid=" + gameId
+                    + "&roomid=" + roomId
+                    + "&players=" + players
+                    + "&prize=" + prize
+                    + "&moves=" + move;
             System.out.println("Creating new game on the server..." + url);
             // Create headers (optional, but good practice to include Content-Type for clarity)
             HttpHeaders headers = new HttpHeaders();
