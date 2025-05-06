@@ -544,10 +544,10 @@ public class TournamentController {
            }
 
            // Handle the case where only one player exists (already a winner)
-           if (waitingCount == 1) {
+/*           if (waitingCount == 1) {
                // If only one player is left and they've won, consider the tournament as completed
                return responseService.generateSuccessResponse("Tournament completed with 1 winner.", null, HttpStatus.OK);
-           }
+           }*/
 
            boolean allPreviousRoundRoomsCompleted = previousRoundRooms.stream()
                    .allMatch(room -> room.getStatus().equalsIgnoreCase("COMPLETED"));
