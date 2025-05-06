@@ -566,7 +566,6 @@ public class TournamentController {
 
            // 5. Decide if next round can be started
            boolean canStartNextRound = allPreviousRoundRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
-
            // 6. Enable Play Again button if all rounds are completed
            boolean playAgainEnabled = allRoundsCompleted || allPreviousRoundRoomsCompleted;
 
