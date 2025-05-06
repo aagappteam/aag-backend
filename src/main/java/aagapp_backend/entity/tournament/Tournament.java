@@ -95,6 +95,9 @@ public class Tournament {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime endDate;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime statusUpdatedAt;  // New field for status update time
+
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = ZonedDateTime.now();

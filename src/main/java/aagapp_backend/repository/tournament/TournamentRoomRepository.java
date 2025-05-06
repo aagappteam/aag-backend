@@ -40,4 +40,5 @@ public interface TournamentRoomRepository extends JpaRepository<TournamentRoom ,
     long countByTournamentIdAndRoundAndCurrentParticipantsGreaterThan(Long tournamentId, int roundNumber, int i);
 
     long countByTournamentIdAndRoundAndStatusAndCurrentParticipantsGreaterThan(Long tournamentId, int roundNumber, String completed, int i);
+
 }

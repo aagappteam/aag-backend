@@ -55,6 +55,8 @@ public class TournamentResultRecord {
     private ZonedDateTime updatedDate;
 
 
+
+
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = ZonedDateTime.now();
