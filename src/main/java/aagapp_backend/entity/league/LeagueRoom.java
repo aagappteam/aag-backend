@@ -3,6 +3,7 @@ package aagapp_backend.entity.league;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.LeagueRoomStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -58,6 +60,9 @@ public class LeagueRoom {
     private League league;
 
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime updatedDate;
+
 
 
 //    private Long currentPlayerId;
@@ -89,6 +94,8 @@ public class LeagueRoom {
             this.maxPlayers = 2;
         }
         this.activePlayersCount = this.currentPlayers.size();
+
+        this.updatedDate = ZonedDateTime.now();
     }
 
     public Player getPlayerById(Long playerId) {

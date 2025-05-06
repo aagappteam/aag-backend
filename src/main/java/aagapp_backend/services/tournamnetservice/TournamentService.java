@@ -173,9 +173,18 @@ public class TournamentService {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             ZonedDateTime fiveMinutesLater = now.plusMinutes(2);
 
+            ZonedDateTime threeMinutesLater = now.plusMinutes(3);
+            ZonedDateTime windowStart = threeMinutesLater.minusSeconds(30);
+            ZonedDateTime windowEnd = threeMinutesLater.plusSeconds(30);
+            List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAtBetween(
+                    TournamentStatus.SCHEDULED, windowStart, windowEnd
+            );
+
+/*
             List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAtBetween(
                     TournamentStatus.SCHEDULED, now, fiveMinutesLater
             );
+*/
 
             System.out.println(upcomingTournaments.size() + " tournaments to notify");
 
@@ -198,28 +207,20 @@ public class TournamentService {
         }
     }
 
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "*/5 * * * * *")
     public void autoStartScheduledTournaments() {
 
         try{
-            /*
+
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
+            ZonedDateTime earlyWindowStart = now.plusSeconds(10);
+            ZonedDateTime earlyWindowEnd = now.plusSeconds(20);
 
-            // Convert `now` to UTC for consistency with stored `scheduledAt` (assuming it's stored in Asia/Kolkata)
-            ZonedDateTime nowInUTC = now.withZoneSameInstant(ZoneOffset.UTC);
-    */
-/*            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS); // Truncate to seconds
 
-            // Debugging: Log the current time in Asia/Kolkata
-            System.out.println("Current Time in Asia/Kolkata: " + now);
-
-            // Convert the current time (now) to UTC for the database comparison
-            ZonedDateTime nowInUTC = now.withZoneSameInstant(ZoneOffset.UTC);*/
-            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
-
-            // Debugging: Log both times
-            List<Tournament> tournamentsToStart = tournamentRepository.findByStatusAndScheduledAtGreaterThanEqual(
+            List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
                     TournamentStatus.SCHEDULED,
+                    earlyWindowStart,
+                    earlyWindowEnd,
                     now
             );
             for (Tournament tournament : tournamentsToStart) {
@@ -227,8 +228,6 @@ public class TournamentService {
 
                     startTournament(tournament.getId());
 
-
-                    System.out.println(tournament.getId() + " has been activated now");
                 }
             }
         }
@@ -310,7 +309,6 @@ public class TournamentService {
 
             }
 
-
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             if (tournamentRequest.getScheduledAt() != null) {
@@ -380,6 +378,10 @@ public class TournamentService {
             // Find the player by ID
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new BusinessException("Player not found" , HttpStatus.BAD_REQUEST));
+
+            if(player==null) {
+                throw new BusinessException("Player not found" , HttpStatus.BAD_REQUEST);
+            }
 
             // Ensure the player is not already registered for the tournament
             Optional<TournamentPlayerRegistration> existingRegistration = tournamentPlayerRegistrationRepository
@@ -451,12 +453,16 @@ public class TournamentService {
     public Page<Player> getRegisteredPlayers(Long tournamentId, int page, int size) {
         try{
             Pageable pageable = PageRequest.of(page, size);
+            List<TournamentPlayerRegistration.RegistrationStatus> statuses = Arrays.asList(
+                    TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                    TournamentPlayerRegistration.RegistrationStatus.ACTIVE
+            );
 
 
             Page<TournamentPlayerRegistration> registrationPage =
-                    tournamentPlayerRegistrationRepository.findRegisteredPlayersByTournamentId(
+                    tournamentPlayerRegistrationRepository.findPlayersByTournamentIdAndStatuses(
                             tournamentId,
-                            TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                            statuses,
                             pageable
                     );
 
@@ -478,8 +484,16 @@ public class TournamentService {
         try {
             Tournament tournament = tournamentRepository.findById(tournamentId)
                     .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
+/*
             List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
                     tournamentId, TournamentPlayerRegistration.RegistrationStatus.REGISTERED
+            );
+*/
+            List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatusIn(
+                    tournamentId, Arrays.asList(
+                            TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                            TournamentPlayerRegistration.RegistrationStatus.ACTIVE
+                    )
             );
 
 
@@ -582,6 +596,23 @@ public class TournamentService {
         return "https://example.com/tournament/" + gameId;
     }
 
+    private void updateTournamentStatus(Tournament tournament, TournamentStatus status, String reason) {
+        tournament.setStatus(status);
+        tournamentRepository.save(tournament);
+
+        System.out.println("Tournament " + tournament.getId() + " status updated to " + status + ". Reason: " + reason);
+
+        if (status == TournamentStatus.REJECTED || status == TournamentStatus.CANCELLED) {
+            String fcmToken = tournament.getVendorEntity().getFcmToken();
+            if (fcmToken != null) {
+                notoficationFirebase.sendNotification(
+                        fcmToken,
+                        "⚠️ Tournament " + tournament.getName() + " was rkected",
+                        "Reason: " + reason
+                );
+            }
+        }
+    }
 
     @Transactional
     public Tournament startTournament(Long tournamentId) {
@@ -593,11 +624,15 @@ public class TournamentService {
         }
 
         List<Player> activePlayers = getActivePlayers(tournamentId);
-        if(activePlayers.size() == 0) {
+/*        if(activePlayers.size() == 0) {
             throw new IllegalStateException("Tournament has no active players" + tournamentId);
+        }*/
+
+        if (activePlayers.isEmpty()) {
+            updateTournamentStatus(tournament, TournamentStatus.REJECTED, "No active players found");
+            return tournament;
         }
 
-        System.out.println("activePlayers: " + activePlayers.size()  + tournamentId + " Tournament ID: " + tournamentId);
         if (activePlayers.size() == 1) {
             Player winner = activePlayers.get(0);
 
@@ -628,7 +663,6 @@ public class TournamentService {
                     + " completed. User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
             return tournament;
         }
-        System.out.println("Number of active players: " + activePlayers.size());
 
         if (activePlayers.size() < 2) {
             throw new IllegalStateException("Not enough players to start the tournament (minimum 2 needed)");
@@ -749,7 +783,6 @@ public class TournamentService {
             player.setTournamentRoom(null);
             playerRepository.save(player);
 
-            // If no players remain in the room, mark it as completed
             List<Player> remainingPlayers = playerRepository.findAllByTournamentRoom(tournamentRoom);
             if (remainingPlayers.isEmpty()) {
                 tournamentRoom.setStatus("COMPLETED");
@@ -772,7 +805,7 @@ public class TournamentService {
         }catch (BusinessException ex) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, ex);
 
-return responseService.generateErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        return responseService.generateErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player cannot leave the room because: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -1221,7 +1254,6 @@ return responseService.generateErrorResponse(ex.getMessage(), HttpStatus.INTERNA
                     System.out.println("🎯 Tournament completed!");
                 }
             } else {
-                // Log if the round is not completed yet
                 System.out.println("⏳ Round " + currentRound + " is not completed yet.");
             }
         }catch (BusinessException e){

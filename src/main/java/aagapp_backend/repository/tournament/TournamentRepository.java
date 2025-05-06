@@ -49,6 +49,21 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
             @Param("currentTime") ZonedDateTime currentTime
     );
 
+    @Query("""
+    SELECT t FROM Tournament t 
+    WHERE t.status = :status AND (
+        (t.scheduledAt BETWEEN :start AND :end)
+        OR t.scheduledAt <= :currentTime
+    )
+""")
+    List<Tournament> findTournamentsToStart(
+            @Param("status") TournamentStatus status,
+            @Param("start") ZonedDateTime start,
+            @Param("end") ZonedDateTime end,
+            @Param("currentTime") ZonedDateTime currentTime
+    );
+
+
     Page<Tournament> findByStatusIn(List<TournamentStatus> statuses, Pageable pageable);
 
     Page<Tournament> findByStatusInAndVendorId(List<TournamentStatus> statuses, Long vendorId, Pageable pageable);

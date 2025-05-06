@@ -2,12 +2,14 @@ package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.team.LeagueTeam;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 @Table(
@@ -52,4 +54,13 @@ public class LeagueResultRecord {
     private Boolean isWinner;
 
     private LocalDateTime playedAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime updatedDate;
+
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = ZonedDateTime.now();
+    }
 }

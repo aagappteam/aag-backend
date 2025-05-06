@@ -2,6 +2,7 @@ package aagapp_backend.entity.game;
 
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.enums.GameRoomStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 @Entity
@@ -54,10 +56,21 @@ public class GameRoom {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime updatedDate;
+
+
+
 
     @PrePersist
     @PreUpdate
     public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+
+        this.updatedDate = ZonedDateTime.now();
+
         if (this.status == null) {
             this.status = GameRoomStatus.INITIALIZED;
         }

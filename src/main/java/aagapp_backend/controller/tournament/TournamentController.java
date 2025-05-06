@@ -185,17 +185,16 @@ public class TournamentController {
 
             notification.setVendorId(vendorId);
             if (tournamentRequest.getScheduledAt() != null) {
-//                notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
+//                notification.setType(NotificationType.GAME_SCHEDULED);
 
 
-                notification.setDescription("Scheduled Tournament"); // Example NotificationType for a successful
-                notification.setDetails("Tournament has been Scheduled"); // Example NotificationType for a successful
+                notification.setDescription("Scheduled Tournament");
+                notification.setDetails("Tournament has been Scheduled");
             }else{
-//                notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
+//                notification.setType(NotificationType.GAME_PUBLISHED);
 
-
-                notification.setDescription("Published Tournament"); // Example NotificationType for a successful
-                notification.setDetails("Tournament has been Published"); // Example NotificationType for a successful
+                notification.setDescription("Published Tournament");
+                notification.setDetails("Tournament has been Published");
             }
 
 
@@ -520,6 +519,12 @@ public class TournamentController {
            @RequestParam Long tournamentId,
            @RequestParam Integer roundNumber) {
        try {
+//           fetch tournmanet exists or not
+           Tournament tournament = entityManager.find(Tournament.class,tournamentId);
+           if (tournament==null){
+               return responseService.generateErrorResponse("Tournament not found.", HttpStatus.BAD_REQUEST);
+
+           }
            // 1. Get all players who are winners or have a free pass from the previous round
            List<TournamentResultRecord> readyPlayers = tournamentService
                    .getPlayersForNextRound(tournamentId, roundNumber - 1);  // Fetch players for the previous round
@@ -561,11 +566,11 @@ public class TournamentController {
 
            // 5. Decide if next round can be started
            boolean canStartNextRound = allPreviousRoundRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
-
            // 6. Enable Play Again button if all rounds are completed
            boolean playAgainEnabled = allRoundsCompleted || allPreviousRoundRoomsCompleted;
 
            Map<String, Object> response = new HashMap<>();
+           response.put("tournament_status",tournament.getStatus());
            response.put("waitingCount", waitingCount);
            response.put("expectedPlayers", expectedPlayers);
            response.put("freePassCount", freePassCount);

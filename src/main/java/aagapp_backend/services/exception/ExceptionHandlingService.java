@@ -89,15 +89,30 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
         }
         return false;
     }
-    public String handleException(HttpStatus status, Exception e, HttpServletRequest request) {
-        String userId = getUserIdSafely(request);
 
-        String requestUrl = (request != null) ? request.getRequestURL().toString() : "N/A";
-        String queryString = (request != null) ? request.getQueryString() : null;
-        String fullUrl = (queryString != null) ? requestUrl + "?" + queryString : requestUrl;
+
+/*    public String handleException(HttpStatus status, Exception e) {
+        String errorDetails = "Status: " + status + "\nMessage: " + e.getMessage() + "\nStackTrace: " + getStackTraceAsString(e);
+
+        if (!isBusinessOrCausedByBusinessException(e)) {
+
+
+            emailService.sendErrorEmail("Error Occurred in Application", errorDetails);
+        }
+
+        if(status.equals(HttpStatus.BAD_REQUEST)){
+            return status + " " + e.getMessage();
+        } else if(status.equals(HttpStatus.INTERNAL_SERVER_ERROR)){
+            return status + " " + e.getMessage();
+        } else {
+            return "Something went wrong: " + e.getMessage();
+        }
+    }*/
+
+    public String handleException(HttpStatus status, Exception e) {
+        String userId = getUserIdFromSecurityContext();
 
         String errorDetails = "UserId: " + userId +
-                "\nRequest URL: " + fullUrl +
                 "\nStatus: " + status +
                 "\nMessage: " + e.getMessage() +
                 "\nStackTrace: " + getStackTraceAsString(e);
@@ -116,35 +131,14 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     }
 
 
-    public String handleException(HttpStatus status, Exception e) {
-        String errorDetails = "Status: " + status + "\nMessage: " + e.getMessage() + "\nStackTrace: " + getStackTraceAsString(e);
-
-        if (!isBusinessOrCausedByBusinessException(e)) {
-
-
-            emailService.sendErrorEmail("Error Occurred in Application", errorDetails);
-        }
-
-        if(status.equals(HttpStatus.BAD_REQUEST)){
-            return status + " " + e.getMessage();
-        } else if(status.equals(HttpStatus.INTERNAL_SERVER_ERROR)){
-            return status + " " + e.getMessage();
-        } else {
-            return "Something went wrong: " + e.getMessage();
-        }
-    }
-
-    public String getUserIdSafely(HttpServletRequest request) {
+    public String getUserIdFromSecurityContext() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.isAuthenticated()) {
                 return authentication.getName();
             }
-            if (request != null) {
-                Object userIdAttr = request.getSession().getAttribute("userId");
-                if (userIdAttr != null) return userIdAttr.toString();
-            }
         } catch (Exception ex) {
+            // Ignore and fallback
         }
         return "Unknown";
     }
