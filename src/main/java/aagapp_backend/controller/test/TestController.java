@@ -1,10 +1,15 @@
 package aagapp_backend.controller.test;
 
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.EmailService;
+import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.faqs.FAQService;
+import aagapp_backend.services.firebase.NotoficationFirebase;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -15,6 +20,13 @@ public class TestController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private ResponseService responseService;
+
+    @Autowired
+    private NotoficationFirebase notoficationFirebase;
+
 
     @Autowired
     private FAQService faqService;
@@ -47,9 +59,59 @@ public class TestController {
             emailService.sendProfileRejectionEmail(vendorEntity);
         }
     }
+
+
 //    set faq data in the database
     @PostMapping("/faquser")
     public void setFaqData() {
         faqService.addFAQIfNeeded();
    }
+
+
+//   send ntotification to user/vendor
+    @PostMapping("/sendnotification/{service_provider_id}/{role}")
+    public ResponseEntity<?> sendNotification(@PathVariable Long service_provider_id,@PathVariable String role) throws IOException {
+
+
+        if ("vendor".equalsIgnoreCase(role)) {
+            VendorEntity vendorEntity = entityManager.find(VendorEntity.class, service_provider_id);
+            if (vendorEntity != null) {
+                if (vendorEntity.getFcmToken() != null) {
+                    notoficationFirebase.sendNotification(
+                            vendorEntity.getFcmToken(),
+                            "Tournament starting soon!",
+                            "Tournament will start in 3 minutes. Please join now!"
+                    );
+                    return new ResponseEntity<>("Notification sent successfully", HttpStatus.OK);
+                } else {
+                    return new ResponseEntity<>("No FCM token for player", HttpStatus.BAD_REQUEST);
+                }
+            } else {
+                return new ResponseEntity<>("Vendor not found", HttpStatus.NOT_FOUND);
+            }
+        } else if ("user".equalsIgnoreCase(role)) {
+
+            CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, service_provider_id);
+            if (customCustomer != null) {
+                if (customCustomer.getFcmToken() != null) {
+                    notoficationFirebase.sendNotification(
+                            customCustomer.getFcmToken(),
+                            "Tournament starting soon!",
+                            "Tournament will start in 3 minutes. Please join now!"
+                    );
+                    return new ResponseEntity<>("Notification sent successfully", HttpStatus.OK);
+                } else {
+                    return new ResponseEntity<>("No FCM token for player", HttpStatus.BAD_REQUEST);
+                }
+
+
+            } else {
+                return new ResponseEntity<>("Invalid role", HttpStatus.BAD_REQUEST);
+            }
+
+
+        }
+        return new ResponseEntity<>("Invalid role", HttpStatus.BAD_REQUEST);
+
+    }
 }
