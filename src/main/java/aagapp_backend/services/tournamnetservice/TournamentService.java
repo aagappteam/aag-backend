@@ -464,12 +464,16 @@ public class TournamentService {
     public Page<Player> getRegisteredPlayers(Long tournamentId, int page, int size) {
         try{
             Pageable pageable = PageRequest.of(page, size);
+            List<TournamentPlayerRegistration.RegistrationStatus> statuses = Arrays.asList(
+                    TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                    TournamentPlayerRegistration.RegistrationStatus.ACTIVE
+            );
 
 
             Page<TournamentPlayerRegistration> registrationPage =
-                    tournamentPlayerRegistrationRepository.findRegisteredPlayersByTournamentId(
+                    tournamentPlayerRegistrationRepository.findPlayersByTournamentIdAndStatuses(
                             tournamentId,
-                            TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                            statuses,
                             pageable
                     );
 
@@ -491,8 +495,16 @@ public class TournamentService {
         try {
             Tournament tournament = tournamentRepository.findById(tournamentId)
                     .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
+/*
             List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatus(
                     tournamentId, TournamentPlayerRegistration.RegistrationStatus.REGISTERED
+            );
+*/
+            List<TournamentPlayerRegistration> registeredPlayers = tournamentPlayerRegistrationRepository.findByTournamentIdAndStatusIn(
+                    tournamentId, Arrays.asList(
+                            TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                            TournamentPlayerRegistration.RegistrationStatus.ACTIVE
+                    )
             );
 
 
@@ -1253,7 +1265,6 @@ public class TournamentService {
                     System.out.println("🎯 Tournament completed!");
                 }
             } else {
-                // Log if the round is not completed yet
                 System.out.println("⏳ Round " + currentRound + " is not completed yet.");
             }
         }catch (BusinessException e){

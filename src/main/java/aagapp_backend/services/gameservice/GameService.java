@@ -307,7 +307,6 @@ public void updateDailylimit() {
                     + "&players=" + players
                     + "&prize=" + prize
                     + "&moves=" + move;
-            System.out.println("Creating new game on the server..." + url);
             HttpHeaders headers = new HttpHeaders();
             headers.set("Content-Type", "application/json");
 
@@ -330,6 +329,7 @@ public void updateDailylimit() {
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+
             throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
         }
     }

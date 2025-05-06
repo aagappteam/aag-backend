@@ -59,9 +59,18 @@ public class GameRoom {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime updatedDate;
 
+
+
+
     @PrePersist
     @PreUpdate
     public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+
+        this.updatedDate = ZonedDateTime.now();
+
         if (this.status == null) {
             this.status = GameRoomStatus.INITIALIZED;
         }
@@ -71,8 +80,6 @@ public class GameRoom {
         if (this.maxPlayers == 0) {
             this.maxPlayers = 2;
         }
-        this.updatedDate = ZonedDateTime.now();
-
     }
 
     public Player getPlayerById(Long playerId) {

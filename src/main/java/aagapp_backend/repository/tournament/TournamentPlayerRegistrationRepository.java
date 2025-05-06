@@ -33,6 +33,15 @@ public interface TournamentPlayerRegistrationRepository extends JpaRepository<To
     );
 
 
+    @Query("SELECT r FROM TournamentPlayerRegistration r " +
+            "WHERE r.tournament.id = :tournamentId AND r.status IN :statuses")
+    Page<TournamentPlayerRegistration> findPlayersByTournamentIdAndStatuses(
+            @Param("tournamentId") Long tournamentId,
+            @Param("statuses") List<TournamentPlayerRegistration.RegistrationStatus> statuses,
+            Pageable pageable
+    );
+
+
 
     @Query("SELECT r FROM TournamentPlayerRegistration r " +
             "WHERE r.tournament.id = :tournamentId AND r.status = :status")
@@ -41,4 +50,5 @@ public interface TournamentPlayerRegistrationRepository extends JpaRepository<To
             @Param("status") TournamentPlayerRegistration.RegistrationStatus status
     );
 
+    List<TournamentPlayerRegistration> findByTournamentIdAndStatusIn(Long tournamentId, List<TournamentPlayerRegistration.RegistrationStatus> statuses);
 }
