@@ -173,7 +173,6 @@ public class TournamentService {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             ZonedDateTime fiveMinutesLater = now.plusMinutes(2);
 
-
             ZonedDateTime threeMinutesLater = now.plusMinutes(3);
             ZonedDateTime windowStart = threeMinutesLater.minusSeconds(30);
             ZonedDateTime windowEnd = threeMinutesLater.plusSeconds(30);
@@ -212,17 +211,8 @@ public class TournamentService {
     public void autoStartScheduledTournaments() {
 
         try{
-/*            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
 
-            // Debugging: Log both times
-            List<Tournament> tournamentsToStart = tournamentRepository.findByStatusAndScheduledAtGreaterThanEqual(
-                    TournamentStatus.SCHEDULED,
-                    now
-            );*/
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
-/*            ZonedDateTime earlyWindowStart = now.plusSeconds(12);
-            ZonedDateTime earlyWindowEnd = now.plusSeconds(18);*/
-
             ZonedDateTime earlyWindowStart = now.plusSeconds(10);
             ZonedDateTime earlyWindowEnd = now.plusSeconds(20);
 
@@ -318,7 +308,6 @@ public class TournamentService {
                 tournament.setMove(Constant.SIXTEENMOVES);
 
             }
-
 
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
