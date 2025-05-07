@@ -714,6 +714,10 @@ public class TournamentController {
             Tournament tournament = tournamentRepository.findById(tournamentId)
                     .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
+            if (TournamentStatus.COMPLETED.equals(tournament.getStatus())) {
+                return responseService.generateErrorResponse("Tournament already completed.", HttpStatus.BAD_REQUEST);
+            }
+
             if (tournament.getRound() > roundNumber) {
                 return responseService.generateErrorResponse(
                         "Too late to join this round. You are disqualified.", HttpStatus.FORBIDDEN);

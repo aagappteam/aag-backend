@@ -1268,8 +1268,8 @@ public class TournamentService {
                 if (nextRound <= tournament.getTotalrounds()) {
 
                     try {
-                        System.out.println("⏳ Waiting for 10 seconds before checking ready players...");
-                        Thread.sleep(10000);
+                        System.out.println("⏳ Waiting for 20 seconds before checking ready players...");
+                        Thread.sleep(20000);
                     } catch (InterruptedException e) {
                         exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
                     }
