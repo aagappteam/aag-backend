@@ -187,23 +187,19 @@
 			<version>0.11.5</version>
 		</dependency>
 
-		<!-- Springdoc OpenAPI 3 for Swagger UI -->
-		<!-- https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-ui -->
-		<!--<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-ui</artifactId>
-			<version>1.7.0</version>
-		</dependency>-->
 
-
-		<!-- ModelMapper for mapping between DTOs and entities -->
-<!--
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 		<dependency>
-			<groupId>org.modelmapper</groupId>
-			<artifactId>modelmapper</artifactId>
-			<version>3.1.1</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.17.0</version>
 		</dependency>
--->
+
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.18.0</version>
+		</dependency>
 
 		<!-- File Upload Utility (for handling file uploads) -->
 		<dependency>
