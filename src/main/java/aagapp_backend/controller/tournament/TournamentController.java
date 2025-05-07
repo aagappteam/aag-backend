@@ -3,6 +3,7 @@ package aagapp_backend.controller.tournament;
 import aagapp_backend.dto.*;
 import aagapp_backend.dto.tournament.MatchResultRequest;
 import aagapp_backend.dto.tournament.TournamentJoinRequest;
+import aagapp_backend.dto.tournament.TournamentRoomDetailsDTO;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
@@ -98,6 +99,8 @@ public class TournamentController {
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {
+
+
             Pageable pageable = PageRequest.of(page, size);
             Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId);
 
@@ -389,6 +392,27 @@ public class TournamentController {
     public ResponseEntity<?> getMyRoom(@PathVariable Long playerId, @PathVariable Long tournamentId) {
         try {
             TournamentRoom room = tournamentService.getMyRoomDetails(playerId, tournamentId);
+
+            String tournamentStatus = room.getTournament() != null ? room.getTournament().getStatus().name() : null;
+
+            TournamentRoomDetailsDTO dto = new TournamentRoomDetailsDTO(room, tournamentStatus);
+
+            return responseService.generateSuccessResponse("Tournament Room fetched successfully", dto, HttpStatus.OK);
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching tournament room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+/*    @GetMapping("/my-opponent/{playerId}/{tournamentId}")
+    public ResponseEntity<?> getMyRoom(@PathVariable Long playerId, @PathVariable Long tournamentId) {
+        try {
+            TournamentRoom room = tournamentService.getMyRoomDetails(playerId, tournamentId);
             return responseService.generateSuccessResponse("Tournament Room fetched successfully", room, HttpStatus.OK);
         }catch (BusinessException e) {
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
@@ -397,7 +421,7 @@ public class TournamentController {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error fetching tournament room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     // Endpoint to add a player to a round
     @PostMapping("/process-next-round")
