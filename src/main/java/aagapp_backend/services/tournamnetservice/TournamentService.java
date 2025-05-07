@@ -639,7 +639,6 @@ public class TournamentService {
             BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
             BigDecimal totalCollection = entryFeePerUser;
             System.out.println("entryFeePerUser: " + entryFeePerUser + " totalCollection: " + totalCollection);
-
             BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
             tournament.setRoomprize(userPrizePool);
             tournament.setTotalPrizePool(totalCollection.doubleValue());
@@ -686,9 +685,38 @@ public class TournamentService {
             room.setRound(1);
             roomRepository.save(room);
 
+/*
             String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(),
                     room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
             room.setGamepassword(gamePassword);
+*/
+
+            // Final check to see all rooms and participants
+//            List<TournamentRoom> rooms = roomRepository.findByTournamentIdAndStatus(tournamentId, "PLAYING");
+            int totalPlayers = tournament.getCurrentJoinedPlayers();
+
+            int totalRounds = (int) Math.ceil(Math.log(totalPlayers + freePassCount) / Math.log(2));
+            tournament.setTotalrounds(totalRounds);
+
+            BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
+            BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers + freePassCount));
+            System.out.println("entryFeePerUser: " + entryFeePerUser + " totalCollection: " + totalCollection);
+
+            BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
+            BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
+            tournament.setRoomprize(roomPrizePool);
+            tournament.setTotalPrizePool(totalCollection.doubleValue());
+
+            tournament.setStatus(TournamentStatus.ACTIVE);
+            tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+            tournamentRepository.save(tournament);
+
+        // Now, roomPrizePool will be available for the game creation
+            String gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(),
+                    room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
+            room.setGamepassword(gamePassword);
+
 
             // Assign two players to the room
             assignPlayerToSpecificRoom(activePlayers.get(playerIndex++), tournamentId, room);
@@ -701,27 +729,7 @@ public class TournamentService {
             assignFreePassToPlayer(freePassPlayer, tournamentId, 1);
         }
 
-        // Final check to see all rooms and participants
-        List<TournamentRoom> rooms = roomRepository.findByTournamentIdAndStatus(tournamentId, "PLAYING");
-        int totalPlayers = rooms.stream().mapToInt(TournamentRoom::getCurrentParticipants).sum();
 
-        System.out.println("totalPlayers: " + totalPlayers);
-
-        int totalRounds = (int) Math.ceil(Math.log(totalPlayers + freePassCount) / Math.log(2));
-        tournament.setTotalrounds(totalRounds);
-
-        BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
-        BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers + freePassCount));
-        System.out.println("entryFeePerUser: " + entryFeePerUser + " totalCollection: " + totalCollection);
-
-        BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
-        tournament.setRoomprize(userPrizePool);
-        tournament.setTotalPrizePool(totalCollection.doubleValue());
-
-        tournament.setStatus(TournamentStatus.ACTIVE);
-        tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
-
-        tournamentRepository.save(tournament);
 
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
@@ -733,11 +741,6 @@ public class TournamentService {
 
         }
 
-        System.out.println("🏆 Tournament " + tournament.getId() + " is now ACTIVE with "
-                + rooms.size() + " rooms, "
-                + (totalPlayers + freePassCount) + " players, "
-                + totalRounds + " rounds, "
-                + "User Prize Pool: " + userPrizePool);
         return tournament;
 
     }
