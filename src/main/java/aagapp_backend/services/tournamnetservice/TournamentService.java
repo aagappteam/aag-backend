@@ -1316,7 +1316,7 @@ public class TournamentService {
     public void distributeRoundPrize(Tournament tournament, int round) {
         BigDecimal totalPrize = tournament.getRoomprize();
         int totalRounds = tournament.getTotalrounds();
-        BigDecimal roundPrize = totalPrize.divide(BigDecimal.valueOf(totalRounds), 2, RoundingMode.HALF_UP);
+        BigDecimal roundPrize = tournament.getRoomprize();
 
         List<TournamentResultRecord> winners = tournamentResultRecordRepository
                 .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
