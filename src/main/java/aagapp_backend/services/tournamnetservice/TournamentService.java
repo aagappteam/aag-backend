@@ -19,6 +19,7 @@ import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.tournament.*;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.repository.wallet.VendorWalletRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
@@ -49,6 +50,10 @@ import java.util.stream.Collectors;
 @Service
 public class TournamentService {
 
+    @Autowired
+    private VendorWalletRepository walletRepo;
+
+
     private TournamentRepository tournamentRepository;
     private TournamentRoundParticipantRepository tournamentRoundParticipantRepository;
     private EntityManager em;
@@ -60,7 +65,6 @@ public class TournamentService {
     private TournamentRoomRepository roomRepository;
     private PlayerRepository playerRepository;
     private VendorRepository vendorRepository;
-    private WalletRepository walletRepo;
     private ResponseService responseService;
     private CustomCustomerRepository customCustomerRepository;
     private TournamentResultRecordRepository tournamentResultRecordRepository;
@@ -121,10 +125,6 @@ public class TournamentService {
         this.vendorRepository = vendorRepository;
     }
 
-    @Autowired
-    public void setWalletRepo(WalletRepository walletRepo) {
-        this.walletRepo = walletRepo;
-    }
 
     @Autowired
     public void setResponseService(ResponseService responseService) {
@@ -1085,19 +1085,6 @@ public class TournamentService {
 
     }
 
-    private void updateWinnerWallet(Long customerId) {
-
-        CustomCustomer customCustomer = em.find(CustomCustomer.class,customerId);
-
-
-        Wallet wallet = walletRepo.findByCustomCustomer(customCustomer);
-
-        BigDecimal winAmount = BigDecimal.valueOf(10);
-        wallet.setWinningAmount(wallet.getWinningAmount().add(winAmount));
-        walletRepo.save(wallet);
-    }
-
-
     public void createNextRoundRooms(Tournament tournament, int currentRound) {
         // Fetch winners and free pass players from the previous round
         List<TournamentResultRecord> resultRecords = tournamentResultRecordRepository
@@ -1177,10 +1164,26 @@ public class TournamentService {
     private void setvendorShare(Tournament tournament) {
         BigDecimal totalWinningAmount = BigDecimal.valueOf(tournament.getTotalPrizePool());
         BigDecimal vendorShareAmount = totalWinningAmount.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
-        VendorWallet wallet = tournament.getVendorEntity().getWallet();
-        wallet.setWinningAmount(vendorShareAmount);
 
+        VendorEntity vendor = tournament.getVendorEntity();
+        VendorWallet wallet = vendor.getWallet();
+
+        if (wallet == null) {
+            VendorWallet vendorWallet = new VendorWallet();
+            vendorWallet.setVendorEntity(vendor);
+            vendorWallet.setWinningAmount(vendorShareAmount);
+            walletRepo.save(vendorWallet);
+
+            vendor.setWallet(vendorWallet);
+            vendorRepository.save(vendor);
+
+            return;
+        }
+
+        wallet.setWinningAmount(vendorShareAmount);
     }
+
+
     @Transactional
     public void processMatchResults(GameResult gameResult) {
             List<PlayerDtoWinner> players = gameResult.getPlayers();
