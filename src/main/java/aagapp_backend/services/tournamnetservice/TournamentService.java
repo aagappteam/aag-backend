@@ -387,7 +387,6 @@ public class TournamentService {
             Optional<TournamentPlayerRegistration> existingRegistration = tournamentPlayerRegistrationRepository
                     .findByTournamentIdAndPlayer_PlayerId(tournamentId, playerId);
 
-
             if (existingRegistration.isPresent()) {
                 throw new BusinessException("Player is already registered for this tournament.", HttpStatus.BAD_REQUEST);
             }
