@@ -557,7 +557,9 @@ public class TournamentService {
     @Transactional
     public List<TournamentRoom> getAllRoomsByTournamentId(Long tournamentId) {
         try {
-            return roomRepository.findByTournamentId(tournamentId);
+            List<String> statuses = Arrays.asList("ONGOING", "INPROGRESS","PLAYING");
+            return roomRepository.findByTournamentIdAndStatusIn(tournamentId, statuses);
+//            return roomRepository.findByTournamentId(tournamentId);
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
             throw e;
@@ -931,14 +933,6 @@ public class TournamentService {
                 .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
 
         Player player = record.getPlayer();
-      /*  TournamentRoundParticipant tournamentRoundParticipant = new TournamentRoundParticipant();
-        tournamentRoundParticipant.setTournamentId(tournament.getId());
-        tournamentRoundParticipant.setPlayerId(player.getPlayerId());
-        tournamentRoundParticipant.setRoundNumber(roundNumber + 1);
-        tournamentRoundParticipant.setJoinedAt(LocalDateTime.now());
-        tournamentRoundParticipant.setStatus("READY_TO_PLAY");
-     return    tournamentRoundParticipantRepository.save(tournamentRoundParticipant);*/
-
         TournamentResultRecord nextRoundRecord = new TournamentResultRecord();
         nextRoundRecord.setTournament(tournament);
         nextRoundRecord.setPlayer(player);
@@ -1195,6 +1189,21 @@ public class TournamentService {
 
             PlayerDtoWinner player1 = players.get(0);
             PlayerDtoWinner player2 = players.get(1);
+
+        if (player1.getPlayerId() == 0 || player2.getPlayerId() == 0) {
+            List<Player> roomPlayers = playerRepository.findByTournamentRoom_Id(gameResult.getRoomId());
+            if (roomPlayers.size() < 2) {
+                throw new BusinessException("Room does not have enough players", HttpStatus.BAD_REQUEST);
+            }
+
+            Player roomPlayer1 = roomPlayers.get(0);
+            Player roomPlayer2 = roomPlayers.get(1);
+
+            player1 = new PlayerDtoWinner(roomPlayer1.getPlayerId(),player1.getScore() );
+            player2 = new PlayerDtoWinner(roomPlayer2.getPlayerId(), player2.getScore());
+
+            System.out.println("Reassigned players from room: " + player1.getPlayerId() + " , " + player2.getPlayerId());
+        }
 
             PlayerDtoWinner winner = null;
             PlayerDtoWinner loser = null;

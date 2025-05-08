@@ -688,7 +688,7 @@ public class LeagueService {
 
             if (player.getLeagueRoom() != null) {
 
-                leaveRoom(player.getPlayerId(), player.getLeagueRoom().getId());
+                leaveRoom(player.getPlayerId(), player.getLeagueRoom().getLeague().getId());
 
                /* return responseService.generateErrorResponse(
                         "Player already in room with ID: " + player.getPlayerId(),

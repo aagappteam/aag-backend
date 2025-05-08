@@ -299,6 +299,7 @@ public class TournamentController {
     @GetMapping("/get-rooms-by-tournament/{tournamentId}")
     public ResponseEntity<?> getRoomsByTournamentId(@PathVariable Long tournamentId) {
         try {
+
             List<TournamentRoom> rooms = tournamentService.getAllRoomsByTournamentId(tournamentId);
             return responseService.generateSuccessResponse("Rooms fetched successfully", rooms, HttpStatus.OK);
         }catch (BusinessException ex) {
