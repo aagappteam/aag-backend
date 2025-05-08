@@ -250,7 +250,7 @@ public class LeagueService {
 
         } catch (BusinessException e) {
             exceptionHandling.handleException(e.getStatus(), e);
-            throw new RuntimeException("Error creating challenge: " + e.getMessage(), e);
+            throw e;
 
         }catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -751,7 +751,7 @@ public class LeagueService {
 
         }catch (BusinessException e) {
             exceptionHandling.handleException(e.getStatus(), e);
-            return responseService.generateErrorResponse(e.getMessage(), e.getStatus());
+            throw e;
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -801,7 +801,7 @@ public class LeagueService {
 
         } catch (BusinessException e) {
             exceptionHandling.handleException(e.getStatus(), e);
-            return responseService.generateErrorResponse(e.getMessage(), e.getStatus());
+            throw e;
 
         }catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -869,8 +869,7 @@ public class LeagueService {
             return responseService.generateSuccessResponse("Player left the League Room ", updated, HttpStatus.OK);
         }catch (BusinessException e) {
             exceptionHandling.handleException(e.getStatus(), e);
-            return responseService.generateErrorResponse(e.getMessage(), e.getStatus());
-
+            throw e;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player can not left the room because " + e.getMessage(), HttpStatus.NOT_FOUND);
@@ -1179,8 +1178,7 @@ public class LeagueService {
             return responseService.generateSuccessResponse("League team details fetched successfully.", leagueTeamDetailsResponse, HttpStatus.OK);
         }catch (BusinessException e) {
             exceptionHandling.handleException(e.getStatus(), e);
-            return responseService.generateErrorResponse(e.getMessage(), e.getStatus());
-
+            throw e;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Failed to fetch league team details because " + e.getMessage(), HttpStatus.NOT_FOUND);

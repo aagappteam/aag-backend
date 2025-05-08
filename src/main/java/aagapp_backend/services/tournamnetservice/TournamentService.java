@@ -200,7 +200,7 @@ public class TournamentService {
 
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;
+            throw e;
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -349,7 +349,7 @@ public class TournamentService {
 
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;        }
+            throw e;      }
         catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
@@ -387,6 +387,7 @@ public class TournamentService {
             Optional<TournamentPlayerRegistration> existingRegistration = tournamentPlayerRegistrationRepository
                     .findByTournamentIdAndPlayer_PlayerId(tournamentId, playerId);
 
+
             if (existingRegistration.isPresent()) {
                 throw new BusinessException("Player is already registered for this tournament.", HttpStatus.BAD_REQUEST);
             }
@@ -420,8 +421,7 @@ public class TournamentService {
 
         }catch (BusinessException e) {
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;
-        }
+            throw e;        }
         catch (Exception e) {
             exceptionHandling.handleException(e);
             throw new RuntimeException("Error registering player for the tournament: " + e.getMessage(), e);
@@ -529,7 +529,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;
+            throw e;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching tournaments: " + e.getMessage(), e);
@@ -549,7 +549,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;
+            throw e;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
@@ -562,7 +562,7 @@ public class TournamentService {
             return roomRepository.findByTournamentId(tournamentId);
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;
+            throw e;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching rooms: " + e.getMessage(), e);
@@ -579,7 +579,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;
+            throw e;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
@@ -811,8 +811,7 @@ public class TournamentService {
 
         }catch (BusinessException ex) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, ex);
-
-        return responseService.generateErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw ex;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Player cannot leave the room because: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -1021,7 +1020,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("An error occurred while retrieving players for tournament " + tournamentId + " and round " + roundNumber, e);
         }
@@ -1066,7 +1065,7 @@ public class TournamentService {
 
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;
+            throw e;
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
@@ -1221,40 +1220,21 @@ public class TournamentService {
 
             leaveRoom(loser.getPlayerId(), tournament.getId());
 
-            int currentRound = tournament.getRound();
-            startNextRound( tournament.getId(),  currentRound);
+           /* int currentRound = tournament.getRound();
+            startNextRound( tournament.getId(),  currentRound);*/
 
     }
 
-    @Scheduled(fixedRate = 30000)
+/*    @Scheduled(fixedRate = 30000)
     public void checkAndStartNextRoundsForAllTournaments() {
-/*        int page = 0;
-        int size = 10;
 
-        Page<Tournament> tournamentPage;
-        do {
-            tournamentPage = tournamentRepository.findByStatus(TournamentStatus.ACTIVE, PageRequest.of(page, size));
-            if (tournamentPage == null || tournamentPage.isEmpty()) {
-                return;
-            }
-
-            for (Tournament tournament : tournamentPage.getContent()) {
-                int currentRound = tournament.getRound();
-
-                startNextRound(tournament.getId(), currentRound);
-                em.flush();
-                em.clear();
-            }
-
-            page++;
-        } while (tournamentPage.hasNext());*/
 
         List<Tournament> activeTournaments = tournamentRepository.findByStatus(TournamentStatus.ACTIVE);
         for (Tournament tournament : activeTournaments) {
             startNextRound(tournament.getId(), tournament.getRound());
         }
 
-    }
+    }*/
 
     public void startNextRound(Long tournamentId, int currentRound) {
         try {
@@ -1299,6 +1279,7 @@ public class TournamentService {
             }
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            throw e;
 
         }
         catch (IllegalStateException e) {
@@ -1307,9 +1288,6 @@ public class TournamentService {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
-
-
-
 
 
     @Transactional
@@ -1392,28 +1370,6 @@ public class TournamentService {
 
         return completedRoomsCount == validRoomsCount;
     }
-
-
-/*    public boolean isRoundCompleted(Long tournamentId, int roundNumber) {
-        long totalRoomsCount = roomRepository.countByTournamentIdAndRound(tournamentId, roundNumber);
-
-        if (totalRoomsCount == 0) {
-            long freePassCount = tournamentResultRecordRepository.countByTournamentIdAndRoundAndStatus(
-                    tournamentId, roundNumber, "FREE_PASS"
-            );
-
-            return freePassCount > 0;
-        }
-
-        // Regular case — check if all rooms are completed
-        long completedRoomsCount = roomRepository.countByTournamentIdAndRoundAndStatus(
-                tournamentId, roundNumber, "COMPLETED"
-        );
-
-        return completedRoomsCount == totalRoomsCount;
-    }*/
-
-
 
     public int nextPowerOfTwo(int n) {
         int powerOfTwo = 1;
@@ -1531,7 +1487,7 @@ public class TournamentService {
             return rounds;
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return null;
+            throw e;
         }catch (Exception e){
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
 
@@ -1548,5 +1504,39 @@ public class TournamentService {
     }
 
 
+    @Transactional
+    public String manualStartNextRound(Long tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
+
+        int currentRound = tournament.getRound();
+
+        if (!isRoundCompleted(tournamentId, currentRound)) {
+            throw new BusinessException("Round " + currentRound + " is not completed yet.", HttpStatus.BAD_REQUEST);
+//            return "⏳ Round " + currentRound + " is not completed yet.";
+        }
+
+        int nextRound = currentRound + 1;
+        distributeRoundPrize(tournament, currentRound);
+
+        if (nextRound <= tournament.getTotalrounds()) {
+            List<TournamentResultRecord> readyPlayers = tournamentResultRecordRepository
+                    .findByTournamentIdAndRoundAndStatus(tournamentId, nextRound, "READY_TO_PLAY");
+
+            if (readyPlayers.size() <= 1) {
+                finishTournament(tournamentId);
+                return "🏁 Only one player remains. Tournament finished.";
+            }
+
+            tournament.setRound(nextRound);
+            tournamentRepository.save(tournament);
+            processNextRoundMatches(tournamentId, nextRound);
+
+            return "✅ Round " + currentRound + " completed. Round " + nextRound + " has started.";
+        } else {
+            finishTournament(tournamentId);
+            return "🎯 Tournament completed!";
+        }
+    }
 
 }
