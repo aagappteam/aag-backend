@@ -11,6 +11,7 @@ import aagapp_backend.enums.NotificationType;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.services.wallet.WalletService;
@@ -106,8 +107,10 @@ public class WalletController {
 
             notificationRepository.save(notification);
 
-            // Return success response
             return responseService.generateSuccessResponse("Balance added successfully", updatedWallet, HttpStatus.OK);
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (IllegalStateException e) {
             // Handle specific case when the wallet is not found
             return responseService.generateErrorResponse("No wallet found for customer with ID " + addBalanceRequest.getCustomerId(), HttpStatus.NOT_FOUND);
@@ -152,6 +155,9 @@ public class WalletController {
 
             }
             return wallet;
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error retrieving balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -219,6 +225,9 @@ public class WalletController {
             notificationRepository.save(notification);
             return responseService.generateSuccessResponse("Balance deducted successfully", updatedWallet, HttpStatus.OK);
 
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error deducting balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -261,6 +270,9 @@ public class WalletController {
             Wallet updatedWallet = walletService.withdrawalAmountFromWallet(customerId, amount);
 
             return responseService.generateSuccessResponse("Balance withdrawn successfully", updatedWallet, HttpStatus.OK);
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         }catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error withdrawing balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

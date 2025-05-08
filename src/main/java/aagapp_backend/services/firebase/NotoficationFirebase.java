@@ -29,7 +29,6 @@ public class NotoficationFirebase {
 
 public void sendNotificationToAll(String title, String body) throws FirebaseMessagingException {
     try{
-        System.out.println("title: " + title);
 
         Message message = Message.builder()
                 .setNotification(Notification.builder()
@@ -40,7 +39,6 @@ public void sendNotificationToAll(String title, String body) throws FirebaseMess
                 .build();
 
         String response = FirebaseMessaging.getInstance().send(message);
-        System.out.println("Successfully sent message: " + response);
     }catch (Exception e) {
         e.printStackTrace();
         throw new RuntimeException("Error sending notification: " + e.getMessage());

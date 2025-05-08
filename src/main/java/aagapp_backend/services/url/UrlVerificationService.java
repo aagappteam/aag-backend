@@ -67,7 +67,6 @@ public class UrlVerificationService {
 
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
-                System.out.println("Forbidden access to URL: " + url);
             }
             exceptionHandlingImplement.handleException(e);
             return false;
