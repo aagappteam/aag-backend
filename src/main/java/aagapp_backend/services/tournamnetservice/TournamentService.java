@@ -321,7 +321,7 @@ public class TournamentService {
             } else {
                 tournament.setStatus(TournamentStatus.SCHEDULED);
 //               tournament.setScheduledAt(nowInKolkata.plusHours(1));
-              tournament.setScheduledAt(nowInKolkata.plusMinutes(5));
+              tournament.setScheduledAt(nowInKolkata.plusMinutes(4));
 
             }
 
@@ -623,9 +623,6 @@ public class TournamentService {
 
         List<Player> activePlayers = getActivePlayers(tournamentId);
 
-        /* if(activePlayers.size() == 0) {
-            throw new IllegalStateException("Tournament has no active players" + tournamentId);
-        }*/
         System.out.println("activePlayers " + activePlayers);
 
         if (activePlayers.isEmpty()) {
@@ -1156,6 +1153,7 @@ public class TournamentService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
         tournament.setStatus(TournamentStatus.COMPLETED);
+
         tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
         setvendorShare(tournament);
         tournamentRepository.save(tournament);
@@ -1192,9 +1190,8 @@ public class TournamentService {
 
             // Check if players list is null or empty
             if (players == null || players.size() < 2) {
-                System.out.println("Players list is null or doesn't contain enough players");
                 throw new BusinessException("Players list is null or doesn't contain enough players" , HttpStatus.BAD_REQUEST);
-                }
+            }
 
             PlayerDtoWinner player1 = players.get(0);
             PlayerDtoWinner player2 = players.get(1);
@@ -1249,9 +1246,9 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
             distributeRoundPrize(tournament, currentRound);
 
             if (nextRound <= tournament.getTotalrounds()) {
+                System.out.println("🎯 Tournament completed!");
 
                 finishTournament(tournamentId);
-                System.out.println("🎯 Tournament completed!");
             }
 
 
