@@ -8,12 +8,14 @@ import aagapp_backend.entity.social.UserVendorFollow;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.social.UserVendorFollowRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.vendor.VenderService;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class UserVendorFollowService {
@@ -187,6 +190,76 @@ public class UserVendorFollowService {
         return response;
     }
 */
+public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size, String firstName) {
+    Pageable pageable = PageRequest.of(page, size);
+
+    CustomCustomer user = customCustomerRepository.findById(userId)
+            .orElseThrow(() -> new BusinessException("User not found" + userId, HttpStatus.BAD_REQUEST));
+
+    Page<UserVendorFollow> followPage = followRepo.findByUserId(userId, Pageable.unpaged()); // fetch all, we'll filter manually
+
+    // Stream map with optional filter
+    Stream<UserVendorFollow> followStream = followPage.getContent().stream();
+
+    if (firstName != null && !firstName.trim().isEmpty()) {
+        String[] nameParts = firstName.trim().split(" ");
+        String firstNamePart = nameParts[0].toLowerCase();
+        String lastNamePart = nameParts.length > 1 ? nameParts[1].toLowerCase() : "";
+
+        followStream = followStream.filter(follow -> {
+            VendorEntity vendor = follow.getVendor();
+            String vendorFirstName = vendor.getFirst_name() != null ? vendor.getFirst_name().toLowerCase() : "";
+            String vendorLastName = vendor.getLast_name() != null ? vendor.getLast_name().toLowerCase() : "";
+
+            if (nameParts.length == 1) {
+                return vendorFirstName.contains(firstNamePart) || vendorLastName.contains(firstNamePart);
+            } else {
+                return vendorFirstName.contains(firstNamePart) && vendorLastName.contains(lastNamePart);
+            }
+        });
+    }
+
+    // Collect filtered list
+    List<Map<String, Object>> filteredVendors = followStream.map(follow -> {
+        VendorEntity vendor = follow.getVendor();
+
+        Map<String, Object> vendorInfo = new HashMap<>();
+        vendorInfo.put("name", vendor.getName());
+        vendorInfo.put("id", vendor.getService_provider_id());
+        vendorInfo.put("profilePic", vendor.getProfilePic());
+        vendorInfo.put("email", vendor.getPrimary_email());
+        vendorInfo.put("followerCount", followRepo.countByVendorId(vendor.getService_provider_id()));
+        vendorInfo.put("isFollowing", true);
+
+        return vendorInfo;
+    }).collect(Collectors.toList());
+
+    // Manual pagination on filtered list
+    int start = Math.min(page * size, filteredVendors.size());
+    int end = Math.min(start + size, filteredVendors.size());
+    List<Map<String, Object>> paginatedList = filteredVendors.subList(start, end);
+
+    // Pagination info
+    Map<String, Object> vendorPageMap = new HashMap<>();
+    vendorPageMap.put("content", paginatedList);
+    vendorPageMap.put("pageNumber", page);
+    vendorPageMap.put("pageSize", size);
+    vendorPageMap.put("totalPages", (int) Math.ceil((double) filteredVendors.size() / size));
+    vendorPageMap.put("totalElements", filteredVendors.size());
+    vendorPageMap.put("last", end == filteredVendors.size());
+
+    // Final response
+    Map<String, Object> response = new HashMap<>();
+    Map<String, Object> userMap = new HashMap<>();
+    userMap.put("name", user.getName());
+    userMap.put("profilePic", user.getProfilePic());
+    userMap.put("email", user.getEmail());
+
+    response.put("user", userMap);
+    response.put("vendors", vendorPageMap);
+
+    return response;
+}
 
 
     public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size) {

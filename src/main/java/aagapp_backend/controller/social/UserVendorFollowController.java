@@ -2,6 +2,7 @@ package aagapp_backend.controller.social;
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.dto.TopVendorWeekDto;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.social.UserVendorFollowService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,23 +56,24 @@ public class UserVendorFollowController {
         }
     }
 
-
+    @GetMapping("/vendors-by-user/{userId}")
+    public ResponseEntity<?> getFollowedVendors(@PathVariable Long userId,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "10") int size,
+                                                @RequestParam(value = "firstName", required = false) String firstName) {
+        try {
+            Map<String, Object> response = followService.getVendorsWithDetails(userId, page, size, firstName);
+            return responseService.generateSuccessResponse("Vendors followed by user", response, HttpStatus.OK);
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+        catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse("Failed to get followed vendors", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 /*    @GetMapping("/vendors-by-user/{userId}")
-    public ResponseEntity<?> getFollowedVendors(@PathVariable Long userId) {
-
-//        return ResponseEntity.ok(followService.getVendorsFollowedByUser(userId));
-        try{
-            return responseService.generateSuccessResponse("Vendors followed by user", followService.getVendorsFollowedByUser(userId), HttpStatus.OK);
-        }catch (Exception e) {
-            exceptionHandling.handleException(
-                    HttpStatus.BAD_REQUEST,
-                    e);
-            return responseService.generateErrorResponse("failed to get followed vendors", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
-
-    @GetMapping("/vendors-by-user/{userId}")
     public ResponseEntity<?> getFollowedVendors(@PathVariable Long userId,
                                                 @RequestParam(defaultValue = "0") int page,
                                                 @RequestParam(defaultValue = "10") int size) {
@@ -82,7 +84,7 @@ public class UserVendorFollowController {
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
             return responseService.generateErrorResponse("failed to get followed vendors", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
 /*    @GetMapping("/users-by-vendor/{vendorId}")
     public ResponseEntity<?> getFollowers(@PathVariable Long vendorId,
