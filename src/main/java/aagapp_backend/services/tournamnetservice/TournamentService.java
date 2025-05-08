@@ -19,6 +19,7 @@ import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.tournament.*;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.repository.wallet.VendorWalletRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
@@ -49,6 +50,10 @@ import java.util.stream.Collectors;
 @Service
 public class TournamentService {
 
+    @Autowired
+    private VendorWalletRepository walletRepo;
+
+
     private TournamentRepository tournamentRepository;
     private TournamentRoundParticipantRepository tournamentRoundParticipantRepository;
     private EntityManager em;
@@ -60,7 +65,6 @@ public class TournamentService {
     private TournamentRoomRepository roomRepository;
     private PlayerRepository playerRepository;
     private VendorRepository vendorRepository;
-    private WalletRepository walletRepo;
     private ResponseService responseService;
     private CustomCustomerRepository customCustomerRepository;
     private TournamentResultRecordRepository tournamentResultRecordRepository;
@@ -121,10 +125,6 @@ public class TournamentService {
         this.vendorRepository = vendorRepository;
     }
 
-    @Autowired
-    public void setWalletRepo(WalletRepository walletRepo) {
-        this.walletRepo = walletRepo;
-    }
 
     @Autowired
     public void setResponseService(ResponseService responseService) {
@@ -186,7 +186,6 @@ public class TournamentService {
             );
 */
 
-            System.out.println(upcomingTournaments.size() + " tournaments to notify");
 
             if (upcomingTournaments.isEmpty()) {
                 return responseService.generateResponse(HttpStatus.OK, "No upcoming tournaments found.", null);
@@ -623,9 +622,11 @@ public class TournamentService {
         }
 
         List<Player> activePlayers = getActivePlayers(tournamentId);
-/*        if(activePlayers.size() == 0) {
+
+        /* if(activePlayers.size() == 0) {
             throw new IllegalStateException("Tournament has no active players" + tournamentId);
         }*/
+        System.out.println("activePlayers " + activePlayers);
 
         if (activePlayers.isEmpty()) {
             updateTournamentStatus(tournament, TournamentStatus.REJECTED, "No active players found");
@@ -668,11 +669,13 @@ public class TournamentService {
             throw new IllegalStateException("Not enough players to start the tournament (minimum 2 needed)");
         }
 
-        Collections.shuffle(activePlayers); // Randomize for fair matchups
+        Collections.shuffle(activePlayers);
 
         int numberOfPairs = activePlayers.size() / 2;
         int freePassCount = activePlayers.size() % 2;
         int playerIndex = 0;
+
+        System.out.println("Number of pairs: " + numberOfPairs + " Free Pass Count: " + freePassCount);
 
         // Create rooms and assign 2 players per room
         for (int i = 0; i < numberOfPairs; i++) {
@@ -728,8 +731,6 @@ public class TournamentService {
             assignFreePassToPlayer(freePassPlayer, tournamentId, 1);
         }
 
-
-
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
             notoficationFirebase.sendNotification(
@@ -739,6 +740,7 @@ public class TournamentService {
             );
 
         }
+        System.out.println("🎉 Tournament " + tournament.getId() + " started." );
 
         return tournament;
 
@@ -1083,19 +1085,6 @@ public class TournamentService {
 
     }
 
-    private void updateWinnerWallet(Long customerId) {
-
-        CustomCustomer customCustomer = em.find(CustomCustomer.class,customerId);
-
-
-        Wallet wallet = walletRepo.findByCustomCustomer(customCustomer);
-
-        BigDecimal winAmount = BigDecimal.valueOf(10);
-        wallet.setWinningAmount(wallet.getWinningAmount().add(winAmount));
-        walletRepo.save(wallet);
-    }
-
-
     public void createNextRoundRooms(Tournament tournament, int currentRound) {
         // Fetch winners and free pass players from the previous round
         List<TournamentResultRecord> resultRecords = tournamentResultRecordRepository
@@ -1175,10 +1164,26 @@ public class TournamentService {
     private void setvendorShare(Tournament tournament) {
         BigDecimal totalWinningAmount = BigDecimal.valueOf(tournament.getTotalPrizePool());
         BigDecimal vendorShareAmount = totalWinningAmount.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
-        VendorWallet wallet = tournament.getVendorEntity().getWallet();
-        wallet.setWinningAmount(vendorShareAmount);
 
+        VendorEntity vendor = tournament.getVendorEntity();
+        VendorWallet wallet = vendor.getWallet();
+
+        if (wallet == null) {
+            VendorWallet vendorWallet = new VendorWallet();
+            vendorWallet.setVendorEntity(vendor);
+            vendorWallet.setWinningAmount(vendorShareAmount);
+            walletRepo.save(vendorWallet);
+
+            vendor.setWallet(vendorWallet);
+            vendorRepository.save(vendor);
+
+            return;
+        }
+
+        wallet.setWinningAmount(vendorShareAmount);
     }
+
+
     @Transactional
     public void processMatchResults(GameResult gameResult) {
             List<PlayerDtoWinner> players = gameResult.getPlayers();
@@ -1219,8 +1224,8 @@ public class TournamentService {
 
             leaveRoom(loser.getPlayerId(), tournament.getId());
 
-           /* int currentRound = tournament.getRound();
-            startNextRound( tournament.getId(),  currentRound);*/
+            int currentRound = tournament.getRound();
+            startNextRound( tournament.getId(),  currentRound);
 
     }
 
@@ -1234,17 +1239,24 @@ public class TournamentService {
         }
 
     }*/
+public void startNextRoundOld(Long tournamentId, int currentRound) {
+    try {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
 
-    public void startNextRound(Long tournamentId, int currentRound) {
-        try {
-            Tournament tournament = tournamentRepository.findById(tournamentId)
-                    .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
+        if (isRoundCompleted(tournamentId, currentRound)) {
+            int nextRound = currentRound + 1;
+            distributeRoundPrize(tournament, currentRound);
 
-            if (isRoundCompleted(tournamentId, currentRound)) {
-                int nextRound = currentRound + 1;
-                distributeRoundPrize(tournament, currentRound);
+            if (nextRound <= tournament.getTotalrounds()) {
 
-                if (nextRound <= tournament.getTotalrounds()) {
+                finishTournament(tournamentId);
+                System.out.println("🎯 Tournament completed!");
+            }
+
+
+
+/*                if (nextRound <= tournament.getTotalrounds()) {
 
                     try {
                         System.out.println("⏳ Waiting for 20 seconds before checking ready players...");
@@ -1262,16 +1274,59 @@ public class TournamentService {
                     }
 
 
-                    // Update tournament round and proceed to the next round
                     tournament.setRound(nextRound);
                     tournamentRepository.save(tournament);
 
-                    System.out.println("✅ Round " + currentRound + " completed. Scheduling round " + nextRound);
-                    processNextRoundMatches(tournamentId, nextRound);
+                    // Update tournament round and proceed to the next round
+
+*//*                    System.out.println("✅ Round " + currentRound + " completed. Scheduling round " + nextRound);
+                    processNextRoundMatches(tournamentId, nextRound);*//*
 
                 } else {
                     finishTournament(tournamentId);
                     System.out.println("🎯 Tournament completed!");
+                }*/
+        } else {
+            System.out.println("⏳ Round " + currentRound + " is not completed yet.");
+        }
+    }catch (BusinessException e){
+        exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+        throw e;
+
+    }
+    catch (IllegalStateException e) {
+        exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+    } catch (Exception e) {
+        exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+    }
+}
+
+    public void startNextRound(Long tournamentId, int currentRound) {
+        try {
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
+
+            if (isRoundCompleted(tournamentId, currentRound)) {
+                int nextRound = currentRound + 1;
+                distributeRoundPrize(tournament, currentRound);
+
+                long freePassCount = tournamentResultRecordRepository
+                        .countByTournamentIdAndRoundAndStatus(tournamentId, currentRound, "FREE_PASS");
+
+                // 🟢 Count WINNER users in current round
+                long winnerCount = tournamentResultRecordRepository
+                        .countByTournamentIdAndRoundAndStatus(tournamentId, currentRound, "WINNER");
+
+
+
+                System.out.println("✔️ Round " + currentRound + " is completed. FREE_PASS=" + freePassCount + " WINNER=" + winnerCount);
+
+                // ✅ If free pass is 0 and winner is 1 → finish tournament
+                if (freePassCount == 0 && winnerCount == 1) {
+                    distributeRoundPrize(tournament, currentRound); // still distribute prize before finishing
+                    finishTournament(tournamentId);
+                    System.out.println("🏆 Tournament finished! Only one winner remains.");
+                    return;
                 }
             } else {
                 System.out.println("⏳ Round " + currentRound + " is not completed yet.");
@@ -1512,7 +1567,6 @@ public class TournamentService {
 
         if (!isRoundCompleted(tournamentId, currentRound)) {
             throw new BusinessException("Round " + currentRound + " is not completed yet.", HttpStatus.BAD_REQUEST);
-//            return "⏳ Round " + currentRound + " is not completed yet.";
         }
 
         int nextRound = currentRound + 1;

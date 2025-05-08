@@ -343,10 +343,11 @@ public void updateDailylimit() {
                     .orElseThrow(() -> new BusinessException("Game not found with ID: " + gameId, HttpStatus.BAD_REQUEST));
 
             if (isPlayerInRoom(player)) {
-                return responseService.generateErrorResponse(
+                leaveRoom(playerId, player.getGameRoom().getId());
+                /*return responseService.generateErrorResponse(
                         "Player " + player.getPlayerId() + " is already in room with game " + player.getGameRoom().getGame().getId(),
                         HttpStatus.BAD_REQUEST
-                );
+                );*/
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);
