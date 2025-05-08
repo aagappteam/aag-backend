@@ -58,6 +58,7 @@ public class TournamentWinning {
         }
     }
 
+//    for vendor this is api
     @GetMapping("/game/{tournamentId}")
     public ResponseEntity<?> getLeaderboard(@PathVariable Long tournamentId, @RequestParam(defaultValue = "0") int page,
                                             @RequestParam(defaultValue = "10") int size) {
@@ -71,6 +72,7 @@ public class TournamentWinning {
             return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
 
     @GetMapping("/leaderboard")

@@ -687,10 +687,13 @@ public class LeagueService {
             }
 
             if (player.getLeagueRoom() != null) {
-                return responseService.generateErrorResponse(
+
+                leaveRoom(player.getPlayerId(), player.getLeagueRoom().getId());
+
+               /* return responseService.generateErrorResponse(
                         "Player already in room with ID: " + player.getPlayerId(),
                         HttpStatus.INTERNAL_SERVER_ERROR
-                );
+                );*/
             }
 
             // ✅ Get the team by teamId
@@ -861,7 +864,7 @@ public class LeagueService {
             }
 
             player.setLeagueRoom(null);
-            player.setTeam(null);
+          /*  player.setTeam(null);*/
             leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
             playerRepository.save(player);
             LeagueRoom updated = leagueRoomRepository.save(leagueRoom);
