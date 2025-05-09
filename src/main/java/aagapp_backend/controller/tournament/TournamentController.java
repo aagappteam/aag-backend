@@ -541,7 +541,7 @@ public class TournamentController {
             boolean canStartNextRound = allPreviousRoundRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
 
             // 6. Enable Play Again button if all rounds completed
-            boolean playAgainEnabled = allCurrentRoundRoomsCompleted || allPreviousRoundRoomsCompleted;
+            boolean playAgainEnabled = allPreviousRoundRoomsCompleted;
 
             // 7. Prepare response
             Map<String, Object> response = new HashMap<>();

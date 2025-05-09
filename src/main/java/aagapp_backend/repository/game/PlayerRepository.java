@@ -25,4 +25,5 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findByTournamentRoom_Id(Long tournamentRoomId);
     List<Player> findAllByTournamentRoom(TournamentRoom tournamentRoom);
 
+    List<Player> findByRoomId(Long roomId);
 }

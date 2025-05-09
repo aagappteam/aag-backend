@@ -927,7 +927,7 @@ public class TournamentService {
 
     }
 
-    public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer roundNumber, TournamentResultRecord record) {
+/*    public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer roundNumber, TournamentResultRecord record) {
 
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
@@ -940,54 +940,32 @@ public class TournamentService {
         nextRoundRecord.setStatus("READY_TO_PLAY");
         nextRoundRecord.setScore(0);
         return tournamentResultRecordRepository.save(nextRoundRecord);
+    }*/
+public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer roundNumber, TournamentResultRecord record) {
 
+    Tournament tournament = tournamentRepository.findById(tournamentId)
+            .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
 
-/*        TournamentResultRecord nextRoundRecord = new TournamentResultRecord();
-        nextRoundRecord.setTournament(tournament);
-        nextRoundRecord.setPlayer(player);
-        nextRoundRecord.setRound(roundNumber + 1);
-        nextRoundRecord.setStatus("READY_TO_PLAY");
-        nextRoundRecord.setScore(0);
-      return   tournamentResultRecordRepository.save(nextRoundRecord);*/
+    Player player = record.getPlayer();
 
-       /* Optional<TournamentRoom> existingRoomOpt = roomRepository
-                .findFirstByTournamentIdAndRoundAndStatusAndCurrentParticipantsLessThan(
-                        tournamentId, roundNumber + 1, "OPEN", 2);
+    // === Check if record already exists ===
+    Optional<TournamentResultRecord> existingRecord = tournamentResultRecordRepository
+            .findByTournamentIdAndPlayerIdAndRound(tournamentId, player.getPlayerId(), roundNumber);
 
-        TournamentRoom room;
-        if (existingRoomOpt.isPresent()) {
-            room = existingRoomOpt.get();
-        } else {
-            room = new TournamentRoom();
-            room.setTournament(tournament);
-            room.setRound(roundNumber + 1);
-            room.setMaxParticipants(2);
-            room.setCurrentParticipants(0);
-            room.setStatus("OPEN");
-            roomRepository.save(room);
-        }
-
-        nextRoundRecord.setRoomId(room.getId());
-        room.setCurrentParticipants(room.getCurrentParticipants() + 1);
-        tournamentResultRecordRepository.save(nextRoundRecord);
-        roomRepository.save(room);
-
-        // If room full → create game and update room
-        if (room.getCurrentParticipants() == room.getMaxParticipants()) {
-            String gamePassword = createNewGame(
-                    baseUrl,
-                    tournament.getId(),
-                    room.getId(),
-                    room.getMaxParticipants(),
-                    tournament.getMove(),
-                    3.2
-            );
-            room.setGamepassword(gamePassword);
-            room.setStatus("IN_PROGRESS");
-            roomRepository.save(room);
-        }
-*/
+    if (existingRecord.isPresent()) {
+        return existingRecord.get();
     }
+
+    TournamentResultRecord nextRoundRecord = new TournamentResultRecord();
+    nextRoundRecord.setTournament(tournament);
+    nextRoundRecord.setPlayer(player);
+    nextRoundRecord.setRound(roundNumber);
+    nextRoundRecord.setStatus("READY_TO_PLAY");
+    nextRoundRecord.setScore(0);
+
+    return tournamentResultRecordRepository.save(nextRoundRecord);
+}
+
 
     private TournamentRoom findAvailableRoom(Long tournamentId) {
         List<TournamentRoom> rooms = roomRepository.findByTournamentIdAndStatus(tournamentId, "OPEN");
@@ -1016,11 +994,6 @@ public class TournamentService {
         } catch (Exception e) {
             throw new RuntimeException("An error occurred while retrieving players for tournament " + tournamentId + " and round " + roundNumber, e);
         }
-    }
-
-    public void deleteTournamentRoundWinner(Long tournamentId, Long playerId) {
-        // Call the custom delete method
-        tournamentRoundWinnerRepository.deleteByTournamentIdAndPlayerId(tournamentId, playerId);
     }
 
 
@@ -1064,17 +1037,6 @@ public class TournamentService {
         }
     }
 
-
-
-    private PlayerDtoWinner determineWinner(List<PlayerDtoWinner> players) {
-
-        return players.stream()
-
-                .max(Comparator.comparingInt(PlayerDtoWinner::getScore))  // Find the player with the highest score
-
-                .orElseThrow(() -> new BusinessException("No players found", HttpStatus.BAD_REQUEST));
-
-    }
 
     public void createNextRoundRooms(Tournament tournament, int currentRound) {
         // Fetch winners and free pass players from the previous round
@@ -1151,6 +1113,17 @@ public class TournamentService {
         tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
         setvendorShare(tournament);
         tournamentRepository.save(tournament);
+
+
+        String fcmToken = tournament.getVendorEntity().getFcmToken();
+        if (fcmToken != null) {
+            notoficationFirebase.sendNotification(
+                    fcmToken,
+                    "🏆 Tournament " + tournament.getName() + " has been Completed now",
+                    "The tournament has successfully concluded. Check final results and prize distribution!"
+            );
+        }
+
     }
 
     private void setvendorShare(Tournament tournament) {
@@ -1313,7 +1286,7 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
                     .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
 
             if (isRoundCompleted(tournamentId, currentRound)) {
-                int nextRound = currentRound + 1;
+//                int nextRound = currentRound + 1;
                 distributeRoundPrize(tournament, currentRound);
 
                 long freePassCount = tournamentResultRecordRepository
