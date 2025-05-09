@@ -333,37 +333,35 @@ public class MatchService {
         Game game = gameRepository.findById(gameRoom.getGame().getId())
                 .orElseThrow(() -> new RuntimeException("Game not found with ID: " + gameRoom.getGame().getId()));
 
-        // === Check if any playerId == 0 and replace players ===
-        boolean hasInvalidPlayer = gameResult.getPlayers().stream()
-                .anyMatch(p -> p.getPlayerId() == 0);
-
-        List<PlayerDtoWinner> playersToProcess;
-
-        if (hasInvalidPlayer) {
-            System.out.println("[INFO] Invalid playerId detected. Replacing players list using room players for Room ID: " + gameResult.getRoomId());
-
-            List<Player> roomPlayers = playerRepository.findByRoomId(gameResult.getRoomId());
-            if (roomPlayers.isEmpty()) {
-                throw new BusinessException("No players found in room " + gameResult.getRoomId(), HttpStatus.BAD_REQUEST);
-            }
-
-            // Build map of submitted playerId -> score (excluding invalid playerId=0)
-            Map<Long, Integer> inputPlayerScores = gameResult.getPlayers().stream()
-                    .filter(p -> p.getPlayerId() != 0)
-                    .collect(Collectors.toMap(PlayerDtoWinner::getPlayerId, PlayerDtoWinner::getScore));
-
-            // Build playersToProcess with preserved scores (if any)
-            playersToProcess = roomPlayers.stream()
-                    .map(p -> {
-                        int score = inputPlayerScores.getOrDefault(p.getPlayerId(), 0);
-                        return new PlayerDtoWinner(p.getPlayerId(), score);
-                    })
-                    .collect(Collectors.toList());
-
-            System.out.println("[INFO] Replaced players list from room (Room ID " + gameResult.getRoomId() + "): " + playersToProcess);
-        } else {
-            playersToProcess = gameResult.getPlayers();
+        // Fetch players from the room
+        List<Player> roomPlayers = playerRepository.findByRoomId(gameResult.getRoomId());
+        if (roomPlayers.isEmpty()) {
+            throw new RuntimeException("No players found in room " + gameResult.getRoomId());
         }
+
+        System.out.println("[roomPlayers]: ");
+        roomPlayers.forEach(player -> {
+            System.out.println("Player ID: " + player.getPlayerId() + ", Player Name: " + player.getCustomer().getName());
+        });
+
+
+        // Fetch players from gameResult and replace playerId 0 with a valid one from the room
+        List<PlayerDtoWinner> playersToProcess = gameResult.getPlayers().stream()
+                .map(p -> {
+                    if (p.getPlayerId() == 0) {
+                        // Find the first available player from the room that is not assigned yet
+                        Player availablePlayer = roomPlayers.stream()
+                                .filter(rp -> gameResult.getPlayers().stream()
+                                        .noneMatch(existingPlayer -> existingPlayer.getPlayerId() == rp.getPlayerId()))
+                                .findFirst()
+                                .orElseThrow(() -> new RuntimeException("No valid player found in room"));
+
+                        // Assign the playerId from the available room player
+                        p.setPlayerId(availablePlayer.getPlayerId());
+                    }
+                    return p;
+                })
+                .collect(Collectors.toList());
 
         // Calculate total collection and shares
         BigDecimal totalCollection = BigDecimal.valueOf(game.getFee())
@@ -378,6 +376,15 @@ public class MatchService {
         List<PlayerDtoWinner> losers = playersToProcess.stream()
                 .filter(p -> winners.stream().noneMatch(w -> w.getPlayerId().equals(p.getPlayerId())))
                 .collect(Collectors.toList());
+
+        // Logs to help debug
+        System.out.println("[INFO] Winners: " + winners.size());
+        if (!winners.isEmpty()) {
+            System.out.println("[INFO] Winner PlayerId: " + winners.get(0).getPlayerId());
+        }
+        if (!losers.isEmpty()) {
+            System.out.println("[INFO] Loser PlayerId: " + losers.get(0).getPlayerId());
+        }
 
         // Calculate individual winning amount
         BigDecimal individualWinningAmount;
@@ -438,38 +445,17 @@ public class MatchService {
         // updateAAGWallet(platformShare, tax);
     }
 
-/*    private List<PlayerDtoWinner> determineWinners(List<PlayerDtoWinner> players) {
-        int maxScore = players.stream()
-                .mapToInt(PlayerDtoWinner::getScore)
-                .max()
-                .orElseThrow(() -> new RuntimeException("No players found"));
-
-        return players.stream()
-                .filter(p -> p.getScore() == maxScore)
-                .collect(Collectors.toList());
-    }*/
 
     private List<PlayerDtoWinner> determineWinners(List<PlayerDtoWinner> players) {
-        if (players.isEmpty()) {
-            throw new RuntimeException("No players found");
-        }
-
         int maxScore = players.stream()
                 .mapToInt(PlayerDtoWinner::getScore)
                 .max()
                 .orElseThrow(() -> new RuntimeException("No players found"));
-
-        // If maxScore == 0 → no winners
-        if (maxScore == 0) {
-            return Collections.emptyList();
-        }
 
         return players.stream()
                 .filter(p -> p.getScore() == maxScore)
                 .collect(Collectors.toList());
     }
-
-
 
     //method to get wiining ammount from game room to user
     public BigDecimal getWinningAmount(GameRoom gameRoom) {
@@ -493,9 +479,6 @@ public class MatchService {
         return finalAmountToUser;
     }
 
-
-
-
     public BigDecimal getWinningAmountLeague(LeagueRoom leagueRoom) {
         Optional<LeagueRoom> leagueRoomOptional = leagueRoomRepository.findById(leagueRoom.getId());
         if (leagueRoomOptional.isEmpty()) {
@@ -517,8 +500,6 @@ public class MatchService {
 
         return finalAmountToUser;
     }
-
-
 
 
     private Player getPlayerById(Long playerId) {
