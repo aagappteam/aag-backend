@@ -25,4 +25,8 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findByTournamentRoom_Id(Long tournamentRoomId);
     List<Player> findAllByTournamentRoom(TournamentRoom tournamentRoom);
 
+
+    @Query("SELECT p FROM Player p WHERE p.gameRoom.id = :roomId")
+    List<Player> findByRoomId(@Param("roomId") Long roomId);
+
 }

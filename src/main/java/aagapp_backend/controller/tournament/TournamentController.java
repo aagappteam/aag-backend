@@ -30,6 +30,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -101,7 +102,9 @@ public class TournamentController {
         try {
 
 
-            Pageable pageable = PageRequest.of(page, size);
+//            Pageable pageable = PageRequest.of(page, size);
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+
             Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId);
 
             List<Tournament> gameList = games.getContent();
@@ -541,7 +544,7 @@ public class TournamentController {
             boolean canStartNextRound = allPreviousRoundRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
 
             // 6. Enable Play Again button if all rounds completed
-            boolean playAgainEnabled = allCurrentRoundRoomsCompleted || allPreviousRoundRoomsCompleted;
+            boolean playAgainEnabled = allPreviousRoundRoomsCompleted;
 
             // 7. Prepare response
             Map<String, Object> response = new HashMap<>();
