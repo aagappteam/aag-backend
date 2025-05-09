@@ -565,7 +565,7 @@ public void updateDailylimit() {
             } else if (gameName.equals("snake & ladder")) {
                 gamePassword = this.createNewGame(snakebaseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
             } else {
-                throw new IllegalArgumentException("Unsupported game: " + gameName);
+                throw new BusinessException("Unsupported game: " + gameName, HttpStatus.BAD_REQUEST);
             }
             newRoom.setGamepassword(gamePassword);
 
@@ -734,16 +734,16 @@ public void updateDailylimit() {
 
           Game game = query.getResultList().stream()
                   .findFirst()
-                  .orElseThrow(() -> new IllegalStateException("Game ID: " + gameId + " does not belong to Vendor ID: " + vendorId));
+                  .orElseThrow(() -> new BusinessException("Game ID: " + gameId + " does not belong to Vendor ID: " + vendorId, HttpStatus.BAD_REQUEST));
 
 
           ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
           ZonedDateTime scheduledAtInKolkata = game.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
           if (game.getStatus() == GameStatus.EXPIRED) {
-              throw new IllegalStateException("Game ID: " + game.getId() + " has already expired. No update allowed.");
+              throw new BusinessException("Game ID: " + game.getId() + " has already expired. No update allowed.", HttpStatus.BAD_REQUEST);
           } else if (game.getStatus() == GameStatus.ACTIVE) {
-              throw new IllegalStateException("Game ID: " + game.getId() + " is already active. No update allowed.");
+              throw new BusinessException("Game ID: " + game.getId() + " is already active. No update allowed.", HttpStatus.BAD_REQUEST);
           }
 
           if (scheduledAtInKolkata != null) {
@@ -773,13 +773,17 @@ public void updateDailylimit() {
                   em.merge(game);
                   return ResponseEntity.ok("Game updated successfully");
               } else {
-                  throw new IllegalStateException("Game ID: " + game.getId() + " cannot be updated on the scheduled date or after.");
+                  throw new BusinessException("Game ID: " + game.getId() + " cannot be updated on the scheduled date or after.", HttpStatus.BAD_REQUEST);
               }
           } else {
-              throw new IllegalStateException("Game ID: " + game.getId() + " does not have a scheduled time.");
+              throw new BusinessException("Game ID: " + game.getId() + " does not have a scheduled time.", HttpStatus.BAD_REQUEST);
           }
 
-      }catch (IllegalStateException e) {
+      }catch (BusinessException e) {
+          throw e;
+      }
+
+      catch (IllegalStateException e) {
           return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
       }catch (Exception e) {
           exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);

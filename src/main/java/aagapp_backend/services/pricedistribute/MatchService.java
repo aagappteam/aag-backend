@@ -339,7 +339,6 @@ public class MatchService {
             throw new RuntimeException("No players found in room " + gameResult.getRoomId());
         }
 
-        System.out.println("[roomPlayers]: ");
         roomPlayers.forEach(player -> {
             System.out.println("Player ID: " + player.getPlayerId() + ", Player Name: " + player.getCustomer().getName());
         });

@@ -95,7 +95,7 @@ public class UserVendorFollowService {
 
         // Check if user is following the vendor
         UserVendorFollow follow = followRepo.findByUserIdAndVendorId(userId, vendorId)
-                .orElseThrow(() -> new IllegalStateException("User is not following the vendor"));
+                .orElseThrow(() -> new BusinessException("User is not following the vendor",HttpStatus.BAD_REQUEST));
 
         followRepo.delete(follow);
 
@@ -118,7 +118,7 @@ public class UserVendorFollowService {
     @Transactional
     public String followVendor(Long userId, Long vendorId) {
         if (followRepo.existsByUserIdAndVendorId(userId, vendorId)) {
-            throw new IllegalStateException("Already followed");
+            throw new BusinessException("Already followed",HttpStatus.BAD_REQUEST);
         }
 
         CustomCustomer user = userRepo.findById(userId)

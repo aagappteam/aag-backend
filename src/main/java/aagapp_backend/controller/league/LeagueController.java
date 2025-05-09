@@ -284,7 +284,7 @@ public class LeagueController {
             }
 
             if (challenge.getChallengeStatus() != Challenge.ChallengeStatus.PENDING) {
-                throw new IllegalArgumentException("The challenge is no longer pending.");
+                throw new BusinessException("The challenge is no longer pending.",HttpStatus.BAD_REQUEST);
             }
 
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
