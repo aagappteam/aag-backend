@@ -704,7 +704,6 @@ public class VenderServiceImpl implements VenderService {
                                 league.getName() != null ? league.getName() : "n/a",
                                 (league.getTheme() != null && league.getTheme().getGameimageUrl() != null) ? league.getTheme().getGameimageUrl() : league.getTheme().getImageUrl()
 
-
                         ))
                         .collect(Collectors.toList()));
 
