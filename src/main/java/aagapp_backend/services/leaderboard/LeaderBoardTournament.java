@@ -4,6 +4,8 @@ import aagapp_backend.dto.GameLeaderboardResponseDTO;
 import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.LeaderboardResponseDTO;
 import aagapp_backend.dto.leaderboard.TournamentLeaderboardDto;
+import aagapp_backend.dto.tournament.GameLeaderboardResponseDTOTornament;
+import aagapp_backend.dto.tournament.LeaderboardResponseDTOTournament;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.league.LeagueResultRecord;
@@ -57,7 +59,7 @@ public class LeaderBoardTournament {
     @Autowired
     private TournamentResultRecordRepository tournamentResultRecordRepository;
 
-    public GameLeaderboardResponseDTO getLeaderboardforvendor(Long tournamentId, Pageable pageable) {
+    public GameLeaderboardResponseDTOTornament getLeaderboardforvendor(Long tournamentId, Pageable pageable) {
         try{
             // 1. Fetch the game details
             Optional<Tournament> gameOpt = tournamentRepository.findById(tournamentId);
@@ -82,7 +84,7 @@ public class LeaderBoardTournament {
             long totalPlayers = tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId);
 
             // 5. Prepare player list
-            List<LeaderboardResponseDTO> playerList = new ArrayList<>();
+            List<LeaderboardResponseDTOTournament> playerList = new ArrayList<>();
             for (TournamentResultRecord result : results) {
                 Player player = result.getPlayer();
 
@@ -92,8 +94,9 @@ public class LeaderBoardTournament {
                     throw new BusinessException("Player details not found for player ID: " + player.getPlayerId() , HttpStatus.BAD_REQUEST);
                 }
 
-                LeaderboardResponseDTO playerDTO = new LeaderboardResponseDTO();
+                LeaderboardResponseDTOTournament playerDTO = new LeaderboardResponseDTOTournament();
                 playerDTO.setPlayerId(player.getPlayerId());
+                playerDTO.setRound(result.getRound());
                 playerDTO.setPlayerName(playerDetails.get().getName());
                 playerDTO.setProfilePicture(playerDetails.get().getProfilePic());
                 playerDTO.setScore(result.getScore());
@@ -103,7 +106,7 @@ public class LeaderBoardTournament {
             }
 
             // 6. Return final wrapped DTO with pagination
-            GameLeaderboardResponseDTO response = new GameLeaderboardResponseDTO();
+            GameLeaderboardResponseDTOTornament response = new GameLeaderboardResponseDTOTornament();
             response.setGameName(game.getName());
             response.setGameFee((double) game.getEntryFee());
             response.setGameIcon(game.getGameUrl());

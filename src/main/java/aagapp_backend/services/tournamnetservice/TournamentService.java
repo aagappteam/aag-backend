@@ -21,6 +21,7 @@ import aagapp_backend.repository.tournament.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.VendorWalletRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -52,6 +53,9 @@ public class TournamentService {
 
     @Autowired
     private VendorWalletRepository walletRepo;
+
+    @Autowired
+    private CommonService commonService;
 
 
     private TournamentRepository tournamentRepository;
@@ -281,7 +285,14 @@ public class TournamentService {
             Tournament tournament = new Tournament();
 
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(tournamentRequest.getExistinggameId());
-            tournament.setGameUrl(gameAvailable.get().getGameImage());
+//            tournament.setGameUrl(gameAvailable.get().getGameImage());
+
+
+            AagAvailableGames gameEntity = gameAvailable.orElseThrow(() ->
+                    new BusinessException("Game not found with ID: " + tournamentRequest.getExistinggameId(), HttpStatus.NOT_FOUND)
+            );
+
+            tournament.setGameUrl(commonService.resolveGameImageUrl(gameEntity,tournamentRequest.getThemeId()));
 
             ThemeEntity theme = em.find(ThemeEntity.class, tournamentRequest.getThemeId());
             if (theme == null) {
@@ -1147,9 +1158,222 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         wallet.setWinningAmount(vendorShareAmount);
     }
-
-
     @Transactional
+    public void processMatchResults(GameResult gameResult) {
+        List<PlayerDtoWinner> players = gameResult.getPlayers();
+
+        System.out.println("[INFO] Processing GameId: " + gameResult.getGameId());
+
+        if (players == null || players.isEmpty()) {
+            System.out.println("[WARN] Players list is null or empty. Skipping processing.");
+            return;
+        }
+
+        // Filter valid players (non-zero IDs)
+        List<PlayerDtoWinner> validPlayers = players.stream()
+                .filter(p -> p.getPlayerId() != 0)
+                .collect(Collectors.toList());
+
+        if (validPlayers.isEmpty()) {
+            System.out.println("[WARN] No valid players (non-zero). Skipping processing.");
+            return;
+        }
+
+        // If still <2 valid players, fetch from room
+        if (validPlayers.size() < 2) {
+            List<Player> roomPlayers = playerRepository.findByTournamentRoom_Id(gameResult.getRoomId());
+            if (roomPlayers.isEmpty()) {
+                System.out.println("[WARN] No players found in room. Skipping processing.");
+                return;
+            }
+
+            for (Player roomPlayer : roomPlayers) {
+                boolean alreadyIncluded = validPlayers.stream()
+                        .anyMatch(vp -> vp.getPlayerId().equals(roomPlayer.getPlayerId()));
+                if (!alreadyIncluded) {
+                    validPlayers.add(new PlayerDtoWinner(roomPlayer.getPlayerId(), 0)); // default score = 0
+                }
+                if (validPlayers.size() >= 2) {
+                    break;
+                }
+            }
+
+            System.out.println("[INFO] After room assignment, valid players: " + validPlayers.stream()
+                    .map(p -> p.getPlayerId() + "")
+                    .collect(Collectors.joining(", ")));
+        }
+
+        if (validPlayers.isEmpty()) {
+            System.out.println("[WARN] No valid players after room fallback. Skipping processing.");
+            return;
+        }
+
+        Tournament tournament = tournamentRepository.findById(gameResult.getGameId())
+                .orElseThrow(() -> new BusinessException("Game not found", HttpStatus.BAD_REQUEST));
+
+        // === 1 PLAYER ===
+        if (validPlayers.size() == 1) {
+            PlayerDtoWinner soleWinner = validPlayers.get(0);
+
+            System.out.println("[INFO] Only 1 player present. PlayerId=" + soleWinner.getPlayerId() + " auto-wins.");
+
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), soleWinner, true);
+            leaveRoom(soleWinner.getPlayerId(), tournament.getId());
+
+            int currentRound = tournament.getRound();
+            startNextRound(tournament.getId(), currentRound);
+            return;
+        }
+
+        // === 2 or more players ===
+
+        // Find highest score
+        int maxScore = validPlayers.stream()
+                .mapToInt(PlayerDtoWinner::getScore)
+                .max()
+                .orElseThrow(() -> new RuntimeException("Unable to determine max score"));
+
+        // Collect winners (players with max score)
+        List<PlayerDtoWinner> winners = validPlayers.stream()
+                .filter(p -> p.getScore() == maxScore)
+                .collect(Collectors.toList());
+
+        // Losers = everyone else
+        List<PlayerDtoWinner> losers = validPlayers.stream()
+                .filter(p -> p.getScore() < maxScore)
+                .collect(Collectors.toList());
+
+        System.out.println("[INFO] Winners: " + winners.stream()
+                .map(p -> p.getPlayerId() + "")
+                .collect(Collectors.joining(", ")));
+
+        System.out.println("[INFO] Losers: " + losers.stream()
+                .map(p -> p.getPlayerId() + "")
+                .collect(Collectors.joining(", ")));
+
+        // === Save WINNERS ===
+        for (PlayerDtoWinner winner : winners) {
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), winner, true);
+            leaveRoom(winner.getPlayerId(), tournament.getId());
+        }
+
+        // === Save LOSERS ===
+        for (PlayerDtoWinner loser : losers) {
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), loser, false);
+            leaveRoom(loser.getPlayerId(), tournament.getId());
+        }
+
+        // === Proceed to next round ===
+        int currentRound = tournament.getRound();
+        startNextRound(tournament.getId(), currentRound);
+    }
+
+/*    @Transactional
+    public void processMatchResults(GameResult gameResult) {
+        List<PlayerDtoWinner> players = gameResult.getPlayers();
+
+        System.out.println("[INFO] Processing GameId: " + gameResult.getGameId());
+
+        if (players == null || players.isEmpty()) {
+            System.out.println("[WARN] Players list is null or empty. Skipping processing.");
+            return;
+        }
+
+        // Filter valid players (non-zero IDs)
+        List<PlayerDtoWinner> validPlayers = players.stream()
+                .filter(p -> p.getPlayerId() != 0)
+                .collect(Collectors.toList());
+
+        if (validPlayers.isEmpty()) {
+            System.out.println("[WARN] No valid players (non-zero). Skipping processing.");
+            return;
+        }
+
+        // If still <2 valid players, fetch from room
+        if (validPlayers.size() < 2) {
+            List<Player> roomPlayers = playerRepository.findByTournamentRoom_Id(gameResult.getRoomId());
+            if (roomPlayers.isEmpty()) {
+                System.out.println("[WARN] No players found in room. Skipping processing.");
+                return;
+            }
+
+            // Add room players who are not already in validPlayers
+            for (Player roomPlayer : roomPlayers) {
+                boolean alreadyIncluded = validPlayers.stream()
+                        .anyMatch(vp -> vp.getPlayerId().equals(roomPlayer.getPlayerId()));
+                if (!alreadyIncluded) {
+                    validPlayers.add(new PlayerDtoWinner(roomPlayer.getPlayerId(), 0)); // default score = 0
+                }
+                if (validPlayers.size() >= 2) {
+                    break;
+                }
+            }
+
+            System.out.println("[INFO] After room assignment, valid players: " + validPlayers.stream()
+                    .map(p -> p.getPlayerId() + "")
+                    .collect(Collectors.joining(", ")));
+        }
+
+        // After attempt to fill from room, check valid count again
+        if (validPlayers.isEmpty()) {
+            System.out.println("[WARN] No valid players after room fallback. Skipping processing.");
+            return;
+        }
+
+        Tournament tournament = tournamentRepository.findById(gameResult.getGameId())
+                .orElseThrow(() -> new BusinessException("Game not found", HttpStatus.BAD_REQUEST));
+
+        if (validPlayers.size() == 1) {
+            // Single player is automatically winner
+            PlayerDtoWinner winner = validPlayers.get(0);
+
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), winner, true);
+            leaveRoom(winner.getPlayerId(), tournament.getId());
+
+            int currentRound = tournament.getRound();
+            startNextRound(tournament.getId(), currentRound);
+            return;
+        }
+
+        // Proceed with standard winner/loser logic (2 players)
+        PlayerDtoWinner player1 = validPlayers.get(0);
+        PlayerDtoWinner player2 = validPlayers.get(1);
+
+        if (player1.getScore() > player2.getScore()) {
+            // Normal winner-loser
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), player1, true);
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), player2, false);
+
+            leaveRoom(player1.getPlayerId(), tournament.getId());
+            leaveRoom(player2.getPlayerId(), tournament.getId());
+
+        } else if (player2.getScore() > player1.getScore()) {
+            // Normal winner-loser (reverse)
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), player2, true);
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), player1, false);
+
+            leaveRoom(player2.getPlayerId(), tournament.getId());
+            leaveRoom(player1.getPlayerId(), tournament.getId());
+
+        } else {
+            // TIE case → both are winners
+            System.out.println("[INFO] Scores are tied! Declaring both as winners.");
+
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), player1, true);
+            storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), player2, true);
+
+            leaveRoom(player1.getPlayerId(), tournament.getId());
+            leaveRoom(player2.getPlayerId(), tournament.getId());
+        }
+
+        int currentRound = tournament.getRound();
+        startNextRound(tournament.getId(), currentRound);
+    }*/
+
+
+
+
+/*    @Transactional
     public void processMatchResults(GameResult gameResult) {
             List<PlayerDtoWinner> players = gameResult.getPlayers();
 
@@ -1206,7 +1430,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             int currentRound = tournament.getRound();
             startNextRound( tournament.getId(),  currentRound);
 
-    }
+    }*/
 
 /*    @Scheduled(fixedRate = 30000)
     public void checkAndStartNextRoundsForAllTournaments() {
@@ -1323,7 +1547,7 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
     }
 
 
-    @Transactional
+   /* @Transactional
     public void distributeRoundPrize(Tournament tournament, int round) {
         BigDecimal totalPrize = tournament.getRoomprize();
         int totalRounds = tournament.getTotalrounds();
@@ -1340,7 +1564,7 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
         for (TournamentResultRecord winner : winners) {
             Notification notification = new Notification();
             notification.setAmount(prizePerWinner.doubleValue());
-            notification.setDetails("You won $" + prizePerWinner + " in Round " + round);
+            notification.setDetails("You won ₹ " + prizePerWinner + " in Round " + round);
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
@@ -1348,7 +1572,45 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
             winner.setAmmount(prizePerWinner);
             tournamentResultRecordRepository.save(winner);
         }
+    }*/
+
+    @Transactional
+    public void distributeRoundPrize(Tournament tournament, int round) {
+        BigDecimal totalPrize = tournament.getRoomprize();
+        BigDecimal roundPrize = totalPrize;
+
+        // Fetch winner records
+        List<TournamentResultRecord> winners = tournamentResultRecordRepository
+                .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
+
+        // Deduplicate winners by unique playerId
+        Map<Long, TournamentResultRecord> uniqueWinnersMap = winners.stream()
+                .collect(Collectors.toMap(
+                        w -> w.getPlayer().getPlayerId(),
+                        w -> w,
+                        (existing, duplicate) -> existing
+                ));
+
+        List<TournamentResultRecord> uniqueWinners = new ArrayList<>(uniqueWinnersMap.values());
+
+        int winnersCount = uniqueWinners.size();
+
+        BigDecimal prizePerWinner = roundPrize.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
+
+        for (TournamentResultRecord winner : uniqueWinners) {
+            Notification notification = new Notification();
+            notification.setAmount(prizePerWinner.doubleValue());
+            notification.setDetails("You won ₹ " + prizePerWinner + " in Round " + round);
+            notification.setDescription("Round Prize");
+            notification.setRole("Customer");
+            notification.setCustomerId(winner.getPlayer().getCustomer().getId());
+            notificationRepository.save(notification);
+
+            winner.setAmmount(prizePerWinner);
+            tournamentResultRecordRepository.save(winner);
+        }
     }
+
 
     @Transactional
     public void storeMatchResult(Long tournamentId, Long roomId, PlayerDtoWinner player, boolean isWinner) {
@@ -1492,24 +1754,43 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
 
 
     public List<Map<String, Object>> generateTournamentRounds(Long tournamentId) {
-        try{
-            Tournament tournament= tournamentRepository.findById(tournamentId).orElseThrow(()-> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
+        try {
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
 
             int totalPlayers = tournament.getParticipants();
+            double totalPrizePool = tournament.getTotalPrizePool();
+            double remainingPrize = totalPrizePool;
 
             List<Map<String, Object>> rounds = new ArrayList<>();
             int roundNumber = 1;
             int currentPlayers = totalPlayers;
 
-            while (currentPlayers >= 2) {
-                int winners = currentPlayers / 2;
-                Map<String, Object> roundInfo = new HashMap<>();
+            // Calculate total rounds
+            int totalRounds = (int) (Math.log(totalPlayers) / Math.log(2));
 
+            while (currentPlayers >= 2 && roundNumber <= totalRounds) {
+                int winners = currentPlayers / 2;
+
+                Map<String, Object> roundInfo = new HashMap<>();
                 roundInfo.put("round", roundNumber + " Round");
                 roundInfo.put("progress", currentPlayers == 2 ? "WINNER" : "Completed");
                 roundInfo.put("numberOfWinners", currentPlayers == 2 ? "1" : String.valueOf(winners));
                 roundInfo.put("totalPlayers", String.valueOf(currentPlayers));
-                roundInfo.put("prize", getDynamicPrize(currentPlayers, tournament));
+
+                // Calculate prize for this round
+                double prizeForThisRound = getDynamicPrize(currentPlayers, tournament, remainingPrize);
+                roundInfo.put("prize", prizeForThisRound);
+
+                // Deduct the prize distributed for this round
+                remainingPrize -= prizeForThisRound;
+
+                // Ensure round 6 exists, even if the prize is exhausted
+                if (remainingPrize <= 0 && roundNumber < totalRounds) {
+                    // If remaining prize is 0 or less, just distribute what’s left for the final round
+                    roundInfo.put("prize", remainingPrize <= 0 ? 0 : remainingPrize);
+                    break;  // Stop after distributing last round's prize
+                }
 
                 rounds.add(0, roundInfo);
 
@@ -1517,24 +1798,45 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
                 roundNumber++;
             }
 
+            // Ensure the final round (round 6) is included in the list
+            if (roundNumber <= totalRounds) {
+                Map<String, Object> finalRoundInfo = new HashMap<>();
+                finalRoundInfo.put("round", roundNumber + " Round");
+                finalRoundInfo.put("progress", "WINNER");
+                finalRoundInfo.put("numberOfWinners", "1");
+                finalRoundInfo.put("totalPlayers", "2");
+                finalRoundInfo.put("prize", remainingPrize <= 0 ? 0 : remainingPrize);
+                rounds.add(finalRoundInfo);
+            }
+
             return rounds;
-        }catch (BusinessException e){
+
+        } catch (BusinessException e) {
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
             throw e;
-        }catch (Exception e){
+        } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-
             throw new RuntimeException(e);
         }
     }
-    private BigDecimal getDynamicPrize(int currentPlayers, Tournament tournament) {
+
+    private double getDynamicPrize(int currentPlayers, Tournament tournament, double remainingPrize) {
         int winners = currentPlayers / 2;
-        BigDecimal roomPrize = tournament.getRoomprize();
-        if (roomPrize == null) {
-            return BigDecimal.ZERO;
+        if (winners == 0) {
+            return remainingPrize; // For the last round (final winner), use all remaining prize
         }
-        return BigDecimal.valueOf(winners).multiply(roomPrize);
+
+        double prizeForThisRound = remainingPrize / winners;
+
+        // Ensure the prize does not exceed the remaining prize
+        if (prizeForThisRound > remainingPrize) {
+            return remainingPrize;
+        }
+
+        return prizeForThisRound;
     }
+
+
 
 
     @Transactional
