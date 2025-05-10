@@ -5,6 +5,7 @@ import aagapp_backend.dto.GameResult;
 import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.PlayerDto;
 import aagapp_backend.dto.leaderboard.TournamentLeaderboardDto;
+import aagapp_backend.dto.tournament.GameLeaderboardResponseDTOTornament;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.leaderboard.LeaderBoardTournament;
@@ -65,7 +66,7 @@ public class TournamentWinning {
         try {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by("score").descending());
-            GameLeaderboardResponseDTO leaderboard = leaderBoardTournament.getLeaderboardforvendor(tournamentId, pageable);
+            GameLeaderboardResponseDTOTornament leaderboard = leaderBoardTournament.getLeaderboardforvendor(tournamentId, pageable);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);

@@ -40,13 +40,13 @@ public class  LeagueWinning {
     public ResponseEntity<?> processGameResult(@RequestBody LeagueMatchProcess gameResult) {
         try {
             // Process game result (you may want to keep this as is, or include some additional logic here)
-            List<PlayerDto> playersDetails = leagueService.processMatch(gameResult);
+             leagueService.processMatch(gameResult);
 
 
 
             // Prepare the response
             Map<String, Object> response = new HashMap<>();
-            response.put("players", playersDetails);
+//            response.put("players", playersDetails);
             response.put("message", "League results processed successfully.");
 
             return ResponseEntity.ok(response);

@@ -16,6 +16,7 @@ import aagapp_backend.repository.game.*;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
@@ -28,6 +29,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.checkerframework.checker.units.qual.A;
 import org.junit.platform.commons.logging.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +63,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 @Service
 public class GameService {
+
+    @Autowired
+    private CommonService commonservice;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String baseUrl = "http://13.232.105.87:8082";
@@ -217,9 +222,15 @@ public void updateDailylimit() {
 //        check from gamerequestgamename that existing game exists or not for same vendor
             Optional<AagAvailableGames> gameAvailable= aagGameRepository.findById(existinggameId);
 
-            game.setImageUrl(gameAvailable.get().getGameImage());
+//            game.setImageUrl(gameAvailable.get().getGameImage());
+        AagAvailableGames gameEntity = gameAvailable.orElseThrow(() ->
+                new BusinessException("Game not found with ID: " + existinggameId, HttpStatus.NOT_FOUND)
+        );
 
-           game.setName(gameAvailable.get().getGameName());
+        game.setImageUrl(commonservice.resolveGameImageUrl(gameEntity,gameRequest.getThemeId()));
+
+
+        game.setName(gameAvailable.get().getGameName());
 
 
             // Fetch Vendor and Theme Entities
@@ -394,7 +405,6 @@ public void updateDailylimit() {
             List<Game> games = gameRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
             List<League> leagues = leagueRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
             List<Tournament> tournaments = tournamentRepository.findByVendorEntityAndScheduledAtBetween(vendorId, startTimeUTC, endTimeUTC);
-
             List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll();
 
             VendorGameResponse response = new VendorGameResponse();
@@ -408,7 +418,8 @@ public void updateDailylimit() {
             publishedContent.addAll(games.stream()
                     .map(game -> {
                         Map<String, String> gameMap = new HashMap<>();
-                        gameMap.put("imageUrl", game.getTheme().getImageUrl());
+                        gameMap.put("imageUrl",(game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl()
+                                );
                         gameMap.put("name", game.getName() != null ? game.getName() : "n/a");
                         gameMap.put("themename", game.getTheme().getName());
                         return gameMap;
@@ -418,17 +429,19 @@ public void updateDailylimit() {
             publishedContent.addAll(leagues.stream()
                     .map(league -> {
                         Map<String, String> gameMap = new HashMap<>();
-                        gameMap.put("imageUrl", league.getTheme().getImageUrl());
+                        gameMap.put("imageUrl",             (league.getTheme() != null && league.getTheme().getGameimageUrl() != null) ? league.getTheme().getGameimageUrl() : league.getTheme().getImageUrl()
+                        );
                         gameMap.put("name", league.getName() != null ? league.getName() : "n/a");
                         gameMap.put("themename", league.getTheme().getName());
                         return gameMap;
                     })
                     .collect(Collectors.toList()));
 
-            publishedContent.addAll(tournaments.stream()
+
+                    publishedContent.addAll(tournaments.stream()
                     .map(tournament -> {
                         Map<String, String> gameMap = new HashMap<>();
-                        gameMap.put("imageUrl", tournament.getTheme().getImageUrl());
+                        gameMap.put("imageUrl",(tournament.getTheme() != null && tournament.getTheme().getGameimageUrl() != null) ? tournament.getTheme().getGameimageUrl() : tournament.getTheme().getImageUrl());
                         gameMap.put("name", tournament.getName() != null ? tournament.getName() : "n/a");
                         gameMap.put("themename", tournament.getTheme().getName());
                         return gameMap;
@@ -665,7 +678,7 @@ public void updateDailylimit() {
                             game.getStatus(),
                             game.getShareableLink(),
                             game.getAaggameid(),
-                            game.getImageUrl(),
+                            (game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
                             game.getCreatedDate() != null ? game.getCreatedDate() : null,
@@ -961,7 +974,7 @@ public void updateDailylimit() {
                             game.getStatus(),
                             game.getShareableLink(),
                             game.getAaggameid(),
-                            game.getImageUrl(),
+                            (game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
                             game.getCreatedDate() != null ? game.getCreatedDate() : null,
@@ -1018,7 +1031,7 @@ public void updateDailylimit() {
                     .map(game -> new GetGameResponseDashboardDTO(
                             game.getId(),
                             game.getName(),
-                            game.getImageUrl()
+                            (game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl()
 /*
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null
 */

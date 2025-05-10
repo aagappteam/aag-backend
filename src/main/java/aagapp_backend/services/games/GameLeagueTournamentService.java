@@ -170,7 +170,7 @@ public class GameLeagueTournamentService {
                             game.getStatus(),
                             game.getShareableLink(),
                             game.getAaggameid(),
-                            game.getImageUrl(),
+                            game.getTheme() != null ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
                             game.getTheme() != null ? game.getTheme().getName() : null,
                             game.getTheme() != null ? game.getTheme().getImageUrl() : null,
                             game.getCreatedDate() != null ? game.getCreatedDate() : null,

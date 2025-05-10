@@ -30,6 +30,7 @@ import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
@@ -64,6 +65,9 @@ public class LeagueService {
 
     @Autowired
     private NotoficationFirebase notificationFirebase;
+
+    @Autowired
+    private CommonService commonService;
 
 
     @Autowired
@@ -350,7 +354,29 @@ public class LeagueService {
                 throw new BusinessException("game is not available" + leagueRequest.getExistinggameId(), HttpStatus.BAD_REQUEST);
             }
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(leagueRequest.getExistinggameId());
+/*
             league.setLeagueUrl(gameAvailable.get().getGameImage());
+*/
+
+/*
+ AagAvailableGames game = gameAvailable.get();
+        // Try to get gameimageUrl from any of the themes
+                    String themeImageUrl = game.getThemes().stream()
+                            .map(ThemeEntity::getGameimageUrl)
+                            .filter(Objects::nonNull)
+                            .findFirst()
+                            .orElse(null);
+
+        // Fallback to gameImage if no theme image URL
+                    String leagueUrl = (themeImageUrl != null) ? themeImageUrl : game.getGameImage();*/
+
+
+            AagAvailableGames gameEntity = gameAvailable.orElseThrow(() ->
+                    new BusinessException("Game not found with ID: " + leagueRequest.getExistinggameId(), HttpStatus.NOT_FOUND)
+            );
+
+
+            league.setLeagueUrl(commonService.resolveGameImageUrl(gameEntity,leagueRequest.getThemeId()));
             league.setGameName(gameAvailable.get().getGameName());
 
             ThemeEntity theme = em.find(ThemeEntity.class, leagueRequest.getThemeId());
@@ -935,7 +961,7 @@ public class LeagueService {
         return roomCode;
     }
     @Transactional
-    public List<PlayerDto> processMatch(LeagueMatchProcess leagueMatchProcess) {
+    public void processMatchRecentOld(LeagueMatchProcess leagueMatchProcess) {
         Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
         if (leagueRoomOpt.isEmpty()) {
             throw new RuntimeException("League room not found with ID: " + leagueMatchProcess.getRoomId());
@@ -951,7 +977,8 @@ public class LeagueService {
         // Fetch players from the room
         List<Player> roomPlayers = playerRepository.findByRoomId(leagueMatchProcess.getRoomId());
         if (roomPlayers.isEmpty()) {
-            throw new RuntimeException("No players found in room " + leagueMatchProcess.getRoomId());
+            return ;
+//            throw new RuntimeException("No players found in room " + leagueMatchProcess.getRoomId());
         }
 
         // Debug log
@@ -1029,11 +1056,206 @@ public class LeagueService {
         leaveRoom(winner.getPlayerId(), league.getId());
         leaveRoom(loser.getPlayerId(), league.getId());
 
-        return getAllPlayersDetails(leagueMatchProcess, leagueRoomOpt, league, winner, loser);
+//        return getAllPlayersDetails(leagueMatchProcess, leagueRoomOpt, league, winner, loser);
+    }
+/*    @Transactional
+    public void processMatch(LeagueMatchProcess leagueMatchProcess) {
+        Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
+        if (leagueRoomOpt.isEmpty()) {
+            throw new RuntimeException("League room not found with ID: " + leagueMatchProcess.getRoomId());
+        }
+        LeagueRoom leagueRoom = leagueRoomOpt.get();
+
+        Optional<League> leagueOpt = leagueRepository.findById(leagueRoom.getLeague().getId());
+        if (leagueOpt.isEmpty()) {
+            throw new RuntimeException("League not found with ID: " + leagueRoom.getLeague().getId());
+        }
+        League league = leagueOpt.get();
+
+        // Fetch players from the room
+        List<Player> roomPlayers = playerRepository.findByRoomId(leagueMatchProcess.getRoomId());
+        if (roomPlayers.isEmpty()) {
+            System.out.println("[WARN] No players found in room. Skipping match process.");
+            return;
+        }
+
+
+        Set<Long> roomPlayerIds = roomPlayers.stream()
+                .map(Player::getPlayerId)
+                .collect(Collectors.toSet());
+
+
+        List<LeaguePlayerDtoWinner> playersToProcess = leagueMatchProcess.getPlayers().stream()
+                .filter(p -> p.getPlayerId() != 0 && roomPlayerIds.contains(p.getPlayerId()))
+                .collect(Collectors.toList());
+
+        playersToProcess.forEach(p -> System.out.println("PlayerId: " + p.getPlayerId() + ", Score: " + p.getScore()));
+
+        if (playersToProcess.size() < 2) {
+            System.out.println("[WARN] Not enough valid players to process match. Skipping.");
+            return;
+        }
+
+        // Determine winner
+        LeaguePlayerDtoWinner winner = determineWinner(playersToProcess);
+
+        Long winnerTeamId = playerRepository.findById(winner.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + winner.getPlayerId()))
+                .getTeam().getId();
+
+        LeagueTeam winnerLeagueTeam = leagueTeamRepository.findById(winnerTeamId)
+                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + winnerTeamId));
+
+        // Identify the loser (anyone not the winner)
+        LeaguePlayerDtoWinner loser = playersToProcess.stream()
+                .filter(p -> !p.getPlayerId().equals(winner.getPlayerId()))
+                .findFirst().orElseThrow(() -> new RuntimeException("No loser found"));
+
+        Long loserTeamId = playerRepository.findById(loser.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + loser.getPlayerId()))
+                .getTeam().getId();
+
+        LeagueTeam loserLeagueTeam = leagueTeamRepository.findById(loserTeamId)
+                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + loserTeamId));
+
+        Player winnerPlayer = playerRepository.findById(winner.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + winner.getPlayerId()));
+
+        Player loserPlayer = playerRepository.findById(loser.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + loser.getPlayerId()));
+
+        // Save winner record
+        LeagueResultRecord winnerRecord = new LeagueResultRecord();
+        winnerRecord.setRoomId(leagueRoom.getId());
+        winnerRecord.setLeague(league);
+        winnerRecord.setPlayer(winnerPlayer);
+        winnerRecord.setLeagueTeam(winnerLeagueTeam);
+        winnerRecord.setTotalScore(winnerLeagueTeam.getTotalScore() + winner.getScore());
+        winnerLeagueTeam.setTotalScore(winnerLeagueTeam.getTotalScore() + winner.getScore());
+        winnerRecord.setIsWinner(true);
+        winnerRecord.setPlayedAt(LocalDateTime.now());
+
+        // Save loser record
+        LeagueResultRecord loserRecord = new LeagueResultRecord();
+        loserRecord.setRoomId(leagueRoom.getId());
+        loserRecord.setLeague(league);
+        loserRecord.setPlayer(loserPlayer);
+        loserRecord.setLeagueTeam(loserLeagueTeam);
+        loserRecord.setTotalScore(loserLeagueTeam.getTotalScore() + loser.getScore());
+        loserLeagueTeam.setTotalScore(loserLeagueTeam.getTotalScore() + loser.getScore());
+        loserRecord.setIsWinner(false);
+        loserRecord.setPlayedAt(LocalDateTime.now());
+
+        leagueResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
+
+        // Leave room
+        leaveRoom(winner.getPlayerId(), league.getId());
+        leaveRoom(loser.getPlayerId(), league.getId());
+    }*/
+@Transactional
+public void processMatch(LeagueMatchProcess leagueMatchProcess) {
+    Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
+    if (leagueRoomOpt.isEmpty()) {
+        throw new RuntimeException("League room not found with ID: " + leagueMatchProcess.getRoomId());
+    }
+    LeagueRoom leagueRoom = leagueRoomOpt.get();
+
+    Optional<League> legueOpt = leagueRepository.findById(leagueRoom.getLeague().getId());
+    if (legueOpt.isEmpty()) {
+        throw new RuntimeException("League not found with ID: " + leagueRoom.getLeague().getId());
+    }
+    League league = legueOpt.get();
+
+    // Fetch players from the room
+    List<Player> roomPlayers = playerRepository.findByRoomId(leagueMatchProcess.getRoomId());
+    if (roomPlayers.isEmpty()) {
+        System.out.println("[WARN] No players found in room " + leagueMatchProcess.getRoomId());
+        return;
     }
 
+    System.out.println("[INFO] Players in the room: " + roomPlayers.stream()
+            .map(p -> "PlayerId=" + p.getPlayerId())
+            .collect(Collectors.joining(", ")));
 
-/*    @Transactional
+    // Filter players: remove playerId = 0 and players not in room
+    List<LeaguePlayerDtoWinner> validPlayers = leagueMatchProcess.getPlayers().stream()
+            .filter(p -> p.getPlayerId() != 0) // exclude playerId = 0
+            .filter(p -> roomPlayers.stream().anyMatch(rp -> rp.getPlayerId().equals(p.getPlayerId()))) // must be in room
+            .collect(Collectors.toList());
+
+    if (validPlayers.isEmpty()) {
+        System.out.println("[WARN] No valid players found in input. Skipping match processing.");
+        return;
+    }
+
+    System.out.println("[INFO] Valid players for processing: " + validPlayers.stream()
+            .map(p -> "PlayerId=" + p.getPlayerId())
+            .collect(Collectors.joining(", ")));
+
+    LeaguePlayerDtoWinner winner;
+    if (validPlayers.size() == 1) {
+        winner = validPlayers.get(0);
+        System.out.println("[INFO] Only 1 valid player. Declared PlayerId=" + winner.getPlayerId() + " as winner.");
+    } else {
+        winner = determineWinner(validPlayers);
+        System.out.println("[INFO] Winner determined by score. PlayerId=" + winner.getPlayerId());
+    }
+
+    Player winnerPlayer = playerRepository.findById(winner.getPlayerId())
+            .orElseThrow(() -> new RuntimeException("Player not found with ID: " + winner.getPlayerId()));
+
+    Long winnerTeamId = winnerPlayer.getTeam().getId();
+    LeagueTeam winnerLeagueTeam = leagueTeamRepository.findById(winnerTeamId)
+            .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + winnerTeamId));
+
+    LeagueResultRecord winnerRecord = new LeagueResultRecord();
+    winnerRecord.setRoomId(leagueRoom.getId());
+    winnerRecord.setLeague(league);
+    winnerRecord.setPlayer(winnerPlayer);
+    winnerRecord.setLeagueTeam(winnerLeagueTeam);
+    winnerRecord.setTotalScore(winnerRecord.getTotalScore() + winner.getScore());
+    winnerLeagueTeam.setTotalScore(winnerLeagueTeam.getTotalScore() + winner.getScore());
+    winnerRecord.setIsWinner(true);
+    winnerRecord.setPlayedAt(LocalDateTime.now());
+
+    leagueResultRecordRepository.save(winnerRecord);
+    leaveRoom(winner.getPlayerId(), league.getId());
+
+    // Process loser only if >1 valid players
+    if (validPlayers.size() >= 2) {
+        LeaguePlayerDtoWinner loser = validPlayers.stream()
+                .filter(p -> !p.getPlayerId().equals(winner.getPlayerId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No loser found"));
+
+        Player loserPlayer = playerRepository.findById(loser.getPlayerId())
+                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + loser.getPlayerId()));
+
+        Long loserTeamId = loserPlayer.getTeam().getId();
+        LeagueTeam loserLeagueTeam = leagueTeamRepository.findById(loserTeamId)
+                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + loserTeamId));
+
+        LeagueResultRecord loserRecord = new LeagueResultRecord();
+        loserRecord.setRoomId(leagueRoom.getId());
+        loserRecord.setLeague(league);
+        loserRecord.setPlayer(loserPlayer);
+        loserRecord.setLeagueTeam(loserLeagueTeam);
+        loserRecord.setTotalScore(loserRecord.getTotalScore() + loser.getScore());
+        loserLeagueTeam.setTotalScore(loserLeagueTeam.getTotalScore() + loser.getScore());
+        loserRecord.setIsWinner(false);
+        loserRecord.setPlayedAt(LocalDateTime.now());
+
+        leagueResultRecordRepository.save(loserRecord);
+        leaveRoom(loser.getPlayerId(), league.getId());
+
+        System.out.println("[INFO] Loser record created for PlayerId=" + loser.getPlayerId());
+    } else {
+        System.out.println("[INFO] Only 1 valid player. No loser record created.");
+    }
+}
+
+
+/*   @Transactional
     public List<PlayerDto> processMatch(LeagueMatchProcess leagueMatchProcess) {
         Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
         if (leagueRoomOpt.isEmpty()) {

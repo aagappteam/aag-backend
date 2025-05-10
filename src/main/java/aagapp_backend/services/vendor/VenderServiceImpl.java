@@ -8,6 +8,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.VendorLevelPlan;
 import aagapp_backend.repository.game.GameRepository;
@@ -322,9 +323,14 @@ public class VenderServiceImpl implements VenderService {
         List<ReferralDTO> sentReferrals = getSentReferrals(vendorEntity.getService_provider_id());
         ReferralDTO receivedReferral = getReceivedReferral(vendorEntity.getService_provider_id());
 
+        PaymentEntity paymentEntity = paymentService.findActivePlanByVendorId(vendorEntity.getService_provider_id());
+
+
         Map<String, Object> data = new HashMap<>();
         data.put("venderDetails", vendorEntity);
         data.put("sentReferrals", sentReferrals);
+//        data.put("vendorLevelPlan", sentReferrals);
+
         data.put("receivedReferral", receivedReferral); // Assuming this is a single referral
         responseBody.put("status_code", HttpStatus.OK.value());
         responseBody.put("data", data);
