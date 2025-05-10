@@ -200,6 +200,7 @@ public class GameController {
             Notification notification = new Notification();
             notification.setRole("Vendor");
 
+
             notification.setVendorId(vendorId);
             if (gameRequest.getScheduledAt() != null) {
 /*

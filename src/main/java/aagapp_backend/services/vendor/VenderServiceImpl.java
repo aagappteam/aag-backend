@@ -692,7 +692,8 @@ public class VenderServiceImpl implements VenderService {
                         .map(game -> new GetGameResponseDashboardDTO(
                                 game.getId(),
                                 game.getName() != null ? game.getName() : "n/a",
-                                game.getTheme() != null ? game.getTheme().getImageUrl() : null
+                                (game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getTheme().getImageUrl()
+
                         ))
                         .collect(Collectors.toList()));
 
@@ -701,16 +702,18 @@ public class VenderServiceImpl implements VenderService {
                         .map(league -> new GetGameResponseDashboardDTO(
                                 league.getId(),
                                 league.getName() != null ? league.getName() : "n/a",
-                                league.getTheme() != null ? league.getTheme().getImageUrl() : null
+                                (league.getTheme() != null && league.getTheme().getGameimageUrl() != null) ? league.getTheme().getGameimageUrl() : league.getTheme().getImageUrl()
+
                         ))
                         .collect(Collectors.toList()));
 
         // Tournaments
-                activeContent.addAll(tournaments.stream()
+
+        activeContent.addAll(tournaments.stream()
                         .map(tournament -> new GetGameResponseDashboardDTO(
                                 tournament.getId(),
                                 tournament.getName() != null ? tournament.getName() : "n/a",
-                                tournament.getTheme() != null ? tournament.getTheme().getImageUrl() : null
+                                (tournament.getTheme() != null && tournament.getTheme().getGameimageUrl() != null) ? tournament.getTheme().getGameimageUrl() : tournament.getTheme().getImageUrl()
                         ))
                         .collect(Collectors.toList()));
 
