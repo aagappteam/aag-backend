@@ -103,7 +103,7 @@ public class WalletController {
 */
             notification.setDescription("Wallet balance added"); // Example NotificationType for a successful
             notification.setAmount((double) amount);
-            notification.setDetails(amount + "added to Wallet"); // Example NotificationType for a successful
+            notification.setDetails("Rs. " +amount + " added to Wallet"); // Example NotificationType for a successful
 
             notificationRepository.save(notification);
 
@@ -220,7 +220,7 @@ public class WalletController {
 */
             notification.setDescription("Wallet balance deducted"); // Example NotificationType for a successful
             notification.setAmount((double) amount);
-            notification.setDetails(amount + "debited from Wallet"); // Example NotificationType for a successful
+            notification.setDetails("Rs. "  + amount + "debited from Wallet"); // Example NotificationType for a successful
 
             notificationRepository.save(notification);
             return responseService.generateSuccessResponse("Balance deducted successfully", updatedWallet, HttpStatus.OK);

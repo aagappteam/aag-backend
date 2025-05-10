@@ -533,9 +533,11 @@ public class MatchService {
 
             Notification notification = new Notification();
             notification.setAmount(individualWinningAmount.doubleValue());
-            notification.setDetails("You won ₹ " + individualWinningAmount + " in Game " + game.getName());
+            notification.setDetails("You won Rs. " + individualWinningAmount + " in Game " + game.getName());
             notification.setDescription("Game Winning Prize");
             notification.setRole("Customer");
+            notification.setCreatedDate(LocalDateTime.now());
+
             notification.setCustomerId(winnerPlayer.getCustomer().getId());
             notificationRepository.save(notification);
 

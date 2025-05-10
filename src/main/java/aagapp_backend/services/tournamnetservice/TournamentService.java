@@ -1600,9 +1600,10 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
         for (TournamentResultRecord winner : uniqueWinners) {
             Notification notification = new Notification();
             notification.setAmount(prizePerWinner.doubleValue());
-            notification.setDetails("You won ₹ " + prizePerWinner + " in Round " + round);
+            notification.setDetails("You won Rs. " + prizePerWinner + " in Round " + round);
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
+            notification.setCreatedDate(LocalDateTime.now());
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
             notificationRepository.save(notification);
 
