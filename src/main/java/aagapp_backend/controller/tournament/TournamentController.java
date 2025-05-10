@@ -37,6 +37,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -188,6 +190,8 @@ public class TournamentController {
             // Now create a single notification for the vendor
             Notification notification = new Notification();
             notification.setRole("Vendor");
+            
+
 
             notification.setVendorId(vendorId);
             if (tournamentRequest.getScheduledAt() != null) {

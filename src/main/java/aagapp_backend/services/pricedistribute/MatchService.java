@@ -36,6 +36,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -536,7 +537,7 @@ public class MatchService {
             notification.setDetails("You won Rs. " + individualWinningAmount + " in Game " + game.getName());
             notification.setDescription("Game Winning Prize");
             notification.setRole("Customer");
-            notification.setCreatedDate(LocalDateTime.now());
+            
 
             notification.setCustomerId(winnerPlayer.getCustomer().getId());
             notificationRepository.save(notification);
@@ -570,6 +571,8 @@ public class MatchService {
             notification.setDetails("Better luck next time! You did not win in Game " + game.getName());
             notification.setDescription("Game Result");
             notification.setRole("Customer");
+            
+
             notification.setCustomerId(loserPlayer.getCustomer().getId());
             notificationRepository.save(notification);
 
