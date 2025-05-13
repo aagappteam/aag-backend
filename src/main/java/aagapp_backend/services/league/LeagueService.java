@@ -22,6 +22,7 @@ import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.NotificationType;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -31,6 +32,7 @@ import aagapp_backend.repository.league.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CommonService;
+import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
@@ -69,6 +71,8 @@ public class LeagueService {
     @Autowired
     private CommonService commonService;
 
+    @Autowired
+    private CustomCustomerService customCustomerService;
 
     @Autowired
     private LeagueRepository leagueRepository;
@@ -683,6 +687,17 @@ public class LeagueService {
             }
 
             leaguePassRepository.save(pass);
+
+
+        // Now create a single notification for the vendor
+        Notification notification = new Notification();
+        CustomCustomer customer = customCustomerService.getCustomerById(playerId);
+        notification.setCustomerId(customer.getId());
+        notification.setDescription("Wallet balance deducted"); // Example NotificationType for a successful
+        notification.setAmount(passCost);
+        notification.setDetails("Rs. " +passCost + " deducted to Wallet to take passes for " + league.getName()); // Example NotificationType for a successful
+
+        notificationRepository.save(notification);
 
             // Step 4: Prepare response
             Map<String, Object> data = new HashMap<>();
