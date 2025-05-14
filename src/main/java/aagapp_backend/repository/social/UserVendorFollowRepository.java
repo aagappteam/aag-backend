@@ -64,6 +64,9 @@ List<TopVendorDto> findTopVendorsWithFollowerCount();*/
     List<TopVendorWeekDto> findTopVendorsThisWeek(@Param("startOfWeek") LocalDateTime startOfWeek,
                                                   @Param("endOfWeek") LocalDateTime endOfWeek);
 
+    //feed
+
+
 
 
 

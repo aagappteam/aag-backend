@@ -1,15 +1,19 @@
 package aagapp_backend.controller.social;
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.dto.TopVendorWeekDto;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.social.UserVendorFollowService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -103,6 +107,7 @@ public class UserVendorFollowController {
     public ResponseEntity<?> getTopVendors() {
         return ResponseEntity.ok(followService.getTopVendors());
     }
+
     @GetMapping("/status")
     public ResponseEntity<?> isUserFollowing(@RequestParam Long userId, @RequestParam Long vendorId) {
         boolean isFollowing = followService.isUserFollowing(userId, vendorId);
@@ -122,5 +127,40 @@ public class UserVendorFollowController {
         }
     }
 
+
+    @GetMapping("/following-vendors")
+    public ResponseEntity<Map<String, Object>> getFollowedVendorsWithDetails(
+            @RequestParam Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String firstName) {
+
+        Map<String, Object> data = followService.getFollowingVendors(userId, page, size, firstName);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Vendors followed by user");
+        response.put("status", "OK");
+        response.put("status_code", 200);
+        response.put("data", data);
+
+        return ResponseEntity.ok(response);
+    }
+
+    //get all vendors
+    @GetMapping("/all-feed")
+    public ResponseEntity<Map<String, Object>> getFeedOfUser(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Map<String, Object> data = followService.getFeedOfVendors( page, size);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "User feed Vendors List");
+        response.put("status", "OK");
+        response.put("status_code", 200);
+        response.put("data", data);
+
+        return ResponseEntity.ok(response);
+    }
 
 }
