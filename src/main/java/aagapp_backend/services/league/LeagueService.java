@@ -1020,6 +1020,8 @@ public class LeagueService {
         } while (leagueRoomRepository.findByRoomCode(roomCode) != null);
         return roomCode;
     }
+
+
     @Transactional
     public void processMatchRecentOld(LeagueMatchProcess leagueMatchProcess) {
         Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
@@ -1118,6 +1120,9 @@ public class LeagueService {
 
 //        return getAllPlayersDetails(leagueMatchProcess, leagueRoomOpt, league, winner, loser);
     }
+
+
+
 /*    @Transactional
     public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
@@ -1212,6 +1217,7 @@ public class LeagueService {
         leaveRoom(winner.getPlayerId(), league.getId());
         leaveRoom(loser.getPlayerId(), league.getId());
     }*/
+/*
 @Transactional
 public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
@@ -1225,7 +1231,10 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         throw new RuntimeException("League not found with ID: " + leagueRoom.getLeague().getId());
     }
     League league = legueOpt.get();
-    // Fetch players from the room
+
+    */
+/*//*
+/ Fetch players from the room
     List<Player> roomPlayers = playerRepository.findByRoomId(leagueMatchProcess.getRoomId());
     if (roomPlayers.isEmpty()) {
         System.out.println("[WARN] No players found in room " + leagueMatchProcess.getRoomId());
@@ -1235,6 +1244,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     System.out.println("[INFO] Players in the room: " + roomPlayers.stream()
             .map(p -> "PlayerId=" + p.getPlayerId())
             .collect(Collectors.joining(", ")));
+*//*
 
     // Filter players: remove playerId = 0 and players not in room
     List<LeaguePlayerDtoWinner> validPlayers = leagueMatchProcess.getPlayers().stream()
@@ -1312,9 +1322,10 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         System.out.println("[INFO] Only 1 valid player. No loser record created.");
     }
 }
+*/
 
 
-/*   @Transactional
+  @Transactional
     public List<PlayerDto> processMatch(LeagueMatchProcess leagueMatchProcess) {
         Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
         if (leagueRoomOpt.isEmpty()) {
@@ -1391,7 +1402,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
         return getAllPlayersDetails(leagueMatchProcess, leagueRoomOpt, league, winner, loser);
 
-    }*/
+    }
 
 
     private LeaguePlayerDtoWinner determineWinner(List<LeaguePlayerDtoWinner> players) {
