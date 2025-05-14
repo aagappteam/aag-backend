@@ -554,7 +554,7 @@ public class TournamentController {
                     .countByTournamentIdAndRoundAndStatusIn(
                             tournamentId,
                             roundNumber - 1,
-                            Arrays.asList("INPROGRESS", "ONGOING")
+                            Arrays.asList("INPROGRESS", "ONGOING","PLAYING")
                     );
 
 
