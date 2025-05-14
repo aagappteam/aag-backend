@@ -1745,8 +1745,6 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
                         room.setStatus("OPEN");
                         roomRepository.save(room);
 
-
-
                         assignPlayerToSpecificRoom(player1, tournamentId, room);
                         assignPlayerToSpecificRoom(player2, tournamentId, room);
 
