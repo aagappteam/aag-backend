@@ -439,6 +439,56 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
     }
 
 
+    //following vendors
+    public Map<String, Object> getFeedOfVendors( int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable1 = PageRequest.of(0, 10);
+        Page<VendorEntity> followPage = vendorRepo.findAll(pageable);
+
+        Stream<VendorEntity> followStream = followPage.getContent().stream();
+
+        List<Map<String, Object>> filteredVendors = followStream.map(follow -> {
+            VendorEntity vendor = follow;
+
+            Map<String, Object> vendorInfo = new HashMap<>();
+            Long vendorId = vendor.getService_provider_id();
+
+            vendorInfo.put("name", vendor.getName());
+            vendorInfo.put("id", vendorId);
+            vendorInfo.put("profilePic", vendor.getProfilePic());
+            vendorInfo.put("email", vendor.getPrimary_email());
+            vendorInfo.put("followerCount", followRepo.countByVendorId(vendorId));
+            vendorInfo.put("isFollowing", true);
+
+            Page<GetGameResponseDTO> games = gameService.getAllGames("ACTIVE", vendorId, pageable1, null);
+            vendorInfo.put("games", games.getContent() != null ? games.getContent() : Collections.emptyList());
+
+            Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(pageable1, vendorId);
+            vendorInfo.put("leagues", leaguesPage.getContent() != null ? leaguesPage.getContent() : Collections.emptyList());
+
+            Page<Tournament> gamesPage = tournamentService.getAllActiveTournamentsByVendor(pageable1,vendorId);
+            vendorInfo.put("tournaments", gamesPage.getContent() != null ? gamesPage.getContent() : Collections.emptyList());
+
+            return vendorInfo;
+        }).collect(Collectors.toList());
+
+        List<Map<String, Object>> paginatedList = filteredVendors;
+
+        Map<String, Object> vendorPageMap = new HashMap<>();
+        vendorPageMap.put("content", paginatedList);
+        vendorPageMap.put("pageNumber", page);
+        vendorPageMap.put("pageSize", size);
+        vendorPageMap.put("totalPages", (int) Math.ceil((double) filteredVendors.size() / size));
+        vendorPageMap.put("totalElements", filteredVendors.size());
+        vendorPageMap.put("last", followPage.isLast());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("vendors", vendorPageMap);
+
+        return response;
+
+    }
+
 
 
 }
