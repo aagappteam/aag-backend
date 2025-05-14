@@ -103,7 +103,12 @@ public class PaymentService {
             VendorLevelPlan level = existingVendor.getVendorLevelPlan();
             Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
             Integer themeLimit = extractThemeLimit(planEntity.getFeatures());
+            existingVendor.setThemeCount(2);
+
+            /*
             existingVendor.setThemeCount(themeLimit);
+*/
+
             existingVendor.setDailyLimit(dailyGameLimit);
 
 /*

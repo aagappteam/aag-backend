@@ -534,14 +534,28 @@ public class TournamentController {
             boolean allCurrentRoundRoomsCompleted = currentRoundRooms.stream()
                     .allMatch(room -> "COMPLETED".equalsIgnoreCase(room.getStatus()));
 
-            long completedRoomCount = previousRoundRooms.stream()
+           /* long completedRoomCount = previousRoundRooms.stream()
                     .filter(room -> "COMPLETED".equalsIgnoreCase(room.getStatus()))
                     .count();
 
             long freePassCount = tournamentResultRecordRepository
                     .countFreePassWinners(tournamentId, roundNumber-1);
 
-            long expectedPlayers = completedRoomCount + freePassCount;
+            long expectedPlayers = completedRoomCount + freePassCount;*/
+
+            long expectedPlayers = tournamentResultRecordRepository
+                    .countByTournamentIdAndRoundAndStatusIn(
+                            tournamentId,
+                            roundNumber - 1,
+                            Arrays.asList("WINNER", "FREE_PASS")
+                    );
+
+            long remainingPlayers = tournamentResultRecordRepository
+                    .countByTournamentIdAndRoundAndStatusIn(
+                            tournamentId,
+                            roundNumber - 1,
+                            Arrays.asList("INPROGRESS", "ONGOING","PLAYING")
+                    );
 
 
             // 5. Decide if next round can start
@@ -555,8 +569,10 @@ public class TournamentController {
             response.put("tournament_status", tournament.getStatus());
             response.put("waitingCount", waitingCount);
             response.put("round", roundNumber);
+            response.put("remainingUsers", remainingPlayers);
+
             response.put("expectedPlayers", expectedPlayers);
-            response.put("freePassCount", freePassCount);
+//             response.put("freePassCount", freePassCount);
             response.put("players",
                     TournamentStatus.COMPLETED.equals(tournament.getStatus()) ? Collections.emptyList() : readyPlayers
             );

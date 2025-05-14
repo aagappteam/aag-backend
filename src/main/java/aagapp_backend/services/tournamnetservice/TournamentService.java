@@ -300,13 +300,21 @@ public class TournamentService {
             }
 
             Double totalPrize = (double) tournamentRequest.getEntryFee() * tournamentRequest.getParticipants();
+            BigDecimal revenueAmmountforuser = BigDecimal.valueOf(totalPrize).multiply(PriceConstant.USER_PRIZE_PERCENT);
+            int totalPlayers = tournamentRequest.getParticipants();
+
+            int totalRounds = (int) Math.ceil(Math.log(totalPlayers) / Math.log(2));
+
+            BigDecimal roomprize = revenueAmmountforuser.divide(BigDecimal.valueOf(totalRounds));
 
             // Set Vendor and Theme to the Game
             tournament.setName(gameAvailable.get().getGameName());
             tournament.setVendorId(vendorId);
+            tournament.setTotalrounds(totalRounds);
             tournament.setTheme(theme);
             tournament.setExistinggameId(tournamentRequest.getExistinggameId());
             tournament.setTotalPrizePool(totalPrize);
+            tournament.setRoomprize(roomprize);
             tournament.setParticipants(tournamentRequest.getParticipants());
             tournament.setVendorEntity(vendorEntity);
             // Calculate moves based on the selected fee
@@ -650,6 +658,7 @@ public class TournamentService {
             BigDecimal totalCollection = entryFeePerUser;
             System.out.println("entryFeePerUser: " + entryFeePerUser + " totalCollection: " + totalCollection);
             BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
+//            BigDecimal roomprize = userPrizePool.multiply(PriceConstant.USER_PRIZE_PERCENT);
             tournament.setRoomprize(userPrizePool);
             tournament.setTotalPrizePool(totalCollection.doubleValue());
             tournament.setTotalrounds(0);
@@ -715,6 +724,7 @@ public class TournamentService {
             System.out.println("entryFeePerUser: " + entryFeePerUser + " totalCollection: " + totalCollection);
 
             BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
+
             BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
             tournament.setRoomprize(roomPrizePool);
             tournament.setTotalPrizePool(totalCollection.doubleValue());
@@ -1754,7 +1764,7 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
     }
 
 
-    public List<Map<String, Object>> generateTournamentRounds(Long tournamentId) {
+   /* public List<Map<String, Object>> generateTournamentRounds(Long tournamentId) {
         try {
             Tournament tournament = tournamentRepository.findById(tournamentId)
                     .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
@@ -1780,7 +1790,7 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
                 roundInfo.put("totalPlayers", String.valueOf(currentPlayers));
 
                 // Calculate prize for this round
-                double prizeForThisRound = getDynamicPrize(currentPlayers, tournament, remainingPrize);
+                BigDecimal prizeForThisRound = getDynamicPrize(currentPlayers, tournament, remainingPrize);
                 roundInfo.put("prize", prizeForThisRound);
 
                 // Deduct the prize distributed for this round
@@ -1821,13 +1831,15 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
         }
     }
 
-    private double getDynamicPrize(int currentPlayers, Tournament tournament, double remainingPrize) {
+    *//*private double getDynamicPrize(int currentPlayers, Tournament tournament, double remainingPrize) {
         int winners = currentPlayers / 2;
         if (winners == 0) {
             return remainingPrize; // For the last round (final winner), use all remaining prize
         }
 
-        double prizeForThisRound = remainingPrize / winners;
+//        double prizeForThisRound = remainingPrize / winners;
+        double prizeForThisRound = tournament.getRoomprize() / winners;
+
 
         // Ensure the prize does not exceed the remaining prize
         if (prizeForThisRound > remainingPrize) {
@@ -1835,7 +1847,114 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
         }
 
         return prizeForThisRound;
+    }*//*
+
+
+    private BigDecimal getDynamicPrize(int currentPlayers, Tournament tournament, BigDecimal remainingPrize) {
+        int winners = currentPlayers / 2;
+
+        // If only one player is left, give them the remaining prize
+        if (winners == 0) {
+            return remainingPrize;
+        }
+
+        // Convert winners to BigDecimal
+        BigDecimal winnersBD = BigDecimal.valueOf(winners);
+
+        // Get room prize from tournament (assumed to be BigDecimal)
+        BigDecimal roomPrize = tournament.getRoomprize();
+
+        // Calculate prize per winner
+        BigDecimal prizeForThisRound = roomPrize.divide(winnersBD, 2, RoundingMode.HALF_UP);
+
+        // Return the lesser of calculated prize or remaining prize
+        return prizeForThisRound.min(remainingPrize);
+    }*/
+
+    public List<Map<String, Object>> generateTournamentRounds(Long tournamentId) {
+        try {
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
+
+            int totalPlayers = tournament.getParticipants();
+            BigDecimal totalPrizePool = BigDecimal.valueOf(tournament.getTotalPrizePool());
+            BigDecimal remainingPrize = totalPrizePool;
+
+            List<Map<String, Object>> rounds = new ArrayList<>();
+            int roundNumber = 1;
+            int currentPlayers = totalPlayers;
+
+            // Calculate total rounds
+            int totalRounds = (int) (Math.log(totalPlayers) / Math.log(2));
+
+            while (currentPlayers >= 2 && roundNumber <= totalRounds) {
+                int winners = currentPlayers / 2;
+
+                Map<String, Object> roundInfo = new HashMap<>();
+                roundInfo.put("round", roundNumber + " Round");
+                roundInfo.put("progress", currentPlayers == 2 ? "WINNER" : "Completed");
+                roundInfo.put("numberOfWinners", currentPlayers == 2 ? "1" : String.valueOf(winners));
+                roundInfo.put("totalPlayers", String.valueOf(currentPlayers));
+
+                // Calculate prize for this round
+                BigDecimal prizeForThisRound = getDynamicPrize(currentPlayers, tournament, remainingPrize);
+                roundInfo.put("prize", prizeForThisRound);
+
+                // Deduct the prize distributed for this round
+                remainingPrize = remainingPrize.subtract(prizeForThisRound);
+
+                // Ensure round 6 exists, even if the prize is exhausted
+                if (remainingPrize.compareTo(BigDecimal.ZERO) <= 0 && roundNumber < totalRounds) {
+                    // If remaining prize is 0 or less, just show zero prize for the final round
+                    roundInfo.put("prize", BigDecimal.ZERO);
+                    rounds.add(0, roundInfo);
+                    break;
+                }
+
+                rounds.add(0, roundInfo);
+
+                currentPlayers = winners;
+                roundNumber++;
+            }
+
+            // Ensure the final round (e.g. round 6) is included in the list
+            if (roundNumber <= totalRounds) {
+                Map<String, Object> finalRoundInfo = new HashMap<>();
+                finalRoundInfo.put("round", roundNumber + " Round");
+                finalRoundInfo.put("progress", "WINNER");
+                finalRoundInfo.put("numberOfWinners", "1");
+                finalRoundInfo.put("totalPlayers", "2");
+                finalRoundInfo.put("prize", remainingPrize.compareTo(BigDecimal.ZERO) <= 0 ? BigDecimal.ZERO : remainingPrize);
+                rounds.add(finalRoundInfo);
+            }
+
+            return rounds;
+
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException(e);
+        }
     }
+
+    private BigDecimal getDynamicPrize(int currentPlayers, Tournament tournament, BigDecimal remainingPrize) {
+        int winners = currentPlayers / 2;
+
+        // If only one player is left, give them the remaining prize
+        if (winners == 0) {
+            return remainingPrize;
+        }
+
+        BigDecimal winnersBD = BigDecimal.valueOf(winners);
+        BigDecimal roomPrize = tournament.getRoomprize(); // must be BigDecimal
+
+        BigDecimal prizeForThisRound = roomPrize.divide(winnersBD, 2, RoundingMode.HALF_UP);
+
+        return prizeForThisRound.min(remainingPrize);
+    }
+
 
 
 

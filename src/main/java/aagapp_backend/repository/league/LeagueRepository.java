@@ -59,4 +59,10 @@ public interface LeagueRepository extends JpaRepository<League, Long> {
             @Param("endTime") ZonedDateTime endTime
     );
 
+    @Query("SELECT l FROM League l WHERE l.status = :status AND l.vendorEntity.service_provider_id = :vendorId Order By l.createdDate DESC")
+    List<League> findActiveLeagues(
+            @Param("vendorId") Long vendorId,
+            @Param("status") LeagueStatus status
+    );
+
 }
