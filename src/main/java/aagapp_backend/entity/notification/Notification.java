@@ -55,7 +55,6 @@ public class Notification {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime  updatedDate;
 
-
     @Column(name = "created_date", updatable = false)
     private ZonedDateTime createdDate;
 

@@ -67,4 +67,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     Page<Tournament> findByStatusIn(List<TournamentStatus> statuses, Pageable pageable);
 
     Page<Tournament> findByStatusInAndVendorId(List<TournamentStatus> statuses, Long vendorId, Pageable pageable);
+
+    @Query("SELECT g FROM Tournament g WHERE g.vendorId = :vendorId AND g.status = :status ORDER BY g.createdDate DESC")
+    List<Tournament> findActiveTournaments( @Param("vendorId") Long vendorId,  @Param("status") TournamentStatus status);
 }

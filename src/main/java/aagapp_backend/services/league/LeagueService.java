@@ -200,13 +200,16 @@ public class LeagueService {
 
             challenge.setName(game.getGameName());
             challenge.setThemeId(leagueRequest.getThemeId());
-            challenge.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
-            if (leagueRequest.getMaxPlayersPerTeam() == null) {
+            challenge.setMinPlayersPerTeam(1);
+/*            if (leagueRequest.getMaxPlayersPerTeam() == null) {
                 challenge.setMaxPlayersPerTeam(2);
             }else {
                 challenge.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
 
-            }
+            }*/
+            challenge.setMinPlayersPerTeam(1);
+            challenge.setMaxPlayersPerTeam(2);
+
             if (leagueRequest.getScheduledAt() != null) {
                 challenge.setScheduledAt(leagueRequest.getScheduledAt());
             }
@@ -236,7 +239,7 @@ public class LeagueService {
 
                 NotificationRequest notificationRequest = new NotificationRequest();
                 notificationRequest.setToken(fcmToken);
-                notificationRequest.setTitle("New Challenge Received!");
+                notificationRequest.setTitle("League Challenge Received from " + vendor.getFirst_name() + "! ");
                 notificationRequest.setBody(challengeJson);
                 notificationRequest.setTopic("League Challenge"); // Optional, just for tagging
 
@@ -257,7 +260,6 @@ public class LeagueService {
                 notificationRepository.save(notification);
 
             }
-
 
             return challenge;
 
@@ -292,6 +294,27 @@ public class LeagueService {
             // Set the challenge status to REJECTED
             challenge.setChallengeStatus(Challenge.ChallengeStatus.REJECTED);
             challangeRepository.save(challenge);
+
+            VendorEntity opponentVendor = vendorRepository.findById(challengeId)
+                    .orElseThrow(() -> new BusinessException("Opponent Vendor not found",HttpStatus.BAD_REQUEST));
+            String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
+
+            if (fcmToken != null && !fcmToken.isEmpty()) {
+
+
+                NotificationRequest notificationRequest = new NotificationRequest();
+                notificationRequest.setToken(fcmToken);
+                notificationRequest.setTitle("Challenge Declined");
+                notificationRequest.setBody("Unfortunately, your opponent has declined your league challenge.");
+                notificationRequest.setTopic("League Challenge Rejected");
+                notificationRequest.setTopic("League Challenge Rejected"); // Optional, just for tagging
+
+                try {
+                    notificationFirebase.sendMessageToToken(notificationRequest);
+                } catch (Exception e) {
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
+            }
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -425,14 +448,17 @@ public class LeagueService {
             }
 
             // Set the minimum and maximum players
-            if (leagueRequest.getMinPlayersPerTeam() != null) {
+/*            if (leagueRequest.getMinPlayersPerTeam() != null) {
                 league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
             }
             if (leagueRequest.getMaxPlayersPerTeam() != null) {
                 league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
             }else {
                 league.setMaxPlayersPerTeam(2);
-            }
+            }*/
+
+            league.setMinPlayersPerTeam(1);
+            league.setMaxPlayersPerTeam(2);
 
 
             // Set created and updated timestamps
@@ -481,7 +507,26 @@ public class LeagueService {
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
             opponentVendor.setPublishedLimit((opponentVendor.getPublishedLimit() == null ? 0 : opponentVendor.getPublishedLimit()) + 1);
             // Return the saved game with the shareable link
+
+            String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
+
+            if (fcmToken != null && !fcmToken.isEmpty()) {
+
+                NotificationRequest notificationRequest = new NotificationRequest();
+                notificationRequest.setToken(fcmToken);
+                notificationRequest.setTitle("Challenge Accepted!");
+                notificationRequest.setBody(opponentVendor.getFirst_name() + " is ready. Your league challenge will be active in 15 minutes!");
+                notificationRequest.setTopic("League Challenge Accepted"); // Optional, just for tagging
+
+                try {
+                    notificationFirebase.sendMessageToToken(notificationRequest);
+                } catch (Exception e) {
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
+            }
             return leagueRepository.save(savedLeague);
+
+
 
         }
         catch (Exception e) {
