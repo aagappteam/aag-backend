@@ -1,10 +1,12 @@
 package aagapp_backend.components;
-import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
 
 public class Constant {
+
+    public static String ludobaseurl = "http://13.232.105.87:8082";
+    public static String snakebaseUrl = "http://13.232.105.87:8092";
 
     public static final String BEARER_CONST= "Bearer ";
     public static final String REFERRAL_CODE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.referralCode = :referralCode";

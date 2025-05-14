@@ -3,7 +3,6 @@ package aagapp_backend.services.tournamnetservice;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.pricelogic.PriceConstant;
 import aagapp_backend.dto.*;
-import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
@@ -11,7 +10,6 @@ import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.*;
 import aagapp_backend.entity.wallet.VendorWallet;
-import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -20,7 +18,6 @@ import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.tournament.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.VendorWalletRepository;
-import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CommonService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
@@ -157,8 +154,6 @@ public class TournamentService {
 
     @Autowired
     private TournamentRoundWinnerRepository tournamentRoundWinnerRepository;
-    private final String baseUrl = "http://13.232.105.87:8082";
-    private final String snakebaseUrl = "http://13.232.105.87:8092";
 
     private static final double TAX_PERCENT = 0.28;
 
@@ -753,10 +748,10 @@ public class TournamentService {
             String gamePassword = null;
 
             if (gameName.equals("ludo")) {
-                 gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(),
+                 gamePassword = this.createNewGame(Constant.ludobaseurl, tournament.getId(), room.getId(),
                         room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
             } else if (gameName.equals("snake & ladder")) {
-                 gamePassword = this.createNewGame(snakebaseUrl, tournament.getId(), room.getId(),
+                 gamePassword = this.createNewGame(Constant.snakebaseUrl, tournament.getId(), room.getId(),
                         room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
             } else {
                 throw new BusinessException("Unsupported game: " + gameName, HttpStatus.BAD_REQUEST);
@@ -1755,10 +1750,10 @@ public void startNextRoundOld(Long tournamentId, int currentRound) {
                         String gamePassword = null;
 
                         if (gameName.equals("ludo")) {
-                            gamePassword = this.createNewGame(baseUrl, tournament.getId(), room.getId(),
+                            gamePassword = this.createNewGame(Constant.ludobaseurl, tournament.getId(), room.getId(),
                                     room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
                         } else if (gameName.equals("snake & ladder")) {
-                            gamePassword = this.createNewGame(snakebaseUrl, tournament.getId(), room.getId(),
+                            gamePassword = this.createNewGame(Constant.snakebaseUrl, tournament.getId(), room.getId(),
                                     room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
                         } else {
                             throw new BusinessException("Unsupported game: " + gameName, HttpStatus.BAD_REQUEST);

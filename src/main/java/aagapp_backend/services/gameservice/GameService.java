@@ -29,8 +29,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.checkerframework.checker.units.qual.A;
-import org.junit.platform.commons.logging.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -53,9 +51,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import org.springframework.http.*;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -68,8 +63,6 @@ public class GameService {
     private CommonService commonservice;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String baseUrl = "http://13.232.105.87:8082";
-    private final String snakebaseUrl = "http://13.232.105.87:8092";
     private final MoveRepository moveRepository;
     private MatchService matchService;
     private final VenderService venderService;
@@ -574,9 +567,9 @@ public void updateDailylimit() {
             String gameName = game.getName().toLowerCase();
 
             if (gameName.equals("ludo")) {
-                gamePassword = this.createNewGame(baseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
+                gamePassword = this.createNewGame(Constant.ludobaseurl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
             } else if (gameName.equals("snake & ladder")) {
-                gamePassword = this.createNewGame(snakebaseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
+                gamePassword = this.createNewGame(Constant.snakebaseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
             } else {
                 throw new BusinessException("Unsupported game: " + gameName, HttpStatus.BAD_REQUEST);
             }
