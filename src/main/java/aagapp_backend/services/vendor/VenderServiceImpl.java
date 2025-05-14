@@ -57,7 +57,6 @@ public class VenderServiceImpl implements VenderService {
     private final GameRepository gameRepository;
     private final LeagueRepository leagueRepository;
     private final TournamentRepository tournamentRepository;
-
     private UserVendorFollowService followService;
 
     private final EntityManager entityManager;
@@ -708,7 +707,6 @@ public class VenderServiceImpl implements VenderService {
                         .collect(Collectors.toList()));
 
         // Tournaments
-
         activeContent.addAll(tournaments.stream()
                         .map(tournament -> new GetGameResponseDashboardDTO(
                                 tournament.getId(),

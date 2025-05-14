@@ -108,8 +108,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+            System.out.println("requestURI" + requestURI);
 
             if (isUnsecuredUri(requestURI) || bypassimages(requestURI)) {
+                System.out.println("isUnsecuredUri" + requestURI);
                 chain.doFilter(request, response);
                 return;
             }
@@ -183,7 +185,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/api/v1/swagger-resources")
                 || requestURI.startsWith("/api/v1/v2/api-docs")
                 || requestURI.startsWith("/api/v1/images")
-                || requestURI.startsWith("/api/v1/webjars");
+                || requestURI.startsWith("/api/v1/webjars")
+                || requestURI.startsWith("/api/v1/initate-payment") // Added leading slash
+                || requestURI.startsWith("/api/v1/response") // Added leading slash
+                || requestURI.startsWith("/api/v1/resp") // Added leading slash
+                || requestURI.startsWith("/api/v1/enq") // Added leading slash
+                || requestURI.startsWith("/api/v1/MerchantAcknowledgement") // Added leading slash
+                || requestURI.startsWith("/api/v1/Bank"); // Added leading slash
+
     }
 
     private boolean authenticateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
