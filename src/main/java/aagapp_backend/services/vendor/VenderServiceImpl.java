@@ -10,6 +10,9 @@ import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.enums.GameStatus;
+import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import aagapp_backend.repository.game.GameRepository;
 import aagapp_backend.repository.league.LeagueRepository;
@@ -57,7 +60,6 @@ public class VenderServiceImpl implements VenderService {
     private final GameRepository gameRepository;
     private final LeagueRepository leagueRepository;
     private final TournamentRepository tournamentRepository;
-
     private UserVendorFollowService followService;
 
     private final EntityManager entityManager;
@@ -680,9 +682,9 @@ public class VenderServiceImpl implements VenderService {
         result.put("activeGames", gamesPage);*/
 
         // Fetch active games/leagues/tournaments
-        List<Game> games = gameRepository.findByVendorEntityAndScheduledAtBetween(existingVendor, startTimeUTC, endTimeUTC);
-        List<League> leagues = leagueRepository.findByVendorEntityAndScheduledAtBetween(existingVendor, startTimeUTC, endTimeUTC);
-        List<Tournament> tournaments = tournamentRepository.findByVendorEntityAndScheduledAtBetween(serviceProviderId, startTimeUTC, endTimeUTC);
+        List<Game> games = gameRepository.findActiveGames(existingVendor, GameStatus.ACTIVE);
+        List<League> leagues = leagueRepository.findActiveLeagues(serviceProviderId, LeagueStatus.ACTIVE);
+        List<Tournament> tournaments = tournamentRepository.findActiveTournaments(serviceProviderId, TournamentStatus.ACTIVE);
 
         // Merge all into one list of GetGameResponseDashboardDTO
                 List<GetGameResponseDashboardDTO> activeContent = new ArrayList<>();
@@ -708,7 +710,6 @@ public class VenderServiceImpl implements VenderService {
                         .collect(Collectors.toList()));
 
         // Tournaments
-
         activeContent.addAll(tournaments.stream()
                         .map(tournament -> new GetGameResponseDashboardDTO(
                                 tournament.getId(),

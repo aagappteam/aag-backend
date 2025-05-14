@@ -45,13 +45,22 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
 
     List<TournamentResultRecord> findByTournamentIdAndRoundAndStatus(Long tournamentId, int round, String status);
 
-    @Query("SELECT COUNT(tr) FROM TournamentResultRecord tr " +
+/*    @Query("SELECT COUNT(tr) FROM TournamentResultRecord tr " +
             "WHERE tr.tournament.id = :tournamentId " +
             "AND tr.round = :round " +
             "AND tr.isWinner = true " +
             "AND tr.score = 0")
     long countFreePassWinners(@Param("tournamentId") Long tournamentId,
+                              @Param("round") Integer round);*/
+
+    @Query("SELECT COUNT(tr) FROM TournamentResultRecord tr " +
+            "WHERE tr.tournament.id = :tournamentId " +
+            "AND tr.round = :round " +
+            "AND tr.isWinner = true " +
+            "AND tr.status = 'FREE_PASS'")
+    long countFreePassWinners(@Param("tournamentId") Long tournamentId,
                               @Param("round") Integer round);
+
 
 
 
@@ -82,7 +91,17 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
             "WHERE r.tournament.id = :tournamentId " +
             "AND r.player.playerId = :playerId " +
             "ORDER BY r.id DESC")
+
+
     List<TournamentResultRecord> findAllByPlayerIdAndTournamentIdOrderByIdDesc(Long playerId, Long tournamentId);
+
+    @Query("SELECT COUNT(r) FROM TournamentResultRecord r " +
+            "WHERE r.tournament.id = :tournamentId " +
+            "AND r.round = :round " +
+            "AND r.status IN :statuses")
+    long countByTournamentIdAndRoundAndStatusIn(@Param("tournamentId") Long tournamentId,
+                                                @Param("round") int round,
+                                                @Param("statuses") List<String> statuses);
 
 
 }
