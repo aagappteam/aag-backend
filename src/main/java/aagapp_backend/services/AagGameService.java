@@ -134,7 +134,9 @@ public class AagGameService {
 
     // Get all games with pagination
     public List<GameResponseDTO> getAllGames(int page, int size) {
-        List<AagAvailableGames> games = gameRepository.findAll(); // Pagination could be added here
+//        List<AagAvailableGames> games = gameRepository.findAll(); // Pagination could be added here
+        List<AagAvailableGames>  games =  gameRepository.findAllByOrderByIdAsc();
+
         return games.stream().map(GameResponseDTO::new).collect(Collectors.toList());
     }
 

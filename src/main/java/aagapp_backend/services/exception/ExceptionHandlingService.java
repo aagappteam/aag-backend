@@ -1,16 +1,28 @@
 
 package aagapp_backend.services.exception;
 
+import aagapp_backend.services.EmailService;
 import com.twilio.exception.ApiException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 @Service
 public class ExceptionHandlingService implements ExceptionHandlingImplement {
+
+    @Autowired
+    private EmailService emailService;
     private static final Logger logger = LoggerFactory.getLogger(ExceptionHandlingService.class);
 
     @Override
@@ -63,19 +75,74 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
 
     }
 
-    public String handleException(HttpStatus status, Exception e) {
+    private String getStackTraceAsString(Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
+    }
+    private boolean isBusinessOrCausedByBusinessException(Throwable e) {
+        while (e != null) {
+            if (e instanceof BusinessException) {
+                return true;
+            }
+            e = e.getCause();
+        }
+        return false;
+    }
 
-        if(status.equals(HttpStatus.BAD_REQUEST)){
-            logger.error("Bad request " + status + " " + e.getMessage());
-            return status + " " + e.getMessage();
-        }else if(status.equals(HttpStatus.INTERNAL_SERVER_ERROR)){
 
-            logger.error("Internal server error " + status + " " + e.getMessage());
-            return status + " " + e.getMessage();
-        }else{
-            logger.error("Unhandled exception " + status + " " + e);
-            return "Something went wrong: " + e.getMessage();
+/*    public String handleException(HttpStatus status, Exception e) {
+        String errorDetails = "Status: " + status + "\nMessage: " + e.getMessage() + "\nStackTrace: " + getStackTraceAsString(e);
+
+        if (!isBusinessOrCausedByBusinessException(e)) {
+
+
+            emailService.sendErrorEmail("Error Occurred in Application", errorDetails);
         }
 
+        if(status.equals(HttpStatus.BAD_REQUEST)){
+            return status + " " + e.getMessage();
+        } else if(status.equals(HttpStatus.INTERNAL_SERVER_ERROR)){
+            return status + " " + e.getMessage();
+        } else {
+            return "Something went wrong: " + e.getMessage();
+        }
+    }*/
+
+    public String handleException(HttpStatus status, Exception e) {
+        String userId = getUserIdFromSecurityContext();
+
+        String errorDetails = "UserId: " + userId +
+                "\nStatus: " + status +
+                "\nMessage: " + e.getMessage() +
+                "\nStackTrace: " + getStackTraceAsString(e);
+
+        if (!isBusinessOrCausedByBusinessException(e)) {
+            emailService.sendErrorEmail("Error Occurred in Application", errorDetails);
+        }
+
+        if (status.equals(HttpStatus.BAD_REQUEST)) {
+            return status + " " + e.getMessage();
+        } else if (status.equals(HttpStatus.INTERNAL_SERVER_ERROR)) {
+            return status + " " + e.getMessage();
+        } else {
+            return "Something went wrong: " + e.getMessage();
+        }
     }
+
+
+    public String getUserIdFromSecurityContext() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                return authentication.getName();
+            }
+        } catch (Exception ex) {
+            // Ignore and fallback
+        }
+        return "Unknown";
+    }
+
+
+
 }

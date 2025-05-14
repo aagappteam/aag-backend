@@ -44,7 +44,13 @@ public class SecurityConfig {
                 "/webjars/**",                    // Webjar resources for Swagger
                 "/swagger-resources/**" ,          // Swagger resources
                 "/api/**/aagdocument/**",
-                "/api/**/files/**"
+                "/api/**/files/**",
+                "/initate-payment",
+                "/response",
+                "/resp",
+                "/enq",
+                "/MerchantAcknowledgement",
+                "/Bank"
         );
     }
     @Bean
@@ -69,7 +75,15 @@ public class SecurityConfig {
                                "/winning/**",
                                "/account/**",
                                "/test/**",
-                               "/ludo-websocket/**"          // Allow WebSocket endpoint
+                               "/ludo-websocket/**" ,         // Allow WebSocket endpoint
+                               // ✅ Add your SabPaisa-related endpoints
+                               "/initate-payment",
+                               "/api/v1/initate-payment",
+                               "/response",
+                               "/resp",
+                               "/enq",
+                               "/MerchantAcknowledgement",
+                               "/Bank"
 
                        ).permitAll() // Allow public access to Swagger UI and some other resources
                        .anyRequest().authenticated() // Require authentication for all other paths

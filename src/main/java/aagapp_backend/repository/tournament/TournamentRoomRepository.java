@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TournamentRoomRepository extends JpaRepository<TournamentRoom , Long> {
 
@@ -21,4 +22,24 @@ public interface TournamentRoomRepository extends JpaRepository<TournamentRoom ,
     long sumMaxParticipantsByTournamentId(@Param("tournamentId") Long tournamentId);
 
 
+    List<TournamentRoom> findByTournamentIdAndRoundAndStatus(Long tournamentId, int round, String status);
+
+    long countByTournamentIdAndRoundAndStatus(Long tournamentId, int round, String status);
+
+    long countByTournamentIdAndRound(Long tournamentId, int round);
+
+    List<TournamentRoom> findByTournamentIdAndRound(Long tournamentId, int round);
+
+    Optional<TournamentRoom> findFirstByTournamentIdAndRoundAndStatusAndCurrentParticipantsLessThan(
+            Long tournamentId,
+            Integer round,
+            String status,
+            Integer currentParticipants
+    );
+
+    long countByTournamentIdAndRoundAndCurrentParticipantsGreaterThan(Long tournamentId, int roundNumber, int i);
+
+    long countByTournamentIdAndRoundAndStatusAndCurrentParticipantsGreaterThan(Long tournamentId, int roundNumber, String completed, int i);
+
+    List<TournamentRoom> findByTournamentIdAndStatusIn(Long tournamentId, List<String> statuses);
 }

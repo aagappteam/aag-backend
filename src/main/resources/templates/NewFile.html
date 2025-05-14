@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="ISO-8859-1">
+    <title>Insert title here</title>
+</head>
+<body>
+<form
+        th:action="@{https://stage-securepay.sabpaisa.in/SabPaisa/sabPaisaInit?v=1}"
+        th:method="post">
+    <input type="text" name="encData" th:value="${encData}" id="frm1">
+    <input type="text" name="clientCode" th:value="${clientCode}"
+           id="frm2"> <input type="submit" id="submitButton"
+                             name="submit">
+</form>
+</body>
+</html>

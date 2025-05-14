@@ -6,6 +6,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.TournamentStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.micrometer.common.lang.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -16,6 +17,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.CurrentTimestamp;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.Date;
 
@@ -39,9 +41,18 @@ public class Tournament {
     private Long id;
 
     private Long vendorId;
+
     private String name;
 
     private Double totalPrizePool;
+
+    @Column(nullable = false, columnDefinition = "integer default 1")
+    private int round = 1;
+
+    @Column(nullable = false, columnDefinition = "integer default 1")
+    private int totalrounds = 1;
+
+    private BigDecimal roomprize;
 
     @ManyToOne
     @JoinColumn(name = "theme_id", nullable = true)
@@ -66,6 +77,7 @@ public class Tournament {
     private String shareableLink;
 
     @ManyToOne
+    @JsonIgnore
     private VendorEntity vendorEntity;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
@@ -77,5 +89,18 @@ public class Tournament {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime updatedDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime endDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime statusUpdatedAt;  // New field for status update time
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = ZonedDateTime.now();
+    }
 
 }

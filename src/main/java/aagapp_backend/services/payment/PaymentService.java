@@ -103,7 +103,12 @@ public class PaymentService {
             VendorLevelPlan level = existingVendor.getVendorLevelPlan();
             Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
             Integer themeLimit = extractThemeLimit(planEntity.getFeatures());
+            existingVendor.setThemeCount(2);
+
+            /*
             existingVendor.setThemeCount(themeLimit);
+*/
+
             existingVendor.setDailyLimit(dailyGameLimit);
 
 /*
@@ -113,15 +118,15 @@ public class PaymentService {
         }
 
 //        @todo need to check theme limit and daily limit
-       /* VendorLevelPlan currentLevel = existingVendor.getVendorLevelPlan();
+        VendorLevelPlan currentLevel = existingVendor.getVendorLevelPlan();
 
         // Get the new plan level (for example, upgrading to PRO_C)
         VendorLevelPlan newLevel = getVendorLevelFromPlan(planEntity); // Implement this logic based on the selected plan
 
         if (newLevel != currentLevel) {
-            // Vendor is changing levels, so update daily game limit and theme limit
+
             updateVendorLevel(existingVendor, newLevel, planEntity);
-        }*/
+        }
         paymentRequest.setPlanDuration(planEntity.getPlanVariant());
 
         // Generate a unique transaction ID
@@ -184,7 +189,7 @@ public class PaymentService {
 
         // Update the daily game limit and themes based on the new level
         existingVendor.setDailyLimit(newLevel.getDailyGameLimit()); // Set new daily limit
-//        existingVendor.setThemeCount(newLevel.getThemeCount()); // Set new theme count
+       existingVendor.setThemeCount(newLevel.getThemeCount()); // Set new theme count
 
         // Additionally, you can update the feature slots, user counter, etc., if needed
 //        existingVendor.setFeatureSlots(newLevel.getFeatureSlots());
@@ -538,5 +543,9 @@ public class PaymentService {
 
         // Log the result (optional)
         System.out.println("Number of plans expired for vendor " + vendorId + ": " + updatedCount);
+    }
+
+    public PaymentEntity findActivePlanByVendorId(Long serviceProviderId) {
+        return paymentRepository.findActivePlanByVendorId(serviceProviderId, LocalDateTime.now(), PaymentStatus.ACTIVE).orElse(null);
     }
 }
