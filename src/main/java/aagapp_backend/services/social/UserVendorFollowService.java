@@ -490,5 +490,70 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
     }
 
 
+  /*  public Map<String, Object> getFeedOfVendors(int page, int size) {
+        Pageable fetchPageable = PageRequest.of(0, 200); // Fetch enough vendors
+        Pageable contentPageable = PageRequest.of(0, 10);
+
+        Page<VendorEntity> allVendorsPage = vendorRepo.findAll(fetchPageable);
+        List<VendorEntity> allVendors = allVendorsPage.getContent();
+
+        List<Map<String, Object>> vendorList = new ArrayList<>();
+
+        for (VendorEntity vendor : allVendors) {
+            Long vendorId = vendor.getService_provider_id();
+
+            Page<GetGameResponseDTO> games = gameService.getAllGames("ACTIVE", vendorId, contentPageable, null);
+            List<GetGameResponseDTO> gameList = games.getContent() != null ? games.getContent() : Collections.emptyList();
+
+            Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(contentPageable, vendorId);
+            List<League> leagueList = leaguesPage.getContent() != null ? leaguesPage.getContent() : Collections.emptyList();
+
+            Page<Tournament> tournamentsPage = tournamentService.getAllActiveTournamentsByVendor(contentPageable, vendorId);
+            List<Tournament> tournamentList = tournamentsPage.getContent() != null ? tournamentsPage.getContent() : Collections.emptyList();
+
+            boolean hasActiveContent = !gameList.isEmpty() || !leagueList.isEmpty() || !tournamentList.isEmpty();
+
+            Map<String, Object> vendorInfo = new HashMap<>();
+            vendorInfo.put("name", vendor.getName());
+            vendorInfo.put("id", vendorId);
+            vendorInfo.put("profilePic", vendor.getProfilePic());
+            vendorInfo.put("email", vendor.getPrimary_email());
+            vendorInfo.put("followerCount", followRepo.countByVendorId(vendorId));
+            vendorInfo.put("isFollowing", true);
+            vendorInfo.put("games", gameList);
+            vendorInfo.put("leagues", leagueList);
+            vendorInfo.put("tournaments", tournamentList);
+            vendorInfo.put("hasActiveContent", hasActiveContent); // helper for sorting
+
+            vendorList.add(vendorInfo);
+        }
+
+        // Sort active content vendors first
+        vendorList.sort((v1, v2) -> Boolean.compare(!(Boolean) v1.get("hasActiveContent"), !(Boolean) v2.get("hasActiveContent")));
+
+        // Remove helper key
+        vendorList.forEach(v -> v.remove("hasActiveContent"));
+
+        // Manual Pagination
+        int totalElements = vendorList.size();
+        int fromIndex = Math.min(page * size, totalElements);
+        int toIndex = Math.min(fromIndex + size, totalElements);
+        List<Map<String, Object>> paginatedList = vendorList.subList(fromIndex, toIndex);
+
+        Map<String, Object> vendorPageMap = new HashMap<>();
+        vendorPageMap.put("content", paginatedList);
+        vendorPageMap.put("pageNumber", page);
+        vendorPageMap.put("pageSize", size);
+        vendorPageMap.put("totalPages", (int) Math.ceil((double) totalElements / size));
+        vendorPageMap.put("totalElements", totalElements);
+        vendorPageMap.put("last", toIndex >= totalElements);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("vendors", vendorPageMap);
+
+        return response;
+    }*/
+
+
 
 }
