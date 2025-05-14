@@ -11,6 +11,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.swing.JToolTip;
 
 import aagapp_backend.utils.Encryptor;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.apache.catalina.core.ApplicationContext;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.json.JSONArray;
@@ -37,8 +38,12 @@ public class SabService {
     @Value("${transUserPassword}")
     private String transUserPassword;
 
-    @Value("${callbackUrl}")
-    private String callbackUrl;
+/*    @Value("${callbackUrl}")
+    private String callbackUrl;*/
+    private static final Dotenv dotenv = Dotenv.load();
+
+    private String callbackUrl = dotenv.get("CALLBACK_URL");
+
 
     @Value("${authKey}")
     private String authKey;
