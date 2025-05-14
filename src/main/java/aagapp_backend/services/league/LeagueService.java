@@ -126,8 +126,7 @@ public class LeagueService {
 
     @Autowired
     private ResponseService responseService;
-   /* private final String baseUrl = Constant.baseUrl;
-    private final String snakebaseUrl = Constant.snakebaseUrl;*/
+
 
 
     @Transactional
