@@ -9,7 +9,6 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
-import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.*;
 
 
@@ -18,11 +17,9 @@ import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 
-import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
-import aagapp_backend.enums.NotificationType;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -51,7 +48,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.ui.context.Theme;
 import org.springframework.web.client.RestTemplate;
 
 import javax.naming.LimitExceededException;
@@ -130,7 +126,7 @@ public class LeagueService {
 
     @Autowired
     private ResponseService responseService;
-    private final String baseUrl = "http://13.232.105.87:8082";
+
 
 
     @Transactional
@@ -200,8 +196,8 @@ public class LeagueService {
 
             challenge.setName(game.getGameName());
             challenge.setThemeId(leagueRequest.getThemeId());
-            challenge.setMinPlayersPerTeam(1);
-/*            if (leagueRequest.getMaxPlayersPerTeam() == null) {
+/*            challenge.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
+            if (leagueRequest.getMaxPlayersPerTeam() == null) {
                 challenge.setMaxPlayersPerTeam(2);
             }else {
                 challenge.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
@@ -209,7 +205,6 @@ public class LeagueService {
             }*/
             challenge.setMinPlayersPerTeam(1);
             challenge.setMaxPlayersPerTeam(2);
-
             if (leagueRequest.getScheduledAt() != null) {
                 challenge.setScheduledAt(leagueRequest.getScheduledAt());
             }
@@ -239,8 +234,7 @@ public class LeagueService {
 
                 NotificationRequest notificationRequest = new NotificationRequest();
                 notificationRequest.setToken(fcmToken);
-                notificationRequest.setTitle("League Challenge Received from " + vendor.getFirst_name() + "! ");
-                notificationRequest.setBody(challengeJson);
+                notificationRequest.setTitle("League Challenge Received from " + vendor.getFirst_name() + "! ");                notificationRequest.setBody(challengeJson);
                 notificationRequest.setTopic("League Challenge"); // Optional, just for tagging
 
                 try {
@@ -260,6 +254,7 @@ public class LeagueService {
                 notificationRepository.save(notification);
 
             }
+
 
             return challenge;
 
@@ -456,7 +451,6 @@ public class LeagueService {
             }else {
                 league.setMaxPlayersPerTeam(2);
             }*/
-
             league.setMinPlayersPerTeam(1);
             league.setMaxPlayersPerTeam(2);
 
@@ -526,8 +520,6 @@ public class LeagueService {
             }
             return leagueRepository.save(savedLeague);
 
-
-
         }
         catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -553,7 +545,6 @@ public class LeagueService {
     public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
             // Construct the URL for the POST request, including query parameters
-//            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move + "&gametype=LEAGUE";
 
             String url = baseUrl + "/CreateNewGame?gametype=LEAGUE"
                     + "&gameid=" + gameId
@@ -825,7 +816,21 @@ public class LeagueService {
 
                 BigDecimal toalprize = matchService.getWinningAmountLeague(leagueRoom);
 
-                String gamePassword = this.createNewGame(baseUrl, league.getId(), leagueRoom.getId(), leagueRoom.getMaxPlayers(), league.getMove(), toalprize);
+//                String gamePassword = this.createNewGame(Constant.baseUrl, league.getId(), leagueRoom.getId(), leagueRoom.getMaxPlayers(), league.getMove(), toalprize);
+
+                String gameName = league.getGameName().toLowerCase();
+                String gamePassword = null;
+
+                if (gameName.equals("ludo")) {
+                    gamePassword = this.createNewGame(Constant.ludobaseurl, league.getId(), leagueRoom.getId(), leagueRoom.getMaxPlayers(), league.getMove(), toalprize);
+
+
+                } else if (gameName.equals("snake & ladder")) {
+                    gamePassword = this.createNewGame(Constant.snakebaseUrl, league.getId(), leagueRoom.getId(), leagueRoom.getMaxPlayers(), league.getMove(), toalprize);
+
+                } else {
+                    throw new BusinessException("Unsupported game: " + gameName, HttpStatus.BAD_REQUEST);
+                }
 
                 leagueRoom.setGamepassword(gamePassword);
 
@@ -1122,7 +1127,6 @@ public class LeagueService {
     }
 
 
-
 /*    @Transactional
     public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
@@ -1323,6 +1327,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     }
 }
 */
+
 
 
   @Transactional
