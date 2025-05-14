@@ -130,8 +130,9 @@ public class LeagueService {
 
     @Autowired
     private ResponseService responseService;
-    private final String baseUrl = "http://13.232.105.87:8082";
 
+    private final String baseUrl = "http://13.232.105.87:8082";
+    private final String snakebaseUrl = "http://13.232.105.87:8092";
 
     @Transactional
     public Challenge createChallenge(LeagueRequest leagueRequest, Long vendorId) {
@@ -825,8 +826,19 @@ public class LeagueService {
 
                 BigDecimal toalprize = matchService.getWinningAmountLeague(leagueRoom);
 
-                String gamePassword = this.createNewGame(baseUrl, league.getId(), leagueRoom.getId(), leagueRoom.getMaxPlayers(), league.getMove(), toalprize);
+//                String gamePassword = this.createNewGame(baseUrl, league.getId(), leagueRoom.getId(), leagueRoom.getMaxPlayers(), league.getMove(), toalprize);
 
+                String gameName = league.getGameName().toLowerCase();
+                String gamePassword = null;
+
+                if (gameName.equals("ludo")) {
+                    gamePassword = this.createNewGame(baseUrl, league.getId(), leagueRoom.getId(), leagueRoom.getMaxPlayers(), league.getMove(), toalprize);
+                } else if (gameName.equals("snake & ladder")) {
+                    gamePassword = this.createNewGame(snakebaseUrl, league.getId(), leagueRoom.getId(), leagueRoom.getMaxPlayers(), league.getMove(), toalprize);
+
+                } else {
+                    throw new BusinessException("Unsupported game: " + gameName, HttpStatus.BAD_REQUEST);
+                }
                 leagueRoom.setGamepassword(gamePassword);
 
                 leagueRoom.setStatus(LeagueRoomStatus.ONGOING);
