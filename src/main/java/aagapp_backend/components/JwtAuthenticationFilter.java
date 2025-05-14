@@ -108,10 +108,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            System.out.println("requestURI" + requestURI);
-
             if (isUnsecuredUri(requestURI) || bypassimages(requestURI)) {
-                System.out.println("isUnsecuredUri" + requestURI);
                 chain.doFilter(request, response);
                 return;
             }
