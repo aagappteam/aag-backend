@@ -1225,7 +1225,6 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         throw new RuntimeException("League not found with ID: " + leagueRoom.getLeague().getId());
     }
     League league = legueOpt.get();
-
     // Fetch players from the room
     List<Player> roomPlayers = playerRepository.findByRoomId(leagueMatchProcess.getRoomId());
     if (roomPlayers.isEmpty()) {
