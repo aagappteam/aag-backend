@@ -550,6 +550,12 @@ public class TournamentController {
                             Arrays.asList("WINNER", "FREE_PASS")
                     );
 
+            long remainingPlayers = tournamentResultRecordRepository
+                    .countByTournamentIdAndRoundAndStatusIn(
+                            tournamentId,
+                            roundNumber - 1,
+                            Arrays.asList("INPROGRESS", "ONGOING")
+                    );
 
 
             // 5. Decide if next round can start
@@ -563,8 +569,10 @@ public class TournamentController {
             response.put("tournament_status", tournament.getStatus());
             response.put("waitingCount", waitingCount);
             response.put("round", roundNumber);
+            response.put("remainingUsers", remainingPlayers);
+
             response.put("expectedPlayers", expectedPlayers);
-//            response.put("freePassCount", freePassCount);
+//             response.put("freePassCount", freePassCount);
             response.put("players",
                     TournamentStatus.COMPLETED.equals(tournament.getStatus()) ? Collections.emptyList() : readyPlayers
             );
