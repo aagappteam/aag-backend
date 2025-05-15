@@ -21,7 +21,7 @@ public class NotificationDTO {
     private Long customerId;
     private String description;
     private String details;
-    private String createdAt; // formatted date string
+    private String createdDate; // formatted date string
     private Double amount;
 
     public NotificationDTO(Notification notification) {
@@ -37,9 +37,9 @@ public class NotificationDTO {
         if (createdDate != null) {
             // Convert to specific time zone if needed, e.g., Asia/Kolkata
             ZonedDateTime indiaTime = createdDate.withZoneSameInstant(java.time.ZoneId.of("Asia/Kolkata"));
-            this.createdAt = indiaTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            this.createdDate = indiaTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         } else {
-            this.createdAt = null;
+            this.createdDate = null;
         }
     }
 
