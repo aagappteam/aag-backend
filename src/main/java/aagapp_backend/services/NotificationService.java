@@ -129,7 +129,8 @@ public class NotificationService {
             e.printStackTrace();
             throw new RuntimeException("Failed to retrieve notifications", e);
 
-        } }
+        }
+    }
 
 
 }
