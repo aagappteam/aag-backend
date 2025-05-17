@@ -1,11 +1,18 @@
 package aagapp_backend.entity.kyc;
 
+import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.KycStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Date;
 
 
 @Entity
@@ -42,6 +49,19 @@ public class KycEntity {
     private String aadharImage;
 
     private String panImage;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(updatable = false)
+    private Date createdAt;
+
+    // Set createdAt before persisting
+    @PrePersist
+    protected void onCreate() {
+        ZoneId india = ZoneId.of("Asia/Kolkata");
+        this.createdAt = Date.from(ZonedDateTime.now(india).toInstant());
+    }
+
 
 
 }

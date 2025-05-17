@@ -11,7 +11,9 @@ import aagapp_backend.services.EmailService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.s3services.S3Service;
 import jakarta.mail.MessagingException;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,9 @@ public class KycService {
 
     @Autowired
     private VendorRepository vendorRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private EmailService emailService;
@@ -97,6 +102,7 @@ public class KycService {
 
     }
 
+    @Transactional
     public KycEntity updateKycVerificationStatus(Long kycId, KycStatus isVerified) {
         KycEntity kyc = kycRepository.findById(kycId)
                 .orElseThrow(() -> new RuntimeException("KYC not found"));
@@ -121,7 +127,7 @@ public class KycService {
             throw new RuntimeException("Invalid role specified in KYC record");
         }
 
-        try {
+/*        try {
             if (isVerified == KycStatus.VERIFIED) {
                 emailService.sendEmail(
                         email,
@@ -137,7 +143,7 @@ public class KycService {
             }
         } catch (MessagingException e) {
             throw new RuntimeException("KYC updated but failed to send email: " + e.getMessage(), e);
-        }
+        }*/
 
         return kyc;
     }
@@ -148,6 +154,22 @@ public class KycService {
         }
         kycRepository.deleteById(kycId);
     }
+
+    public String getKycStatus(KycEntity kycEntity) {
+        if ("vendor".equalsIgnoreCase(kycEntity.getRole())) {
+            VendorEntity vendor = entityManager.find(VendorEntity.class, kycEntity.getUserOrVendorId());
+            return vendor != null && vendor.getKycStatus() != null
+                    ? vendor.getKycStatus().name()
+                    : "UNKNOWN";
+        } else if ("user".equalsIgnoreCase(kycEntity.getRole())) {
+            CustomCustomer user = entityManager.find(CustomCustomer.class, kycEntity.getUserOrVendorId());
+            return user != null && user.getKycStatus() != null
+                    ? user.getKycStatus().name()
+                    : "UNKNOWN";
+        }
+        return "UNKNOWN";
+    }
+
 
 
 }

@@ -803,6 +803,17 @@ public class TournamentService {
 
 
     public void assignPlayerToSpecificRoom(Player player, Long tournamentId, TournamentRoom room) {
+
+        if (player.getTournamentRoom() != null && player.getTournamentRoom().getId().equals(room.getId())) {
+            return;
+        }
+
+        if (player.getTournamentRoom() != null) {
+            // Player is already in another room, remove them from that room
+            player.setTournamentRoom(null);
+            playerRepository.save(player);
+        }
+
         player.setTournamentRoom(room);
         room.setCurrentParticipants(room.getCurrentParticipants() + 1);
         room.setStatus("PLAYING");
