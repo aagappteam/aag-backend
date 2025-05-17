@@ -5,8 +5,9 @@ import java.math.BigDecimal;
 
 public class Constant {
 
-    public static String ludobaseurl = "http://13.232.105.87:8082";
-    public static String snakebaseUrl = "http://13.232.105.87:8092";
+
+    public static String ludobaseurl = "http://3.110.44.61:8082";
+    public static String snakebaseUrl = "http://3.110.44.61:8092";
 
     public static final String BEARER_CONST= "Bearer ";
     public static final String REFERRAL_CODE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.referralCode = :referralCode";
@@ -59,7 +60,7 @@ public class Constant {
     public static Integer TOKEN_SIZE = 2;
 
     public static String PROFILE_IMAGE_URL = "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
-    public static final String ONBOARDING_EMAIL_SUBJECT = "Welcome to AAG Application – Profile Verification in Progress";
+    public static final String ONBOARDING_EMAIL_SUBJECT = "Registration Received – Next Steps to Become AAGVEER! ";
     public static final String APPROVED_EMAIL_SUBJECT = "AAG Veer - Vendor Account Approved";
     public static final String REJCTED_EMAIL_SUBJECT = "AAG Veer - Vendor Account Rejected";
 

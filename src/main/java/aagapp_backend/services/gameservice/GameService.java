@@ -126,7 +126,6 @@ public class GameService {
         int pageSize = 100;
         List<Long> vendorIds;
         while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
-            System.out.println("Scheduled task checkAndActivateScheduledGames started  " + vendorIds);
 
 
             for (Long vendorId : vendorIds) {
@@ -321,13 +320,11 @@ public void updateDailylimit() {
 
             // Parse the response body (assuming it's a JSON response)
             String responseBody = response.getBody();
-            System.out.println("responseBody: " + responseBody);
 
             // Assuming the response is JSON and contains "GamePassword"
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonResponse = objectMapper.readTree(responseBody);
             String gamePassword = jsonResponse.get("GamePassword").asText();
-            System.out.println("gamePassword: " + gamePassword);
 
             return gamePassword;
 
@@ -856,7 +853,6 @@ public void updateDailylimit() {
                     league.setStatus(LeagueStatus.EXPIRED); // Change the status to EXPIRED
                     league.setUpdatedDate(nowInKolkata);
                     leagueRepository.save(league);
-                    System.out.println("League ID: " + league.getId() + " status updated to EXPIRED.");
                 }
             }
 
@@ -1073,7 +1069,6 @@ public void updateDailylimit() {
                 game.setScheduledAt(nowInKolkata);
                 game.setUpdatedDate(nowInKolkata);
                 gameRepository.save(game);
-                System.out.println("Game ID: " + game.getId() + " status updated to ACTIVE.");
 
             }
 
@@ -1108,7 +1103,6 @@ public void updateDailylimit() {
                     league.setScheduledAt(nowInKolkata);
                     league.setUpdatedDate(nowInKolkata);
                     leagueRepository.save(league);
-                    System.out.println("league ID: " + league.getId() + " status updated to ACTIVE.");
 
             }
 
