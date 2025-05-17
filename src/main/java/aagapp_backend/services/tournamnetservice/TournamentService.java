@@ -687,6 +687,16 @@ public class TournamentService {
             System.out.println("🎉 Only one player. Tournament " + tournament.getId()
                     + " completed. User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
 
+
+            String fcmToken = tournament.getVendorEntity().getFcmToken();
+            if (fcmToken != null) {
+                notoficationFirebase.sendNotification(
+                        fcmToken,
+                        "⚠️ Tournament " + tournament.getName() + " was conculded",
+                        "⚠️ Tournament " + tournament.getName() + " was conculded "+
+
+                        "User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
+            }
             return tournament;
         }
 
@@ -804,7 +814,7 @@ public class TournamentService {
 
     public void assignPlayerToSpecificRoom(Player player, Long tournamentId, TournamentRoom room) {
 
-        if (player.getTournamentRoom() != null && player.getTournamentRoom().getId().equals(room.getId())) {
+/*        if (player.getTournamentRoom() != null && player.getTournamentRoom().getId().equals(room.getId())) {
             return;
         }
 
@@ -812,7 +822,7 @@ public class TournamentService {
             // Player is already in another room, remove them from that room
             player.setTournamentRoom(null);
             playerRepository.save(player);
-        }
+        }*/
 
         player.setTournamentRoom(room);
         room.setCurrentParticipants(room.getCurrentParticipants() + 1);
@@ -1042,7 +1052,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             headers.set("Content-Type", "application/json");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
@@ -1226,7 +1235,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         }*/
 
         if (validPlayers.isEmpty()) {
-            System.out.println("[WARN] No valid players after room fallback. Cleaning up room...");
 
             List<Player> roomPlayers = playerRepository.findByTournamentRoom_Id(gameResult.getRoomId());
             Tournament tournament = tournamentRepository.findById(gameResult.getGameId())
@@ -1235,10 +1243,9 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             for (Player p : roomPlayers) {
                 leaveRoom(p.getPlayerId(), tournament.getId());
             }
-
             return;
-        }
 
+        }
 
         Tournament tournament = tournamentRepository.findById(gameResult.getGameId())
                 .orElseThrow(() -> new BusinessException("Game not found", HttpStatus.BAD_REQUEST));
