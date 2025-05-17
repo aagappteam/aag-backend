@@ -443,7 +443,6 @@ public class LeagueService {
                 league.setScheduledAt(nowInKolkata);
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             }
-
             // Set the minimum and maximum players
 /*            if (leagueRequest.getMinPlayersPerTeam() != null) {
                 league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
