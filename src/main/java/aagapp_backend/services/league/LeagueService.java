@@ -139,9 +139,9 @@ public class LeagueService {
             if (leagueRequest.getFee() > Constant.MAX_FEE)
                 throw new BusinessException("Fee exceeds maximum allowed limit.", HttpStatus.BAD_REQUEST);
 
-            if (leagueRequest.getMinPlayersPerTeam() > leagueRequest.getMaxPlayersPerTeam()) {
+/*            if (leagueRequest.getMinPlayersPerTeam() > leagueRequest.getMaxPlayersPerTeam()) {
                 throw new BusinessException("Min players per team cannot be more than max players.", HttpStatus.BAD_REQUEST);
-            }
+            }*/
             if (leagueRequest.getScheduledAt() != null &&
                     leagueRequest.getScheduledAt().isBefore(ZonedDateTime.now().plusHours(4))) {
                 throw new BusinessException("Scheduled time must be at least 4 hours in the future.", HttpStatus.BAD_REQUEST);
