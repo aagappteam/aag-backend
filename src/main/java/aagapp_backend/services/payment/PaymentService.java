@@ -121,12 +121,12 @@ public class PaymentService {
         VendorLevelPlan currentLevel = existingVendor.getVendorLevelPlan();
 
         // Get the new plan level (for example, upgrading to PRO_C)
-        VendorLevelPlan newLevel = getVendorLevelFromPlan(planEntity); // Implement this logic based on the selected plan
+/*        VendorLevelPlan newLevel = getVendorLevelFromPlan(planEntity); // Implement this logic based on the selected plan
 
         if (newLevel != currentLevel) {
 
             updateVendorLevel(existingVendor, newLevel, planEntity);
-        }
+        }*/
         paymentRequest.setPlanDuration(planEntity.getPlanVariant());
 
         // Generate a unique transaction ID

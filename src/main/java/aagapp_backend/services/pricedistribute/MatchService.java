@@ -468,7 +468,6 @@ public class MatchService {
 
         List<Player> roomPlayers = playerRepository.findByRoomId(gameResult.getRoomId());
         if (roomPlayers.isEmpty()) {
-            System.out.println("[WARN] No players found in room " + gameResult.getRoomId());
             return;
         }
 

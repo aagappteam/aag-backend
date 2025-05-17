@@ -13,6 +13,6 @@ public class GameResult {
     private Long gameId;
     private Long roomId;
     private String conclusionType;
-    private String gameWinner;
+    private Long gameWinner;
     private List<PlayerDtoWinner> players;
 }

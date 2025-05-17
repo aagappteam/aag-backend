@@ -863,11 +863,10 @@ public class TournamentService {
         room.setMaxParticipants(2); // Assuming a 2-player room, you can adjust this logic if needed
         room.setGamepassword(null); // Set the game password or leave it as null if not applicable
         room.setTournament(result.getTournament());
-
         // Wrap the single Player into a List
         room.setCurrentPlayers(Collections.singletonList(result.getPlayer())); // Wrap single player in a List
 
-        room.setStatus("Free Pass");
+        room.setStatus("FREE_PASS");
         return room;
     }
 
@@ -894,29 +893,6 @@ public class TournamentService {
             return room;
 
     }
-
-/*    @Transactional
-    public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
-
-        // Query for the room where this player is in this tournament
-        TournamentRoom room = roomRepository.findByPlayerIdAndTournamentId(playerId, tournamentId)
-                .orElse(null);
-
-        if (room != null) {
-            return room;
-        }
-
-        List<TournamentResultRecord> records = tournamentResultRecordRepository.findAllByPlayerIdAndTournamentIdOrderByIdDesc(playerId, tournamentId);
-        if (records.isEmpty()) {
-            throw new BusinessException("No tournament result found for player in this tournament.", HttpStatus.BAD_REQUEST);
-        }
-
-        TournamentResultRecord latestRecord = records.get(0);
-        return convertTournamentResultToRoom(latestRecord);
-    }*/
-
 
     @Transactional
     public TournamentRoom assignPlayerToRoom(Long playerId, Long tournamentId) {
