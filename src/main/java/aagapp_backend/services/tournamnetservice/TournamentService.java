@@ -1220,10 +1220,25 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                     .collect(Collectors.joining(", ")));
         }
 
-        if (validPlayers.isEmpty()) {
+/*        if (validPlayers.isEmpty()) {
             System.out.println("[WARN] No valid players after room fallback. Skipping processing.");
             return;
+        }*/
+
+        if (validPlayers.isEmpty()) {
+            System.out.println("[WARN] No valid players after room fallback. Cleaning up room...");
+
+            List<Player> roomPlayers = playerRepository.findByTournamentRoom_Id(gameResult.getRoomId());
+            Tournament tournament = tournamentRepository.findById(gameResult.getGameId())
+                    .orElseThrow(() -> new BusinessException("Game not found", HttpStatus.BAD_REQUEST));
+
+            for (Player p : roomPlayers) {
+                leaveRoom(p.getPlayerId(), tournament.getId());
+            }
+
+            return;
         }
+
 
         Tournament tournament = tournamentRepository.findById(gameResult.getGameId())
                 .orElseThrow(() -> new BusinessException("Game not found", HttpStatus.BAD_REQUEST));
@@ -1231,8 +1246,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         // === 1 PLAYER ===
         if (validPlayers.size() == 1) {
             PlayerDtoWinner soleWinner = validPlayers.get(0);
-
-            System.out.println("[INFO] Only 1 player present. PlayerId=" + soleWinner.getPlayerId() + " auto-wins.");
 
             storeMatchResult(gameResult.getGameId(), gameResult.getRoomId(), soleWinner, true);
             leaveRoom(soleWinner.getPlayerId(), tournament.getId());
@@ -1260,13 +1273,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 .filter(p -> p.getScore() < maxScore)
                 .collect(Collectors.toList());
 
-        System.out.println("[INFO] Winners: " + winners.stream()
-                .map(p -> p.getPlayerId() + "")
-                .collect(Collectors.joining(", ")));
 
-        System.out.println("[INFO] Losers: " + losers.stream()
-                .map(p -> p.getPlayerId() + "")
-                .collect(Collectors.joining(", ")));
 
         // === Save WINNERS ===
         for (PlayerDtoWinner winner : winners) {
