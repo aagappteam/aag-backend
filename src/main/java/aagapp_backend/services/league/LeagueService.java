@@ -736,6 +736,39 @@ public class LeagueService {
         return responseService.generateSuccessResponse("League entry successful. 3 passes added.", data, HttpStatus.OK);
     }
 
+    @Transactional
+    public ResponseEntity<?> selectLeagueTeam(Long playerId, Long leagueId, Long teamId) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
+
+        League league = leagueRepository.findById(leagueId)
+                .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
+
+        LeagueTeam team = leagueTeamRepository.findById(teamId)
+                .orElseThrow(() -> new BusinessException("Team not found with ID: " + teamId, HttpStatus.BAD_REQUEST));
+
+
+        if (!team.getLeague().getId().equals(league.getId())) {
+            return responseService.generateErrorResponse("Selected team does not belong to the specified league", HttpStatus.BAD_REQUEST);
+        }
+
+        LeaguePass existingPass = leaguePassRepository.findByPlayerAndLeague(player, league).orElse(null);
+        if (existingPass == null) {
+            return responseService.generateErrorResponse("Player has not entered the league or has no entries", HttpStatus.BAD_REQUEST);
+        }
+
+        if (existingPass.getSelectedTeamId() != null) {
+            return responseService.generateErrorResponse("Player already selected a team", HttpStatus.BAD_REQUEST);
+        }
+
+        existingPass.setSelectedTeamId(teamId);
+        player.setTeam(team);
+        leaguePassRepository.save(existingPass);
+
+        return responseService.generateSuccessResponse("Team selected successfully", "player selected team"+ team.getTeamName(), HttpStatus.OK);
+    }
+
+
 
     @Transactional
     public ResponseEntity<?> takePassForLeague(Long playerId, Long leagueId) {
