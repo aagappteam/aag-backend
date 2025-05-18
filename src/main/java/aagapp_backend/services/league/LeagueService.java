@@ -683,6 +683,60 @@ public class LeagueService {
         }
     }
 
+
+    @Transactional
+    public ResponseEntity<?> takeEntryForLeague(Long playerId, Long leagueId) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
+
+        League league = leagueRepository.findById(leagueId)
+                .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
+
+        Wallet wallet = player.getCustomer().getWallet();
+        Double currentBalance = wallet.getUnplayedBalance();
+        Double leagueFee = league.getFee();
+
+
+        LeaguePass existingPass = leaguePassRepository.findByPlayerAndLeague(player, league).orElse(null);
+        if (existingPass != null) {
+            return responseService.generateErrorResponse("Player already entered the league. You can take extra passes to contribute to the league", HttpStatus.BAD_REQUEST);
+        }
+
+        if (currentBalance < leagueFee) {
+            return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
+        }
+
+        // Deduct wallet balance
+        wallet.setUnplayedBalance(currentBalance - leagueFee);
+
+        // Create new LeaguePass with 3 passes
+        LeaguePass pass = new LeaguePass();
+        pass.setPlayer(player);
+        pass.setLeague(league);
+        pass.setPassCount(3);
+        leaguePassRepository.save(pass);
+
+        // Create Notification
+        CustomCustomer customer = customCustomerService.getCustomerById(playerId);
+        Notification notification = new Notification();
+        notification.setCustomerId(customer.getId());
+        notification.setDescription("Wallet balance deducted");
+        notification.setAmount(leagueFee);
+        notification.setDetails("Rs. " + leagueFee + " deducted for league entry: " + league.getName());
+        notificationRepository.save(notification);
+
+        // Prepare response
+        Map<String, Object> data = new HashMap<>();
+        data.put("walletBalance", wallet.getUnplayedBalance());
+        data.put("leaguePasses", pass.getPassCount());
+        data.put("playerName", player.getPlayerName());
+        data.put("leagueId", league.getId());
+        data.put("leagueName", league.getName());
+
+        return responseService.generateSuccessResponse("League entry successful. 3 passes added.", data, HttpStatus.OK);
+    }
+
+
     @Transactional
     public ResponseEntity<?> takePassForLeague(Long playerId, Long leagueId) {
         // Step 1: Get Player and League
@@ -698,30 +752,25 @@ public class LeagueService {
         //remove when live
 //            wallet.setUnplayedBalance(100.0);
         Double currentBalance = wallet.getUnplayedBalance();
-        Double passCost = 7.0;
+        Double passCost = Constant.LEAGUE_PASSES_FEE;
 
         if (currentBalance < passCost) {
             return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
         }
 
-        // Deduct wallet balance
-        wallet.setUnplayedBalance(currentBalance - passCost);
-
-        // Step 3: Check if LeaguePass already exists
-        LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league)
-                .orElse(null);
-
-        if (pass != null) {
-            // Update existing pass
-            pass.setPassCount(pass.getPassCount() + 3);
-        } else {
-            // Create new LeaguePass
-            pass = new LeaguePass();
-            pass.setPlayer(player);
-            pass.setLeague(league);
-            pass.setPassCount(3);
+        // ✅ Check if player has entered the league before
+        LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league).orElse(null);
+        if (pass == null) {
+            return responseService.generateErrorResponse("Player has not entered the league yet. You can enter the league first", HttpStatus.BAD_REQUEST);
         }
 
+        if (currentBalance < passCost) {
+            return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
+        }
+
+        // Deduct Rs. 7 from wallet
+        wallet.setUnplayedBalance(currentBalance - passCost);
+        pass.setPassCount(pass.getPassCount() + 3);
         leaguePassRepository.save(pass);
 
 
@@ -743,7 +792,7 @@ public class LeagueService {
         data.put("leagueId", league.getId());
         data.put("leagueName", league.getName());
 
-        return responseService.generateSuccessResponse("3 League passes added successfully", data, HttpStatus.OK);
+        return responseService.generateSuccessResponse("3 more League passes added successfully", data, HttpStatus.OK);
 
 
     }
