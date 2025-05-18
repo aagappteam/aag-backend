@@ -372,6 +372,24 @@ public class LeagueController {
         }
     }
 
+
+    @PostMapping("/entry-league-pass/{playerId}/{leagueId}")
+    public ResponseEntity<?> buyLeaguePassEntryFee(@PathVariable Long playerId, @PathVariable Long leagueId) {
+        try {
+            return leagueService.takeEntryForLeague(playerId, leagueId);
+        } catch (RuntimeException e) {
+            return responseService.generateErrorResponse(
+                    "Failed to purchase league pass to take entry in this league: " + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "An unexpected error occurred while purchasing league pass and taking entry in this league.",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
     @PostMapping("/buy-league-pass/{playerId}/{leagueId}")
     public ResponseEntity<?> buyLeaguePass(@PathVariable Long playerId, @PathVariable Long leagueId) {
         try {

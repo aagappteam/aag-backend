@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 public class Constant {
 
 
+    public static final Double LEAGUE_PASSES_FEE = 7.0;
     public static String ludobaseurl = "http://3.110.44.61:8082";
     public static String snakebaseUrl = "http://3.110.44.61:8092";
 
