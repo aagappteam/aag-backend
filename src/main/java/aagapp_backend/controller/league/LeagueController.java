@@ -390,6 +390,23 @@ public class LeagueController {
         }
     }
 
+    @PostMapping("/select-league-team/{playerId}/{leagueId}/{teamId}")
+    public ResponseEntity<?> selectLeagueTeam(@PathVariable Long playerId, @PathVariable Long leagueId, @PathVariable Long teamId) {
+        try {
+            return leagueService.selectLeagueTeam(playerId, leagueId, teamId);
+        } catch (RuntimeException e) {
+            return responseService.generateErrorResponse(
+                    "Failed to select team for this league: " + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "An unexpected error occurred while selecting team for this league.",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
     @PostMapping("/buy-league-pass/{playerId}/{leagueId}")
     public ResponseEntity<?> buyLeaguePass(@PathVariable Long playerId, @PathVariable Long leagueId) {
         try {
