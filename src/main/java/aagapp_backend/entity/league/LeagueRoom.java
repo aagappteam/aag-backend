@@ -78,8 +78,8 @@ public class LeagueRoom {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "active_players_count")
-    private int activePlayersCount;
+   /* @Column(name = "active_players_count")
+    private int activePlayersCount;*/
 
     @PrePersist
     @PreUpdate
@@ -93,7 +93,7 @@ public class LeagueRoom {
         if (this.maxPlayers == 0) {
             this.maxPlayers = 2;
         }
-        this.activePlayersCount = this.currentPlayers.size();
+
 
         this.updatedDate = ZonedDateTime.now();
     }

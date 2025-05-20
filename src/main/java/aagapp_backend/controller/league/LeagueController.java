@@ -546,6 +546,11 @@ public class LeagueController {
     }
 
 
+    @GetMapping("/distribute-prize/{leagueId}")
+    public ResponseEntity<?> distributePrize(@PathVariable Long leagueId) {
+        return leagueService.distributePrizePool(leagueId);
+    }
+
 
 
 
