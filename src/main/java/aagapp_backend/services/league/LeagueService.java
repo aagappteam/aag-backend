@@ -242,7 +242,7 @@ public class LeagueService {
                 try {
                     notificationFirebase.sendMessageToToken(notificationRequest);
                 } catch (Exception e) {
-                    System.out.println("Error sending notification: " + e.getMessage());
+                    throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
             if (opponentVendor != null) {
@@ -266,7 +266,7 @@ public class LeagueService {
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error creating challenge: " + e.getMessage(), e);
+            throw new BusinessException("Error creating challenge: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -276,7 +276,7 @@ public class LeagueService {
         try {
             // Fetch the challenge
             Challenge challenge = challangeRepository.findById(challengeId)
-                    .orElseThrow(() -> new RuntimeException("Challenge not found"));
+                    .orElseThrow(() -> new BusinessException("Challenge not found", HttpStatus.BAD_REQUEST));
 
             // Check if the opponent is the correct vendor and challenge is pending
             if (!challenge.getOpponentVendorId().equals(vendorId)) {
@@ -322,7 +322,7 @@ public class LeagueService {
     @Transactional
     public Challenge getChallengeById(Long challengeId) {
         return challangeRepository.findById(challengeId)
-                .orElseThrow(() -> new RuntimeException("Challenge not found with ID: " + challengeId));
+                .orElseThrow(() -> new BusinessException("Challenge not found with ID: " + challengeId, HttpStatus.NOT_FOUND));
     }
 
     @Transactional
@@ -336,8 +336,8 @@ public class LeagueService {
         }
 
         if (challenges.isEmpty()) {
-            throw new RuntimeException("No challenges found for opponentVendorIds: " + opponentVendorId +
-                    (status != null ? " with status: " + status : ""));
+            throw new BusinessException("No challenges found for opponentVendorIds: " + opponentVendorId +
+                    (status != null ? " with status: " + status : ""), HttpStatus.NOT_FOUND);
         }
 
         return challenges;
@@ -355,8 +355,8 @@ public class LeagueService {
         }
 
         if (challenges.isEmpty()) {
-            throw new RuntimeException("No challenges found for vendorIds: " + vendorIds +
-                    (status != null ? " with status: " + status : ""));
+            throw new BusinessException("No challenges found for vendorIds: " + vendorIds +
+                    (status != null ? " with status: " + status : ""), HttpStatus.NOT_FOUND);
         }
 
         return challenges;
@@ -510,13 +510,14 @@ public class LeagueService {
                 NotificationRequest notificationRequest = new NotificationRequest();
                 notificationRequest.setToken(fcmToken);
                 notificationRequest.setTitle("Challenge Accepted!");
-                notificationRequest.setBody(opponentVendor.getFirst_name() + " is ready. Your league challenge will be active in 15 minutes!");
+                notificationRequest.setBody(opponentVendor.getFirst_name() + " is ready. Your league challenge will be active in 10 minutes!");
                 notificationRequest.setTopic("League Challenge Accepted"); // Optional, just for tagging
 
                 try {
                     notificationFirebase.sendMessageToToken(notificationRequest);
                 } catch (Exception e) {
-                    System.out.println("Error sending notification: " + e.getMessage());
+//                    System.out.println("Error sending notification: " + e.getMessage());
+                    throw  new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
             return leagueRepository.save(savedLeague);
@@ -595,7 +596,7 @@ public class LeagueService {
         availableVendors.removeIf(vendor -> vendor.getService_provider_id().equals(excludeVendorId));
 
         if (availableVendors.isEmpty()) {
-            throw new RuntimeException("No available vendors found Right Now.");
+            throw new BusinessException("No available vendors found Right Now.", HttpStatus.NOT_FOUND);
         }
 
         // Return a random vendor from the remaining list
@@ -801,7 +802,7 @@ public class LeagueService {
             return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
         }
 
-        // Deduct Rs. 7 from wallet
+
         wallet.setUnplayedBalance(currentBalance - passCost);
         pass.setPassCount(pass.getPassCount() + 3);
         leaguePassRepository.save(pass);
@@ -813,7 +814,7 @@ public class LeagueService {
         notification.setCustomerId(customer.getId());
         notification.setDescription("Wallet balance deducted"); // Example NotificationType for a successful
         notification.setAmount(passCost);
-        notification.setDetails("Rs. " + passCost + " deducted to Wallet to take passes for " + league.getName()); // Example NotificationType for a successful
+        notification.setDetails("Rs. " + passCost + " deducted to Wallet to take extra passes for " + league.getName()); // Example NotificationType for a successful
 
         notificationRepository.save(notification);
 
@@ -1590,40 +1591,47 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            List<Object[]> results = leagueResultRecordRepository.getTeamTotalScoresByLeague(leagueId);
-            List<Map<String, Object>> teamScores = new ArrayList<>();
-            int passCount = leaguePassRepository.getPlayerPassCountByLeague(leagueId, playerId);
+            // Step 1: Get all teams in the league
+            List<LeagueTeam> allTeams = leagueTeamRepository.findByLeagueId(leagueId);
 
+            // Step 2: Get team scores only for teams that have score records
+            List<Object[]> results = leagueResultRecordRepository.getTeamTotalScoresByLeague(leagueId);
+            Map<String, Long> scoreMap = new HashMap<>();
             for (Object[] row : results) {
                 String teamName = (String) row[0];
-                Long totalScore = (Long) row[1];
+                Long totalScore = row[1] != null ? (Long) row[1] : 0L;
+                scoreMap.put(teamName, totalScore);
+            }
 
-                LeagueTeam team = leagueTeamRepository.findByTeamNameAndLeagueId(teamName, leagueId).orElse(null);
+            // Step 3: Build teamScores list including default scores for teams without scores
+            List<Map<String, Object>> teamScores = new ArrayList<>();
+            for (LeagueTeam team : allTeams) {
+                String teamName = team.getTeamName();
+                Long totalScore = scoreMap.getOrDefault(teamName, 0L);
 
                 Map<String, Object> teamData = new HashMap<>();
                 teamData.put("teamName", teamName);
                 teamData.put("totalScore", totalScore);
-
-                if (team != null) {
-                    teamData.put("profilePic", team.getProfilePic());
-                    teamData.put("playerCount", playerRepository.countByTeamId(team.getId()));
-                } else {
-                    teamData.put("profilePic", null);
-                    teamData.put("playerCount", 0);
-                }
+                teamData.put("profilePic", team.getProfilePic() != null ? team.getProfilePic() :
+                        "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
+                teamData.put("playerCount", playerRepository.countByTeamId(team.getId()));
 
                 teamScores.add(teamData);
             }
 
             response.put("teamScores", teamScores);
 
+            // Step 4: Player data
             if (playerId != null) {
                 Integer playerScore = leagueResultRecordRepository.getPlayerTotalScoreInLeague(leagueId, playerId);
+                int passCount = leaguePassRepository.getPlayerPassCountByLeague(leagueId, playerId);
                 Player player = playerRepository.findById(playerId).orElse(null);
 
                 Map<String, Object> playerData = new HashMap<>();
                 playerData.put("playerScore", playerScore != null ? playerScore : 0);
-                playerData.put("profilePic", player != null ? player.getPlayerProfilePic() : null);
+                playerData.put("profilePic", player != null && player.getPlayerProfilePic() != null ?
+                        player.getPlayerProfilePic() :
+                        "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
                 playerData.put("pass", passCount);
 
                 response.put("player", playerData);
@@ -1631,11 +1639,12 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
         } catch (Exception e) {
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw e; // Let controller handle final response
+            throw e;
         }
 
         return response;
     }
+
 
 
     public ResponseEntity<?> getLeagueTeamDetails(Long leagueId, Long currentUserId) {

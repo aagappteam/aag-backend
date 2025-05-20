@@ -14,7 +14,9 @@ import aagapp_backend.enums.LeagueStatus;
 
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
+import aagapp_backend.repository.league.LeagueTeamRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.exception.BusinessException;
@@ -63,6 +65,12 @@ public class LeagueController {
 
     @Autowired
     private ExceptionHandlingService exceptionHandlingImplement;
+
+    @Autowired
+    private LeagueRepository leagueRepository;
+
+    @Autowired
+    private LeagueTeamRepository leagueTeamRepository;
 
     @Autowired
     public void setChallangeRepository(@Lazy ChallangeRepository challangeRepository) {
@@ -515,6 +523,9 @@ public class LeagueController {
             @RequestParam(required = false) Long playerId
     ) {
         try {
+            leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.NOT_FOUND));
+
             Map<String, Object> result = leagueService.getTeamScoresByLeague(leagueId, playerId);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", result);
         } catch (Exception e) {
