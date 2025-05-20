@@ -12,6 +12,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -51,10 +52,17 @@ public class TournamentResultRecord {
 
     private LocalDateTime playedAt;
 
+    @Column(name = "created_date", updatable = false)
+    private ZonedDateTime createdDate;
+
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime updatedDate;
 
-
+    @PrePersist
+    public void setCreatedDate() {
+        this.createdDate = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+    }
 
 
     @PreUpdate

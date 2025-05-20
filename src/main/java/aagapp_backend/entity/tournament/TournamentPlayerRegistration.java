@@ -11,6 +11,7 @@ import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -33,6 +34,10 @@ public class TournamentPlayerRegistration {
     @JoinColumn(name = "player_id", nullable = false)
     @OnDelete(action = OnDeleteAction.NO_ACTION) // or CASCADE if you want auto delete
     private Player player;
+
+    @Column(name = "created_date", updatable = false)
+    private ZonedDateTime createdDate;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime updatedDate;
 
@@ -49,6 +54,9 @@ public class TournamentPlayerRegistration {
         REGISTERED, CANCELLED,ACTIVE
     }
 
-
+    @PrePersist
+    public void setCreatedDate() {
+        this.createdDate = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+    }
 
 }
