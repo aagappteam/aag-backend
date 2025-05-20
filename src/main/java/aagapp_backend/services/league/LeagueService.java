@@ -1441,23 +1441,20 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 .collect(Collectors.toList());
 
         if (validPlayers.isEmpty()) {
-            throw new RuntimeException("No valid players found in input. Skipping match processing.");
+            throw new BusinessException("No valid players found in input. Skipping match processing.",HttpStatus.BAD_REQUEST);
         }
 
-        System.out.println("[INFO] Valid players: " + validPlayers.stream()
-                .map(p -> "PlayerId=" + p.getPlayerId() + " Score=" + p.getScore())
-                .collect(Collectors.joining(", ")));
 
         // Always determine winner from valid players
         LeaguePlayerDtoWinner winner = determineWinner(validPlayers);
         Long winnerPlayerId = winner.getPlayerId();
 
         Player winnerPlayer = playerRepository.findById(winnerPlayerId)
-                .orElseThrow(() -> new RuntimeException("Player not found with ID: " + winnerPlayerId));
+                .orElseThrow(() -> new BusinessException("Player not found with ID: " + winnerPlayerId,HttpStatus.NOT_FOUND));
         Long winnerTeamId = winnerPlayer.getTeam().getId();
 
         LeagueTeam winnerLeagueTeam = leagueTeamRepository.findById(winnerTeamId)
-                .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + winnerTeamId));
+                .orElseThrow(() -> new BusinessException("LeagueTeam not found with ID: " + winnerTeamId,HttpStatus.NOT_FOUND));
 
         // Winner record
         LeagueResultRecord winnerRecord = new LeagueResultRecord();
@@ -1480,15 +1477,15 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             loser = validPlayers.stream()
                     .filter(p -> !p.getPlayerId().equals(winnerPlayerId))
                     .findFirst()
-                    .orElseThrow(() -> new RuntimeException("No loser found"));
+                    .orElseThrow(() -> new BusinessException("No loser found",HttpStatus.BAD_REQUEST));
 
             Long loserPlayerId = loser.getPlayerId();
             Player loserPlayer = playerRepository.findById(loserPlayerId)
-                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + loserPlayerId));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + loserPlayerId,HttpStatus.BAD_REQUEST));
             Long loserTeamId = loserPlayer.getTeam().getId();
 
             LeagueTeam loserLeagueTeam = leagueTeamRepository.findById(loserTeamId)
-                    .orElseThrow(() -> new RuntimeException("LeagueTeam not found with ID: " + loserTeamId));
+                    .orElseThrow(() -> new BusinessException("LeagueTeam not found with ID: " + loserTeamId,HttpStatus.NOT_FOUND));
 
             LeagueResultRecord loserRecord = new LeagueResultRecord();
             loserRecord.setRoomId(leagueRoom.getId());
@@ -1522,7 +1519,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     private LeaguePlayerDtoWinner determineWinner(List<LeaguePlayerDtoWinner> players) {
         return players.stream()
                 .max(Comparator.comparingInt(LeaguePlayerDtoWinner::getScore))  // Find the player with the highest score
-                .orElseThrow(() -> new RuntimeException("No players found"));
+                .orElseThrow(() -> new BusinessException("No players found",HttpStatus.NOT_FOUND));
     }
 
 
