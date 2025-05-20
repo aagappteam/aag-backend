@@ -105,7 +105,6 @@ public class LeaderBoardLeague {
     public List<LeagueLeaderboardDto> getLeaderboard(Long leagueId, Long roomId, Boolean winnerFlag) {
         List<LeagueResultRecord> results;
 
-
         if (roomId != null) {
             // Filter by both game and room
             results = leagueResultRecordRepository.findByLeague_IdAndRoomId(leagueId, roomId);

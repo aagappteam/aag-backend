@@ -81,10 +81,10 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
         }
     }*/
 
-    @GetMapping("/get-all-customers")
-    public ResponseEntity<?> getAllCustomers(
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit,
+    @GetMapping("/get-all-customersold")
+    public ResponseEntity<?> getAllCustomersOld(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long customerId
     ) {
         try {
@@ -93,7 +93,7 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
                 return ResponseService.generateSuccessResponse("Customer details : ", customCustomer, HttpStatus.OK);
             }
 
-            int startPosition = offset * limit;
+            int startPosition = page * size;
 
             // Total count query
             Query countQuery = entityManager.createQuery("SELECT COUNT(c) FROM CustomCustomer c");
@@ -102,7 +102,7 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
             // Paginated data query
             TypedQuery<CustomCustomer> query = entityManager.createQuery(Constant.GET_ALL_CUSTOMERS, CustomCustomer.class);
             query.setFirstResult(startPosition);
-            query.setMaxResults(limit);
+            query.setMaxResults(size);
             List<CustomCustomer> results = new ArrayList<>();
             for (CustomCustomer customer : query.getResultList()) {
                 CustomCustomer customerToAdd = customCustomerService.readCustomerById(customer.getId());
@@ -118,6 +118,59 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
             return ResponseService.generateErrorResponse("Some issue in customers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+    @GetMapping("/get-all-customers")
+    public ResponseEntity<?> getAllCustomers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) String mobileNumber
+    ) {
+        try {
+            if (customerId != null) {
+                CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, customerId);
+                return ResponseService.generateSuccessResponse("Customer details:", customCustomer, HttpStatus.OK);
+            }
+
+            int startPosition = page * size;
+
+            StringBuilder baseQuery = new StringBuilder("SELECT c FROM CustomCustomer c WHERE 1=1");
+            StringBuilder countQueryStr = new StringBuilder("SELECT COUNT(c) FROM CustomCustomer c WHERE 1=1");
+
+            Map<String, Object> params = new HashMap<>();
+
+            if (mobileNumber != null && !mobileNumber.isEmpty()) {
+                baseQuery.append(" AND c.mobileNumber = :mobileNumber");
+                countQueryStr.append(" AND c.mobileNumber = :mobileNumber");
+                params.put("mobileNumber", mobileNumber);
+            }
+
+            baseQuery.append(" ORDER BY c.createdDate DESC");
+
+            TypedQuery<Long> countQuery = entityManager.createQuery(countQueryStr.toString(), Long.class);
+            TypedQuery<CustomCustomer> dataQuery = entityManager.createQuery(baseQuery.toString(), CustomCustomer.class)
+                    .setFirstResult(startPosition)
+                    .setMaxResults(size);
+
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                countQuery.setParameter(entry.getKey(), entry.getValue());
+                dataQuery.setParameter(entry.getKey(), entry.getValue());
+            }
+
+            Long totalCount = countQuery.getSingleResult();
+            List<CustomCustomer> results = dataQuery.getResultList();
+
+            return ResponseService.generateSuccessResponseWithCount("List of customers:", results, totalCount, HttpStatus.OK);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Some issue in customers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
 
 
     @Transactional
