@@ -1602,7 +1602,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 System.out.println("✔️ Round " + currentRound + " is completed. FREE_PASS=" + freePassCount + " WINNER=" + winnerCount);
 
                 if (freePassCount == 0 && winnerCount == 1) {
-                   /* distributeRoundPrize(tournament, currentRound);*/
                     finishTournament(tournamentId);
                     System.out.println("🏆 Tournament finished! Only one winner remains.");
                     return;
@@ -2072,9 +2071,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
     }
 
 
-
-
-
     @Transactional
     public String manualStartNextRound(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
@@ -2087,8 +2083,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         }
 
         int nextRound = currentRound + 1;
-        distributeRoundPrize(tournament, currentRound);
-
         if (nextRound <= tournament.getTotalrounds()) {
             List<TournamentResultRecord> readyPlayers = tournamentResultRecordRepository
                     .findByTournamentIdAndRoundAndStatus(tournamentId, nextRound, "READY_TO_PLAY");
