@@ -57,6 +57,7 @@ public class  LeagueWinning {
         }
     }
 
+/*
     @GetMapping("/game/{leagueId}")
     public ResponseEntity<?> getLeaderboard(@PathVariable Long leagueId, @RequestParam(defaultValue = "0") int page,
                                             @RequestParam(defaultValue = "10") int size) {
@@ -70,6 +71,7 @@ public class  LeagueWinning {
             return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+*/
 
 
     @GetMapping("/leaderboard")

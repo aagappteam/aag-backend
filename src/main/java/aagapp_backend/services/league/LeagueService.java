@@ -86,8 +86,7 @@ public class LeagueService {
     @Autowired
     private EntityManager em;
 
-    @Autowired
-    private LeagueRoomWinnerRepository leagueRoomWinnerRepository;
+
 
     @Autowired
     private VendorRepository vendorRepository;

@@ -382,7 +382,6 @@ public class TournamentController {
     }*/
 
 
-
     @PostMapping("/leave-room")
     public ResponseEntity<?> leaveTournamentRoom(@RequestBody TournamentJoinRequest tournamentJoinRequest) {
 
@@ -554,7 +553,7 @@ public class TournamentController {
                     .countByTournamentIdAndRoundAndStatusIn(
                             tournamentId,
                             roundNumber - 1,
-                            Arrays.asList("INPROGRESS", "ONGOING","PLAYING")
+                            Arrays.asList("IN_PROGRESS", "ONGOING","PLAYING")
                     );
 
 

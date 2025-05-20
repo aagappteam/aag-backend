@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,9 @@ public class TournamentRoom {
 
     private String status;
 
+    @Column(name = "created_date", updatable = false)
+    private ZonedDateTime createdDate;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime updatedDate;
 
@@ -57,5 +61,10 @@ public class TournamentRoom {
     @PreUpdate
     public void preUpdate() {
         this.updatedDate = ZonedDateTime.now();
+    }
+
+    @PrePersist
+    public void setCreatedDate() {
+        this.createdDate = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
     }
 }

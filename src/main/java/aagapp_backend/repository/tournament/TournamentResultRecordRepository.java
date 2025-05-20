@@ -95,6 +95,7 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
 
     List<TournamentResultRecord> findAllByPlayerIdAndTournamentIdOrderByIdDesc(Long playerId, Long tournamentId);
 
+
     @Query("SELECT COUNT(r) FROM TournamentResultRecord r " +
             "WHERE r.tournament.id = :tournamentId " +
             "AND r.round = :round " +
