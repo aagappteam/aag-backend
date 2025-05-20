@@ -762,6 +762,7 @@ public class LeagueService {
         }
 
         existingPass.setSelectedTeamId(teamId);
+        team.setTeamPlayersCount(team.getTeamPlayersCount() + 1);
         player.setTeam(team);
         leaguePassRepository.save(existingPass);
 
@@ -876,7 +877,6 @@ public class LeagueService {
 
 
             LeagueRoom leagueRoom = findAvailableGameRoom(league);
-            team.setTeamPlayersCount(team.getTeamPlayersCount() + 1);
 
             // ✅ Use team.getTeamName() instead of passing string teamName
             boolean playerJoined = addPlayerToRoom(leagueRoom, player, team.getTeamName());
