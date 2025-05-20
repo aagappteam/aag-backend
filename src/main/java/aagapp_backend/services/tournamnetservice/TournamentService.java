@@ -621,7 +621,139 @@ public class TournamentService {
             }
         }
     }
+
     @Transactional
+    public Tournament startTournament(Long tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
+
+        if (tournament.getStatus() != TournamentStatus.SCHEDULED) {
+            throw new IllegalStateException("Tournament is not in SCHEDULED status");
+        }
+
+        List<Player> activePlayers = getActivePlayers(tournamentId);
+
+        if (activePlayers.isEmpty()) {
+            updateTournamentStatus(tournament, TournamentStatus.REJECTED, "No active players found");
+            return tournament;
+        }
+
+        if (activePlayers.size() == 1) {
+            Player winner = activePlayers.get(0);
+
+            BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
+            BigDecimal totalCollection = entryFeePerUser;
+            BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
+            tournament.setRoomprize(userPrizePool);
+            tournament.setTotalPrizePool(totalCollection.doubleValue());
+            tournament.setTotalrounds(1);
+            tournament.setStatus(TournamentStatus.COMPLETED);
+            tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+            tournamentRepository.save(tournament);
+
+            setvendorShare(tournament);
+
+            TournamentResultRecord result = new TournamentResultRecord();
+            result.setTournament(tournament);
+            result.setRoomId(null);
+            result.setPlayer(winner);
+            result.setScore(0);
+            result.setIsWinner(true);
+            result.setStatus("WINNER");
+            result.setRound(1);
+            result.setPlayedAt(LocalDateTime.now());
+            tournamentResultRecordRepository.save(result);
+
+            Notification notification = new Notification();
+            notification.setAmount(userPrizePool.doubleValue());
+            notification.setDetails("You won ₹ " + userPrizePool + " in Round 1");
+            notification.setDescription("Round Prize");
+            notification.setRole("Customer");
+            notification.setCustomerId(winner.getCustomer().getId());
+            notificationRepository.save(notification);
+
+            String fcmToken = tournament.getVendorEntity().getFcmToken();
+            if (fcmToken != null) {
+                notoficationFirebase.sendNotification(
+                        fcmToken,
+                        "⚠️ Tournament " + tournament.getName() + " was concluded",
+                        "⚠️ Tournament " + tournament.getName() + " was concluded. " +
+                                "User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
+            }
+
+            return tournament;
+        }
+
+        if (activePlayers.size() < 2) {
+            throw new IllegalStateException("Not enough players to start the tournament (minimum 2 needed)");
+        }
+
+        Collections.shuffle(activePlayers);
+
+        int totalPlayers = tournament.getCurrentJoinedPlayers();
+        int freePassCount = activePlayers.size() % 2;
+        int totalRounds = (int) Math.ceil(Math.log(totalPlayers + freePassCount) / Math.log(2));
+        tournament.setTotalrounds(totalRounds);
+
+        BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
+        BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers + freePassCount));
+
+        BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
+        BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
+
+        tournament.setRoomprize(roomPrizePool);
+        tournament.setTotalPrizePool(totalCollection.doubleValue());
+        tournament.setStatus(TournamentStatus.ACTIVE);
+        tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+        tournamentRepository.save(tournament);
+
+        for (int i = 0; i < activePlayers.size(); i += 2) {
+            if (i + 1 < activePlayers.size()) {
+                TournamentRoom room = new TournamentRoom();
+                room.setTournament(tournament);
+                room.setMaxParticipants(2);
+                room.setCurrentParticipants(0);
+                room.setStatus("IN_PROGRESS");
+                room.setRound(1);
+                roomRepository.save(room);
+
+                String gameName = tournament.getName().toLowerCase();
+                String gamePassword;
+
+                if (gameName.equals("ludo")) {
+                    gamePassword = this.createNewGame(Constant.ludobaseurl, tournament.getId(), room.getId(),
+                            room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
+                } else if (gameName.equals("snake & ladder")) {
+                    gamePassword = this.createNewGame(Constant.snakebaseUrl, tournament.getId(), room.getId(),
+                            room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
+                } else {
+                    throw new BusinessException("Unsupported game: " + gameName, HttpStatus.BAD_REQUEST);
+                }
+
+                room.setGamepassword(gamePassword);
+                roomRepository.save(room);
+
+                assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
+                assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);
+            } else {
+                assignFreePassToPlayer(activePlayers.get(i), tournamentId, 1);
+            }
+        }
+
+        String fcmToken = tournament.getVendorEntity().getFcmToken();
+        if (fcmToken != null) {
+            notoficationFirebase.sendNotification(
+                    fcmToken,
+                    "🎉 Your Tournament Has Begun!",
+                    "Congratulations! The tournament '" + tournament.getName() + "' you hosted is now live. Monitor the progress and enjoy the event!"
+            );
+        }
+
+        return tournament;
+    }
+
+/*    @Transactional
     public Tournament startTournament(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
@@ -707,9 +839,40 @@ public class TournamentService {
         tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
         tournamentRepository.save(tournament);
+        if (i + 1 < activePlayers.size()) {
+            TournamentRoom room = new TournamentRoom();
+            room.setTournament(tournament);
+            room.setMaxParticipants(2);
+            room.setCurrentParticipants(0);
+            room.setStatus("IN_PROGRESS");
+            room.setRound(1);
+            roomRepository.save(room);
+
+            String gameName = tournament.getName().toLowerCase();
+            String gamePassword;
+
+            if (gameName.equals("ludo")) {
+                gamePassword = this.createNewGame(Constant.ludobaseurl, tournament.getId(), room.getId(),
+                        room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
+            } else if (gameName.equals("snake & ladder")) {
+                gamePassword = this.createNewGame(Constant.snakebaseUrl, tournament.getId(), room.getId(),
+                        room.getMaxParticipants(), tournament.getMove(), tournament.getRoomprize());
+            } else {
+                throw new BusinessException("Unsupported game: " + gameName, HttpStatus.BAD_REQUEST);
+            }
+
+            room.setGamepassword(gamePassword);
+            roomRepository.save(room);
+
+            assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
+            assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);
+        } else {
+            // Odd player: give free pass, NO room creation
+            assignFreePassToPlayer(activePlayers.get(i), tournamentId, 1);
+        }
 
         // Assign players 2 per room, last player gets free pass if odd number
-        for (int i = 0; i < activePlayers.size(); i += 2) {
+*//*        for (int i = 0; i < activePlayers.size(); i += 2) {
             TournamentRoom room = new TournamentRoom();
             room.setTournament(tournament);
             room.setMaxParticipants(2);
@@ -741,7 +904,7 @@ public class TournamentService {
                 assignFreePassToPlayer(activePlayers.get(i), tournamentId, 1);
 //                roomRepository.deleteById(room.getId());
             }
-        }
+        }*//*
 
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
@@ -754,7 +917,7 @@ public class TournamentService {
 
 
         return tournament;
-    }
+    }*/
 
 /*    @Transactional
     public Tournament startTournamentOld(Long tournamentId) {
@@ -1573,16 +1736,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
     }*/
 
-/*    @Scheduled(fixedRate = 30000)
-    public void checkAndStartNextRoundsForAllTournaments() {
-
-
-        List<Tournament> activeTournaments = tournamentRepository.findByStatus(TournamentStatus.ACTIVE);
-        for (Tournament tournament : activeTournaments) {
-            startNextRound(tournament.getId(), tournament.getRound());
-        }
-
-    }*/
     public void startNextRound(Long tournamentId, int currentRound) {
         try {
             Tournament tournament = tournamentRepository.findById(tournamentId)

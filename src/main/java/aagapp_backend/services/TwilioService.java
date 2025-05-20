@@ -88,6 +88,11 @@ public class TwilioService {
                 customerDetails.setMobileNumber(mobileNumber);
                 customerDetails.setOtp(otp);
                 customerDetails.setProfileStatus(ProfileStatus.PENDING);
+
+
+
+
+
                 entityManager.persist(customerDetails);
                 /*Player player = new Player();
                 player.setPlayerId(customerDetails.getId());

@@ -4,6 +4,8 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 
 import aagapp_backend.enums.ProfileStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +16,13 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class CustomCustomerService {
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     private EntityManager entityManager;
 
@@ -191,4 +197,14 @@ public class CustomCustomerService {
         return email != null && email.matches(Constant.EMAIL_REGEXP);
     }
 
+    public String getGenderByName(String name) {
+        String url = "https://api.genderize.io?name=" + name;
+        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            Map body = response.getBody();
+            return (String) body.get("gender");
+        }
+        return "unknown";
+    }
 }
