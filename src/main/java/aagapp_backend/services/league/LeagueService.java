@@ -1606,10 +1606,12 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             // Step 3: Build teamScores list including default scores for teams without scores
             List<Map<String, Object>> teamScores = new ArrayList<>();
             for (LeagueTeam team : allTeams) {
+                Long teamId = team.getId();
                 String teamName = team.getTeamName();
                 Long totalScore = scoreMap.getOrDefault(teamName, 0L);
 
                 Map<String, Object> teamData = new HashMap<>();
+                teamData.put("teamId", teamId);
                 teamData.put("teamName", teamName);
                 teamData.put("totalScore", totalScore);
                 teamData.put("profilePic", team.getProfilePic() != null ? team.getProfilePic() :
