@@ -45,7 +45,7 @@ public class LeaderBoardLeague {
     @Autowired
     private CustomCustomerRepository customCustomerRepository;
 
-    public GameLeaderboardResponseDTO getLeaderboard(Long leagueId, Pageable pageable) {
+/*    public GameLeaderboardResponseDTO getLeaderboard(Long leagueId, Pageable pageable) {
         // 1. Fetch the game details
         Optional<League> gameOpt = leagueRepository.findById(leagueId);
         if (gameOpt.isEmpty()) {
@@ -99,7 +99,7 @@ public class LeaderBoardLeague {
         response.setCurrentPage(winnersPage.getNumber());
 
         return response;
-    }
+    }*/
 
 
     public List<LeagueLeaderboardDto> getLeaderboard(Long leagueId, Long roomId, Boolean winnerFlag) {
