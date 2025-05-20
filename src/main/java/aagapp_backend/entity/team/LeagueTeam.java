@@ -47,6 +47,10 @@ public class LeagueTeam {
     @JsonIgnore
     private League league;
 
+    @Column(name = "team_players_count")
+    private Integer teamPlayersCount = 0;
+
+
 
     @OneToMany(mappedBy = "team")
     @JsonManagedReference(value = "teamPlayers")

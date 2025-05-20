@@ -876,9 +876,7 @@ public class LeagueService {
 
 
             LeagueRoom leagueRoom = findAvailableGameRoom(league);
-
-            // ✅ Assign team to player
-            player.setTeam(team);
+            team.setTeamPlayersCount(team.getTeamPlayersCount() + 1);
 
             // ✅ Use team.getTeamName() instead of passing string teamName
             boolean playerJoined = addPlayerToRoom(leagueRoom, player, team.getTeamName());
@@ -1008,8 +1006,7 @@ public class LeagueService {
             }
 
             player.setLeagueRoom(null);
-            player.setTeam(null);
-            leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
+//            player.setTeam(null);
             playerRepository.save(player);
 
             List<Player> remainingPlayers = playerRepository.findAllByLeagueRoom(leagueRoom);
@@ -1045,7 +1042,7 @@ public class LeagueService {
 
             player.setLeagueRoom(null);
             /*  player.setTeam(null);*/
-            leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
+//            leagueRoom.setActivePlayersCount(leagueRoom.getCurrentPlayers().size());
             playerRepository.save(player);
             LeagueRoom updated = leagueRoomRepository.save(leagueRoom);
 
@@ -1612,7 +1609,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 teamData.put("totalScore", totalScore);
                 teamData.put("profilePic", team.getProfilePic() != null ? team.getProfilePic() :
                         "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
-                teamData.put("playerCount", playerRepository.countByTeamId(team.getId()));
+                teamData.put("playerCount", team.getTeamPlayersCount());
 
                 teamScores.add(teamData);
             }
@@ -1702,6 +1699,113 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             return responseService.generateErrorResponse("Failed to fetch league team details because " + e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
+
+
+    public ResponseEntity<?> distributePrizePool(Long leagueId) {
+        try {
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new BusinessException("League not found", HttpStatus.BAD_REQUEST));
+
+            List<LeagueTeam> teams = leagueTeamRepository.findByLeague(league);
+            if (teams.size() != 2)
+                throw new BusinessException("Exactly two teams required.", HttpStatus.BAD_REQUEST);
+
+            // Determine winning team
+            LeagueTeam winner = teams.get(0).getTotalScore() >= teams.get(1).getTotalScore()
+                    ? teams.get(0) : teams.get(1);
+
+            // Fetch all result records for winning team
+            List<LeagueResultRecord> records = leagueResultRecordRepository.findByLeagueIdAndLeagueTeamId(
+                    league.getId(), winner.getId());
+
+            // Group records by player and calculate total scores
+            Map<Long, List<LeagueResultRecord>> groupedByPlayer = records.stream()
+                    .collect(Collectors.groupingBy(r -> r.getPlayer().getPlayerId()));
+
+            List<PlayerLeagueScoreDDTO> players = groupedByPlayer.values().stream().map(playerRecords -> {
+                LeagueResultRecord firstRecord = playerRecords.get(0);
+                Player player = firstRecord.getPlayer();
+                int totalScore = playerRecords.stream().mapToInt(LeagueResultRecord::getTotalScore).sum();
+
+                return new PlayerLeagueScoreDDTO(
+                        player.getPlayerName(),
+                        player.getPlayerProfilePic(),
+                        false, // currentUser irrelevant here
+                        totalScore,
+                        2, // static retries
+                        true, // isWinner
+                        null // prize will be added later
+                );
+            }).collect(Collectors.toList());
+
+            int totalScore = winner.getTotalScore();
+            double prizePool = 1000.0;
+
+            List<PlayerPrizeDTO> prizeDistribution = calculatePrizeDistribution(players, totalScore, prizePool);
+
+            return responseService.generateSuccessResponse(
+                    "Prize pool distributed successfully.",
+                    prizeDistribution,
+                    HttpStatus.OK
+            );
+
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(e.getStatus(), e);
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Failed to distribute prize: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    public List<PlayerPrizeDTO> calculatePrizeDistribution(List<PlayerLeagueScoreDDTO> players, int totalTeamScore, double totalPrizePool) {
+        players.sort(Comparator.comparingInt(PlayerLeagueScoreDDTO::getScore).reversed());
+
+        int topN = 10;
+        int playerCount = players.size();
+
+        List<PlayerPrizeDTO> prizeDistribution = new ArrayList<>();
+        double distributedPrize = 0;
+
+        for (int i = 0; i < Math.min(topN, playerCount); i++) {
+            PlayerLeagueScoreDDTO player = players.get(i);
+            double contributionPercentage = (double) player.getScore() * 100 / totalTeamScore;
+            double prizeAmount = (contributionPercentage / 100) * totalPrizePool;
+            distributedPrize += prizeAmount;
+
+            prizeDistribution.add(new PlayerPrizeDTO(
+                    player.getName(),
+                    player.getScore(),
+                    round(contributionPercentage),
+                    round(prizeAmount)
+            ));
+        }
+
+        double remainingPrize = round(totalPrizePool - distributedPrize);
+
+        if (playerCount > topN) {
+            int remainingPlayersCount = playerCount - topN;
+            double equalShare = remainingPrize / remainingPlayersCount;
+
+            for (int i = topN; i < playerCount; i++) {
+                PlayerLeagueScoreDDTO player = players.get(i);
+                prizeDistribution.add(new PlayerPrizeDTO(
+                        player.getName(),
+                        player.getScore(),
+                        0.0,
+                        round(equalShare)
+                ));
+            }
+        }
+
+        return prizeDistribution;
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+
 
 
 }
