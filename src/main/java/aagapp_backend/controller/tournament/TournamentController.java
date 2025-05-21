@@ -530,8 +530,28 @@ public class TournamentController {
             // 3. Completion checks
             boolean allPreviousRoundRoomsCompleted = previousRoundRooms.stream()
                     .allMatch(room -> "COMPLETED".equalsIgnoreCase(room.getStatus()));
-            boolean allCurrentRoundRoomsCompleted = currentRoundRooms.stream()
-                    .allMatch(room -> "COMPLETED".equalsIgnoreCase(room.getStatus()));
+
+            List<TournamentRoom> roomsInProgress = tournamentRoomRepository.findByTournamentIdAndRoundAndStatus(tournamentId, roundNumber - 1, "PLAYING");
+
+            System.out.println("Rooms in progress from previous round: " + roomsInProgress.size());
+
+            for (TournamentRoom room : roomsInProgress) {
+                long playerCount = room.getCurrentPlayers() != null ? room.getCurrentPlayers().stream().count() : 0;
+                System.out.println("Room ID: " + room.getId() + " has " + playerCount + " players.");
+
+                if (playerCount == 0) {
+                    room.setStatus("COMPLETED"); // or "ENDED"
+                    tournamentRoomRepository.save(room);
+                    System.out.println("Room ID: " + room.getId() + " marked as COMPLETED due to zero players.");
+                }
+            }
+
+
+
+//            boolean canStartNextRound = remainingPlayers == 0;
+//            System.out.println("Remaining active players: " + remainingPlayers);
+//            System.out.println("Can start next round? " + canStartNextRound);
+
 
            /* long completedRoomCount = previousRoundRooms.stream()
                     .filter(room -> "COMPLETED".equalsIgnoreCase(room.getStatus()))
@@ -559,12 +579,18 @@ public class TournamentController {
                             Arrays.asList("IN_PROGRESS", "ONGOING","PLAYING")
                     );
 
+
+
+
             System.out.println("expectedPlayers: " + expectedPlayers);
             System.out.println("remainingPlayers: " + remainingPlayers);
 
 
             // 5. Decide if next round can start
-            boolean canStartNextRound = allPreviousRoundRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
+//            boolean canStartNextRound = allPreviousRoundRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
+            boolean canStartNextRound = allPreviousRoundRoomsCompleted
+                    && remainingPlayers == 0  // no active players left in previous round rooms
+                    && waitingCount > 0;      // at least some players ready for next round
 
             // 6. Enable Play Again button if all rounds completed
             boolean playAgainEnabled = allPreviousRoundRoomsCompleted;

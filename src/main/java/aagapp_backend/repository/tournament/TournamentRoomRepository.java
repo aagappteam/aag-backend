@@ -43,5 +43,19 @@ public interface TournamentRoomRepository extends JpaRepository<TournamentRoom ,
 
     List<TournamentRoom> findByTournamentIdAndStatusIn(Long tournamentId, List<String> statuses);
 
+/*
     long countByTournamentIdAndRoundAndStatusIn(Long tournamentId, int i, List<String> list);
+*/
+
+    @Query("SELECT COUNT(tr) FROM TournamentRoom tr WHERE tr.tournament.id = :tournamentId AND tr.round = :round AND tr.status IN :statuses")
+    long countByTournamentIdAndRoundAndStatusIn(
+            @Param("tournamentId") Long tournamentId,
+            @Param("round") int round,
+            @Param("statuses") List<String> statuses);
+
+/*    @Query("SELECT COUNT(r) FROM TournamentRoom r WHERE r.tournamentId = :tournamentId AND r.round = :round AND r.status IN :statuses AND SIZE(r.currentPlayers) > 0")
+    long countActiveRoomsWithPlayers(Long tournamentId, int round, List<String> statuses);*/
+
+
+
 }
