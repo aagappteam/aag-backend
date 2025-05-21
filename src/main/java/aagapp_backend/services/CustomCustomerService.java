@@ -137,32 +137,26 @@ public class CustomCustomerService {
     @Transactional
     public ResponseEntity<?> updateCustomer(Long customerId, Map<String, Object> updates) {
         try {
-            // Retrieve the existing customer entity by ID
             CustomCustomer existingCustomer = entityManager.find(CustomCustomer.class, customerId);
             if (existingCustomer == null) {
                 return ResponseEntity.status(404).body("Customer with ID " + customerId + " not found");
             }
 
-            // Prevent the mobile number from being updated
             if (updates.containsKey("mobileNumber")) {
-                updates.remove("mobileNumber"); // Remove mobileNumber from updates to prevent modification
+                updates.remove("mobileNumber");
             }
 
-            // Validate the provided updates
             for (Map.Entry<String, Object> entry : updates.entrySet()) {
                 String fieldName = entry.getKey();
                 Object newValue = entry.getValue();
 
-                // Use reflection to set the fields dynamically
                 Field field = CustomCustomer.class.getDeclaredField(fieldName);
                 field.setAccessible(true);
 
-                // Skip fields that are not valid for update or cannot be empty
                 if (newValue == null || newValue.toString().isEmpty()) {
                     continue;
                 }
 
-                // Handle specific validations for each field
                 if ("email".equals(fieldName)) {
                     // You can add your own email validation logic here if required
                     if (newValue != null && !isValidEmail((String) newValue)) {
