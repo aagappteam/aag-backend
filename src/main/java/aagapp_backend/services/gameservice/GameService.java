@@ -20,6 +20,7 @@ import aagapp_backend.services.CommonService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.pricedistribute.MatchService;
 import aagapp_backend.services.vendor.VenderService;
@@ -117,6 +118,10 @@ public class GameService {
     public void setMatchService(MatchService matchService) {
         this.matchService = matchService;
     }
+
+    @Autowired
+    private LeagueService leagueService;
+
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(GameService.class);
 
 
@@ -852,6 +857,7 @@ public void updateDailylimit() {
                 if (league.getEndDate() != null && league.getEndDate().isBefore(nowInKolkata)) {
                     league.setStatus(LeagueStatus.EXPIRED); // Change the status to EXPIRED
                     league.setUpdatedDate(nowInKolkata);
+                    leagueService.distributePrizePoolSilently(league.getId());
                     leagueRepository.save(league);
                 }
             }

@@ -7,6 +7,7 @@ public class Constant {
 
 
     public static final Double LEAGUE_PASSES_FEE = 7.0;
+    public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(1000.00);
     public static String ludobaseurl = "http://3.110.44.61:8082";
     public static String snakebaseUrl = "http://3.110.44.61:8092";
 
