@@ -29,7 +29,7 @@ public class LeaguePass {
     @ManyToOne
     private League league;
 
-    private int passCount;
+    private int passCount=0;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime updatedDate;
