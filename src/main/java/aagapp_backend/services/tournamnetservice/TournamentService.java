@@ -638,6 +638,7 @@ public class TournamentService {
             return tournament;
         }
 
+        System.out.println("activePlayers: " + activePlayers.size());
         if (activePlayers.size() == 1) {
             Player winner = activePlayers.get(0);
 
@@ -740,7 +741,6 @@ public class TournamentService {
                 assignFreePassToPlayer(activePlayers.get(i), tournamentId, 1);
             }
         }
-
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
             notoficationFirebase.sendNotification(
@@ -1115,9 +1115,6 @@ public class TournamentService {
             tournamentResultRecordRepository.save(result);
         }
     }
-
-
-
 
 
     public void assignPlayerToSpecificRoom(Player player, Long tournamentId, TournamentRoom room) {

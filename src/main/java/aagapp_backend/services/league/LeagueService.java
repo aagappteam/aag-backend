@@ -506,7 +506,7 @@ public class LeagueService {
                 NotificationRequest notificationRequest = new NotificationRequest();
                 notificationRequest.setToken(fcmToken);
                 notificationRequest.setTitle("Challenge Accepted!");
-                notificationRequest.setBody(opponentVendor.getFirst_name() + " is ready. Your league challenge will be active in 10 minutes!");
+                notificationRequest.setBody(vendorEntity.getFirst_name() + " is ready. Your league will be active in 15 minutes!");
                 notificationRequest.setTopic("League Challenge Accepted"); // Optional, just for tagging
 
                 try {
