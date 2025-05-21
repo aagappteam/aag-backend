@@ -1604,6 +1604,9 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 Map<String, Object> teamData = new HashMap<>();
                 teamData.put("teamId", teamId);
                 teamData.put("teamName", teamName);
+
+                teamData.put("teamScore", totalScore);
+
                 teamData.put("profilePic", team.getProfilePic() != null ? team.getProfilePic() :
                         "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
                 teamData.put("playerCount", team.getTeamPlayersCount());
