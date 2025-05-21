@@ -88,7 +88,6 @@ public class LeagueService {
     private EntityManager em;
 
 
-
     @Autowired
     private VendorRepository vendorRepository;
 
@@ -514,7 +513,7 @@ public class LeagueService {
                     notificationFirebase.sendMessageToToken(notificationRequest);
                 } catch (Exception e) {
 //                    System.out.println("Error sending notification: " + e.getMessage());
-                    throw  new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
             return leagueRepository.save(savedLeague);
@@ -764,9 +763,8 @@ public class LeagueService {
         player.setTeam(team);
         leaguePassRepository.save(existingPass);
 
-        return responseService.generateSuccessResponse("Team selected successfully", "player selected team"+ team.getTeamName(), HttpStatus.OK);
+        return responseService.generateSuccessResponse("Team selected successfully", "player selected team" + team.getTeamName(), HttpStatus.OK);
     }
-
 
 
     @Transactional
@@ -842,7 +840,7 @@ public class LeagueService {
             LeaguePass leaguePass = leaguePassRepository.findByPlayerAndLeague(player, league)
                     .orElseThrow(() -> new BusinessException("No league passes found for this player in the selected league", HttpStatus.BAD_REQUEST));
 
-            if(!teamId.equals(leaguePass.getSelectedTeamId())){
+            if (!teamId.equals(leaguePass.getSelectedTeamId())) {
                 return responseService.generateErrorResponse("You have not selected a team or you want to join with another team", HttpStatus.BAD_REQUEST);
             }
 
@@ -1438,7 +1436,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 .collect(Collectors.toList());
 
         if (validPlayers.isEmpty()) {
-            throw new BusinessException("No valid players found in input. Skipping match processing.",HttpStatus.BAD_REQUEST);
+            throw new BusinessException("No valid players found in input. Skipping match processing.", HttpStatus.BAD_REQUEST);
         }
 
 
@@ -1447,11 +1445,11 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         Long winnerPlayerId = winner.getPlayerId();
 
         Player winnerPlayer = playerRepository.findById(winnerPlayerId)
-                .orElseThrow(() -> new BusinessException("Player not found with ID: " + winnerPlayerId,HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException("Player not found with ID: " + winnerPlayerId, HttpStatus.NOT_FOUND));
         Long winnerTeamId = winnerPlayer.getTeam().getId();
 
         LeagueTeam winnerLeagueTeam = leagueTeamRepository.findById(winnerTeamId)
-                .orElseThrow(() -> new BusinessException("LeagueTeam not found with ID: " + winnerTeamId,HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException("LeagueTeam not found with ID: " + winnerTeamId, HttpStatus.NOT_FOUND));
 
         // Winner record
         LeagueResultRecord winnerRecord = new LeagueResultRecord();
@@ -1474,15 +1472,15 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             loser = validPlayers.stream()
                     .filter(p -> !p.getPlayerId().equals(winnerPlayerId))
                     .findFirst()
-                    .orElseThrow(() -> new BusinessException("No loser found",HttpStatus.BAD_REQUEST));
+                    .orElseThrow(() -> new BusinessException("No loser found", HttpStatus.BAD_REQUEST));
 
             Long loserPlayerId = loser.getPlayerId();
             Player loserPlayer = playerRepository.findById(loserPlayerId)
-                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + loserPlayerId,HttpStatus.BAD_REQUEST));
+                    .orElseThrow(() -> new BusinessException("Player not found with ID: " + loserPlayerId, HttpStatus.BAD_REQUEST));
             Long loserTeamId = loserPlayer.getTeam().getId();
 
             LeagueTeam loserLeagueTeam = leagueTeamRepository.findById(loserTeamId)
-                    .orElseThrow(() -> new BusinessException("LeagueTeam not found with ID: " + loserTeamId,HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new BusinessException("LeagueTeam not found with ID: " + loserTeamId, HttpStatus.NOT_FOUND));
 
             LeagueResultRecord loserRecord = new LeagueResultRecord();
             loserRecord.setRoomId(leagueRoom.getId());
@@ -1511,12 +1509,10 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     }
 
 
-
-
     private LeaguePlayerDtoWinner determineWinner(List<LeaguePlayerDtoWinner> players) {
         return players.stream()
                 .max(Comparator.comparingInt(LeaguePlayerDtoWinner::getScore))  // Find the player with the highest score
-                .orElseThrow(() -> new BusinessException("No players found",HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException("No players found", HttpStatus.NOT_FOUND));
     }
 
 
@@ -1606,7 +1602,6 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 Map<String, Object> teamData = new HashMap<>();
                 teamData.put("teamId", teamId);
                 teamData.put("teamName", teamName);
-                teamData.put("totalScore", totalScore);
                 teamData.put("profilePic", team.getProfilePic() != null ? team.getProfilePic() :
                         "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
                 teamData.put("playerCount", team.getTeamPlayersCount());
@@ -1621,6 +1616,8 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 Integer playerScore = leagueResultRecordRepository.getPlayerTotalScoreInLeague(leagueId, playerId);
                 int passCount = leaguePassRepository.getPlayerPassCountByLeague(leagueId, playerId);
                 Player player = playerRepository.findById(playerId).orElse(null);
+                // 👇 Call the reusable method to get player's prize
+                BigDecimal playerPrize = getPlayerWinningPrize(leagueId, playerId);
 
                 Map<String, Object> playerData = new HashMap<>();
                 playerData.put("playerScore", playerScore != null ? playerScore : 0);
@@ -1628,7 +1625,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                         player.getPlayerProfilePic() :
                         "https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
                 playerData.put("pass", passCount);
-
+                playerData.put("winningPrize", playerPrize);
                 response.put("player", playerData);
             }
 
@@ -1640,6 +1637,73 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         return response;
     }
 
+
+    public BigDecimal getPlayerWinningPrize(Long leagueId, Long playerId) {
+        try {
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new BusinessException("League not found", HttpStatus.BAD_REQUEST));
+
+            List<LeagueTeam> teams = leagueTeamRepository.findByLeague(league);
+            if (teams.size() != 2)
+                throw new BusinessException("Exactly two teams required.", HttpStatus.BAD_REQUEST);
+
+            LeagueTeam winningTeam = teams.get(0).getTotalScore() >= teams.get(1).getTotalScore()
+                    ? teams.get(0) : teams.get(1);
+
+            /*if (!leagueResultRecordRepository.existsByLeagueIdAndLeagueTeamIdAndPlayerId(leagueId, winningTeam.getId(), playerId)) {
+                return BigDecimal.ZERO;
+            }
+*/
+            List<LeagueResultRecord> records = leagueResultRecordRepository
+                    .findByLeagueIdAndLeagueTeamId(leagueId, winningTeam.getId());
+
+            // Calculate total scores per player
+            Map<Long, Integer> playerScores = new HashMap<>();
+            for (LeagueResultRecord r : records) {
+                Long pid = r.getPlayer().getPlayerId();
+                playerScores.put(pid, playerScores.getOrDefault(pid, 0) + r.getTotalScore());
+            }
+
+            int totalTeamScore = winningTeam.getTotalScore();
+            BigDecimal prizePool = Constant.LEAGUE_PRIZE_POOL;
+
+            // Sort players by score
+            List<Map.Entry<Long, Integer>> sorted = playerScores.entrySet().stream()
+                    .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+                    .collect(Collectors.toList());
+
+            int topN = 10;
+            BigDecimal distributed = BigDecimal.ZERO;
+            Map<Long, BigDecimal> prizeMap = new HashMap<>();
+
+            List<Map.Entry<Long, Integer>> top = sorted.stream().limit(topN).toList();
+            List<Map.Entry<Long, Integer>> rest = sorted.stream().skip(topN).toList();
+
+            for (Map.Entry<Long, Integer> entry : top) {
+                BigDecimal percent = BigDecimal.valueOf(entry.getValue())
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
+
+                BigDecimal prize = prizePool.multiply(percent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                prizeMap.put(entry.getKey(), prize);
+                distributed = distributed.add(prize);
+            }
+
+            if (!rest.isEmpty()) {
+                BigDecimal remaining = prizePool.subtract(distributed).setScale(2, RoundingMode.HALF_UP);
+                BigDecimal equalShare = remaining.divide(BigDecimal.valueOf(rest.size()), 2, RoundingMode.HALF_UP);
+                for (Map.Entry<Long, Integer> entry : rest) {
+                    prizeMap.put(entry.getKey(), equalShare);
+                }
+            }
+
+            return prizeMap.getOrDefault(playerId, BigDecimal.ZERO);
+
+        } catch (Exception e) {
+            exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return BigDecimal.ZERO;
+        }
+    }
 
 
     public ResponseEntity<?> getLeagueTeamDetails(Long leagueId, Long currentUserId) {
@@ -1739,7 +1803,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             }).collect(Collectors.toList());
 
             int totalScore = winner.getTotalScore();
-            BigDecimal prizePool = new BigDecimal("1000.00");
+            BigDecimal prizePool = Constant.LEAGUE_PRIZE_POOL;
 
             List<PlayerPrizeDTO> prizeDistribution = calculatePrizeDistribution(players, totalScore, prizePool);
 
@@ -1760,136 +1824,148 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
 
     public List<PlayerPrizeDTO> calculatePrizeDistribution(List<PlayerLeagueScoreDDTO> players, int totalTeamScore, BigDecimal totalPrizePool) {
-        players.sort(Comparator.comparingInt(PlayerLeagueScoreDDTO::getScore).reversed());
+        try {
+            players.sort(Comparator.comparingInt(PlayerLeagueScoreDDTO::getScore).reversed());
 
-        int topN = 10;
-        int playerCount = players.size();
+            int topN = 10;
+            int playerCount = players.size();
 
-        List<PlayerPrizeDTO> prizeDistribution = new ArrayList<>();
-        BigDecimal distributedPrize = BigDecimal.ZERO;
+            List<PlayerPrizeDTO> prizeDistribution = new ArrayList<>();
+            BigDecimal distributedPrize = BigDecimal.ZERO;
 
-        for (int i = 0; i < Math.min(topN, playerCount); i++) {
-            PlayerLeagueScoreDDTO player = players.get(i);
-
-            BigDecimal contributionPercentage = BigDecimal.valueOf(player.getScore())
-                    .multiply(BigDecimal.valueOf(100))
-                    .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
-
-            BigDecimal prizeAmount = totalPrizePool
-                    .multiply(contributionPercentage)
-                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-
-            distributedPrize = distributedPrize.add(prizeAmount);
-
-            prizeDistribution.add(new PlayerPrizeDTO(
-                    player.getName(),
-                    player.getScore(),
-                    contributionPercentage.doubleValue(), // If DTO expects double
-                    prizeAmount
-            ));
-        }
-
-        BigDecimal remainingPrize = totalPrizePool.subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
-
-        if (playerCount > topN) {
-            int remainingPlayersCount = playerCount - topN;
-            BigDecimal equalShare = remainingPrize
-                    .divide(BigDecimal.valueOf(remainingPlayersCount), 2, RoundingMode.HALF_UP);
-
-            for (int i = topN; i < playerCount; i++) {
+            for (int i = 0; i < Math.min(topN, playerCount); i++) {
                 PlayerLeagueScoreDDTO player = players.get(i);
+
+                BigDecimal contributionPercentage = BigDecimal.valueOf(player.getScore())
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
+
+                BigDecimal prizeAmount = totalPrizePool
+                        .multiply(contributionPercentage)
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+                distributedPrize = distributedPrize.add(prizeAmount);
+
                 prizeDistribution.add(new PlayerPrizeDTO(
                         player.getName(),
                         player.getScore(),
-                        0.0,
-                        equalShare
+                        contributionPercentage.doubleValue(),
+                        prizeAmount
                 ));
             }
-        }
 
-        return prizeDistribution;
+            BigDecimal remainingPrize = totalPrizePool.subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
+
+            if (playerCount > topN) {
+                int remainingPlayersCount = playerCount - topN;
+                BigDecimal equalShare = remainingPrize
+                        .divide(BigDecimal.valueOf(remainingPlayersCount), 2, RoundingMode.HALF_UP);
+
+                for (int i = topN; i < playerCount; i++) {
+                    PlayerLeagueScoreDDTO player = players.get(i);
+                    prizeDistribution.add(new PlayerPrizeDTO(
+                            player.getName(),
+                            player.getScore(),
+                            0.0,
+                            equalShare
+                    ));
+                }
+            }
+
+            return prizeDistribution;
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return new ArrayList<>();
+        }
     }
 
 
 
     @Transactional
     public void distributePrizePoolSilently(Long leagueId) {
-        League league = leagueRepository.findById(leagueId)
-                .orElseThrow(() -> new BusinessException("League not found", HttpStatus.BAD_REQUEST));
+        try {
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new BusinessException("League not found", HttpStatus.BAD_REQUEST));
 
-        List<LeagueTeam> teams = leagueTeamRepository.findByLeague(league);
-        if (teams.size() != 2)
-            throw new BusinessException("Exactly two teams required.", HttpStatus.BAD_REQUEST);
-
-        LeagueTeam winner = teams.get(0).getTotalScore() >= teams.get(1).getTotalScore()
-                ? teams.get(0) : teams.get(1);
-
-        List<LeagueResultRecord> records = leagueResultRecordRepository
-                .findByLeagueIdAndLeagueTeamId(league.getId(), winner.getId());
-
-        // Group by player and calculate total score
-        Map<Player, Integer> playerScores = new HashMap<>();
-        for (LeagueResultRecord record : records) {
-            Player player = record.getPlayer();
-            playerScores.put(player, playerScores.getOrDefault(player, 0) + record.getTotalScore());
-        }
-
-        int totalTeamScore = winner.getTotalScore();
-        BigDecimal totalPrizePool = Constant.LEAGUE_PRIZE_POOL;
-        BigDecimal distributedPrize = BigDecimal.ZERO;
-
-        // Sort players by score descending
-        List<Map.Entry<Player, Integer>> sortedPlayers = playerScores.entrySet().stream()
-                .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
-                .collect(Collectors.toList());
-
-        // Top 10 players get prize based on contribution %
-        int topN = 10;
-        List<Map.Entry<Player, Integer>> topPlayers = sortedPlayers.stream().limit(topN).toList();
-        List<Map.Entry<Player, Integer>> remainingPlayers = sortedPlayers.stream().skip(topN).toList();
-
-        for (Map.Entry<Player, Integer> entry : topPlayers) {
-            Player player = entry.getKey();
-            int playerScore = entry.getValue();
-
-            BigDecimal contributionPercentage = BigDecimal.valueOf(playerScore)
-                    .multiply(BigDecimal.valueOf(100))
-                    .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
-
-            BigDecimal prizeAmount = totalPrizePool
-                    .multiply(contributionPercentage)
-                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-
-            distributedPrize = distributedPrize.add(prizeAmount);
-
-            Wallet wallet = player.getCustomer().getWallet();
-            wallet.setWinningAmount(wallet.getWinningAmount().add(prizeAmount));
-            walletRepo.save(wallet); // Persist wallet
-
-            // 🔍 Log the prize
-            System.out.println("TOP10: Player '" + player.getPlayerName() + "' (ID: " + player.getPlayerId() +
-                    ") scored " + playerScore +
-                    ", Contribution: " + contributionPercentage + "%" +
-                    ", Prize: ₹" + prizeAmount);
-        }
-
-        // Calculate remaining prize
-        BigDecimal remainingPrize = totalPrizePool.subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
-
-        if (!remainingPlayers.isEmpty() && remainingPrize.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal equalShare = remainingPrize
-                    .divide(BigDecimal.valueOf(remainingPlayers.size()), 2, RoundingMode.HALF_UP);
-
-            for (Map.Entry<Player, Integer> entry : remainingPlayers) {
-                Player player = entry.getKey();
-                Wallet wallet = player.getCustomer().getWallet();
-                wallet.setWinningAmount(wallet.getWinningAmount().add(equalShare));
-                walletRepo.save(wallet); // Save update
-
-                // 🔍 Log the remaining prize
-                System.out.println("REMAINING: Player '" + player.getPlayerName() + "' (ID: " + player.getPlayerId() +
-                        ") received equal share: ₹" + equalShare);
+            List<LeagueTeam> teams = leagueTeamRepository.findByLeague(league);
+            if (teams.size() != 2) {
+                throw new BusinessException("Exactly two teams required.", HttpStatus.BAD_REQUEST);
             }
+
+            LeagueTeam winner = teams.get(0).getTotalScore() >= teams.get(1).getTotalScore()
+                    ? teams.get(0) : teams.get(1);
+
+            List<LeagueResultRecord> records = leagueResultRecordRepository
+                    .findByLeagueIdAndLeagueTeamId(league.getId(), winner.getId());
+
+            // Aggregate scores per player
+            Map<Player, Integer> playerScores = new HashMap<>();
+            for (LeagueResultRecord record : records) {
+                Player player = record.getPlayer();
+                playerScores.put(player, playerScores.getOrDefault(player, 0) + record.getTotalScore());
+            }
+
+            int totalTeamScore = winner.getTotalScore();
+            BigDecimal totalPrizePool = Constant.LEAGUE_PRIZE_POOL;
+            BigDecimal distributedPrize = BigDecimal.ZERO;
+
+            // Sort players by score descending
+            List<Map.Entry<Player, Integer>> sortedPlayers = playerScores.entrySet().stream()
+                    .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+                    .collect(Collectors.toList());
+
+            int topN = 10;
+            List<Map.Entry<Player, Integer>> topPlayers = sortedPlayers.stream().limit(topN).toList();
+            List<Map.Entry<Player, Integer>> remainingPlayers = sortedPlayers.stream().skip(topN).toList();
+
+            // Top N contribution-based prize
+            for (Map.Entry<Player, Integer> entry : topPlayers) {
+                Player player = entry.getKey();
+                int score = entry.getValue();
+
+                BigDecimal contributionPercent = BigDecimal.valueOf(score)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
+
+                BigDecimal prize = totalPrizePool
+                        .multiply(contributionPercent)
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+                distributedPrize = distributedPrize.add(prize);
+
+                Wallet wallet = player.getCustomer().getWallet();
+                if (wallet != null) {
+                    wallet.setWinningAmount(wallet.getWinningAmount().add(prize));
+                    walletRepo.save(wallet);
+                }
+
+                System.out.println("TOP10: Player '" + player.getPlayerName() + "' (ID: " + player.getPlayerId() +
+                        ") scored " + score + ", Prize: ₹" + prize);
+            }
+
+            // Remaining prize equal distribution
+            BigDecimal remainingPrize = totalPrizePool.subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
+
+            if (!remainingPlayers.isEmpty() && remainingPrize.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal equalShare = remainingPrize
+                        .divide(BigDecimal.valueOf(remainingPlayers.size()), 2, RoundingMode.HALF_UP);
+
+                for (Map.Entry<Player, Integer> entry : remainingPlayers) {
+                    Player player = entry.getKey();
+                    Wallet wallet = player.getCustomer().getWallet();
+                    if (wallet != null) {
+                        wallet.setWinningAmount(wallet.getWinningAmount().add(equalShare));
+                        walletRepo.save(wallet);
+                    }
+
+                    System.out.println("REMAINING: Player '" + player.getPlayerName() + "' (ID: " + player.getPlayerId() +
+                            ") received equal share: ₹" + equalShare);
+                }
+            }
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
