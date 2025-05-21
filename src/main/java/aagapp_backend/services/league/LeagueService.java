@@ -213,8 +213,6 @@ public class LeagueService {
             challenge.setVendorProfilePic(vendor.getProfilePic());
             challenge.setName(game.getGameName());
             challenge.setGameImage(game.getGameImage());
-
-
             // Save the challenge in the database
             challangeRepository.save(challenge);
 
@@ -222,7 +220,7 @@ public class LeagueService {
 
             VendorEntity opponentVendor = vendorRepository.findById(receiverVendorId)
                     .orElseThrow(() -> new BusinessException("Opponent Vendor not found", HttpStatus.BAD_REQUEST));
-            String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
+            String fcmToken = opponentVendor.getFcmToken();
 
             if (fcmToken != null && !fcmToken.isEmpty()) {
                 Gson gson = new GsonBuilder()
@@ -470,7 +468,6 @@ public class LeagueService {
             challengingTeam.setVendor(opponentVendor);
             challengingTeam.setProfilePic(opponentVendor.getProfilePic());
             challengingTeam.setLeague(savedLeague);
-
             LeagueTeam opponentTeam = new LeagueTeam();
             opponentTeam.setTeamName("Team " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
             opponentTeam.setVendor(vendorEntity);

@@ -1568,7 +1568,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             leaveRoom(loser.getPlayerId(), tournament.getId());
         }
 
-        // === Proceed to next round ===
         int currentRound = tournament.getRound();
         startNextRound(tournament.getId(), currentRound);
     }
@@ -1756,6 +1755,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
                 if (freePassCount == 0 && winnerCount == 1) {
                     finishTournament(tournamentId);
+
                     System.out.println("🏆 Tournament finished! Only one winner remains.");
                     return;
                 }
@@ -1779,7 +1779,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         BigDecimal totalPrize = tournament.getRoomprize();
         BigDecimal roundPrize = totalPrize;
 
-        // Fetch winner records
         List<TournamentResultRecord> winners = tournamentResultRecordRepository
                 .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
 
@@ -1847,22 +1846,17 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
     public boolean isRoundCompleted(Long tournamentId, int roundNumber) {
 
-        System.out.println("Round Number: " + roundNumber  + " Tournament ID: " + tournamentId);
-        // Count only rooms that actually had participants
         long validRoomsCount = roomRepository.countByTournamentIdAndRoundAndCurrentParticipantsGreaterThan(
                 tournamentId, roundNumber, 0);
 
-        System.out.println("Valid rooms count: " + validRoomsCount);
         if (validRoomsCount == 0) {
             long freePassCount = tournamentResultRecordRepository
                     .countByTournamentIdAndRoundAndStatus(tournamentId, roundNumber, "FREE_PASS");
             return freePassCount > 0;
         }
 
-
         long completedRoomsCount = roomRepository.countByTournamentIdAndRoundAndStatusAndCurrentParticipantsGreaterThan(
                 tournamentId, roundNumber, "COMPLETED", 0);
-        System.out.println("completedRoomsCount rooms count: " + completedRoomsCount);
 
         return completedRoomsCount == validRoomsCount;
     }
