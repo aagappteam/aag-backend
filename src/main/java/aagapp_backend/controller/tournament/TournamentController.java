@@ -542,19 +542,25 @@ public class TournamentController {
 
             long expectedPlayers = completedRoomCount + freePassCount;*/
 
-            long expectedPlayers = tournamentResultRecordRepository
+            long expectedPlayersTournment = tournamentRoomRepository
                     .countByTournamentIdAndRoundAndStatusIn(
                             tournamentId,
                             roundNumber - 1,
-                            Arrays.asList("WINNER", "FREE_PASS")
+                            Arrays.asList("IN_PROGRESS", "ONGOING","PLAYING","COMPLETED")
                     );
+            long freePassCount = tournamentResultRecordRepository
+                    .countFreePassWinners(tournamentId, roundNumber-1);
+            long expectedPlayers = expectedPlayersTournment + freePassCount;
 
-            long remainingPlayers = tournamentResultRecordRepository
+            long remainingPlayers = tournamentRoomRepository
                     .countByTournamentIdAndRoundAndStatusIn(
                             tournamentId,
                             roundNumber - 1,
                             Arrays.asList("IN_PROGRESS", "ONGOING","PLAYING")
                     );
+
+            System.out.println("expectedPlayers: " + expectedPlayers);
+            System.out.println("remainingPlayers: " + remainingPlayers);
 
 
             // 5. Decide if next round can start

@@ -2,6 +2,7 @@ package aagapp_backend.controller.test;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.EmailService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.faqs.FAQService;
@@ -33,6 +34,9 @@ public class TestController {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private CustomCustomerService customCustomerService;
 
     // POST method to send onboarding email
     @PostMapping("/sendOnboardingEmail")
@@ -113,5 +117,10 @@ public class TestController {
         }
         return new ResponseEntity<>("Invalid role", HttpStatus.BAD_REQUEST);
 
+    }
+
+    @GetMapping("/gender")
+    public String getGender(@RequestParam String name) {
+        return customCustomerService.getGenderByName(name);
     }
 }

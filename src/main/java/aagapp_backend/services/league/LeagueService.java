@@ -213,8 +213,6 @@ public class LeagueService {
             challenge.setVendorProfilePic(vendor.getProfilePic());
             challenge.setName(game.getGameName());
             challenge.setGameImage(game.getGameImage());
-
-
             // Save the challenge in the database
             challangeRepository.save(challenge);
 
@@ -222,7 +220,7 @@ public class LeagueService {
 
             VendorEntity opponentVendor = vendorRepository.findById(receiverVendorId)
                     .orElseThrow(() -> new BusinessException("Opponent Vendor not found", HttpStatus.BAD_REQUEST));
-            String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
+            String fcmToken = opponentVendor.getFcmToken();
 
             if (fcmToken != null && !fcmToken.isEmpty()) {
                 Gson gson = new GsonBuilder()
@@ -470,7 +468,6 @@ public class LeagueService {
             challengingTeam.setVendor(opponentVendor);
             challengingTeam.setProfilePic(opponentVendor.getProfilePic());
             challengingTeam.setLeague(savedLeague);
-
             LeagueTeam opponentTeam = new LeagueTeam();
             opponentTeam.setTeamName("Team " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
             opponentTeam.setVendor(vendorEntity);
@@ -509,7 +506,7 @@ public class LeagueService {
                 NotificationRequest notificationRequest = new NotificationRequest();
                 notificationRequest.setToken(fcmToken);
                 notificationRequest.setTitle("Challenge Accepted!");
-                notificationRequest.setBody(opponentVendor.getFirst_name() + " is ready. Your league challenge will be active in 10 minutes!");
+                notificationRequest.setBody(vendorEntity.getFirst_name() + " is ready. Your league will be active in 15 minutes!");
                 notificationRequest.setTopic("League Challenge Accepted"); // Optional, just for tagging
 
                 try {
