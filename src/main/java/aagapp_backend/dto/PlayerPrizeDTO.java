@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -13,9 +15,9 @@ public class PlayerPrizeDTO {
     private String playerName;
     private int score;
     private double contributionPercentage;
-    private double prizeAmount;
+    private BigDecimal prizeAmount;
 
-    public PlayerPrizeDTO(String playerName, int score, double contributionPercentage, double prizeAmount) {
+    public PlayerPrizeDTO(String playerName, int score, double contributionPercentage, BigDecimal prizeAmount) {
         this.playerName = playerName;
         this.score = score;
         this.contributionPercentage = contributionPercentage;

@@ -52,6 +52,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.SQLOutput;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -842,8 +843,10 @@ public class LeagueService {
 
             LeaguePass leaguePass = leaguePassRepository.findByPlayerAndLeague(player, league)
                     .orElseThrow(() -> new BusinessException("No league passes found for this player in the selected league", HttpStatus.BAD_REQUEST));
-            leaguePass.setSelectedTeamId(teamId);
-            leaguePassRepository.save(leaguePass);
+
+            if(!teamId.equals(leaguePass.getSelectedTeamId())){
+                return responseService.generateErrorResponse("You have not selected a team or you want to join with another team", HttpStatus.BAD_REQUEST);
+            }
 
             if (leaguePass.getPassCount() == 0) {
                 return responseService.generateErrorResponse(
@@ -1729,16 +1732,16 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 return new PlayerLeagueScoreDDTO(
                         player.getPlayerName(),
                         player.getPlayerProfilePic(),
-                        false, // currentUser irrelevant here
+                        false,
                         totalScore,
-                        2, // static retries
-                        true, // isWinner
-                        null // prize will be added later
+                        2,
+                        true,
+                        null
                 );
             }).collect(Collectors.toList());
 
             int totalScore = winner.getTotalScore();
-            double prizePool = 1000.0;
+            BigDecimal prizePool = new BigDecimal("1000.00");
 
             List<PlayerPrizeDTO> prizeDistribution = calculatePrizeDistribution(players, totalScore, prizePool);
 
@@ -1758,34 +1761,42 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     }
 
 
-    public List<PlayerPrizeDTO> calculatePrizeDistribution(List<PlayerLeagueScoreDDTO> players, int totalTeamScore, double totalPrizePool) {
+    public List<PlayerPrizeDTO> calculatePrizeDistribution(List<PlayerLeagueScoreDDTO> players, int totalTeamScore, BigDecimal totalPrizePool) {
         players.sort(Comparator.comparingInt(PlayerLeagueScoreDDTO::getScore).reversed());
 
         int topN = 10;
         int playerCount = players.size();
 
         List<PlayerPrizeDTO> prizeDistribution = new ArrayList<>();
-        double distributedPrize = 0;
+        BigDecimal distributedPrize = BigDecimal.ZERO;
 
         for (int i = 0; i < Math.min(topN, playerCount); i++) {
             PlayerLeagueScoreDDTO player = players.get(i);
-            double contributionPercentage = (double) player.getScore() * 100 / totalTeamScore;
-            double prizeAmount = (contributionPercentage / 100) * totalPrizePool;
-            distributedPrize += prizeAmount;
+
+            BigDecimal contributionPercentage = BigDecimal.valueOf(player.getScore())
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
+
+            BigDecimal prizeAmount = totalPrizePool
+                    .multiply(contributionPercentage)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+            distributedPrize = distributedPrize.add(prizeAmount);
 
             prizeDistribution.add(new PlayerPrizeDTO(
                     player.getName(),
                     player.getScore(),
-                    round(contributionPercentage),
-                    round(prizeAmount)
+                    contributionPercentage.doubleValue(), // If DTO expects double
+                    prizeAmount
             ));
         }
 
-        double remainingPrize = round(totalPrizePool - distributedPrize);
+        BigDecimal remainingPrize = totalPrizePool.subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
 
         if (playerCount > topN) {
             int remainingPlayersCount = playerCount - topN;
-            double equalShare = remainingPrize / remainingPlayersCount;
+            BigDecimal equalShare = remainingPrize
+                    .divide(BigDecimal.valueOf(remainingPlayersCount), 2, RoundingMode.HALF_UP);
 
             for (int i = topN; i < playerCount; i++) {
                 PlayerLeagueScoreDDTO player = players.get(i);
@@ -1793,7 +1804,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                         player.getName(),
                         player.getScore(),
                         0.0,
-                        round(equalShare)
+                        equalShare
                 ));
             }
         }
@@ -1801,10 +1812,88 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         return prizeDistribution;
     }
 
-    private double round(double value) {
-        return Math.round(value * 100.0) / 100.0;
-    }
 
+
+    @Transactional
+    public void distributePrizePoolSilently(Long leagueId) {
+        League league = leagueRepository.findById(leagueId)
+                .orElseThrow(() -> new BusinessException("League not found", HttpStatus.BAD_REQUEST));
+
+        List<LeagueTeam> teams = leagueTeamRepository.findByLeague(league);
+        if (teams.size() != 2)
+            throw new BusinessException("Exactly two teams required.", HttpStatus.BAD_REQUEST);
+
+        LeagueTeam winner = teams.get(0).getTotalScore() >= teams.get(1).getTotalScore()
+                ? teams.get(0) : teams.get(1);
+
+        List<LeagueResultRecord> records = leagueResultRecordRepository
+                .findByLeagueIdAndLeagueTeamId(league.getId(), winner.getId());
+
+        // Group by player and calculate total score
+        Map<Player, Integer> playerScores = new HashMap<>();
+        for (LeagueResultRecord record : records) {
+            Player player = record.getPlayer();
+            playerScores.put(player, playerScores.getOrDefault(player, 0) + record.getTotalScore());
+        }
+
+        int totalTeamScore = winner.getTotalScore();
+        BigDecimal totalPrizePool = Constant.LEAGUE_PRIZE_POOL;
+        BigDecimal distributedPrize = BigDecimal.ZERO;
+
+        // Sort players by score descending
+        List<Map.Entry<Player, Integer>> sortedPlayers = playerScores.entrySet().stream()
+                .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+                .collect(Collectors.toList());
+
+        // Top 10 players get prize based on contribution %
+        int topN = 10;
+        List<Map.Entry<Player, Integer>> topPlayers = sortedPlayers.stream().limit(topN).toList();
+        List<Map.Entry<Player, Integer>> remainingPlayers = sortedPlayers.stream().skip(topN).toList();
+
+        for (Map.Entry<Player, Integer> entry : topPlayers) {
+            Player player = entry.getKey();
+            int playerScore = entry.getValue();
+
+            BigDecimal contributionPercentage = BigDecimal.valueOf(playerScore)
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
+
+            BigDecimal prizeAmount = totalPrizePool
+                    .multiply(contributionPercentage)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+            distributedPrize = distributedPrize.add(prizeAmount);
+
+            Wallet wallet = player.getCustomer().getWallet();
+            wallet.setWinningAmount(wallet.getWinningAmount().add(prizeAmount));
+            walletRepo.save(wallet); // Persist wallet
+
+            // 🔍 Log the prize
+            System.out.println("TOP10: Player '" + player.getPlayerName() + "' (ID: " + player.getPlayerId() +
+                    ") scored " + playerScore +
+                    ", Contribution: " + contributionPercentage + "%" +
+                    ", Prize: ₹" + prizeAmount);
+        }
+
+        // Calculate remaining prize
+        BigDecimal remainingPrize = totalPrizePool.subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
+
+        if (!remainingPlayers.isEmpty() && remainingPrize.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal equalShare = remainingPrize
+                    .divide(BigDecimal.valueOf(remainingPlayers.size()), 2, RoundingMode.HALF_UP);
+
+            for (Map.Entry<Player, Integer> entry : remainingPlayers) {
+                Player player = entry.getKey();
+                Wallet wallet = player.getCustomer().getWallet();
+                wallet.setWinningAmount(wallet.getWinningAmount().add(equalShare));
+                walletRepo.save(wallet); // Save update
+
+                // 🔍 Log the remaining prize
+                System.out.println("REMAINING: Player '" + player.getPlayerName() + "' (ID: " + player.getPlayerId() +
+                        ") received equal share: ₹" + equalShare);
+            }
+        }
+    }
 
 
 }
