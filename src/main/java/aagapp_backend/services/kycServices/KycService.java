@@ -127,23 +127,28 @@ public class KycService {
             throw new RuntimeException("Invalid role specified in KYC record");
         }
 
-/*        try {
+        try {
             if (isVerified == KycStatus.VERIFIED) {
-                emailService.sendEmail(
-                        email,
-                        "Your KYC Verified from AAG Team",
-                        "Dear User,\n\nYour KYC has been successfully verified.\n\nRegards,\nAAG App Team",false
-                );
+                if(email!=null){
+                    emailService.sendEmail(
+                            email,
+                            "Your KYC Verified from AAG Team",
+                            "Dear User,\n\nYour KYC has been successfully verified.\n\nRegards,\nAAG App Team",false
+                    );
+                }
+
             } else if (isVerified == KycStatus.REJECTED) {
-                emailService.sendEmail(
-                        email,
-                        "Your KYC Rejected from AAG Team",
-                        "Dear User,\n\nUnfortunately, your KYC has been rejected. Please review your submitted documents and try again.\n\nRegards,\nAAG App Team",false
-                );
+               if(email!=null){
+                   emailService.sendEmail(
+                           email,
+                           "Your KYC Rejected from AAG Team",
+                           "Dear User,\n\nUnfortunately, your KYC has been rejected. Please review your submitted documents and try again.\n\nRegards,\nAAG App Team",false
+                   );
+               }
             }
         } catch (MessagingException e) {
             throw new RuntimeException("KYC updated but failed to send email: " + e.getMessage(), e);
-        }*/
+        }
 
         return kyc;
     }

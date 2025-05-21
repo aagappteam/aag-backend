@@ -236,6 +236,8 @@ public class LeagueService {
                 notificationRequest.setBody(challengeJson);
                 notificationRequest.setTopic("League Challenge"); // Optional, just for tagging
 
+                System.out.println("challengeJson: " + challengeJson);
+
                 try {
                     notificationFirebase.sendMessageToToken(notificationRequest);
                 } catch (Exception e) {

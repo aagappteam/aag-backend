@@ -367,7 +367,6 @@ public class TournamentService {
     }
 
 
-
     @Transactional
     public TournamentPlayerRegistration registerPlayer(Long tournamentId, Long playerId) {
         try {
@@ -393,7 +392,6 @@ public class TournamentService {
                 throw new BusinessException("Player not found" , HttpStatus.BAD_REQUEST);
             }
 
-            // Ensure the player is not already registered for the tournament
             Optional<TournamentPlayerRegistration> existingRegistration = tournamentPlayerRegistrationRepository
                     .findByTournamentIdAndPlayer_PlayerId(tournamentId, playerId);
 
@@ -1129,6 +1127,11 @@ public class TournamentService {
             playerRepository.save(player);
         }*/
 
+        if (player.getTournamentRoom() != null) {
+            player.setTournamentRoom(null);
+            playerRepository.save(player);
+        }
+
         player.setTournamentRoom(room);
         room.setCurrentParticipants(room.getCurrentParticipants() + 1);
         room.setStatus("PLAYING");
@@ -1153,10 +1156,6 @@ public class TournamentService {
                 return responseService.generateErrorResponse("Player is not in any Tournament Room", HttpStatus.BAD_REQUEST);
             }
 
-            // Remove player from the room
-            player.setTournamentRoom(null);
-            playerRepository.save(player);
-
             List<Player> remainingPlayers = playerRepository.findAllByTournamentRoom(tournamentRoom);
             if (remainingPlayers.isEmpty()) {
                 tournamentRoom.setStatus("COMPLETED");
@@ -1173,6 +1172,9 @@ public class TournamentService {
                     tournamentResultRecordRepository.save(latestResult);
                 }
             }
+
+            player.setTournamentRoom(null);
+            playerRepository.save(player);
 
             return responseService.generateSuccessResponse("Player left the Tournament Room", tournament.getName(), HttpStatus.OK);
 
@@ -1841,7 +1843,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
     }
 
-    public boolean isRoundCompleted(Long tournamentId, int roundNumber) {
+    /*public boolean isRoundCompleted(Long tournamentId, int roundNumber) {
 
         long validRoomsCount = roomRepository.countByTournamentIdAndRoundAndCurrentParticipantsGreaterThan(
                 tournamentId, roundNumber, 0);
@@ -1856,7 +1858,39 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 tournamentId, roundNumber, "COMPLETED", 0);
 
         return completedRoomsCount == validRoomsCount;
+    }*/
+
+    public boolean isRoundCompleted(Long tournamentId, int roundNumber) {
+        // 1. Count all rooms (regardless of players)
+        long totalRooms = roomRepository.countByTournamentIdAndRound(tournamentId, roundNumber);
+
+        // 2. If no rooms created at all, check if only FREE_PASS players exist
+        if (totalRooms == 0) {
+            long freePassCount = tournamentResultRecordRepository
+                    .countByTournamentIdAndRoundAndStatus(tournamentId, roundNumber, "FREE_PASS");
+            return freePassCount > 0;
+        }
+
+        // 3. Count valid rooms where at least 1 player joined
+        long validRoomsCount = roomRepository.countByTournamentIdAndRoundAndCurrentParticipantsGreaterThan(
+                tournamentId, roundNumber, 0);
+
+        // 4. If no valid rooms, i.e. all rooms are empty (0 participants), treat it as completed
+        if (validRoomsCount == 0) {
+            long freePassCount = tournamentResultRecordRepository
+                    .countByTournamentIdAndRoundAndStatus(tournamentId, roundNumber, "FREE_PASS");
+
+            return freePassCount > 0 || true; // either free pass or everything is empty = safe to continue
+        }
+
+        // 5. Count only those valid rooms that are completed
+        long completedRoomsCount = roomRepository.countByTournamentIdAndRoundAndStatusAndCurrentParticipantsGreaterThan(
+                tournamentId, roundNumber, "COMPLETED", 0);
+
+        // 6. Round is completed only if all valid rooms are completed
+        return completedRoomsCount == validRoomsCount;
     }
+
 
     public int nextPowerOfTwo(int n) {
         int powerOfTwo = 1;
