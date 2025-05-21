@@ -65,13 +65,18 @@ public class SabService {
         byte amount = 10;
         char channelId = 'W';
         String Class = "AAg test";
-//		String vpa = "9531863874@ybl";
-//		String browserDetails = "Browser Language|Browser Color Depth|Browser Screen Height|Browser Screen Width|Browser�Time�Zone";
+		String vpa = "9531863874@ybl";
+		String browserDetails = "Browser Language|Browser Color Depth|Browser Screen Height|Browser Screen Width|Browser�Time�Zone";
+        Boolean byPassFlag = true;
+        String modeTransfer = "UPI_APPS_MODE_TRANSFER";
 
+        String transDate = java.time.LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         spURL = "payerName=" + payerName.trim() + "&payerEmail=" + payerEmail.trim() + "&payerMobile=" + payerMobile
                 + "&clientTxnId=" + clientTxnId.trim() + "&amount=" + amount + "&clientCode=" + clientCode.trim()
                 + "&transUserName=" + transUserName.trim() + "&transUserPassword=" + transUserPassword.trim()
-                + "&callbackUrl=" + callbackUrl.trim() + "&channelId=" + channelId + "&Class=" + Class;
+                + "&callbackUrl=" + callbackUrl.trim() + "&channelId=" + channelId + "&Class=" + Class + "&vpa=" + vpa.trim()
+        + "&browserDetails=" + browserDetails.trim() + "&byPassFlag=" + byPassFlag + "&modeTransfer=" + modeTransfer + "&transDate=" + transDate;;
 
 
 /*        String payerName = "Vijay";
