@@ -164,6 +164,7 @@ public class CustomCustomerService {
                     }
                 }
 
+
                 if ("mobileNumber".equals(fieldName)) {
                     // Validate mobile number if it's being updated (this should not happen)
                     if (newValue != null && !isValidMobileNumber((String) newValue)) {
