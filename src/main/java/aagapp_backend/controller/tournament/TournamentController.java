@@ -299,7 +299,7 @@ public class TournamentController {
             throw ex;
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error starting tournament: " + e.getMessage());
+                    .body("Error starting tournament: " + e);
         }
     }
 
@@ -546,12 +546,7 @@ public class TournamentController {
                 }
             }
 
-
-
 //            boolean canStartNextRound = remainingPlayers == 0;
-//            System.out.println("Remaining active players: " + remainingPlayers);
-//            System.out.println("Can start next round? " + canStartNextRound);
-
 
            /* long completedRoomCount = previousRoundRooms.stream()
                     .filter(room -> "COMPLETED".equalsIgnoreCase(room.getStatus()))
@@ -578,13 +573,6 @@ public class TournamentController {
                             roundNumber - 1,
                             Arrays.asList("IN_PROGRESS", "ONGOING","PLAYING")
                     );
-
-
-
-
-            System.out.println("expectedPlayers: " + expectedPlayers);
-            System.out.println("remainingPlayers: " + remainingPlayers);
-
 
             // 5. Decide if next round can start
 //            boolean canStartNextRound = allPreviousRoundRoomsCompleted && waitingCount == expectedPlayers && expectedPlayers > 0;
