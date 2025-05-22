@@ -21,8 +21,7 @@ import java.time.ZonedDateTime;
                 @Index(name = "idx_opponentVendorId", columnList = "opponentVendorId"),
                 @Index(name = "idx_existinggameId", columnList = "existinggameId"),
                 @Index(name = "idx_vendor_status", columnList = "vendorId,challengeStatus"),
-                @Index(name = "idx_createdAt", columnList = "createdAt"),
-                @Index(name = "idx_endDate", columnList = "endDate")
+                @Index(name = "idx_createdAt", columnList = "createdAt")
         }
 )
 public class Challenge {
