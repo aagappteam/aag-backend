@@ -196,13 +196,6 @@ public class LeagueService {
 
             challenge.setName(game.getGameName());
             challenge.setThemeId(leagueRequest.getThemeId());
-/*            challenge.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
-            if (leagueRequest.getMaxPlayersPerTeam() == null) {
-                challenge.setMaxPlayersPerTeam(2);
-            }else {
-                challenge.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
-
-            }*/
             challenge.setMinPlayersPerTeam(1);
             challenge.setMaxPlayersPerTeam(2);
             if (leagueRequest.getScheduledAt() != null) {
@@ -236,10 +229,23 @@ public class LeagueService {
                 notificationRequest.setBody(challengeJson);
                 notificationRequest.setTopic("League Challenge"); // Optional, just for tagging
 
-                System.out.println("challengeJson: " + challengeJson);
 
                 try {
-                    notificationFirebase.sendMessageToToken(notificationRequest);
+//                    notificationFirebase.sendMessageToToken(notificationRequest);
+/*                    notoficationFirebase.sendNotification(
+                            fcmToken,
+                            "Tournament starting soon!",
+                            "Tournament '" + tournament.getName() + "' will start in 3 minutes. Please join now!"
+                    );*/
+                    String title = "League Challenge Received!";
+                    String body = vendor.getFirst_name() + " has challenged you to a " +
+                            game.getGameName() + " league. Open the Challenge section to accept it!";
+
+
+
+                    notificationFirebase.sendNotification(fcmToken, title, body);
+
+                    notificationFirebase.sendNotification(fcmToken, "League Challenge Received from " + vendor.getFirst_name() + "! ", challengeJson);
                 } catch (Exception e) {
                     throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
@@ -298,15 +304,20 @@ public class LeagueService {
             if (fcmToken != null && !fcmToken.isEmpty()) {
 
 
-                NotificationRequest notificationRequest = new NotificationRequest();
+/*                NotificationRequest notificationRequest = new NotificationRequest();
                 notificationRequest.setToken(fcmToken);
                 notificationRequest.setTitle("Challenge Declined");
                 notificationRequest.setBody("Unfortunately, your opponent has declined your league challenge.");
                 notificationRequest.setTopic("League Challenge Rejected");
-                notificationRequest.setTopic("League Challenge Rejected"); // Optional, just for tagging
+                notificationRequest.setTopic("League Challenge Rejected"); // Optional, just for tagging*/
 
                 try {
-                    notificationFirebase.sendMessageToToken(notificationRequest);
+//                    notificationFirebase.sendMessageToToken(notificationRequest);
+
+                    String title = "Challenge Declined";
+                    String body = "Unfortunately, your opponent has declined your league challenge.";
+
+                    notificationFirebase.sendNotification(fcmToken, title, body);
                 } catch (Exception e) {
                     System.out.println("Error sending notification: " + e.getMessage());
                 }
@@ -505,14 +516,19 @@ public class LeagueService {
 
             if (fcmToken != null && !fcmToken.isEmpty()) {
 
-                NotificationRequest notificationRequest = new NotificationRequest();
+              /*  NotificationRequest notificationRequest = new NotificationRequest();
                 notificationRequest.setToken(fcmToken);
                 notificationRequest.setTitle("Challenge Accepted!");
                 notificationRequest.setBody(vendorEntity.getFirst_name() + " is ready. Your league will be active in 15 minutes!");
-                notificationRequest.setTopic("League Challenge Accepted"); // Optional, just for tagging
+                notificationRequest.setTopic("League Challenge Accepted"); // Optional, just for tagging*/
 
                 try {
-                    notificationFirebase.sendMessageToToken(notificationRequest);
+//                    notificationFirebase.sendMessageToToken(notificationRequest);
+
+                    String title = "Challenge Accepted!";
+                    String body = vendorEntity.getFirst_name() + " is ready. Your league will be active in 15 minutes!";
+
+                    notificationFirebase.sendNotification(fcmToken, title, body);
                 } catch (Exception e) {
 //                    System.out.println("Error sending notification: " + e.getMessage());
                     throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

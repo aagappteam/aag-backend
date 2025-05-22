@@ -631,12 +631,13 @@ public class TournamentService {
 
         List<Player> activePlayers = getActivePlayers(tournamentId);
 
+        System.out.println("activePlayers: " + activePlayers.size());
+
         if (activePlayers.isEmpty()) {
             updateTournamentStatus(tournament, TournamentStatus.REJECTED, "No active players found");
             return tournament;
         }
 
-        System.out.println("activePlayers: " + activePlayers.size());
         if (activePlayers.size() == 1) {
             Player winner = activePlayers.get(0);
 
@@ -740,6 +741,8 @@ public class TournamentService {
                 assignFreePassToPlayer(activePlayers.get(i), tournamentId, 1);
             }
         }
+
+        System.out.println("Tournament started successfully: " + tournamentId + " - " + tournament.getName() + totalCollection + " - " + userPrizePool + " - " + roomPrizePool + activePlayers.size() + " - " + freePassCount + " - " + totalRounds + freePassCount);
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
             notoficationFirebase.sendNotification(
@@ -1099,7 +1102,9 @@ public class TournamentService {
         Optional<TournamentResultRecord> alreadyExists = tournamentResultRecordRepository
                 .findByTournamentIdAndPlayerIdAndRound(tournamentId, player.getPlayerId(), roundNumber);
 
-        if (alreadyExists.isEmpty()) {
+        System.out.println("alreadyExists: " + alreadyExists.get().getId());
+
+
             TournamentResultRecord result = new TournamentResultRecord();
             result.setTournament(tournamentRepository.findById(tournamentId).orElseThrow());
             result.setRoomId(null);
@@ -1111,7 +1116,7 @@ public class TournamentService {
             result.setPlayedAt(LocalDateTime.now());
 
             tournamentResultRecordRepository.save(result);
-        }
+
     }
 
 
@@ -1828,7 +1833,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         List<TournamentResultRecord> winners = tournamentResultRecordRepository
                 .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
 
-        // Deduplicate winners by unique playerId
         Map<Long, TournamentResultRecord> uniqueWinnersMap = winners.stream()
                 .collect(Collectors.toMap(
                         w -> w.getPlayer().getPlayerId(),
