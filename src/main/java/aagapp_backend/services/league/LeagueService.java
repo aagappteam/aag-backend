@@ -4,10 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.ZonedDateTimeAdapter;
 import aagapp_backend.dto.*;
 
-import aagapp_backend.entity.Challenge;
-import aagapp_backend.entity.CustomCustomer;
-import aagapp_backend.entity.ThemeEntity;
-import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.*;
 import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.league.*;
 
@@ -53,6 +50,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.CacheRequest;
 import java.sql.SQLOutput;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -1731,13 +1729,18 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     Player player = firstRecord.getPlayer();
                     int totalScore = playerRecords.stream().mapToInt(LeagueResultRecord::getTotalScore).sum();
                     boolean isCurrentUser = player.getCustomer().getId().equals(currentUserId);
+                    ResponseEntity<?> response = getLeaguePasses(player.getPlayerId(), leagueId);
+                    SuccessResponse successResponse = (SuccessResponse) response.getBody();
+                    Map<String, Object> data = (Map<String, Object>) successResponse.getData();
+                    int passCount = (int) data.get("passCount");
+
 
                     return new PlayerLeagueScoreDTO(
                             player.getPlayerName(),
                             player.getPlayerProfilePic(),
                             isCurrentUser,
                             totalScore,
-                            2, // You can replace this with actual retry count if available
+                            passCount, // You can replace this with actual retry count if available
                             team.equals(winner)
                     );
                 }).collect(Collectors.toList());
