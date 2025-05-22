@@ -451,15 +451,6 @@ public class LeagueService {
                 league.setScheduledAt(nowInKolkata);
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             }
-            // Set the minimum and maximum players
-/*            if (leagueRequest.getMinPlayersPerTeam() != null) {
-                league.setMinPlayersPerTeam(leagueRequest.getMinPlayersPerTeam());
-            }
-            if (leagueRequest.getMaxPlayersPerTeam() != null) {
-                league.setMaxPlayersPerTeam(leagueRequest.getMaxPlayersPerTeam());
-            }else {
-                league.setMaxPlayersPerTeam(2);
-            }*/
             league.setMinPlayersPerTeam(1);
             league.setMaxPlayersPerTeam(2);
 
@@ -490,9 +481,9 @@ public class LeagueService {
             List<LeagueTeam> teams = leagueTeamRepository.findByLeague(savedLeague);
             savedLeague.setTeams(teams);
 
-// 🔄 Optional: Save their IDs in League entity for fast reference
-//            savedLeague.setChallengingTeamId(challengingTeam.getId());
-//            savedLeague.setOpponentTeamId(opponentTeam.getId());
+            // 🔄 Optional: Save their IDs in League entity for fast reference
+            //            savedLeague.setChallengingTeamId(challengingTeam.getId());
+            //            savedLeague.setOpponentTeamId(opponentTeam.getId());
 
 
             // Create the first GameRoom (initialized, 2 players max)
