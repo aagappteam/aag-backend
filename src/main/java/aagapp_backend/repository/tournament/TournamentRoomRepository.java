@@ -14,9 +14,6 @@ public interface TournamentRoomRepository extends JpaRepository<TournamentRoom ,
 
     List<TournamentRoom> findByTournamentIdAndStatus(Long tournamentId, String open);
 
-    List<TournamentRoom> findByTournamentId(Long tournamentId);
-
-    List<TournamentRoom> findByStatus(String active);
 
     @Query("SELECT COALESCE(SUM(r.maxParticipants), 0) FROM TournamentRoom r WHERE r.tournament.id = :tournamentId")
     long sumMaxParticipantsByTournamentId(@Param("tournamentId") Long tournamentId);
@@ -24,9 +21,6 @@ public interface TournamentRoomRepository extends JpaRepository<TournamentRoom ,
 
     List<TournamentRoom> findByTournamentIdAndRoundAndStatus(Long tournamentId, int round, String status);
 
-    long countByTournamentIdAndRoundAndStatus(Long tournamentId, int round, String status);
-
-    long countByTournamentIdAndRound(Long tournamentId, int round);
 
     List<TournamentRoom> findByTournamentIdAndRound(Long tournamentId, int round);
 
@@ -52,6 +46,13 @@ public interface TournamentRoomRepository extends JpaRepository<TournamentRoom ,
             @Param("tournamentId") Long tournamentId,
             @Param("round") int round,
             @Param("statuses") List<String> statuses);
+
+
+    @Query("SELECT p.tournamentRoom FROM Player p " +
+            "WHERE p.id = :playerId AND p.tournamentRoom IS NOT NULL " +
+            "AND p.tournamentRoom.tournament.id = :tournamentId")
+    TournamentRoom findRoomByPlayerIdAndTournamentId(@Param("playerId") Long playerId,
+                                                     @Param("tournamentId") Long tournamentId);
 
 /*    @Query("SELECT COUNT(r) FROM TournamentRoom r WHERE r.tournamentId = :tournamentId AND r.round = :round AND r.status IN :statuses AND SIZE(r.currentPlayers) > 0")
     long countActiveRoomsWithPlayers(Long tournamentId, int round, List<String> statuses);*/

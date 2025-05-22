@@ -735,11 +735,35 @@ public class TournamentService {
         System.out.println("Tournament started successfully: " + tournamentId + " - " + tournament.getName() + totalCollection + " - " + userPrizePool + " - " + roomPrizePool + activePlayers.size() + " - " + freePassCount + " - " + totalRounds + freePassCount);
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
-            notoficationFirebase.sendNotification(
+/*            notoficationFirebase.sendNotification(
                     fcmToken,
                     "🎉 Your Tournament Has Begun!",
                     "Congratulations! The tournament '" + tournament.getName() + "' you hosted is now live. Monitor the progress and enjoy the event!"
+            );*/
+
+            String message = String.format(
+                    "🎉 Tournament '%s' is now live!\n" +
+                            "👥 Active Players: %d\n" +
+                            "🎟️ Free Pass Given: %d\n" +
+                            "🔁 Total Rounds: %d\n" +
+                            "💰 Total Prize Pool: ₹%.2f\n" +
+                            "🏆 Round Prize: ₹%.2f\n" +
+                            "Monitor the progress and enjoy the event!",
+                    tournament.getName(),
+                    activePlayers.size(),
+                    freePassCount,
+                    totalRounds,
+                    totalCollection.doubleValue(),
+                    roomPrizePool.doubleValue()
             );
+
+
+            notoficationFirebase.sendNotification(
+                    fcmToken,
+                    "🎉 Your Tournament Has Begun!",
+                    message
+            );
+
         }
 
         return tournament;
@@ -1092,7 +1116,7 @@ public class TournamentService {
         Optional<TournamentResultRecord> alreadyExists = tournamentResultRecordRepository
                 .findByTournamentIdAndPlayerIdAndRound(tournamentId, player.getPlayerId(), roundNumber);
 
-        if (!alreadyExists.isPresent()) {
+
             System.out.println("No existing result found. Assigning FREE_PASS to player ID: " + player.getPlayerId());
 
             Tournament tournament = tournamentRepository.findById(tournamentId)
@@ -1109,7 +1133,7 @@ public class TournamentService {
             result.setPlayedAt(LocalDateTime.now());
 
             tournamentResultRecordRepository.save(result);
-        }
+
     }
 
 
@@ -1242,6 +1266,33 @@ public class TournamentService {
 
     @Transactional
     public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
+
+        // Directly fetch player's room for this tournament
+        TournamentRoom room = roomRepository.findRoomByPlayerIdAndTournamentId(playerId, tournamentId);
+
+        if (room != null) {
+            return room;
+        }
+
+        // Check if the player has a result record instead (could be a free pass)
+        List<TournamentResultRecord> records = tournamentResultRecordRepository
+                .findAllByPlayerIdAndTournamentIdOrderByIdDesc(playerId, tournamentId);
+
+        if (records.isEmpty()) {
+            throw new BusinessException("No tournament result found for player in this tournament.", HttpStatus.BAD_REQUEST);
+        }
+
+        TournamentResultRecord latestRecord = records.get(0);
+
+        // If the result was a free pass (or any record not associated with a room)
+        return convertTournamentResultToRoom(latestRecord);
+    }
+
+
+/*    @Transactional
+    public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
 
             Player player = playerRepository.findById(playerId)
                     .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
@@ -1262,7 +1313,7 @@ public class TournamentService {
 
             return room;
 
-    }
+    }*/
 
     @Transactional
     public TournamentRoom assignPlayerToRoom(Long playerId, Long tournamentId) {
