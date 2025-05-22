@@ -79,11 +79,17 @@ public class Otp {
         String messageBody = "Your OTP for AAG app (Aapka Apna Game is: " + otp + ". Please use this code to verify your identity - AAG Team";
 
         try {
-            Message message = Message.creator(
+/*            Message message = Message.creator(
                     new PhoneNumber(completeMobileNumber),
                     serviceProviderSid,
                     messageBody
-            ).create();
+            ).create();*/
+  /*          Message message = Message.creator(
+                    new PhoneNumber(completeMobileNumber),
+                    new PhoneNumber(twilioPhoneNumber),
+                    messageBody
+            ).create();*/
+
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);

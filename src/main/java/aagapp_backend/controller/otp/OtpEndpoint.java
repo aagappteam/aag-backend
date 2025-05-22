@@ -490,7 +490,7 @@ public class OtpEndpoint {
             Bucket bucket = rateLimiterService.resolveBucket(mobileNumber, "/otp/vendor-signup");
             if (bucket.tryConsume(1)) {
 
-                otpservice.sendOtp(countryCode,mobileNumber,otp);
+//                otpservice.sendOtp(countryCode,mobileNumber,otp);
                 VendorEntity existingServiceProviderwithoutsigneup = serviceProviderService.findActiveServiceProviderByPhone(mobileNumber, countryCode);
                 if(existingServiceProviderwithoutsigneup==null){
                     VendorEntity vendorEntity = new VendorEntity();

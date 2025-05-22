@@ -75,7 +75,7 @@ public class TwilioService {
         try {
             String otp = generateOTP();
 
-          otpservice.sendOtp(countryCode,mobileNumber,otp);
+//          otpservice.sendOtp(countryCode,mobileNumber,otp);
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
 /*
@@ -155,7 +155,7 @@ public class TwilioService {
 
         try {
             String otp = generateOTP();
-            otpservice.sendOtp(countryCode,mobileNumber,otp);
+//            otpservice.sendOtp(countryCode,mobileNumber,otp);
 
             VendorEntity existingServiceProvider = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
 

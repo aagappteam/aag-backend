@@ -1,27 +1,19 @@
 package aagapp_backend.services.leaderboard;
-
-import aagapp_backend.dto.GameLeaderboardResponseDTO;
-import aagapp_backend.dto.LeaderboardDto;
-import aagapp_backend.dto.LeaderboardResponseDTO;
 import aagapp_backend.dto.leaderboard.TournamentLeaderboardDto;
 import aagapp_backend.dto.tournament.GameLeaderboardResponseDTOTornament;
 import aagapp_backend.dto.tournament.LeaderboardResponseDTOTournament;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
-import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.TournamentResultRecord;
-import aagapp_backend.entity.tournament.TournamentRoomWinner;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.ThemeRepository;
 import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
 import aagapp_backend.repository.tournament.TournamentRoomRepository;
-import aagapp_backend.repository.tournament.TournamentRoomWinnerRepository;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,9 +29,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class LeaderBoardTournament {
-
-    @Autowired
-    private TournamentRoomWinnerRepository tournamentRoomWinnerRepository;
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandling;

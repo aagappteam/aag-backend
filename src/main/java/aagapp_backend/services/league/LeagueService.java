@@ -230,11 +230,6 @@ public class LeagueService {
 
                 try {
 //                    notificationFirebase.sendMessageToToken(notificationRequest);
-/*                    notoficationFirebase.sendNotification(
-                            fcmToken,
-                            "Tournament starting soon!",
-                            "Tournament '" + tournament.getName() + "' will start in 3 minutes. Please join now!"
-                    );*/
                     String title = "League Challenge Received!";
                     String body = vendor.getFirst_name() + " has challenged you to a " +
                             game.getGameName() + " league. Open the Challenge section to accept it!";
@@ -243,7 +238,6 @@ public class LeagueService {
 
                     notificationFirebase.sendNotification(fcmToken, title, body);
 
-                    notificationFirebase.sendNotification(fcmToken, "League Challenge Received from " + vendor.getFirst_name() + "! ", challengeJson);
                 } catch (Exception e) {
                     throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
