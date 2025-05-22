@@ -8,7 +8,6 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.game.GameResultRecord;
 import aagapp_backend.entity.game.GameRoom;
-import aagapp_backend.entity.game.GameRoomWinner;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
@@ -52,7 +51,6 @@ public class MatchService {
     private static final double USER_WIN_PERCENT = 0.63;
     private static final double BONUS_PERCENT = 0.20;
 
-    private GameRoomWinnerRepository gameRoomWinnerRepository;
     private GameResultRecordRepository gameResultRecordRepository;
     private LeagueRoomRepository leagueRoomRepository;
     private TournamentRepository tournamentRepository;
@@ -65,11 +63,6 @@ public class MatchService {
     private GameRoomRepository gameRoomRepository;
     private GameRepository gameRepository;
     private WalletRepository walletRepo;
-
-    @Autowired
-    public void setGameRoomWinnerRepository(GameRoomWinnerRepository repo) {
-        this.gameRoomWinnerRepository = repo;
-    }
 
     @Autowired
     public void setGameResultRecordRepository(GameResultRecordRepository repo) {
@@ -190,14 +183,7 @@ public class MatchService {
         }
         Player winnerPlayer = winnerPlayerOpt.get();
 
-        GameRoomWinner gameRoomWinner = new GameRoomWinner();
-        gameRoomWinner.setGame(game);  // Set the game
-        gameRoomWinner.setPlayer(winnerPlayer);  // Set the player (winner)
-        gameRoomWinner.setScore(winner.getScore());  // Set the score
-        gameRoomWinner.setWinTimestamp(LocalDateTime.now());  // Set the win timestamp
 
-        // Save the winner record into the database
-        gameRoomWinnerRepository.save(gameRoomWinner);
 
         GameResultRecord winnerRecord = new GameResultRecord();
         winnerRecord.setRoomId(gameRoom.getId());

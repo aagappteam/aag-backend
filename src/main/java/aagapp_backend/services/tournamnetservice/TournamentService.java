@@ -56,7 +56,6 @@ public class TournamentService {
 
 
     private TournamentRepository tournamentRepository;
-    private TournamentRoundParticipantRepository tournamentRoundParticipantRepository;
     private EntityManager em;
     private NotificationRepository notificationRepository;
     private AagGameRepository aagGameRepository;
@@ -69,17 +68,13 @@ public class TournamentService {
     private ResponseService responseService;
     private CustomCustomerRepository customCustomerRepository;
     private TournamentResultRecordRepository tournamentResultRecordRepository;
-    private TournamentRoomWinnerRepository tournamentRoomWinnerRepository;
     private TournamentPlayerRegistrationRepository tournamentPlayerRegistrationRepository;
     @Autowired
     public void setTournamentRepository(TournamentRepository tournamentRepository) {
         this.tournamentRepository = tournamentRepository;
     }
 
-    @Autowired
-    public void setTournamentRoundParticipantRepository(TournamentRoundParticipantRepository tournamentRoundParticipantRepository) {
-        this.tournamentRoundParticipantRepository = tournamentRoundParticipantRepository;
-    }
+
 
     @Autowired
     public void setEm(EntityManager em) {
@@ -143,17 +138,10 @@ public class TournamentService {
     }
 
     @Autowired
-    public void setTournamentRoomWinnerRepository(TournamentRoomWinnerRepository tournamentRoomWinnerRepository) {
-        this.tournamentRoomWinnerRepository = tournamentRoomWinnerRepository;
-    }
-
-    @Autowired
     public void setTournamentPlayerRegistrationRepository(TournamentPlayerRegistrationRepository tournamentPlayerRegistrationRepository) {
         this.tournamentPlayerRegistrationRepository = tournamentPlayerRegistrationRepository;
     }
 
-    @Autowired
-    private TournamentRoundWinnerRepository tournamentRoundWinnerRepository;
 
     private static final double TAX_PERCENT = 0.28;
 
@@ -441,6 +429,8 @@ public class TournamentService {
         try {
             List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
                     .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
+
+            System.out.println("Active players: " + registrations.size());
 
             List<Player> players = registrations.stream()
                     .map(TournamentPlayerRegistration::getPlayer)
@@ -1102,11 +1092,14 @@ public class TournamentService {
         Optional<TournamentResultRecord> alreadyExists = tournamentResultRecordRepository
                 .findByTournamentIdAndPlayerIdAndRound(tournamentId, player.getPlayerId(), roundNumber);
 
-        System.out.println("alreadyExists: " + alreadyExists.get().getId());
+        if (!alreadyExists.isPresent()) {
+            System.out.println("No existing result found. Assigning FREE_PASS to player ID: " + player.getPlayerId());
 
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new RuntimeException("Tournament not found with ID: " + tournamentId));
 
             TournamentResultRecord result = new TournamentResultRecord();
-            result.setTournament(tournamentRepository.findById(tournamentId).orElseThrow());
+            result.setTournament(tournament);
             result.setRoomId(null);
             result.setPlayer(player);
             result.setScore(0);
@@ -1116,7 +1109,7 @@ public class TournamentService {
             result.setPlayedAt(LocalDateTime.now());
 
             tournamentResultRecordRepository.save(result);
-
+        }
     }
 
 

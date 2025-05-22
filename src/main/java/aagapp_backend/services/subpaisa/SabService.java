@@ -57,26 +57,43 @@ public class SabService {
     public ModelAndView getSabPaisaPgService() {
         String spURL = null;
 
+
+     /*   Client Code
+        ES2S
+
+                Username
+        Jnc710@sp
+
+                Password
+        5e3XaNg1cG
+
+        Authentication KEY
+        5ViCjwczDkXtkFbf
+
+        Authentication IV
+        ZpCX1ItbzsNVaSX4*/
+
         String payerName = "Vijay";
         String payerEmail = "test@email.in";
         long payerMobile = 1234567890;
         String clientTxnId = RandomStringUtils.randomAlphanumeric(20).toUpperCase();
         System.out.println("clientTxnId :: " + clientTxnId);
-        byte amount = 10;
+        byte amount = 1;
         char channelId = 'W';
-        String Class = "AAg test";
-		String vpa = "9531863874@ybl";
+//        String Class = "AAg test";
+//		String vpa = "9531863874@ybl";
 		String browserDetails = "Browser Language|Browser Color Depth|Browser Screen Height|Browser Screen Width|Browser�Time�Zone";
         Boolean byPassFlag = true;
         String modeTransfer = "UPI_APPS_MODE_TRANSFER";
+        String seamlessType = "S2S";
 
         String transDate = java.time.LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         spURL = "payerName=" + payerName.trim() + "&payerEmail=" + payerEmail.trim() + "&payerMobile=" + payerMobile
                 + "&clientTxnId=" + clientTxnId.trim() + "&amount=" + amount + "&clientCode=" + clientCode.trim()
                 + "&transUserName=" + transUserName.trim() + "&transUserPassword=" + transUserPassword.trim()
-                + "&callbackUrl=" + callbackUrl.trim() + "&channelId=" + channelId + "&Class=" + Class + "&vpa=" + vpa.trim()
-        + "&browserDetails=" + browserDetails.trim() + "&byPassFlag=" + byPassFlag + "&modeTransfer=" + modeTransfer + "&transDate=" + transDate;;
+                + "&callbackUrl=" + callbackUrl.trim() + "&channelId=" + channelId +  "&seamlessType=" + seamlessType
+        + "&browserDetails=" + browserDetails.trim() + "&byPassFlag=" + byPassFlag + "&modeTransfer=" + modeTransfer + "&transDate=" + transDate;
 
 
 /*        String payerName = "Vijay";

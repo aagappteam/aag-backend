@@ -2,11 +2,14 @@ package aagapp_backend.controller.test;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.players.Player;
+import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.EmailService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
+import aagapp_backend.services.tournamnetservice.TournamentService;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/test")
@@ -24,6 +28,9 @@ public class TestController {
 
     @Autowired
     private ResponseService responseService;
+
+    @Autowired
+    private TournamentService tournamentService;
 
     @Autowired
     private NotoficationFirebase notoficationFirebase;
@@ -122,5 +129,17 @@ public class TestController {
     @GetMapping("/gender")
     public String getGender(@RequestParam String name) {
         return customCustomerService.getGenderByName(name);
+    }
+
+
+    @GetMapping("/active-players")
+    public ResponseEntity<?> getActivePlayers(@RequestParam Long tournamentId) {
+        try {
+            List<Player> players = tournamentService.getActivePlayers(tournamentId);
+            System.out.println("Players: " + players.size());
+            return responseService.generateSuccessResponse("Players fetched successfully", players, HttpStatus.OK);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

@@ -298,6 +298,7 @@ public class TournamentController {
         }catch (BusinessException ex) {
             throw ex;
         } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error starting tournament: " + e);
         }
