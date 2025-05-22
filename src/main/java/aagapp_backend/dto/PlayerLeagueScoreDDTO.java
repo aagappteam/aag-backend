@@ -28,7 +28,6 @@ public class PlayerLeagueScoreDDTO {
         this.winner = winner;
         this.prizeAmount = prizeAmount;
     }
-
     // Getters
     public String getName() { return name; }
     public int getScore() { return score; }
