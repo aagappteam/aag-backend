@@ -1,3 +1,4 @@
+/*
 package aagapp_backend.entity.league;
 
 
@@ -48,3 +49,4 @@ public class LeagueRoomWinner {
 
 
 }
+*/
