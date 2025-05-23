@@ -1105,7 +1105,7 @@ public class LeagueService {
     }
 
 
-    @Transactional
+    /*@Transactional
     public void processMatchRecentOld(LeagueMatchProcess leagueMatchProcess) {
         Optional<LeagueRoom> leagueRoomOpt = leagueRoomRepository.findById(leagueMatchProcess.getRoomId());
         if (leagueRoomOpt.isEmpty()) {
@@ -1202,7 +1202,7 @@ public class LeagueService {
         leaveRoom(loser.getPlayerId(), league.getId());
 
 //        return getAllPlayersDetails(leagueMatchProcess, leagueRoomOpt, league, winner, loser);
-    }
+    }*/
 
 
 /*    @Transactional
@@ -1942,13 +1942,14 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 distributedPrize = distributedPrize.add(prize);
 
                 Wallet wallet = player.getCustomer().getWallet();
-                if (wallet != null) {
-                    wallet.setWinningAmount(wallet.getWinningAmount().add(prize));
-                    walletRepo.save(wallet);
-                }
-
-                System.out.println("TOP10: Player '" + player.getPlayerName() + "' (ID: " + player.getPlayerId() +
-                        ") scored " + score + ", Prize: ₹" + prize);
+                wallet.setWinningAmount(wallet.getWinningAmount().add(prize));
+                walletRepo.save(wallet);
+                Notification notification = new Notification();
+                notification.setCustomerId(player.getPlayerId());
+                notification.setDescription("Wallet balance credited");
+                notification.setAmount(prize.doubleValue());
+                notification.setDetails("Rs. " + prize.doubleValue() + " won in " + league.getName());
+                notification.setRole("Customer");
             }
 
             // Remaining prize equal distribution
@@ -1966,8 +1967,12 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                         walletRepo.save(wallet);
                     }
 
-                    System.out.println("REMAINING: Player '" + player.getPlayerName() + "' (ID: " + player.getPlayerId() +
-                            ") received equal share: ₹" + equalShare);
+                    Notification notification = new Notification();
+                    notification.setCustomerId(player.getPlayerId());
+                    notification.setDescription("Wallet balance credited");
+                    notification.setAmount(equalShare.doubleValue());
+                    notification.setDetails("Rs. " + equalShare.doubleValue() + " won in " + league.getName());
+                    notification.setRole("Customer");
                 }
             }
 
