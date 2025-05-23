@@ -1845,9 +1845,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                         .countByTournamentIdAndRoundAndStatus(tournamentId, currentRound, "WINNER");
 
 
-
-                System.out.println("✔️ Round " + currentRound + " is completed. FREE_PASS=" + freePassCount + " WINNER=" + winnerCount);
-
                 if (freePassCount == 0 && winnerCount == 1) {
                     finishTournament(tournamentId);
 
@@ -2015,7 +2012,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 Player player1 = p1.getPlayer();
 
                 if (i + 1 >= participants.size()) {
-                    assignFreePassToPlayer(player1, tournamentId, roundNumber);
+//                    assignFreePassToPlayer(player1, tournamentId, roundNumber);
                     p1.setStatus("FREE_PASS");
                     tournamentResultRecordRepository.save(p1);
                     break;
