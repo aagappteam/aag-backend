@@ -687,7 +687,8 @@ public class TournamentService {
         tournament.setTotalrounds(totalRounds);
 
         BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
-        BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers + freePassCount));
+//        BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers + freePassCount));
+        BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers));
 
         BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
         BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
@@ -732,7 +733,6 @@ public class TournamentService {
             }
         }
 
-        System.out.println("Tournament started successfully: " + tournamentId + " - " + tournament.getName() + totalCollection + " - " + userPrizePool + " - " + roomPrizePool + activePlayers.size() + " - " + freePassCount + " - " + totalRounds + freePassCount);
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
 /*            notoficationFirebase.sendNotification(
