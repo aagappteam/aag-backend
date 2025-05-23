@@ -1708,7 +1708,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     }
 
 
-    public ResponseEntity<?> getLeagueTeamDetails(Long leagueId, Long currentUserId) {
+    public ResponseEntity<?> getLeagueTeamDetails(Long leagueId, Long currentUserId, int page, int size){
         try {
             League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new BusinessException("League not found", HttpStatus.BAD_REQUEST));
@@ -1722,37 +1722,45 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
             for (LeagueTeam team : teams) {
                 List<LeagueResultRecord> records = leagueResultRecordRepository.findByLeagueIdAndLeagueTeamId(league.getId(), team.getId());
+
                 Map<Long, List<LeagueResultRecord>> groupedByPlayer = records.stream()
                         .collect(Collectors.groupingBy(r -> r.getPlayer().getPlayerId()));
 
-                List<PlayerLeagueScoreDTO> players = groupedByPlayer.values().stream().map(playerRecords -> {
-                    LeagueResultRecord firstRecord = playerRecords.get(0);
-                    Player player = firstRecord.getPlayer();
-                    int totalScore = playerRecords.stream().mapToInt(LeagueResultRecord::getTotalScore).sum();
-                    boolean isCurrentUser = player.getCustomer().getId().equals(currentUserId);
-                    ResponseEntity<?> response = getLeaguePasses(player.getPlayerId(), leagueId);
-                    SuccessResponse successResponse = (SuccessResponse) response.getBody();
-                    Map<String, Object> data = (Map<String, Object>) successResponse.getData();
-                    int passCount = (int) data.get("passCount");
+                List<PlayerLeagueScoreDTO> allPlayers = groupedByPlayer.values().stream().map(playerRecords -> {
+                            LeagueResultRecord firstRecord = playerRecords.get(0);
+                            Player player = firstRecord.getPlayer();
+                            int totalScore = playerRecords.stream().mapToInt(LeagueResultRecord::getTotalScore).sum();
+                            boolean isCurrentUser = player.getCustomer().getId().equals(currentUserId);
 
+                            ResponseEntity<?> response = getLeaguePasses(player.getPlayerId(), leagueId);
+                            SuccessResponse successResponse = (SuccessResponse) response.getBody();
+                            Map<String, Object> data = (Map<String, Object>) successResponse.getData();
+                            int passCount = (int) data.get("passCount");
 
-                    return new PlayerLeagueScoreDTO(
-                            player.getPlayerName(),
-                            player.getPlayerProfilePic(),
-                            isCurrentUser,
-                            totalScore,
-                            passCount, // You can replace this with actual retry count if available
-                            team.equals(winner)
-                    );
-                }).collect(Collectors.toList());
+                            return new PlayerLeagueScoreDTO(
+                                    player.getPlayerName(),
+                                    player.getPlayerProfilePic(),
+                                    isCurrentUser,
+                                    totalScore,
+                                    passCount,
+                                    team.equals(winner)
+                            );
+                        }).sorted(Comparator.comparingInt(PlayerLeagueScoreDTO::getScore).reversed()) // sort descending
+                        .collect(Collectors.toList());
+
+                // Pagination logic
+                int start = Math.min(page * size, allPlayers.size());
+                int end = Math.min(start + size, allPlayers.size());
+                List<PlayerLeagueScoreDTO> paginatedPlayers = allPlayers.subList(start, end);
 
                 teamDetails.add(new TeamDetailsDTO(
                         team.getTeamName(),
                         team.getProfilePic(),
                         team.getTotalScore(),
-                        players
+                        paginatedPlayers
                 ));
             }
+
 
 
             LeagueTeamDetailsResponse leagueTeamDetailsResponse = new LeagueTeamDetailsResponse(
@@ -1772,6 +1780,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     }
 
 
+    @Transactional
     public ResponseEntity<?> distributePrizePool(Long leagueId) {
         try {
             League league = leagueRepository.findById(leagueId)
