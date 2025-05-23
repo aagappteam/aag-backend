@@ -1958,6 +1958,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 notification.setAmount(prize.doubleValue());
                 notification.setDetails("Rs. " + prize.doubleValue() + " won in " + league.getName());
                 notification.setRole("Customer");
+                notificationRepository.save(notification);
             }
 
             // Remaining prize equal distribution
@@ -1981,6 +1982,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     notification.setAmount(equalShare.doubleValue());
                     notification.setDetails("Rs. " + equalShare.doubleValue() + " won in " + league.getName());
                     notification.setRole("Customer");
+                    notificationRepository.save(notification);
                 }
             }
 
