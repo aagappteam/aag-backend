@@ -1961,7 +1961,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             for (int i = 0; i < participants.size(); i += 2) {
                 TournamentResultRecord p1 = participants.get(i);
                 Player player1 = p1.getPlayer();
-
                 if (i + 1 >= participants.size()) {
                     p1.setStatus("FREE_PASS");
                     p1.setIsWinner(true);
