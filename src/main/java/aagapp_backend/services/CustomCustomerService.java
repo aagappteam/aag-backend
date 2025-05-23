@@ -4,6 +4,8 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 
 import aagapp_backend.enums.ProfileStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +16,13 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class CustomCustomerService {
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     private EntityManager entityManager;
 
@@ -131,38 +137,33 @@ public class CustomCustomerService {
     @Transactional
     public ResponseEntity<?> updateCustomer(Long customerId, Map<String, Object> updates) {
         try {
-            // Retrieve the existing customer entity by ID
             CustomCustomer existingCustomer = entityManager.find(CustomCustomer.class, customerId);
             if (existingCustomer == null) {
                 return ResponseEntity.status(404).body("Customer with ID " + customerId + " not found");
             }
 
-            // Prevent the mobile number from being updated
             if (updates.containsKey("mobileNumber")) {
-                updates.remove("mobileNumber"); // Remove mobileNumber from updates to prevent modification
+                updates.remove("mobileNumber");
             }
 
-            // Validate the provided updates
             for (Map.Entry<String, Object> entry : updates.entrySet()) {
                 String fieldName = entry.getKey();
                 Object newValue = entry.getValue();
 
-                // Use reflection to set the fields dynamically
                 Field field = CustomCustomer.class.getDeclaredField(fieldName);
                 field.setAccessible(true);
 
-                // Skip fields that are not valid for update or cannot be empty
                 if (newValue == null || newValue.toString().isEmpty()) {
                     continue;
                 }
 
-                // Handle specific validations for each field
                 if ("email".equals(fieldName)) {
                     // You can add your own email validation logic here if required
                     if (newValue != null && !isValidEmail((String) newValue)) {
                         return ResponseEntity.badRequest().body("Invalid email format");
                     }
                 }
+
 
                 if ("mobileNumber".equals(fieldName)) {
                     // Validate mobile number if it's being updated (this should not happen)
@@ -191,4 +192,14 @@ public class CustomCustomerService {
         return email != null && email.matches(Constant.EMAIL_REGEXP);
     }
 
+    public String getGenderByName(String name) {
+        String url = "https://api.genderize.io?name=" + name;
+        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            Map body = response.getBody();
+            return (String) body.get("gender");
+        }
+        return "unknown";
+    }
 }

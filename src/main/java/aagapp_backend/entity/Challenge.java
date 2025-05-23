@@ -21,8 +21,7 @@ import java.time.ZonedDateTime;
                 @Index(name = "idx_opponentVendorId", columnList = "opponentVendorId"),
                 @Index(name = "idx_existinggameId", columnList = "existinggameId"),
                 @Index(name = "idx_vendor_status", columnList = "vendorId,challengeStatus"),
-                @Index(name = "idx_createdAt", columnList = "createdAt"),
-                @Index(name = "idx_endDate", columnList = "endDate")
+                @Index(name = "idx_createdAt", columnList = "createdAt")
         }
 )
 public class Challenge {
@@ -50,22 +49,23 @@ public class Challenge {
     @Enumerated(EnumType.STRING)
     private ChallengeStatus challengeStatus;
 
+    @NotNull(message = "Game id can not be null")
     private Long existinggameId;
 
+    @NotNull(message = "Theme id can not be null")
     private Long themeId;
 
     private Integer minPlayersPerTeam;
     private Integer maxPlayersPerTeam;
 
-    @NotNull
+    @NotNull(message = "Fee can not be null")
     private Double fee;
 
+    @NotNull(message = "Move can not be null")
     private Integer move;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;
-
-    private ZonedDateTime endDate;
 
     @Column(updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")

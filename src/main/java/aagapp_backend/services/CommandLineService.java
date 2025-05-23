@@ -7,6 +7,7 @@ import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.GameStatus;
 import aagapp_backend.repository.game.PriceRepository;
 import aagapp_backend.repository.game.ThemeRepository;
+import aagapp_backend.services.faqs.FAQService;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityManager;
@@ -30,6 +31,9 @@ public class CommandLineService implements CommandLineRunner {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Autowired
+    private FAQService faqService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -385,10 +389,6 @@ public class CommandLineService implements CommandLineRunner {
         String ludo_league_roomsalterQuery = "ALTER TABLE ludo_league_rooms ADD COLUMN game_id BIGINT";
         Query ludo_league_roomsalterQueryquery = entityManager.createNativeQuery(ludo_league_roomsalterQuery);
         ludo_league_roomsalterQueryquery.executeUpdate();*/
-
-
-
-
 
     }
 

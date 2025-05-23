@@ -21,7 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/leagues/winning")
-public class LeagueWinning {
+public class  LeagueWinning {
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandlingImplement;
@@ -40,12 +40,13 @@ public class LeagueWinning {
     public ResponseEntity<?> processGameResult(@RequestBody LeagueMatchProcess gameResult) {
         try {
             // Process game result (you may want to keep this as is, or include some additional logic here)
-            List<PlayerDto> playersDetails = leagueService.processMatch(gameResult);
+             leagueService.processMatch(gameResult);
+
 
 
             // Prepare the response
             Map<String, Object> response = new HashMap<>();
-            response.put("players", playersDetails);
+//            response.put("players", playersDetails);
             response.put("message", "League results processed successfully.");
 
             return ResponseEntity.ok(response);
@@ -56,6 +57,7 @@ public class LeagueWinning {
         }
     }
 
+/*
     @GetMapping("/game/{leagueId}")
     public ResponseEntity<?> getLeaderboard(@PathVariable Long leagueId, @RequestParam(defaultValue = "0") int page,
                                             @RequestParam(defaultValue = "10") int size) {
@@ -69,6 +71,7 @@ public class LeagueWinning {
             return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+*/
 
 
     @GetMapping("/leaderboard")
@@ -78,7 +81,7 @@ public class LeagueWinning {
             @RequestParam(required = false) Boolean winner  // Optional param
     ) {
         try {
-            List<LeaderboardDto> leaderboard = leaderBoardLeague.getLeaderboard(leagueId, roomId, winner);
+            List<LeagueLeaderboardDto> leaderboard = leaderBoardLeague.getLeaderboard(leagueId, roomId, winner);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         }catch (RuntimeException e){
             return responseService.generateErrorResponse(

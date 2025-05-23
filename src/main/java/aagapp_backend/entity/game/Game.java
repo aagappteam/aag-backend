@@ -83,6 +83,7 @@ public class Game {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime createdDate;
 
+
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime updatedDate;

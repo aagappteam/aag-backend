@@ -3,13 +3,11 @@ package aagapp_backend.services;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.players.Player;
-import aagapp_backend.enums.PlayerStatus;
+
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.otp.Otp;
 import aagapp_backend.services.vendor.VenderServiceImpl;
-import com.twilio.rest.verify.v2.service.Verification;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -19,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import com.twilio.Twilio;
 import com.twilio.exception.ApiException;
-import org.springframework.beans.factory.annotation.Value;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -78,7 +75,7 @@ public class TwilioService {
         try {
             String otp = generateOTP();
 
-          otpservice.sendOtp(countryCode,mobileNumber,otp);
+//          otpservice.sendOtp(countryCode,mobileNumber,otp);
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
 /*
@@ -91,6 +88,11 @@ public class TwilioService {
                 customerDetails.setMobileNumber(mobileNumber);
                 customerDetails.setOtp(otp);
                 customerDetails.setProfileStatus(ProfileStatus.PENDING);
+
+
+
+
+
                 entityManager.persist(customerDetails);
                 /*Player player = new Player();
                 player.setPlayerId(customerDetails.getId());
@@ -153,7 +155,7 @@ public class TwilioService {
 
         try {
             String otp = generateOTP();
-            otpservice.sendOtp(countryCode,mobileNumber,otp);
+//            otpservice.sendOtp(countryCode,mobileNumber,otp);
 
             VendorEntity existingServiceProvider = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
 
