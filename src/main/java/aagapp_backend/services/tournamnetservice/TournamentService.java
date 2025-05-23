@@ -2012,7 +2012,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 Player player1 = p1.getPlayer();
 
                 if (i + 1 >= participants.size()) {
-//                    assignFreePassToPlayer(player1, tournamentId, roundNumber);
                     p1.setStatus("FREE_PASS");
                     tournamentResultRecordRepository.save(p1);
                     break;
@@ -2048,7 +2047,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 }
 
                 room.setGamepassword(gamePassword);
-                room.setStatus("IN_PROGRESS");
+//                room.setStatus("IN_PROGRESS");
                 roomRepository.save(room); // Final update with game password
 
                 // Save updated player status
