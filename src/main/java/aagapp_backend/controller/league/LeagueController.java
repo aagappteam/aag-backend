@@ -538,12 +538,13 @@ public class LeagueController {
     @GetMapping("/team-details/{leagueId}")
     public ResponseEntity<?> getTeamDetails(
             @PathVariable Long leagueId,
-            @RequestParam Long playerId
+            @RequestParam Long playerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
-            return leagueService.getLeagueTeamDetails(leagueId, playerId);
-
-
+        return leagueService.getLeagueTeamDetails(leagueId, playerId, page, size);
     }
+
 
 
     @GetMapping("/distribute-prize/{leagueId}")
