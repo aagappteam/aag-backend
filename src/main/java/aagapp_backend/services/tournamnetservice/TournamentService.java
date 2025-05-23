@@ -1269,7 +1269,6 @@ public class TournamentService {
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
 
-        // Directly fetch player's room for this tournament
         TournamentRoom room = roomRepository.findRoomByPlayerIdAndTournamentId(playerId, tournamentId);
 
         if (room != null) {
@@ -1315,54 +1314,6 @@ public class TournamentService {
 
     }*/
 
-    @Transactional
-    public TournamentRoom assignPlayerToRoom(Long playerId, Long tournamentId) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new BusinessException("Player not found with id " + playerId , HttpStatus.BAD_REQUEST));
-
-        if (player.getTournamentRoom() != null) {
-            throw new BusinessException("Player already assigned to a room." , HttpStatus.BAD_REQUEST);
-        }
-
-        // Find an available room using the helper method
-        TournamentRoom room = findAvailableRoom(tournamentId);
-
-        // If an available room is found, assign the player to it
-        if (room != null) {
-            player.setTournamentRoom(room);
-            room.getCurrentPlayers().add(player);
-            room.setCurrentParticipants(room.getCurrentParticipants() + 1);
-
-            // If the room is the first round, update the tournament's joined players count
-            if (room.getRound() == 1) {
-                Tournament tournament = tournamentRepository.findById(tournamentId)
-                        .orElseThrow(() -> new BusinessException("Tournament not found with id " + tournamentId , HttpStatus.BAD_REQUEST));
-                tournament.setCurrentJoinedPlayers(tournament.getCurrentJoinedPlayers() + 1);
-            }
-
-            roomRepository.save(room);
-            return room;
-        }
-
-        // If no available room is found, create a new room
-        Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new BusinessException("Tournament not found with id " + tournamentId , HttpStatus.BAD_REQUEST));
-
-        TournamentRoom newRoom = new TournamentRoom();
-        newRoom.setTournament(tournament);
-        newRoom.setStatus("OPEN"); // Mark room as open
-        newRoom.setCurrentParticipants(1); // Initially, the player is in the room
-        newRoom.setMaxParticipants(tournament.getParticipants()); // Set max participants (you can adjust this)
-        newRoom = roomRepository.save(newRoom);
-
-        // Assign the player to the newly created room
-        player.setTournamentRoom(newRoom);
-        newRoom.getCurrentPlayers().add(player);
-        newRoom.setCurrentParticipants(newRoom.getCurrentParticipants() + 1);
-        roomRepository.save(newRoom);
-        return newRoom;
-
-    }
 
 public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer roundNumber, TournamentResultRecord record) {
 
@@ -2013,6 +1964,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
                 if (i + 1 >= participants.size()) {
                     p1.setStatus("FREE_PASS");
+                    p1.setIsWinner(true);
                     tournamentResultRecordRepository.save(p1);
                     break;
                 }
