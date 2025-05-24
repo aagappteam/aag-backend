@@ -2,6 +2,7 @@ package aagapp_backend.services.gameservice;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.*;
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.*;
@@ -9,6 +10,7 @@ import aagapp_backend.entity.game.*;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.*;
 import aagapp_backend.repository.aagavailblegames.AagAvailbleGamesRepository;
 import aagapp_backend.repository.game.*;
@@ -16,7 +18,9 @@ import aagapp_backend.repository.game.*;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CommonService;
+import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
@@ -79,6 +83,12 @@ public class GameService {
     private final PlayerRepository playerRepository;
     private final GameRoomRepository gameRoomRepository;
     private final VendorRepository vendorRepository;
+
+    @Autowired
+    private CustomCustomerService customCustomerService;
+
+    @Autowired
+    private WalletRepository walletRepo;
 
     @Autowired
     public GameService(
@@ -339,6 +349,62 @@ public void updateDailylimit() {
             throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
         }
     }
+
+
+
+    @Transactional
+    public Wallet deductAmountFromWallet(Long customerId, Long gameId) {
+        try {
+            // Step 1: Retrieve the customer
+            CustomCustomer customer = customCustomerService.getCustomerById(customerId);
+            if (customer == null) {
+                throw new BusinessException("Customer not found for the given ID: " + customerId, HttpStatus.BAD_REQUEST);
+            }
+
+            // Step 2: Retrieve the wallet
+            Wallet wallet = walletRepo.findByCustomCustomer(customer);
+            if (wallet == null) {
+                throw new BusinessException("No wallet found for the customer", HttpStatus.BAD_REQUEST);
+            }
+
+            // Step 3: Fetch the game and get its fee
+            Game game = gameRepository.findById(gameId)
+                    .orElseThrow(() -> new BusinessException("Game not found with ID: " + gameId, HttpStatus.BAD_REQUEST));
+
+            Double gameFee = game.getFee();
+
+            // Step 4: Balance checks
+            Double unplayedBalance = wallet.getUnplayedBalance();
+            BigDecimal winningAmount = wallet.getWinningAmount();
+            double totalAvailable = unplayedBalance + winningAmount.doubleValue();
+
+            if (gameFee > totalAvailable) {
+                throw new BusinessException("Insufficient balance in the wallet", HttpStatus.BAD_REQUEST);
+            }
+
+            // Step 5: Deduct amount with priority logic
+            if (gameFee <= unplayedBalance) {
+                wallet.setUnplayedBalance(unplayedBalance - gameFee);
+            } else {
+                double remainingAmount = gameFee - unplayedBalance;
+                wallet.setUnplayedBalance(0.0);
+                wallet.setWinningAmount(winningAmount.subtract(BigDecimal.valueOf(remainingAmount)));
+            }
+
+
+            walletRepo.save(wallet);
+
+            return wallet;
+
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error occurred while deducting game fee from wallet", e);
+        }
+    }
+
     @Transactional
     public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
         try {
@@ -357,6 +423,9 @@ public void updateDailylimit() {
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);
+
+            //deduct ammount here
+            deductAmountFromWallet(playerId ,gameId);
 
             boolean playerJoined = addPlayerToRoom(gameRoom, player);
             if (!playerJoined) {

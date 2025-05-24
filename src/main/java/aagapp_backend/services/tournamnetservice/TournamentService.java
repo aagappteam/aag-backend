@@ -3,13 +3,16 @@ package aagapp_backend.services.tournamnetservice;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.pricelogic.PriceConstant;
 import aagapp_backend.dto.*;
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
+import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.*;
 import aagapp_backend.entity.wallet.VendorWallet;
+import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -18,7 +21,9 @@ import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.tournament.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.VendorWalletRepository;
+import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CommonService;
+import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -53,6 +58,12 @@ public class TournamentService {
 
     @Autowired
     private CommonService commonService;
+
+    @Autowired
+    private CustomCustomerService customCustomerService;
+
+    @Autowired
+    private WalletRepository walletRepository;
 
 
     private TournamentRepository tournamentRepository;
@@ -391,6 +402,8 @@ public class TournamentService {
                 throw new BusinessException("The tournament has already reached the maximum number of participants.", HttpStatus.BAD_REQUEST);
             }
 
+            deductAmountFromWalletToRegisterInTournament(playerId, tournamentId);
+
             // Register the player
             TournamentPlayerRegistration registration = new TournamentPlayerRegistration();
             registration.setTournament(tournament);
@@ -421,6 +434,62 @@ public class TournamentService {
             throw new RuntimeException("Error registering player for the tournament: " + e.getMessage(), e);
 
 
+        }
+    }
+
+
+    @Transactional
+    public Wallet deductAmountFromWalletToRegisterInTournament(Long customerId, Long tournamentId) {
+        try {
+            // Step 1: Retrieve the customer
+            CustomCustomer customer = customCustomerService.getCustomerById(customerId);
+            if (customer == null) {
+                throw new BusinessException("Customer not found for the given ID: " + customerId, HttpStatus.BAD_REQUEST);
+            }
+
+            // Step 2: Retrieve the wallet
+            Wallet wallet = walletRepository.findByCustomCustomer(customer);
+            if (wallet == null) {
+                throw new BusinessException("No wallet found for the customer", HttpStatus.BAD_REQUEST);
+            }
+
+            // Step 3: Fetch the game and get its fee
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new BusinessException("Game not found with ID: " + tournamentId, HttpStatus.BAD_REQUEST));
+
+            Integer gameFee = tournament.getEntryFee();
+
+            // Step 4: Balance checks
+            Double unplayedBalance = wallet.getUnplayedBalance();
+            BigDecimal winningAmount = wallet.getWinningAmount();
+            double totalAvailable = unplayedBalance + winningAmount.doubleValue();
+
+            if (gameFee > totalAvailable) {
+                throw new BusinessException("Insufficient balance in the wallet", HttpStatus.BAD_REQUEST);
+            }
+
+            // Step 5: Deduct amount with priority logic
+            if (gameFee <= unplayedBalance) {
+                wallet.setUnplayedBalance(unplayedBalance - gameFee);
+            } else {
+                double remainingAmount = gameFee - unplayedBalance;
+                wallet.setUnplayedBalance(0.0);
+                wallet.setWinningAmount(winningAmount.subtract(BigDecimal.valueOf(remainingAmount)));
+            }
+
+
+            // implement here to give 5% of the game fee to the tournament creator
+
+            walletRepository.save(wallet);
+
+            return wallet;
+
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error occurred while deducting game fee from wallet", e);
         }
     }
 
