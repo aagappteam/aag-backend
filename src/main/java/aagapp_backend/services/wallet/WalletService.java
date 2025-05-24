@@ -101,38 +101,51 @@ public class WalletService {
             // Retrieve the customer by ID
             CustomCustomer customer = customCustomerService.getCustomerById(customerId);
             if (customer == null) {
-                throw new BusinessException("Customer not found for the given ID: " + customerId , HttpStatus.BAD_REQUEST);
+                throw new BusinessException("Customer not found for the given ID: " + customerId, HttpStatus.BAD_REQUEST);
             }
 
             // Retrieve the wallet associated with the customer
             Wallet wallet = walletRepository.findByCustomCustomer(customer);
             if (wallet == null) {
-                throw new BusinessException("No wallet found for the customer" , HttpStatus.BAD_REQUEST);
+                throw new BusinessException("No wallet found for the customer", HttpStatus.BAD_REQUEST);
             }
 
-            if (deducedAmount > wallet.getUnplayedBalance()) {
+            Double unplayedBalance = wallet.getUnplayedBalance();
+            BigDecimal winningAmount = wallet.getWinningAmount();
+            double totalAvailable = unplayedBalance + winningAmount.doubleValue();
+
+            if (deducedAmount > totalAvailable) {
                 throw new BusinessException("Insufficient balance in the wallet", HttpStatus.BAD_REQUEST);
             }
 
-            // Deduct the balance from the wallet
-            wallet.setUnplayedBalance(wallet.getUnplayedBalance() - deducedAmount);
+            // Deduct from unplayed first
+            if (deducedAmount <= unplayedBalance) {
+                wallet.setUnplayedBalance(unplayedBalance - deducedAmount);
+            } else {
+                double remainingAmount = deducedAmount - unplayedBalance;
+
+                // Set unplayed balance to 0
+                wallet.setUnplayedBalance(0.0);
+
+                // Deduct remaining from winning amount
+                BigDecimal newWinningAmount = winningAmount.subtract(BigDecimal.valueOf(remainingAmount));
+                wallet.setWinningAmount(newWinningAmount);
+            }
 
             // Save the updated wallet
             walletRepository.save(wallet);
 
-            // Return the updated balance
             return wallet;
 
-        } catch (BusinessException e){
+        } catch (BusinessException e) {
             exceptionHandlingService.handleException(HttpStatus.BAD_REQUEST, e);
             throw e;
-        }
-
-        catch (Exception e) {
+        } catch (Exception e) {
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while deducting balance from wallet", e);
         }
     }
+
 
 
     @Transactional
@@ -156,7 +169,7 @@ public class WalletService {
                 throw new BusinessException("Insufficient balance in the wallet" , HttpStatus.BAD_REQUEST);
             }
 
-// Withdraw the balance from the wallet
+            // Withdraw the balance from the wallet
             wallet.setWinningAmount(wallet.getWinningAmount().subtract(withdrawBalanceBD));
 
             // Save the updated wallet
