@@ -478,6 +478,14 @@ public class TournamentService {
             }
 
 
+            Notification notification = new Notification();
+            notification.setCustomerId(customer.getId());
+            notification.setDescription("Wallet balance deducted");
+            notification.setAmount(gameFee.doubleValue());
+            notification.setDetails("Rs. " + gameFee + " deducted to join tournament " + tournament.getName());
+            notificationRepository.save(notification);
+
+
             // implement here to give 5% of the game fee to the tournament creator
 
             walletRepository.save(wallet);

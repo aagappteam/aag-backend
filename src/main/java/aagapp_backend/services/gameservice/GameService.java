@@ -8,10 +8,12 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.*;
 
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.*;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.aagavailblegames.AagAvailbleGamesRepository;
 import aagapp_backend.repository.game.*;
 
@@ -89,6 +91,9 @@ public class GameService {
 
     @Autowired
     private WalletRepository walletRepo;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     public GameService(
@@ -391,6 +396,12 @@ public void updateDailylimit() {
                 wallet.setWinningAmount(winningAmount.subtract(BigDecimal.valueOf(remainingAmount)));
             }
 
+            Notification notification = new Notification();
+            notification.setCustomerId(customer.getId());
+            notification.setDescription("Wallet balance deducted");
+            notification.setAmount(gameFee);
+            notification.setDetails("Rs. " + gameFee + " deducted to join game " + game.getName());
+            notificationRepository.save(notification);
 
             walletRepo.save(wallet);
 
