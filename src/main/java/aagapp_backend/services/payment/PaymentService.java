@@ -466,7 +466,7 @@ public class PaymentService {
                 return new PaymentDashboardDTO(
                         planEntity.getPlanName(),
                         planEntity.getPlanVariant(),
-                        dailyPercentage != null ? dailyPercentage + "%" : "0%",
+                        dailyPercentage != null ? dailyPercentage + "x" : "0x",
                         dailyLimitString,
                         paymentEntity.getId() != null ? paymentEntity.getId() : 0L,
                         planEntity.getPrice() != null ? planEntity.getPrice() : 0D,
@@ -476,12 +476,12 @@ public class PaymentService {
                         totalBoxes
                 );
             }).orElseGet(() -> new PaymentDashboardDTO(
-                    "NA", "NA", "0%", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
+                    "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
             )));
         } else {
             // Return default DTO if no active plan is found
             return Optional.of(new PaymentDashboardDTO(
-                    "NA", "NA", "0%", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
+                    "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
             ));
         }
     }

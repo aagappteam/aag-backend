@@ -401,26 +401,6 @@ public class GameController {
         }
     }
 
-    @GetMapping("/active-game-rooms")
-    public ResponseEntity<?> getAllActiveGameRooms() {
-        // Fetch all GameRooms with status ONGOING
-        List<GameRoom> ongoingRooms = gameRoomRepository.findByStatus(GameRoomStatus.ONGOING);
-
-        // Map the GameRoom entities to GameRoomResponseDTO
-        List<GameRoomResponseDTO> gameRoomResponseDTOS = ongoingRooms.stream().map(gameRoom -> {
-            Integer maxParticipants = gameRoom.getMaxPlayers();
-            Long gameId = gameRoom.getGame().getId();
-            String gamePassword = gameRoom.getGamepassword();
-            Integer moves = gameRoom.getGame().getMove();  // Assuming moves is stored in the Game entity
-
-            BigDecimal totalPrize = matchService.getWinningAmount(gameRoom);  // Assuming matchService calculates the total prize
-
-            return new GameRoomResponseDTO(gameId, gameRoom.getId(), gamePassword, moves, totalPrize, maxParticipants);
-        }).collect(Collectors.toList());
-
-        // Return the response wrapped in a success response
-        return responseService.generateSuccessResponse("Fetching game room details", gameRoomResponseDTOS, HttpStatus.OK);
-    }
 
 
 }

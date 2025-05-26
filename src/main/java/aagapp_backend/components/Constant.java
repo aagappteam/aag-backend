@@ -6,9 +6,14 @@ import java.math.BigDecimal;
 public class Constant {
 
 
+    public static final double BONUS_PERCENT = 0.05;
+    public static final double USER_WIN_PERCENT = 0.62;
+
+
     public static final Double LEAGUE_PASSES_FEE = 7.0;
     public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(1000.00);
     public static final int MULTIPLIER = 4;
+
     public static String ludobaseurl = "http://3.110.44.61:8082";
     public static String snakebaseUrl = "http://3.110.44.61:8092";
 

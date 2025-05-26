@@ -23,16 +23,6 @@ import java.util.Arrays;
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
-/*    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS configuration
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
-                .authorizeRequests()
-                .requestMatchers("/ludo-websocket/**").permitAll()
-                .anyRequest().authenticated();
-
-        return http.build();
-    }*/
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
@@ -46,11 +36,13 @@ public class SecurityConfig {
                 "/api/**/aagdocument/**",
                 "/api/**/files/**",
                 "/initate-payment",
+                "/.well-known/**",
                 "/response",
                 "/resp",
                 "/enq",
                 "/MerchantAcknowledgement",
-                "/Bank"
+                "/Bank",
+                "/.well-known/**"
         );
     }
     @Bean
@@ -84,7 +76,8 @@ public class SecurityConfig {
                                "/enq",
                                "/MerchantAcknowledgement",
                                "/subPaisa/**",
-                               "/Bank"
+                               "/Bank",
+                               "/.well-known/**"
 
                        ).permitAll() // Allow public access to Swagger UI and some other resources
                        .anyRequest().authenticated() // Require authentication for all other paths

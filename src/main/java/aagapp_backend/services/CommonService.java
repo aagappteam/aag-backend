@@ -16,6 +16,7 @@ import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.services.exception.BusinessException;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -60,7 +61,6 @@ public class CommonService {
                 .findFirst()
                 .orElse(game.getGameImage());
     }
-
 
     public void deductFromWallet(Long playerId, Double amount,String description) {
         Player player = playerRepository.findById(playerId)
@@ -117,9 +117,10 @@ public class CommonService {
         // ✅ Notification
         Notification notification = new Notification();
         notification.setCustomerId(customer.getId());
-        notification.setDescription("Wallet balance deducted for tournament");
+        notification.setDescription("Wallet balance deducted");
         notification.setAmount(gameAmount.doubleValue());
-        notification.setDetails("Rs. " + gameAmount + " deducted for playing " + player.getGameRoom().getGame().getName());
+        notification.setDetails(description);
+        notification.setRole("Customer");
 
 
 
@@ -146,6 +147,7 @@ public class CommonService {
         }
     }
 
+    @Transactional
     public void addVendorEarningForPayment(Long vendorId, BigDecimal paymentAmount, BigDecimal vendorSharePercent) {
         String monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
         InfluencerMonthlyEarning earning = earningRepository.findByInfluencerIdAndMonthYear(vendorId, monthYear);

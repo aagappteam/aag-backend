@@ -21,7 +21,6 @@ import aagapp_backend.repository.game.*;
 import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
-import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CommonService;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
@@ -92,15 +91,6 @@ public class GameService {
     private final PlayerRepository playerRepository;
     private final GameRoomRepository gameRoomRepository;
     private final VendorRepository vendorRepository;
-
-    @Autowired
-    private CustomCustomerService customCustomerService;
-
-    @Autowired
-    private WalletRepository walletRepo;
-
-    @Autowired
-    private NotificationRepository notificationRepository;
 
     @Autowired
     public GameService(
@@ -361,68 +351,6 @@ public void updateDailylimit() {
             throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
         }
     }
-
-
-
-    @Transactional
-    public Wallet deductAmountFromWallet(Long customerId, Long gameId) {
-        try {
-            // Step 1: Retrieve the customer
-            CustomCustomer customer = customCustomerService.getCustomerById(customerId);
-            if (customer == null) {
-                throw new BusinessException("Customer not found for the given ID: " + customerId, HttpStatus.BAD_REQUEST);
-            }
-
-            // Step 2: Retrieve the wallet
-            Wallet wallet = walletRepo.findByCustomCustomer(customer);
-            if (wallet == null) {
-                throw new BusinessException("No wallet found for the customer", HttpStatus.BAD_REQUEST);
-            }
-
-            // Step 3: Fetch the game and get its fee
-            Game game = gameRepository.findById(gameId)
-                    .orElseThrow(() -> new BusinessException("Game not found with ID: " + gameId, HttpStatus.BAD_REQUEST));
-
-            Double gameFee = game.getFee();
-
-            // Step 4: Balance checks
-            Double unplayedBalance = wallet.getUnplayedBalance();
-            BigDecimal winningAmount = wallet.getWinningAmount();
-            double totalAvailable = unplayedBalance + winningAmount.doubleValue();
-
-            if (gameFee > totalAvailable) {
-                throw new BusinessException("Insufficient balance in the wallet", HttpStatus.BAD_REQUEST);
-            }
-
-            // Step 5: Deduct amount with priority logic
-            if (gameFee <= unplayedBalance) {
-                wallet.setUnplayedBalance(unplayedBalance - gameFee);
-            } else {
-                double remainingAmount = gameFee - unplayedBalance;
-                wallet.setUnplayedBalance(0.0);
-                wallet.setWinningAmount(winningAmount.subtract(BigDecimal.valueOf(remainingAmount)));
-            }
-
-            Notification notification = new Notification();
-            notification.setCustomerId(customer.getId());
-            notification.setDescription("Wallet balance deducted");
-            notification.setAmount(gameFee);
-            notification.setDetails("Rs. " + gameFee + " deducted to join game " + game.getName());
-            notificationRepository.save(notification);
-
-            walletRepo.save(wallet);
-
-            return wallet;
-
-        } catch (BusinessException e) {
-            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw e;
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while deducting game fee from wallet", e);
-        }
-    }
-
     @Transactional
     public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
         try {
@@ -435,23 +363,19 @@ public void updateDailylimit() {
             BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
 
             BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
-            commonservice.deductFromWallet(playerId, game.getFee(),"Wallet balance deducted for game");
-            commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
+
 
             if (isPlayerInRoom(player)) {
                 leaveRoom(playerId, player.getGameRoom().getGame().getId());
-                /*return responseService.generateErrorResponse(
-                        "Player " + player.getPlayerId() + " is already in room with game " + player.getGameRoom().getGame().getId(),
-                        HttpStatus.BAD_REQUEST
-                );*/
             }
 
             GameRoom gameRoom = findAvailableGameRoom(game);
 
-            //deduct ammount here
-            deductAmountFromWallet(playerId ,gameId);
 
+            commonservice.deductFromWallet(playerId, game.getFee(),"Rs. " + game.getFee() + " deducted for playing " + game.getName() + " game");
+            commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
             boolean playerJoined = addPlayerToRoom(gameRoom, player);
+
             if (!playerJoined) {
                 return responseService.generateErrorResponse("Room is already full with game ID: " + game.getId(), HttpStatus.BAD_REQUEST);
             }
@@ -722,7 +646,6 @@ public void updateDailylimit() {
     private void transitionRoomToOngoing(GameRoom newRoom) {
 
         try {
-            BigDecimal toalprize =    matchService.getWinningAmount(newRoom);
 
             Game game = newRoom.getGame();
 
@@ -732,12 +655,26 @@ public void updateDailylimit() {
             BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
             BigDecimal totalPrize = totalCollection.multiply(Constant.USER_PERCENTAGE);
 
+            BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
+
+            BigDecimal singleBonus = entryFee.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT));
+            BigDecimal totalBonusCollected = singleBonus.multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
+
+
+            BigDecimal finalWinnerAmount = totalPrize.add(totalBonusCollected.multiply(BigDecimal.valueOf(2)));
+
+            BigDecimal totalPrizenew = finalWinnerAmount;
+
+            System.out.println("totalPrize: " + totalPrize);
+            System.out.println("totalPrizenew: " + totalPrizenew);
+
+
             String gameName = game.getName().toLowerCase();
 
             if (gameName.equals("ludo")) {
-                gamePassword = this.createNewGame(Constant.ludobaseurl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
+                gamePassword = this.createNewGame(Constant.ludobaseurl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrizenew);
             } else if (gameName.equals("snake & ladder")) {
-                gamePassword = this.createNewGame(Constant.snakebaseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrize);
+                gamePassword = this.createNewGame(Constant.snakebaseUrl, game.getId(), newRoom.getId(), game.getMaxPlayersPerTeam(), game.getMove(), totalPrizenew);
             } else {
                 throw new BusinessException("Unsupported game: " + gameName, HttpStatus.BAD_REQUEST);
             }

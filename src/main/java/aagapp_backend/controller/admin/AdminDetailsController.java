@@ -259,26 +259,61 @@ public class AdminDetailsController {
 
     @PostMapping("/withdrawal/{id}/approve")
     public ResponseEntity<?> approveWithdraw(@PathVariable Long id) {
-        Optional<WithdrawalRequest> wr = withdrawalRepo.findById(id);
-        if (wr.isPresent()) {
-            WithdrawalRequest request = wr.get();
-            request.setStatus("APPROVED");
-            withdrawalRepo.save(request);
-            return ResponseEntity.ok("Approved");
+        try {
+            Optional<WithdrawalRequest> wr = withdrawalRepo.findById(id);
+            if (wr.isPresent()) {
+                WithdrawalRequest request = wr.get();
+                request.setStatus("APPROVED");
+                withdrawalRepo.save(request);
+                return responseService.generateSuccessResponse(
+                        "Withdrawal request approved successfully",
+                        request,
+                        HttpStatus.OK
+                );
+            }else
+            {
+                return responseService.generateErrorResponse(
+                        "Withdrawal request not found",
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+        }catch (Exception e){
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
         }
-        return ResponseEntity.notFound().build();
     }
 
     @PostMapping("/withdrawal/{id}/reject")
     public ResponseEntity<?> rejectWithdraw(@PathVariable Long id) {
-        Optional<WithdrawalRequest> wr = withdrawalRepo.findById(id);
-        if (wr.isPresent()) {
-            WithdrawalRequest request = wr.get();
-            request.setStatus("REJECTED");
-            withdrawalRepo.save(request);
-            return ResponseEntity.ok("Rejected");
+        try {
+            Optional<WithdrawalRequest> wr = withdrawalRepo.findById(id);
+            if (wr.isPresent()) {
+                WithdrawalRequest request = wr.get();
+                request.setStatus("REJECTED");
+                withdrawalRepo.save(request);
+                return responseService.generateSuccessResponse(
+                        "Withdrawal request rejected successfully",
+                        request,
+                        HttpStatus.OK
+                );
+
+            }else{
+                return responseService.generateErrorResponse(
+                        "Withdrawal request not found",
+                        HttpStatus.BAD_REQUEST
+                );
+
+            }
+        }catch (Exception e){
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
         }
-        return ResponseEntity.notFound().build();
     }
 
     private Map<String, Object> buildSummaryMap(InfluencerMonthlyEarning e, List<WithdrawalRequest> withdrawals) {

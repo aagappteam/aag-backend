@@ -721,7 +721,7 @@ public class VenderServiceImpl implements VenderService {
         // Now you can set this list directly to the response map
         result.put("activeGames", activeContent);
 
-        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit(),existingVendor.getDailyLimit());
+        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit()!=null?existingVendor.getPublishedLimit():0,existingVendor.getDailyLimit()!=null?existingVendor.getDailyLimit():0);
         result.put("subscriptionPlanCards", transactions);
 
         return result;

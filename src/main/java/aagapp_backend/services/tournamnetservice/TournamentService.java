@@ -15,6 +15,7 @@ import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.tournament.*;
@@ -66,7 +67,8 @@ public class TournamentService {
     private WalletRepository walletRepository;
 
 
-
+        @Autowired
+        private CustomCustomerRepository customCustomerRepository;
     private TournamentRepository tournamentRepository;
     private EntityManager em;
     private NotificationRepository notificationRepository;
@@ -372,12 +374,11 @@ public class TournamentService {
                 throw new BusinessException("Tournament is already active" , HttpStatus.BAD_REQUEST);
 
             }
-            commonService.deductFromWallet(playerId, (double) tournament.getEntryFee(), "Wallet balance deducted for tournament");
+
+            commonService.deductFromWallet(playerId, (double) tournament.getEntryFee(), "Rs. " + tournament.getEntryFee() + " deducted for playing " + tournament.getName() + " tournament");
 
             BigDecimal entryFee = BigDecimal.valueOf(tournament.getEntryFee());
             BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
-
-
             commonService.addVendorEarningForPayment(tournament.getVendorId(), BigDecimal.valueOf(tournament.getEntryFee()), vendorShareAmount);
 
 
@@ -1918,18 +1919,39 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         BigDecimal prizePerWinner = roundPrize.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
 
+        BigDecimal entryFee = BigDecimal.valueOf(tournament.getEntryFee());
+        int totalPlayersInRound = uniqueWinnersMap.size() * 2;
+
+        BigDecimal bonusCollected = entryFee.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT))
+                .multiply(BigDecimal.valueOf(totalPlayersInRound));
+        BigDecimal bonusPool = bonusCollected.multiply(BigDecimal.valueOf(2));
+        BigDecimal bonusPerWinner = bonusPool.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
+
+        BigDecimal finalPayoutPerWinner = prizePerWinner.add(bonusPerWinner);
+
+        System.out.println("Total Prize: " + finalPayoutPerWinner);
+        System.out.println("Round Prize: " + roundPrize);
+        System.out.println("Winners: " + winnersCount);
+        System.out.println("Prize per Winner: " + prizePerWinner);
+        System.out.println("Entry Fee: " + entryFee);
+        System.out.println("Total Players in Round: " + totalPlayersInRound);
+
         for (TournamentResultRecord winner : uniqueWinners) {
             Notification notification = new Notification();
-            notification.setAmount(prizePerWinner.doubleValue());
-            notification.setDetails("You won Rs. " + prizePerWinner + " in Round " + round);
+            notification.setAmount(finalPayoutPerWinner.doubleValue());
+            notification.setDetails("You won Rs. " + finalPayoutPerWinner + " in Round " + round);
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
-            
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
             notificationRepository.save(notification);
 
             winner.setAmmount(winner.getAmmount().add(prizePerWinner));
+            CustomCustomer customCustomer = winner.getPlayer().getCustomer();
+            customCustomer.setBonusBalance(customCustomer.getBonusBalance().add(bonusPerWinner));
+            customCustomerRepository.save(customCustomer);
+
             tournamentResultRecordRepository.save(winner);
+
 
         }
     }
