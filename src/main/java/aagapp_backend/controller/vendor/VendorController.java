@@ -847,9 +847,6 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
         try {
             String month = LocalDate.now().toString().substring(0, 7);
-            InfluencerMonthlyEarning e = earningRepo.findByInfluencerIdAndMonthYear(influencerId, month);
-/*        if (e == null || e.get().compareTo(amount) < 0)
-            return ResponseEntity.badRequest().body(Map.of("message", "Insufficient balance"));*/
 
             VendorEntity vendor = vendorRepository.findById(influencerId).orElse(null);
             if (vendor == null)

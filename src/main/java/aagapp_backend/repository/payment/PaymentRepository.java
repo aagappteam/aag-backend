@@ -15,13 +15,24 @@ import java.util.Optional;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
-
-    @Query("SELECT p FROM PaymentEntity p WHERE p.vendorEntity.id = :vendorId " +
+/*    @Query("SELECT p FROM PaymentEntity p WHERE p.vendorEntity.id = :vendorId " +
             "AND p.expiryAt > :currentDate AND p.status = :status " +
             "ORDER BY p.createdAt DESC")
     Optional<PaymentEntity> findActivePlanByVendorId(@Param("vendorId") Long vendorId,
                                                      @Param("currentDate") LocalDateTime currentDate,
+                                                     @Param("status") PaymentStatus status);*/
+
+    @Query("SELECT p FROM PaymentEntity p " +
+            "WHERE p.vendorEntity.id = :vendorId " +
+            "AND :currentDate BETWEEN p.createdAt AND p.expiryAt " +
+            "AND p.status = :status " +
+            "ORDER BY p.createdAt DESC")
+    Optional<PaymentEntity> findActivePlanByVendorId(@Param("vendorId") Long vendorId,
+                                                     @Param("currentDate") LocalDateTime currentDate,
                                                      @Param("status") PaymentStatus status);
+
+
+
 
     @Query("SELECT p FROM PaymentEntity p WHERE p.vendorEntity.id = :vendorId " +
             "AND (:transactionReference IS NULL OR p.transactionId = :transactionReference) " +
