@@ -1,6 +1,7 @@
 package aagapp_backend.services.gameservice;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.components.pricelogic.PriceConstant;
 import aagapp_backend.dto.*;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
@@ -36,6 +37,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -52,6 +54,7 @@ import org.springframework.stereotype.Service;
 
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -69,6 +72,10 @@ public class GameService {
     @Autowired
     private CommonService commonservice;
 
+    @Autowired
+    private CustomCustomerService   customCustomerService;
+    @Autowired
+    private NotificationRepository notificationRepository;
     private final RestTemplate restTemplate = new RestTemplate();
     private final MoveRepository moveRepository;
     private MatchService matchService;
@@ -425,6 +432,12 @@ public void updateDailylimit() {
             Game game = gameRepository.findById(gameId)
                     .orElseThrow(() -> new BusinessException("Game not found with ID: " + gameId, HttpStatus.BAD_REQUEST));
 
+            BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
+
+            BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
+            commonservice.deductFromWallet(playerId, game.getFee(),"Wallet balance deducted for game");
+            commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
+
             if (isPlayerInRoom(player)) {
                 leaveRoom(playerId, player.getGameRoom().getGame().getId());
                 /*return responseService.generateErrorResponse(
@@ -451,6 +464,25 @@ public void updateDailylimit() {
 
             updatePlayerStatusToPlaying(player);
 
+/*            Wallet wallet = player.getCustomer().getWallet();
+            Double currentBalance = wallet.getUnplayedBalance();
+            Double entryFee = game.getFee();
+            if (currentBalance < entryFee) {
+                return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
+            }
+            wallet.setUnplayedBalance(currentBalance - entryFee);
+
+            // Now create a single notification for the vendor
+            Notification notification = new Notification();
+            CustomCustomer customer = customCustomerService.getCustomerById(playerId);
+            notification.setCustomerId(customer.getId());
+            notification.setDescription("Wallet balance deducted"); // Example NotificationType for a successful
+            notification.setAmount(entryFee);
+            notification.setDetails("Rs. " + entryFee + " deducted for playing " + game.getName()); // Example NotificationType for a successful
+
+            notificationRepository.save(notification);*/
+
+
             return responseService.generateSuccessResponse("Player joined the Game Room", gameRoom, HttpStatus.OK);
         } catch (BusinessException e) {
             throw e;  // propagate cleanly
@@ -459,6 +491,61 @@ public void updateDailylimit() {
             throw new RuntimeException("Unexpected error in joinRoom: " + e.getMessage(), e);
         }
     }
+
+
+
+
+//    deduct from wallet ammount for game and add notification
+/*    public void deductFromWallet(Long playerId, Double amount) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
+        Wallet wallet = player.getCustomer().getWallet();
+*//*        Double currentBalance = wallet.getUnplayedBalance();
+        if (currentBalance < amount.doubleValue()) {
+            throw new BusinessException("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
+        }
+        wallet.setUnplayedBalance(currentBalance - amount.doubleValue());*//*
+
+        Double unplayed = wallet.getUnplayedBalance();  // Add cash balance record
+        BigDecimal winning = wallet.getWinningAmount(); // Winning ammount
+        BigDecimal gameAmount = BigDecimal.valueOf(amount);
+        BigDecimal unplayedBD = BigDecimal.valueOf(unplayed);
+
+
+        System.out.println("unplayedBD: " + unplayedBD);
+        System.out.println("gameAmount: " + gameAmount);
+        System.out.println("winning: " + winning);
+
+        BigDecimal totalBalance = unplayedBD.add(winning);
+        System.out.println("totalBalance: " + totalBalance);
+
+        if (totalBalance.compareTo(gameAmount) < 0) {
+            throw new BusinessException("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
+        }
+
+        // Case 2: Enough in unplayed balance
+        if (unplayedBD.compareTo(gameAmount) >= 0) {
+            wallet.setUnplayedBalance(unplayedBD.subtract(gameAmount).doubleValue());
+            System.out.println("Deducted full from unplayed.");
+        } else {
+            BigDecimal remaining = gameAmount.subtract(unplayedBD);
+            wallet.setUnplayedBalance(0.0); // Unplayed exhausted
+            wallet.setWinningAmount(winning.subtract(remaining));
+            System.out.println("Deducted " + unplayedBD + " from unplayed and " + remaining + " from winning.");
+        }
+
+
+        // Now create a single notification for the vendor
+        Notification notification = new Notification();
+        CustomCustomer customer = customCustomerService.getCustomerById(playerId);
+        notification.setCustomerId(customer.getId());
+        notification.setDescription("Wallet balance deducted"); // Example NotificationType for a successful
+        notification.setAmount(amount.doubleValue());
+        notification.setDetails("Rs. " + amount + " deducted for playing a game " + player.getGameRoom().getGame().getName() ); // Example NotificationType for a successful
+
+        notificationRepository.save(notification);
+
+    }*/
 
 
     @Transactional
@@ -618,11 +705,10 @@ public void updateDailylimit() {
             gameRoom.getCurrentPlayers().add(player);
 
             player.setGameRoom(gameRoom);
-
-//            player.setPlayerStatus(PlayerStatus.PLAYING);
-
             gameRoomRepository.save(gameRoom);
             playerRepository.save(player);
+
+
 
             // Return true as the player was successfully added
             return true;
@@ -1172,12 +1258,15 @@ public void updateDailylimit() {
 
             String sql = "SELECT * " +
                     "FROM aag_league l " +
-                    "WHERE l.vendor_id = :vendorId " +
+                    "WHERE l.scheduled_at <= :nowInKolkata " +
+                    "AND l.vendor_id = :vendorId " +
                     "AND l.status = :scheduledStatus";
+
 
             Query query = em.createNativeQuery(sql, League.class);
             query.setParameter("vendorId", vendorId);
             query.setParameter("scheduledStatus", Constant.SCHEDULED);
+            query.setParameter("nowInKolkata", nowInKolkata);
 
 
             List<League> leagues = query.getResultList();

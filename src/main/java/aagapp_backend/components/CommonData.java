@@ -1,15 +1,29 @@
 package aagapp_backend.components;
 
+import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.game.PlayerRepository;
+import aagapp_backend.services.CustomCustomerService;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
 @Component
 public class CommonData {
+
+
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandling;
@@ -42,4 +56,6 @@ public class CommonData {
             return false;
         }
     }
+
+
 }

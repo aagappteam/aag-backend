@@ -96,7 +96,7 @@ import java.util.Random;
                 Twilio.init(accountSid, authToken);
                 String completeMobileNumber = countryCode + mobileNumber;
                 String otp = generateOTPForAdmin();
-//                otpservice.sendOtp(countryCode,mobileNumber,otp);
+               otpservice.sendOtp(countryCode,mobileNumber,otp);
 
 
                 CustomAdmin existingAdmin = adminService.findAdminByPhone(mobileNumber,countryCode);

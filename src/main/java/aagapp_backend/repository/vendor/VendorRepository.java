@@ -43,4 +43,7 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     List<TopVendorDto> findTopVendorsWithFollowerCount(Pageable pageable);
 
 
+    @Query("SELECT v FROM VendorEntity v WHERE v.service_provider_id = :influencerId")
+
+    VendorEntity findByServiceProviderId(@Param("influencerId") Long influencerId);
 }

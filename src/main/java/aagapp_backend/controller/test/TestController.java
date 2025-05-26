@@ -2,21 +2,27 @@ package aagapp_backend.controller.test;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.EmailService;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.download.InfluencerEarningsService;
 import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import jakarta.persistence.EntityManager;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -25,6 +31,9 @@ public class TestController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private InfluencerMonthlyEarningRepository earningRepository;
 
     @Autowired
     private ResponseService responseService;
@@ -140,6 +149,33 @@ public class TestController {
             return responseService.generateSuccessResponse("Players fetched successfully", players, HttpStatus.OK);
         } catch (Exception e) {
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/createOrUpdateMonthlyPlan")
+    public ResponseEntity<?> createOrUpdateMonthlyPlan(@RequestParam Long influencerId, @RequestParam  BigDecimal rechargeAmount, int multiplier) {
+        String monthYear = LocalDate.now().toString().substring(0, 7); // "2025-05"
+
+        InfluencerMonthlyEarning existing = earningRepository.findByInfluencerIdAndMonthYear(influencerId, monthYear);
+
+        if (existing == null) {
+            // Insert new row
+            InfluencerMonthlyEarning newEarning = new InfluencerMonthlyEarning();
+            newEarning.setInfluencerId(influencerId);
+            newEarning.setMonthYear(monthYear);
+            newEarning.setRechargeAmount(rechargeAmount);
+            newEarning.setMultiplier(multiplier);
+            newEarning.setEarnedAmount(BigDecimal.ZERO); // Start with 0
+            earningRepository.save(newEarning);
+            return responseService.generateSuccessResponse("Monthly plan created/updated successfully", newEarning, HttpStatus.OK);
+
+        } else {
+            // Optional: update recharge or multiplier if needed
+            existing.setRechargeAmount(rechargeAmount);
+            existing.setMultiplier(multiplier);
+            earningRepository.save(existing);
+            return responseService.generateSuccessResponse("Monthly plan created/updated successfully", existing, HttpStatus.OK);
+
         }
     }
 }

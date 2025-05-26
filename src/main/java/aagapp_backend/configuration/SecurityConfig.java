@@ -83,6 +83,7 @@ public class SecurityConfig {
                                "/resp",
                                "/enq",
                                "/MerchantAcknowledgement",
+                               "/subPaisa/**",
                                "/Bank"
 
                        ).permitAll() // Allow public access to Swagger UI and some other resources

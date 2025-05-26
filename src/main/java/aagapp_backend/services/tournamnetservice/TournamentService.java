@@ -15,7 +15,6 @@ import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
-import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.tournament.*;
@@ -28,6 +27,7 @@ import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.firebase.NotoficationFirebase;
+import aagapp_backend.services.gameservice.GameService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
@@ -66,6 +66,7 @@ public class TournamentService {
     private WalletRepository walletRepository;
 
 
+
     private TournamentRepository tournamentRepository;
     private EntityManager em;
     private NotificationRepository notificationRepository;
@@ -77,7 +78,6 @@ public class TournamentService {
     private PlayerRepository playerRepository;
     private VendorRepository vendorRepository;
     private ResponseService responseService;
-    private CustomCustomerRepository customCustomerRepository;
     private TournamentResultRecordRepository tournamentResultRecordRepository;
     private TournamentPlayerRegistrationRepository tournamentPlayerRegistrationRepository;
     @Autowired
@@ -138,10 +138,6 @@ public class TournamentService {
         this.responseService = responseService;
     }
 
-    @Autowired
-    public void setCustomCustomerRepository(CustomCustomerRepository customCustomerRepository) {
-        this.customCustomerRepository = customCustomerRepository;
-    }
 
     @Autowired
     public void setTournamentResultRecordRepository(TournamentResultRecordRepository tournamentResultRecordRepository) {
@@ -376,6 +372,14 @@ public class TournamentService {
                 throw new BusinessException("Tournament is already active" , HttpStatus.BAD_REQUEST);
 
             }
+            commonService.deductFromWallet(playerId, (double) tournament.getEntryFee(), "Wallet balance deducted for tournament");
+
+            BigDecimal entryFee = BigDecimal.valueOf(tournament.getEntryFee());
+            BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
+
+
+            commonService.addVendorEarningForPayment(tournament.getVendorId(), BigDecimal.valueOf(tournament.getEntryFee()), vendorShareAmount);
+
 
             // Check if the tournament has reached the maximum participant limit
             int currentRegistrations = tournamentPlayerRegistrationRepository
@@ -423,6 +427,7 @@ public class TournamentService {
 //                tournament.setStatus(TournamentStatus.FULL);  // Mark the tournament as full
                 tournamentRepository.save(tournament);
             }
+
 
             return registration;
 
@@ -698,8 +703,6 @@ public class TournamentService {
 
         List<Player> activePlayers = getActivePlayers(tournamentId);
 
-        System.out.println("activePlayers: " + activePlayers.size());
-
         if (activePlayers.isEmpty()) {
             updateTournamentStatus(tournament, TournamentStatus.REJECTED, "No active players found");
             return tournament;
@@ -719,7 +722,6 @@ public class TournamentService {
             tournamentRepository.save(tournament);
 
             distributeRoundPrize(tournament, 1);
-            setvendorShare(tournament);
 
             TournamentResultRecord result = new TournamentResultRecord();
             result.setTournament(tournament);
@@ -833,6 +835,9 @@ public class TournamentService {
                     totalCollection.doubleValue(),
                     roomPrizePool.doubleValue()
             );
+
+//           setvendorShare(tournament);
+//            commonService.addVendorEarningForPayment(tournament.getVendorId(), totalCollection, vendorShareAmount);
 
 
             notoficationFirebase.sendNotification(
@@ -1554,7 +1559,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
         tournament.setStatus(TournamentStatus.COMPLETED);
         tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
-        setvendorShare(tournament);
         tournamentRepository.save(tournament);
 
 
@@ -1569,7 +1573,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
     }
 
-    private void setvendorShare(Tournament tournament) {
+    public void setvendorShare(Tournament tournament) {
         BigDecimal totalWinningAmount = BigDecimal.valueOf(tournament.getTotalPrizePool());
         BigDecimal vendorShareAmount = totalWinningAmount.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
 
@@ -1584,11 +1588,10 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
             vendor.setWallet(vendorWallet);
             vendorRepository.save(vendor);
-
-            return;
+        } else {
+            wallet.setWinningAmount(wallet.getWinningAmount().add(vendorShareAmount));
+            walletRepo.save(wallet);
         }
-
-        wallet.setWinningAmount(vendorShareAmount);
     }
     @Transactional
     public void processMatchResults(GameResult gameResult) {
@@ -1925,8 +1928,9 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
             notificationRepository.save(notification);
 
-            winner.setAmmount(prizePerWinner);
+            winner.setAmmount(winner.getAmmount().add(prizePerWinner));
             tournamentResultRecordRepository.save(winner);
+
         }
     }
 

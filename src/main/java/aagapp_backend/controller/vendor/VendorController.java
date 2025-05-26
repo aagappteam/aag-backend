@@ -5,9 +5,15 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.repository.social.UserVendorFollowRepository;
+import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
+import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
+import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.repository.withdrawrequest.WithdrawalRequestRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
@@ -27,6 +33,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,6 +43,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/vendor")
 
 public class VendorController {
+
+    @Autowired
+    private InfluencerMonthlyEarningRepository earningRepo;
+
+    @Autowired
+    private WithdrawalRequestRepository withdrawalRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -802,6 +817,83 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);}//catch
 
+    }
+
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<?> dashboard(@RequestParam Long influencerId) {
+        String month = LocalDate.now().toString().substring(0, 7);
+        InfluencerMonthlyEarning e = earningRepo.findByInfluencerIdAndMonthYear(influencerId, month);
+        if (e == null) return ResponseEntity.ok(Map.of("message", "No earnings yet"));
+
+        BigDecimal maxReturn = e.getMaxReturnAmount();
+        BigDecimal cappedEarn = e.getEarnedAmount().min(maxReturn);
+        BigDecimal percent = cappedEarn.divide(maxReturn, 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+
+        return ResponseEntity.ok(Map.of(
+                "rechargeAmount", e.getRechargeAmount(),
+                "earnedAmount", cappedEarn,
+                "maxReturn", maxReturn,
+                "returnX", cappedEarn.divide(e.getRechargeAmount(), 2, RoundingMode.HALF_UP) + "x",
+                "progressPercent", percent.min(BigDecimal.valueOf(100)).intValue(),
+                "filledBoxes", Math.min(10, percent.intValue() / 10),
+                "totalBoxes", 10
+        ));
+    }
+
+    @PostMapping("/withdraw-request")
+    public ResponseEntity<?> requestWithdraw(@RequestParam Long influencerId,
+                                             @RequestParam BigDecimal amount) {
+
+        try {
+            String month = LocalDate.now().toString().substring(0, 7);
+            InfluencerMonthlyEarning e = earningRepo.findByInfluencerIdAndMonthYear(influencerId, month);
+/*        if (e == null || e.get().compareTo(amount) < 0)
+            return ResponseEntity.badRequest().body(Map.of("message", "Insufficient balance"));*/
+
+            VendorEntity vendor = vendorRepository.findById(influencerId).orElse(null);
+            if (vendor == null)
+                return responseService.generateErrorResponse("Vendor not found", HttpStatus.BAD_REQUEST);
+
+            WithdrawalRequest req = new WithdrawalRequest();
+            req.setInfluencerId(influencerId);
+            req.setAmount(amount);
+            req.setMonthYear(month);
+            req.setStatus("PENDING");
+
+            withdrawalRepo.save(req);
+
+            return responseService.generateSuccessResponse("Withdraw request submitted", Map.of("message", "Withdraw request submitted"), HttpStatus.OK);
+        }catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/withdraw-history")
+    public ResponseEntity<?> getWithdrawHistory(
+            @RequestParam Long influencerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+
+            Page<WithdrawalRequest> requestsPage = withdrawalRepo.findByInfluencerId(influencerId, pageable);
+
+            return responseService.generateSuccessResponseWithCount(
+                    "Withdrawal history fetched successfully",
+                    requestsPage.getContent(),
+                    requestsPage.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
     }
 
 }
