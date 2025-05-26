@@ -407,7 +407,7 @@ public class TournamentService {
                 throw new BusinessException("The tournament has already reached the maximum number of participants.", HttpStatus.BAD_REQUEST);
             }
 
-            deductAmountFromWalletToRegisterInTournament(playerId, tournamentId);
+//            deductAmountFromWalletToRegisterInTournament(playerId, tournamentId);
 
             // Register the player
             TournamentPlayerRegistration registration = new TournamentPlayerRegistration();
