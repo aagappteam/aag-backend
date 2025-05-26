@@ -214,8 +214,7 @@ public class CommonService {
 
         PaymentEntity activePlan = activePlanOpt.get();
         Long paymentId = activePlan.getId();
-
-        Optional<InfluencerMonthlyEarning> earningOpt = earningRepository.findByPaymentId(paymentId);
+        Optional<InfluencerMonthlyEarning> earningOpt = earningRepository.findLatestByInfluencerId(vendorId);
 
         InfluencerMonthlyEarning earning = earningOpt.orElseGet(() -> {
             InfluencerMonthlyEarning newEarning = new InfluencerMonthlyEarning();
