@@ -33,13 +33,6 @@ public class TwilioService {
 
     private ExceptionHandlingImplement exceptionHandling;
 
-
-    private static final Dotenv dotenv = Dotenv.load();
-    private String accountSid = dotenv.get("TWILIO_ACCOUNT_SID");
-    private String authToken = dotenv.get("TWILIO_AUTH_TOKEN");
-    private String twilioPhoneNumber = dotenv.get("TWILIO_PHONE_NUMBER");
-    private String serviceProviderSid = dotenv.get("SERVICE_PROVIDER_SID");
-
     private CustomCustomerService customCustomerService;
     private EntityManager entityManager;
     private VenderServiceImpl venderService;
@@ -75,7 +68,7 @@ public class TwilioService {
         try {
             String otp = generateOTP();
 
-//          otpservice.sendOtp(countryCode,mobileNumber,otp);
+         otpservice.sendOtp(countryCode,mobileNumber,otp);
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
 /*
@@ -155,7 +148,7 @@ public class TwilioService {
 
         try {
             String otp = generateOTP();
-//            otpservice.sendOtp(countryCode,mobileNumber,otp);
+          otpservice.sendOtp(countryCode,mobileNumber,otp);
 
             VendorEntity existingServiceProvider = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
 

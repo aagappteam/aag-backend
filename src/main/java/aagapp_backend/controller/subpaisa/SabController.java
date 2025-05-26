@@ -21,17 +21,30 @@ import jakarta.annotation.PostConstruct;
 @Controller
 public class SabController {
 
+
     @Autowired
     private SabService sabService;
 
 //    Initate payment
     @GetMapping("/initate-payment")
-    public ModelAndView initate() {
+    public ModelAndView initiateSabPaisaWebPayment() {
         ModelAndView init = sabService.getSabPaisaPgService();
+
 
         return init;
     }
+    @PostMapping("/response")
+    public ModelAndView getResponse(@RequestParam("encResponse") String encResponse) {
+        String pgResponseService = sabService.getPgResponseService(encResponse);
+        System.out.println("Decrypted Response: " + pgResponseService);
 
+        ModelAndView mv = new ModelAndView("paymentResult"); // create paymentResult.html or JSP
+        mv.addObject("paymentDetails", pgResponseService);
+        return mv;
+    }
+
+
+/*
     @PostMapping("/response")
     public ResponseEntity<?> getresponse(@RequestParam("encResponse") String encResponse) {
 
@@ -39,6 +52,7 @@ public class SabController {
         System.out.println("pgResponseService________________" + pgResponseService);
         return new ResponseEntity<>(pgResponseService, HttpStatus.OK);
     }
+*/
 
     @GetMapping("/resp")
     public ModelAndView getRes() {

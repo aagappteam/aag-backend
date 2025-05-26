@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!--<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="ISO-8859-1">
@@ -6,6 +6,7 @@
 </head>
 <body>
 <form
+
         th:action="@{https://stage-securepay.sabpaisa.in/SabPaisa/sabPaisaInit?v=1}"
         th:method="post">
     <input type="text" name="encData" th:value="${encData}" id="frm1">
@@ -14,4 +15,23 @@
                              name="submit">
 </form>
 </body>
+</html>-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Redirecting to SabPaisa</title>
+</head>
+<body onload="document.forms[0].submit();">
+<form th:action="@{https://stage-securepay.sabpaisa.in/SabPaisa/sabPaisaInit?v=1}" method="post">
+    <input type="hidden" name="encData" th:value="${encData}" />
+    <input type="hidden" name="clientCode" th:value="${clientCode}" />
+</form>
+<p>Redirecting to payment gateway...</p>
+</body>
 </html>
+
+
+
+
+
+

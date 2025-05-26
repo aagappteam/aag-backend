@@ -1,8 +1,10 @@
 package aagapp_backend.services.payment;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.dto.PaymentDashboardDTO;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
@@ -10,9 +12,11 @@ import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.payment.PlanRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.NotificationService;
 
 import jakarta.mail.MessagingException;
@@ -33,6 +37,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +54,12 @@ public class PaymentService {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private CommonService commonService;
+
+    @Autowired
+    private InfluencerMonthlyEarningRepository earningRepository;
 
     @Autowired
     private PlanRepository planRepository;
@@ -178,6 +191,8 @@ public class PaymentService {
         notification.setDetails("Your payment of " + paymentRequest.getAmount() + " has been processed. Plan: " + planEntity.getPlanName());
 
         notificationRepository.save(notification);
+
+        commonService.createOrUpdateMonthlyPlan(existingVendor.getService_provider_id(), BigDecimal.valueOf(paymentRequest.getAmount()), Constant.MULTIPLIER);
 
         return paymentRepository.save(paymentRequest);
     }
@@ -345,10 +360,8 @@ public class PaymentService {
     public List<PaymentEntity> getTransactionsByVendorId(Long vendorId, int page, int size, String transactionReference) {
         Pageable pageable = PageRequest.of(page, size);
         return paymentRepository.findAllTransactionsByVendorId(vendorId, transactionReference, pageable);
-    }
-
-    // Updated to include transactionReference as an additional parameter
-    public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendorId, Integer dailyPercentage,Integer PublishedLimit,Integer dailyLimit) {
+    }/*
+    public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorIdOld(Long vendorId, Integer dailyPercentage,Integer PublishedLimit,Integer dailyLimit) {
         PaymentStatus status = PaymentStatus.ACTIVE;
 
         // Retrieve the active payment plan for the vendor
@@ -396,6 +409,85 @@ public class PaymentService {
             return Optional.of(defaultDTO);  // Wrap default DTO in Optional
         }
     }
+*/
+    public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendorId, Integer dailyPercentage, Integer publishedLimit, Integer dailyLimit) {
+        PaymentStatus status = PaymentStatus.ACTIVE;
+
+        Optional<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
+
+        if (activePlanOptional.isPresent()) {
+            PaymentEntity paymentEntity = activePlanOptional.get();
+            Optional<PlanEntity> planEntityOptional = planRepository.findById(paymentEntity.getPlanId());
+            String dailyLimitString = publishedLimit + "/" + dailyLimit;
+
+            return Optional.of(planEntityOptional.map(planEntity -> {
+                // Default recharge amount from payment entity, in case no earning is found
+                Double rechargeAmount = paymentEntity.getAmount() != null ? paymentEntity.getAmount() : 0D;
+
+                // Get InfluencerMonthlyEarning
+                String month = LocalDate.now().toString().substring(0, 7);
+                InfluencerMonthlyEarning earning = earningRepository.findByInfluencerIdAndMonthYear(vendorId, month);
+
+                Double earnedAmount = 0D;
+                Double maxReturn = 0D;
+
+                if (earning != null) {
+                    earnedAmount = earning.getEarnedAmount() != null ? earning.getEarnedAmount().doubleValue() : 0D;
+                    rechargeAmount = earning.getRechargeAmount() != null ? earning.getRechargeAmount().doubleValue() : rechargeAmount;
+
+                    // Enforce max return cap = 4x of recharge amount
+                    Double rawMaxReturn = earning.getMaxReturnAmount() != null ? earning.getMaxReturnAmount().doubleValue() : 0D;
+                    maxReturn = Math.min(rawMaxReturn, rechargeAmount * 4);
+                }
+
+                // Avoid divide by zero
+                BigDecimal recharge = BigDecimal.valueOf(rechargeAmount != 0 ? rechargeAmount : 1);
+
+                // Calculate returnX value and cap it to 4x
+                Double returnXValue = Math.min(earnedAmount / rechargeAmount, 4.0);
+                String returnX = BigDecimal.valueOf(returnXValue).setScale(2, RoundingMode.HALF_UP) + "x";
+
+                // Cap the earned amount to maxReturn
+                BigDecimal cappedEarn = BigDecimal.valueOf(Math.min(earnedAmount, maxReturn));
+
+                // Calculate progress percentage
+                BigDecimal percent = maxReturn != 0
+                        ? cappedEarn.multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(maxReturn), 2, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO;
+
+                // Ensure progressPercent is capped at 100
+                int progressPercent = percent.min(BigDecimal.valueOf(100)).intValue();
+
+                // Calculate filledBoxes and ensure it doesn't exceed 10
+                int filledBoxes = Math.min(10, progressPercent / 10);
+                int totalBoxes = 10;
+
+                // Create and return DTO
+                return new PaymentDashboardDTO(
+                        planEntity.getPlanName(),
+                        planEntity.getPlanVariant(),
+                        dailyPercentage != null ? dailyPercentage + "x" : "0x",
+                        dailyLimitString,
+                        paymentEntity.getId() != null ? paymentEntity.getId() : 0L,
+                        planEntity.getPrice() != null ? planEntity.getPrice() : 0D,
+                        returnX,
+                        progressPercent,
+                        filledBoxes,
+                        totalBoxes
+                );
+            }).orElseGet(() -> new PaymentDashboardDTO(
+                    "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
+            )));
+        } else {
+            // Return default DTO if no active plan is found
+            return Optional.of(new PaymentDashboardDTO(
+                    "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
+            ));
+        }
+    }
+
+
+    // Updated to include transactionReference as an additional parameter
 
 
     // Updated to include transactionReference as an additional parameter

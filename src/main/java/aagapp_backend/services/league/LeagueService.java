@@ -717,7 +717,6 @@ public class LeagueService {
         }
 
         walletRepo.save(wallet);
-
         // Create new LeaguePass with 3 passes
         LeaguePass pass = new LeaguePass();
         pass.setPlayer(player);

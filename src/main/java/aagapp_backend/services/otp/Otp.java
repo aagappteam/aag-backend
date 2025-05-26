@@ -76,15 +76,15 @@ public class Otp {
         Twilio.init(accountSid, authToken);
         String completeMobileNumber = countryCode + mobileNumber;
 
-        String messageBody = "Your OTP for AAG app (Aapka Apna Game is: " + otp + ". Please use this code to verify your identity - AAG Team";
+        String messageBody = "Your OTP for AAG app (Aapka Apna Game is: " + otp + ". Please use this code to verify your identity - AAG App";
 
         try {
-/*            Message message = Message.creator(
+            Message message = Message.creator(
                     new PhoneNumber(completeMobileNumber),
                     serviceProviderSid,
                     messageBody
-            ).create();*/
-  /*          Message message = Message.creator(
+            ).create();
+/*            Message message = Message.creator(
                     new PhoneNumber(completeMobileNumber),
                     new PhoneNumber(twilioPhoneNumber),
                     messageBody

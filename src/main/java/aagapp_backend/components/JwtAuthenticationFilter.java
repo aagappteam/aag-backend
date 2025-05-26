@@ -108,6 +108,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+
             if (isUnsecuredUri(requestURI) || bypassimages(requestURI)) {
                 chain.doFilter(request, response);
                 return;
@@ -172,6 +173,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean isUnsecuredUri(String requestURI) {
         return requestURI.startsWith("/api/v1/account")
                 || requestURI.startsWith("/api/v1/winning")
+
                 || requestURI.startsWith("/api/v1/otp")
                 || requestURI.startsWith("/api/v1/health")
                 || requestURI.startsWith("/api/v1/test")
@@ -184,6 +186,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/api/v1/images")
                 || requestURI.startsWith("/api/v1/webjars")
                 || requestURI.startsWith("/api/v1/initate-payment") // Added leading slash
+                || requestURI.startsWith("/api/v1/.well-known/assetlinks.json") // Added leading slash
                 || requestURI.startsWith("/api/v1/response") // Added leading slash
                 || requestURI.startsWith("/api/v1/resp") // Added leading slash
                 || requestURI.startsWith("/api/v1/enq") // Added leading slash
@@ -191,6 +194,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/api/v1/Bank"); // Added leading slash
 
     }
+
 
     private boolean authenticateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         final String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);

@@ -92,143 +92,8 @@ public class SabService {
         spURL = "payerName=" + payerName.trim() + "&payerEmail=" + payerEmail.trim() + "&payerMobile=" + payerMobile
                 + "&clientTxnId=" + clientTxnId.trim() + "&amount=" + amount + "&clientCode=" + clientCode.trim()
                 + "&transUserName=" + transUserName.trim() + "&transUserPassword=" + transUserPassword.trim()
-                + "&callbackUrl=" + callbackUrl.trim() + "&channelId=" + channelId +  "&seamlessType=" + seamlessType
-        + "&browserDetails=" + browserDetails.trim() + "&byPassFlag=" + byPassFlag + "&modeTransfer=" + modeTransfer + "&transDate=" + transDate;
-
-
-/*        String payerName = "Vijay";
-        String payerEmail = "test@email.in";
-        long payerMobile = 1234567890;
-        String clientTxnId = RandomStringUtils.randomAlphanumeric(20).toUpperCase();
-        System.out.println("clientTxnId :: " + clientTxnId);
-        byte amount = 10;
-//        String mcc = "00000000000000007399";
-
-        char channelId = 'W';
-        String Class = "AAG App";
-        String vpa = "9531863874@ybl";
-        String browserDetails = "Browser Language|Browser Color Depth|Browser Screen Height|Browser Screen Width|Browser�Time�Zone";
-
-        String paymentMode = "UPI";
-        String purpose = "Test Transaction";
-        String txnNote = "Transaction for test purpose";
-        Boolean byPassFlag = true;
-        String modeTransfer = "UPI_APPS_MODE_TRANSFER";
-        String seamlessType  = "S2S";
-        String transDate = java.time.LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-
-        spURL = "payerName=" + payerName.trim()
-                + "&payerEmail=" + payerEmail.trim()
-                + "&payerMobile=" + payerMobile
-                + "&clientTxnId=" + clientTxnId.trim()
-                + "&amount=" + amount
-                + "&clientCode=" + clientCode.trim()
-                + "&transUserName=" + transUserName.trim()
-                + "&transUserPassword=" + transUserPassword.trim()
-                + "&callbackUrl=" + callbackUrl.trim()
-                + "&channelId=" + channelId
-                + "&Class=" + Class
-                + "&vpa=" + vpa.trim()
-                + "&paymentMode=" + paymentMode
-                + "&purpose=" + purpose
-                + "&txnNote=" + txnNote
-                + "&transDate=" + transDate
-//                + "&mcc=" + mcc
-                + "&byPassFlag=" + byPassFlag
-                + "&modeTransfer=" + modeTransfer
-                + "&seamlessType=" + seamlessType
-                + "&browserDetails=" + browserDetails;*/
-        System.out.println("spURL :: " + spURL);
-
-
-        try {
-            spURL = Encryptor.encrypt(authKey.trim(), authIV.trim(), spURL.trim());
-        } catch (InvalidKeyException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (BadPaddingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InvalidAlgorithmParameterException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        ModelAndView view = new ModelAndView("NewFile");
-
-        view.addObject("encData", spURL);
-        view.addObject("clientCode", clientCode);
-        // view.addObject("URL", spDomain);
-
-        return view;
-    }
-
-    public ModelAndView getSabPaisaPgServiceMobile() {
-
-        String spURL = null;
-
-        String payerName = "Vijay";
-        String payerEmail = "test@email.in";
-        long payerMobile = 1234567890;
-        String clientTxnId = RandomStringUtils.randomAlphanumeric(20).toUpperCase();
-        System.out.println("clientTxnId :: " + clientTxnId);
-        byte amount = 10;
-        String mcc = "00000000000000007399";
-
-        char channelId = 'M';
-        String Class = "AAG App";
-        String vpa = "9531863874@ybl";
-        String browserDetails = "Browser Language|Browser Color Depth|Browser Screen Height|Browser Screen Width|Browser�Time�Zone";
-
-        String paymentMode = "UPI";
-        String purpose = "Test Transaction";
-        String txnNote = "Transaction for test purpose";
-        Boolean byPassFlag = true;
-        String modeTransfer = "UPI_APPS_MODE_TRANSFER";
-        String seamlessType  = "S2S";
-        String transDate = java.time.LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-
-        spURL = "payerName=" + payerName.trim()
-                + "&payerEmail=" + payerEmail.trim()
-                + "&payerMobile=" + payerMobile
-                + "&clientTxnId=" + clientTxnId.trim()
-                + "&amount=" + amount
-                + "&clientCode=" + clientCode.trim()
-                + "&transUserName=" + transUserName.trim()
-                + "&transUserPassword=" + transUserPassword.trim()
-                + "&callbackUrl=" + callbackUrl.trim()
-                + "&channelId=" + channelId
-                + "&Class=" + Class
-                + "&vpa=" + vpa.trim()
-                + "&paymentMode=" + paymentMode
-                + "&purpose=" + purpose
-                + "&txnNote=" + txnNote
-                + "&transDate=" + transDate
-                + "&mcc=" + mcc
-                + "&byPassFlag=" + byPassFlag
-                + "&modeTransfer=" + modeTransfer
-                + "&seamlessType=" + seamlessType
-                + "&browserDetails=" + browserDetails;
-
-
-
-
+                 + "&channelId=" + channelId +  "&seamlessType=" + seamlessType
+        + "&browserDetails=" + browserDetails.trim() + "&byPassFlag=" + byPassFlag + "&modeTransfer=" + modeTransfer + "&transDate=" + transDate + "&callbackUrl=" + callbackUrl.trim();
 
         System.out.println("spURL :: " + spURL);
 
@@ -262,6 +127,7 @@ public class SabService {
 
         view.addObject("encData", spURL);
         view.addObject("clientCode", clientCode);
+
         // view.addObject("URL", spDomain);
 
         return view;
