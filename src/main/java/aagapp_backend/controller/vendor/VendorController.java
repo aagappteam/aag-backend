@@ -3,6 +3,8 @@ package aagapp_backend.controller.vendor;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
+import aagapp_backend.dto.WithdrawalRequestDTO;
+import aagapp_backend.dto.WithdrawalRequestSubmitDto;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
@@ -36,6 +38,8 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -842,30 +846,41 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
     }
 
     @PostMapping("/withdraw-request")
-    public ResponseEntity<?> requestWithdraw(@RequestParam Long influencerId,
-                                             @RequestParam BigDecimal amount) {
-
+    public ResponseEntity<?> requestWithdraw(@RequestBody WithdrawalRequestSubmitDto dto) {
         try {
             String month = LocalDate.now().toString().substring(0, 7);
 
-            VendorEntity vendor = vendorRepository.findById(influencerId).orElse(null);
+            VendorEntity vendor = vendorRepository.findById(dto.getInfluencerId()).orElse(null);
             if (vendor == null)
                 return responseService.generateErrorResponse("Vendor not found", HttpStatus.BAD_REQUEST);
 
             WithdrawalRequest req = new WithdrawalRequest();
-            req.setInfluencerId(influencerId);
-            req.setAmount(amount);
+            req.setInfluencerId(dto.getInfluencerId());
+            req.setAmount(dto.getAmount());
             req.setMonthYear(month);
             req.setStatus("PENDING");
+            req.setRequestedAt(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+            if (dto.getReason() != null && !dto.getReason().trim().isEmpty()) {
+                req.setReason(dto.getReason());
+            }
 
             withdrawalRepo.save(req);
 
-            return responseService.generateSuccessResponse("Withdraw request submitted", Map.of("message", "Withdraw request submitted"), HttpStatus.OK);
-        }catch (Exception e) {
+            return responseService.generateSuccessResponse(
+                    "Withdraw request submitted",
+                    Map.of("message", "Withdraw request submitted"),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
         }
     }
+
 
     @GetMapping("/withdraw-history")
     public ResponseEntity<?> getWithdrawHistory(
@@ -878,9 +893,24 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
             Page<WithdrawalRequest> requestsPage = withdrawalRepo.findByInfluencerId(influencerId, pageable);
 
+            VendorEntity vendor = vendorRepository.findById(influencerId).orElse(null);
+            if (vendor == null){
+                return responseService.generateErrorResponse("Vendor not found", HttpStatus.BAD_REQUEST);
+
+            }
+
+            // Assuming you have a method to get the influencer's name
+            String influencerName = vendor.getFirst_name()!=null ? vendor.getFirst_name() + " " + vendor.getLast_name()!=null ? vendor.getLast_name() : "" : "";
+
+            // Convert to DTOs
+            List<WithdrawalRequestDTO> dtoList = requestsPage.getContent()
+                    .stream()
+                    .map(request -> new WithdrawalRequestDTO(request, influencerName))
+                    .collect(Collectors.toList());
+
             return responseService.generateSuccessResponseWithCount(
                     "Withdrawal history fetched successfully",
-                    requestsPage.getContent(),
+                    dtoList,
                     requestsPage.getTotalElements(),
                     HttpStatus.OK
             );
@@ -892,5 +922,6 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             );
         }
     }
+
 
 }
