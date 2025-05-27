@@ -171,6 +171,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isUnsecuredUri(String requestURI) {
+        return requestURI.startsWith("/account")
+                || requestURI.startsWith("/winning")
+
+                || requestURI.startsWith("/otp")
+                || requestURI.startsWith("/health")
+                || requestURI.startsWith("/test")
+                || requestURI.startsWith("/files/aagdocument/**")
+                || requestURI.startsWith("/files/**")
+                || requestURI.startsWith("/aagdocument/**")
+                || requestURI.startsWith("/swagger-ui.html")
+                || requestURI.startsWith("/swagger-resources")
+                || requestURI.startsWith("/v2/api-docs")
+                || requestURI.startsWith("/images")
+                || requestURI.startsWith("/webjars")
+                || requestURI.startsWith("/initate-payment") // Added leading slash
+                || requestURI.startsWith("/.well-known/assetlinks.json") // Added leading slash
+                || requestURI.startsWith("/response") // Added leading slash
+                || requestURI.startsWith("/resp") // Added leading slash
+                || requestURI.startsWith("/enq") // Added leading slash
+                || requestURI.startsWith("/MerchantAcknowledgement") // Added leading slash
+                || requestURI.startsWith("/Bank"); // Added leading slash
+
+    }
+
+    /*private boolean isUnsecuredUri(String requestURI) {
         return requestURI.startsWith("/api/v1/account")
                 || requestURI.startsWith("/api/v1/winning")
 
@@ -193,7 +218,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/api/v1/MerchantAcknowledgement") // Added leading slash
                 || requestURI.startsWith("/api/v1/Bank"); // Added leading slash
 
-    }
+    }*/
 
 
     private boolean authenticateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
