@@ -1,13 +1,5 @@
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.aag.userapp",
-      "sha256_cert_fingerprints": [
-        "C8:CF:99:1B:6D:CA:B3:29:D8:EF:3E:C7:C8:C3:4E:2B:48:95:F4:99:E0:FD:D5:B8:52:E0:B7:69:F2:D5:70:E2",
-        "69:86:EE:A2:1D:3D:41:42:FE:5F:03:2A:38:E3:88:09:0D:CA:2C:ED:AA:C4:84:54:A5:2F:D5:8B:C4:FA:F5:94"
-      ]
-    }
-  }
-]
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target" : { "namespace": "android_app", "package_name": "com.aag.userapp",
+    "sha256_cert_fingerprints": ["C8:CF:99:1B:6D:CA:B3:29:D8:EF:3E:C7:C8:C3:4E:2B:48:95:F4:99:E0:FD:D5:B8:52:E0:B7:69:F2:D5:70:E2"] }
+}]
