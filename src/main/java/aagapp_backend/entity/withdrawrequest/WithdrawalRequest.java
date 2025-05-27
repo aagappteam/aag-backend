@@ -25,9 +25,15 @@ public class WithdrawalRequest {
     private Long id;
 
     private Long influencerId;
+
     private BigDecimal amount;
+
+    private String reason;
+
     private String monthYear;
+
     private String status; // PENDING, APPROVED, REJECTED
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private LocalDateTime requestedAt;
 }

@@ -5,10 +5,23 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 import java.util.Optional;
 
 public interface InfluencerMonthlyEarningRepository extends JpaRepository<InfluencerMonthlyEarning, Long> {
+    @Query(value = """
+    SELECT e FROM InfluencerMonthlyEarning e 
+    WHERE e.influencerId = :influencerId 
+    AND e.monthYear = (
+        SELECT MAX(e2.monthYear) FROM InfluencerMonthlyEarning e2 
+        WHERE e2.influencerId = :influencerId
+    )
+    ORDER BY e.id DESC
+    """)
+    Optional<InfluencerMonthlyEarning> findLatestByInfluencerId(@Param("influencerId") Long influencerId);
 
     // Now paginated
     Page<InfluencerMonthlyEarning> findByMonthYear(String monthYear, Pageable pageable);
