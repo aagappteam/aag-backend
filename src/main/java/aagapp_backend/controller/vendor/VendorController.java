@@ -881,7 +881,8 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             }
 
             // Assuming you have a method to get the influencer's name
-            String influencerName = vendor.getFirst_name()!=null ? vendor.getFirst_name() + " " + vendor.getLast_name()!=null ? vendor.getLast_name() : "" : "";
+            String influencerName = (vendor.getFirst_name() != null ? vendor.getFirst_name() : "") +
+                    (vendor.getLast_name() != null ? " " + vendor.getLast_name() : "");
 
             // Convert to DTOs
             List<WithdrawalRequestDTO> dtoList = requestsPage.getContent()
