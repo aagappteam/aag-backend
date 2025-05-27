@@ -1886,7 +1886,15 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
             winner.setAmmount(winner.getAmmount().add(prizePerWinner));
             CustomCustomer customCustomer = winner.getPlayer().getCustomer();
-            customCustomer.setBonusBalance(customCustomer.getBonusBalance().add(bonusPerWinner));
+
+            BigDecimal currentBonus = customCustomer.getBonusBalance();
+            if (currentBonus == null) {
+                currentBonus = BigDecimal.ZERO;
+            }
+            System.out.println("Current Bonus: " + currentBonus);
+            customCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
+
+//            customCustomer.setBonusBalance(customCustomer.getBonusBalance().add(bonusPerWinner));
             customCustomerRepository.save(customCustomer);
 
             tournamentResultRecordRepository.save(winner);
