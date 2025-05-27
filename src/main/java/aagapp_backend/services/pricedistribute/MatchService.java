@@ -422,7 +422,14 @@ public class MatchService {
             CustomCustomer winnerCustomer = customCustomerRepository.findById(winner.getPlayerId())
                     .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + winner.getPlayerId()));
 
-            winnerCustomer.setBonusBalance(winnerCustomer.getBonusBalance().add(bonusPerWinner));
+            BigDecimal currentBonus = winnerCustomer.getBonusBalance();
+            if (currentBonus == null) {
+                currentBonus = BigDecimal.ZERO;
+            }
+            System.out.println("currentBonus = " + currentBonus);
+            winnerCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
+
+
             customCustomerRepository.save(winnerCustomer);
 
             Player winnerPlayer = playerRepository.findById(winner.getPlayerId())
