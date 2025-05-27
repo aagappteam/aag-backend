@@ -173,7 +173,6 @@ public class CommonService {
 
         List<PaymentEntity> activePlanOptional = paymentService.getActivePlanByVendorId(vendorId);
 
-
         if (activePlanOptional.isEmpty()) {
             throw new IllegalStateException("No active payment plan found for vendor ID: " + vendorId);
         }
