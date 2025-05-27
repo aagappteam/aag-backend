@@ -178,7 +178,6 @@ public class CommonService {
             throw new IllegalStateException("No active payment plan found for vendor ID: " + vendorId);
         }
 
-
         PaymentEntity activePlan = activePlanOptional.get(0);
         Long paymentId = activePlan.getId();
         Optional<InfluencerMonthlyEarning> earningOpt = earningRepository.findLatestByInfluencerId(vendorId);
