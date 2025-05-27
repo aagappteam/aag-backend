@@ -19,7 +19,8 @@ public interface InfluencerMonthlyEarningRepository extends JpaRepository<Influe
         SELECT MAX(e2.monthYear) FROM InfluencerMonthlyEarning e2 
         WHERE e2.influencerId = :influencerId
     )
-    ORDER BY e.id DESC
+    ORDER BY e.id DESC  LIMIT 1
+
     """)
     Optional<InfluencerMonthlyEarning> findLatestByInfluencerId(@Param("influencerId") Long influencerId);
 

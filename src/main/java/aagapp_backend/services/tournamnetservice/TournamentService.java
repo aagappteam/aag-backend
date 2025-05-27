@@ -378,8 +378,10 @@ public class TournamentService {
             commonService.deductFromWallet(playerId, (double) tournament.getEntryFee(), "Rs. " + tournament.getEntryFee() + " deducted for playing " + tournament.getName() + " tournament");
 
             BigDecimal entryFee = BigDecimal.valueOf(tournament.getEntryFee());
-            BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
-//            commonService.addVendorEarningForPayment(tournament.getVendorId(), BigDecimal.valueOf(tournament.getEntryFee()), vendorShareAmount);
+
+            BigDecimal vendorShareAmount = PriceConstant.VENDOR_REVENUE_PERCENT;
+            commonService.addVendorEarningForPayment(tournament.getVendorId(), BigDecimal.valueOf(tournament.getEntryFee()), vendorShareAmount);
+
 
 
             // Check if the tournament has reached the maximum participant limit

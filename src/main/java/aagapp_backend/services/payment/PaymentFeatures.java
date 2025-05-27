@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import javax.naming.LimitExceededException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -39,8 +40,7 @@ public class PaymentFeatures {
     public ResponseEntity<?> canPublishGame(Long vendorId) throws LimitExceededException {
         try {
             PaymentStatus status = PaymentStatus.ACTIVE;
-            Optional<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
-
+            List<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
 
             if (activePlanOptional.isEmpty()) {
                 return ResponseService.generateErrorResponse(
@@ -49,7 +49,14 @@ public class PaymentFeatures {
                 );
             }
 
-            PaymentEntity activePlan = activePlanOptional.get();
+/*            if (activePlanOptional.isEmpty()) {
+                return ResponseService.generateErrorResponse(
+                        "No active plan found for the vendor.",
+                        HttpStatus.NOT_FOUND
+                );
+            }*/
+
+            PaymentEntity activePlan = activePlanOptional.get(0);
 
             int dailyUsage = gameService.countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
 

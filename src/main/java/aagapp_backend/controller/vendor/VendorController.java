@@ -871,7 +871,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
             return responseService.generateSuccessResponse(
                     "Withdraw request submitted",
-                    Map.of("message", "Withdraw request submitted"),
+                    null,
                     HttpStatus.OK
             );
         } catch (Exception e) {
