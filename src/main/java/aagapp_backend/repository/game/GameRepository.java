@@ -29,6 +29,12 @@ public interface GameRepository extends JpaRepository<Game, Long> {
             @Param("endTime") ZonedDateTime endTime
     );
 
+    @Query("SELECT g FROM Game g WHERE g.vendorEntity = :vendorEntity AND  g.status = :status  ORDER BY g.createdDate DESC")
+    List<Game> findActiveGames(
+            @Param("vendorEntity") VendorEntity vendorEntity,
+            @Param("status") GameStatus status
+    );
+
 
  /*   @Query("SELECT g FROM Game g WHERE g.vendorEntity.service_provider_id = :vendorId")
     List<Game> findByVendorId(@Param("vendorId") Long vendorId, Pageable pageable);*/

@@ -8,17 +8,55 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TournamentRoomRepository extends JpaRepository<TournamentRoom , Long> {
 
     List<TournamentRoom> findByTournamentIdAndStatus(Long tournamentId, String open);
 
-    List<TournamentRoom> findByTournamentId(Long tournamentId);
-
-    List<TournamentRoom> findByStatus(String active);
 
     @Query("SELECT COALESCE(SUM(r.maxParticipants), 0) FROM TournamentRoom r WHERE r.tournament.id = :tournamentId")
     long sumMaxParticipantsByTournamentId(@Param("tournamentId") Long tournamentId);
+
+
+    List<TournamentRoom> findByTournamentIdAndRoundAndStatus(Long tournamentId, int round, String status);
+
+
+    List<TournamentRoom> findByTournamentIdAndRound(Long tournamentId, int round);
+
+    Optional<TournamentRoom> findFirstByTournamentIdAndRoundAndStatusAndCurrentParticipantsLessThan(
+            Long tournamentId,
+            Integer round,
+            String status,
+            Integer currentParticipants
+    );
+
+    long countByTournamentIdAndRoundAndCurrentParticipantsGreaterThan(Long tournamentId, int roundNumber, int i);
+
+    long countByTournamentIdAndRoundAndStatusAndCurrentParticipantsGreaterThan(Long tournamentId, int roundNumber, String completed, int i);
+
+    List<TournamentRoom> findByTournamentIdAndStatusIn(Long tournamentId, List<String> statuses);
+
+/*
+    long countByTournamentIdAndRoundAndStatusIn(Long tournamentId, int i, List<String> list);
+*/
+
+    @Query("SELECT COUNT(tr) FROM TournamentRoom tr WHERE tr.tournament.id = :tournamentId AND tr.round = :round AND tr.status IN :statuses")
+    long countByTournamentIdAndRoundAndStatusIn(
+            @Param("tournamentId") Long tournamentId,
+            @Param("round") int round,
+            @Param("statuses") List<String> statuses);
+
+
+    @Query("SELECT p.tournamentRoom FROM Player p " +
+            "WHERE p.id = :playerId AND p.tournamentRoom IS NOT NULL " +
+            "AND p.tournamentRoom.tournament.id = :tournamentId")
+    TournamentRoom findRoomByPlayerIdAndTournamentId(@Param("playerId") Long playerId,
+                                                     @Param("tournamentId") Long tournamentId);
+
+/*    @Query("SELECT COUNT(r) FROM TournamentRoom r WHERE r.tournamentId = :tournamentId AND r.round = :round AND r.status IN :statuses AND SIZE(r.currentPlayers) > 0")
+    long countActiveRoomsWithPlayers(Long tournamentId, int round, List<String> statuses);*/
+
 
 
 }

@@ -1,8 +1,10 @@
 package aagapp_backend.services.payment;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.dto.PaymentDashboardDTO;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
@@ -10,11 +12,14 @@ import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.payment.PlanRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.NotificationService;
 
+import aagapp_backend.services.exception.BusinessException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
@@ -24,8 +29,10 @@ import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -33,6 +40,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -45,25 +55,61 @@ public class PaymentService {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
 
-    @Autowired
     private PaymentRepository paymentRepository;
-
-    @Autowired
+    private CommonService commonService;
+    private InfluencerMonthlyEarningRepository earningRepository;
     private PlanRepository planRepository;
-
-    @Autowired
     private EntityManager entityManager;
-
-    @Autowired
     private VendorReferralRepository vendorReferralRepository;
-    @Autowired
     private NotificationService notificationService;
-
-    @Autowired
     private NotificationRepository notificationRepository;
+    private JavaMailSender mailSender;
 
     @Autowired
-    private JavaMailSender mailSender;
+    public void setPaymentRepository(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
+
+    @Autowired
+    public void setCommonService(@Lazy CommonService commonService) {
+        this.commonService = commonService;
+    }
+
+
+    @Autowired
+    public void setEarningRepository(InfluencerMonthlyEarningRepository earningRepository) {
+        this.earningRepository = earningRepository;
+    }
+
+    @Autowired
+    public void setPlanRepository(PlanRepository planRepository) {
+        this.planRepository = planRepository;
+    }
+
+    @Autowired
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
+    @Autowired
+    public void setVendorReferralRepository(VendorReferralRepository vendorReferralRepository) {
+        this.vendorReferralRepository = vendorReferralRepository;
+    }
+
+    @Autowired
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    @Autowired
+    public void setNotificationRepository(NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
+    }
+
+    @Autowired
+    public void setMailSender(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
 
     public List<PaymentEntity> findActivePlansByVendorId(Long vendorId) {
@@ -103,7 +149,12 @@ public class PaymentService {
             VendorLevelPlan level = existingVendor.getVendorLevelPlan();
             Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
             Integer themeLimit = extractThemeLimit(planEntity.getFeatures());
+            existingVendor.setThemeCount(2);
+
+            /*
             existingVendor.setThemeCount(themeLimit);
+*/
+
             existingVendor.setDailyLimit(dailyGameLimit);
 
 /*
@@ -113,13 +164,13 @@ public class PaymentService {
         }
 
 //        @todo need to check theme limit and daily limit
-       /* VendorLevelPlan currentLevel = existingVendor.getVendorLevelPlan();
+        VendorLevelPlan currentLevel = existingVendor.getVendorLevelPlan();
 
         // Get the new plan level (for example, upgrading to PRO_C)
-        VendorLevelPlan newLevel = getVendorLevelFromPlan(planEntity); // Implement this logic based on the selected plan
+/*        VendorLevelPlan newLevel = getVendorLevelFromPlan(planEntity); // Implement this logic based on the selected plan
 
         if (newLevel != currentLevel) {
-            // Vendor is changing levels, so update daily game limit and theme limit
+
             updateVendorLevel(existingVendor, newLevel, planEntity);
         }*/
         paymentRequest.setPlanDuration(planEntity.getPlanVariant());
@@ -170,11 +221,14 @@ public class PaymentService {
 */
         notification.setDescription("Plan purchased successfully"); // Example NotificationType for a successful
         notification.setAmount(paymentRequest.getAmount());
-        notification.setDetails("Your payment of " + paymentRequest.getAmount() + " has been processed. Plan: " + planEntity.getPlanName());
+        notification.setDetails("Your subscription of Rs. " + paymentRequest.getAmount() + " has been processed");
 
         notificationRepository.save(notification);
+        paymentRepository.save(paymentRequest);
+        commonService.createOrUpdateMonthlyPlan(existingVendor.getService_provider_id(), BigDecimal.valueOf(paymentRequest.getAmount()), Constant.MULTIPLIER);
 
-        return paymentRepository.save(paymentRequest);
+
+        return paymentRequest;
     }
 
     // Helper method to update the vendor's level and associated features
@@ -184,7 +238,7 @@ public class PaymentService {
 
         // Update the daily game limit and themes based on the new level
         existingVendor.setDailyLimit(newLevel.getDailyGameLimit()); // Set new daily limit
-//        existingVendor.setThemeCount(newLevel.getThemeCount()); // Set new theme count
+       existingVendor.setThemeCount(newLevel.getThemeCount()); // Set new theme count
 
         // Additionally, you can update the feature slots, user counter, etc., if needed
 //        existingVendor.setFeatureSlots(newLevel.getFeatureSlots());
@@ -340,10 +394,8 @@ public class PaymentService {
     public List<PaymentEntity> getTransactionsByVendorId(Long vendorId, int page, int size, String transactionReference) {
         Pageable pageable = PageRequest.of(page, size);
         return paymentRepository.findAllTransactionsByVendorId(vendorId, transactionReference, pageable);
-    }
-
-    // Updated to include transactionReference as an additional parameter
-    public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendorId, Integer dailyPercentage,Integer PublishedLimit,Integer dailyLimit) {
+    }/*
+    public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorIdOld(Long vendorId, Integer dailyPercentage,Integer PublishedLimit,Integer dailyLimit) {
         PaymentStatus status = PaymentStatus.ACTIVE;
 
         // Retrieve the active payment plan for the vendor
@@ -391,6 +443,166 @@ public class PaymentService {
             return Optional.of(defaultDTO);  // Wrap default DTO in Optional
         }
     }
+*/
+/*
+    public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendorId, Integer dailyPercentage, Integer publishedLimit, Integer dailyLimit) {
+        PaymentStatus status = PaymentStatus.ACTIVE;
+
+        Optional<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
+
+        if (activePlanOptional.isPresent()) {
+            PaymentEntity paymentEntity = activePlanOptional.get();
+            Optional<PlanEntity> planEntityOptional = planRepository.findById(paymentEntity.getPlanId());
+            String dailyLimitString = publishedLimit + "/" + dailyLimit;
+
+            return Optional.of(planEntityOptional.map(planEntity -> {
+                // Default recharge amount from payment entity, in case no earning is found
+                Double rechargeAmount = paymentEntity.getAmount() != null ? paymentEntity.getAmount() : 0D;
+
+                // Get InfluencerMonthlyEarning
+                String month = LocalDate.now().toString().substring(0, 7);
+                InfluencerMonthlyEarning earning = earningRepository.findByInfluencerIdAndMonthYear(vendorId, month);
+
+                Double earnedAmount = 0D;
+                Double maxReturn = 0D;
+
+                if (earning != null) {
+                    earnedAmount = earning.getEarnedAmount() != null ? earning.getEarnedAmount().doubleValue() : 0D;
+                    rechargeAmount = earning.getRechargeAmount() != null ? earning.getRechargeAmount().doubleValue() : rechargeAmount;
+
+                    // Enforce max return cap = 4x of recharge amount
+                    Double rawMaxReturn = earning.getMaxReturnAmount() != null ? earning.getMaxReturnAmount().doubleValue() : 0D;
+                    maxReturn = Math.min(rawMaxReturn, rechargeAmount * 4);
+                }
+
+                // Avoid divide by zero
+                BigDecimal recharge = BigDecimal.valueOf(rechargeAmount != 0 ? rechargeAmount : 1);
+
+                // Calculate returnX value and cap it to 4x
+                Double returnXValue = Math.min(earnedAmount / rechargeAmount, 4.0);
+                String returnX = BigDecimal.valueOf(returnXValue).setScale(2, RoundingMode.HALF_UP) + "x";
+
+                // Cap the earned amount to maxReturn
+                BigDecimal cappedEarn = BigDecimal.valueOf(Math.min(earnedAmount, maxReturn));
+
+                // Calculate progress percentage
+                BigDecimal percent = maxReturn != 0
+                        ? cappedEarn.multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(maxReturn), 2, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO;
+
+                // Ensure progressPercent is capped at 100
+                int progressPercent = percent.min(BigDecimal.valueOf(100)).intValue();
+
+                // Calculate filledBoxes and ensure it doesn't exceed 10
+                int filledBoxes = Math.min(10, progressPercent / 10);
+                int totalBoxes = 10;
+
+                // Create and return DTO
+                return new PaymentDashboardDTO(
+                        planEntity.getPlanName(),
+                        planEntity.getPlanVariant(),
+                        dailyPercentage != null ? dailyPercentage + "x" : "0x",
+                        dailyLimitString,
+                        paymentEntity.getId() != null ? paymentEntity.getId() : 0L,
+                        planEntity.getPrice() != null ? planEntity.getPrice() : 0D,
+                        returnX,
+                        progressPercent,
+                        filledBoxes,
+                        totalBoxes
+                );
+            }).orElseGet(() -> new PaymentDashboardDTO(
+                    "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
+            )));
+        } else {
+            // Return default DTO if no active plan is found
+            return Optional.of(new PaymentDashboardDTO(
+                    "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
+            ));
+        }
+    }
+*/
+
+//    get active plan for evndor
+    public List<PaymentEntity> getActivePlanByVendorId(Long vendorId) {
+        PaymentStatus status = PaymentStatus.ACTIVE;
+        System.out.println("Vendor ID: " + vendorId);
+        System.out.println("Current Time: " + LocalDateTime.now());
+        System.out.println("Status: " + status);
+        return paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
+    }
+
+public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendorId, Integer dailyPercentage, Integer publishedLimit, Integer dailyLimit) {
+    PaymentStatus status = PaymentStatus.ACTIVE;
+
+    List<PaymentEntity> activePlanOptional = getActivePlanByVendorId(vendorId);
+
+    System.out.println("Active Plan Optional: " + activePlanOptional);
+    if (activePlanOptional.isEmpty()) {
+        return Optional.of(new PaymentDashboardDTO(
+                "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
+        ));
+    }
+
+    PaymentEntity paymentEntity = activePlanOptional.get(0);
+    Long paymentId = paymentEntity.getId(); // NOT planId, use actual PaymentEntity ID
+
+    System.out.println("Payment ID: " + paymentId);
+    Optional<PlanEntity> planEntityOptional = planRepository.findById(paymentEntity.getPlanId());
+    String dailyLimitString = publishedLimit + "/" + dailyLimit;
+
+        return Optional.of(planEntityOptional.map(planEntity -> {
+//            Optional<InfluencerMonthlyEarning> earningOpt = earningRepository.findByPaymentId(paymentId);
+
+            Optional<InfluencerMonthlyEarning> earningOpt = earningRepository.findTopByPaymentIdOrderByIdDesc(paymentId);
+
+
+            double rechargeAmount = paymentEntity.getAmount() != null ? paymentEntity.getAmount() : 0D;
+            double earnedAmount = 0D;
+            double maxReturn = 0D;
+
+            if (earningOpt.isPresent()) {
+                InfluencerMonthlyEarning earning = earningOpt.get();
+
+                earnedAmount = earning.getEarnedAmount() != null ? earning.getEarnedAmount().doubleValue() : 0D;
+                rechargeAmount = earning.getRechargeAmount() != null ? earning.getRechargeAmount().doubleValue() : rechargeAmount;
+
+                double rawMaxReturn = earning.getMaxReturnAmount() != null ? earning.getMaxReturnAmount().doubleValue() : 0D;
+                maxReturn = Math.min(rawMaxReturn, rechargeAmount * 4); // Safety cap
+            }
+
+            double safeRecharge = rechargeAmount != 0 ? rechargeAmount : 1;
+            double returnXValue = Math.min(earnedAmount / safeRecharge, 4.0);
+            String returnX = BigDecimal.valueOf(returnXValue).setScale(2, RoundingMode.HALF_UP) + "x";
+
+            // Cap earnings
+            BigDecimal cappedEarn = BigDecimal.valueOf(Math.min(earnedAmount, maxReturn));
+            BigDecimal percent = maxReturn != 0
+                    ? cappedEarn.multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(maxReturn), 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+
+            int progressPercent = percent.min(BigDecimal.valueOf(100)).intValue();
+            int filledBoxes = Math.min(10, progressPercent / 10);
+            int totalBoxes = 10;
+
+            return new PaymentDashboardDTO(
+                    planEntity.getPlanName(),
+                    planEntity.getPlanVariant(),
+                    dailyPercentage != null ? dailyPercentage + "x" : "0x",
+                    dailyLimitString,
+                    paymentId,
+                    planEntity.getPrice() != null ? planEntity.getPrice() : 0D,
+                    returnX,
+                    progressPercent,
+                    filledBoxes,
+                    totalBoxes
+            );
+        }).orElseGet(() -> new PaymentDashboardDTO(
+                "NA", "NA", "0x", publishedLimit + "/" + 0, paymentId, 0D, "0x", 0, 0, 10
+        )));
+}
+
+
+    // Updated to include transactionReference as an additional parameter
 
 
     // Updated to include transactionReference as an additional parameter
@@ -539,4 +751,6 @@ public class PaymentService {
         // Log the result (optional)
         System.out.println("Number of plans expired for vendor " + vendorId + ": " + updatedCount);
     }
+
+
 }

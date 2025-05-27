@@ -23,16 +23,6 @@ import java.util.Arrays;
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
-/*    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS configuration
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
-                .authorizeRequests()
-                .requestMatchers("/ludo-websocket/**").permitAll()
-                .anyRequest().authenticated();
-
-        return http.build();
-    }*/
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
@@ -44,7 +34,15 @@ public class SecurityConfig {
                 "/webjars/**",                    // Webjar resources for Swagger
                 "/swagger-resources/**" ,          // Swagger resources
                 "/api/**/aagdocument/**",
-                "/api/**/files/**"
+                "/api/**/files/**",
+                "/initate-payment",
+                "/.well-known/**",
+                "/response",
+                "/resp",
+                "/enq",
+                "/MerchantAcknowledgement",
+                "/Bank",
+                "/.well-known/**"
         );
     }
     @Bean
@@ -69,7 +67,17 @@ public class SecurityConfig {
                                "/winning/**",
                                "/account/**",
                                "/test/**",
-                               "/ludo-websocket/**"          // Allow WebSocket endpoint
+                               "/ludo-websocket/**" ,         // Allow WebSocket endpoint
+                               // ✅ Add your SabPaisa-related endpoints
+                               "/initate-payment",
+                               "/api/v1/initate-payment",
+                               "/response",
+                               "/resp",
+                               "/enq",
+                               "/MerchantAcknowledgement",
+                               "/subPaisa/**",
+                               "/Bank",
+                               "/.well-known/**"
 
                        ).permitAll() // Allow public access to Swagger UI and some other resources
                        .anyRequest().authenticated() // Require authentication for all other paths

@@ -43,6 +43,8 @@ private GameRoomRepository gameRoomRepository;
     @PostMapping("/processGameResult")
     public ResponseEntity<?> processGameResult(@RequestBody GameResult gameResult) {
         try {
+            System.out.println("processGameResult");
+
             // Process game result (you may want to keep this as is, or include some additional logic here)
                matchService.processMatch(gameResult);
 

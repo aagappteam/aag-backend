@@ -1,3 +1,4 @@
+/*
 package aagapp_backend.services.gameservice;
 
 public class LudoResponse {
@@ -57,3 +58,4 @@ public class LudoResponse {
         this.nextPlayerId = nextPlayerId;
     }
 }
+*/

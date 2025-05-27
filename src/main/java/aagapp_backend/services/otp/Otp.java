@@ -73,10 +73,10 @@ public class Otp {
 
     public String sendOtp(String countryCode, String mobileNumber, String otp) {
 
-/*        Twilio.init(accountSid, authToken);
+        Twilio.init(accountSid, authToken);
         String completeMobileNumber = countryCode + mobileNumber;
 
-        String messageBody = "Your OTP for AAG app (Aapka Apna Game is: " + otp + ". Please use this code to verify your identity - AAG Team";
+        String messageBody = "Your OTP for AAG app (Aapka Apna Game is: " + otp + ". Please use this code to verify your identity - AAG App";
 
         try {
             Message message = Message.creator(
@@ -84,10 +84,16 @@ public class Otp {
                     serviceProviderSid,
                     messageBody
             ).create();
+/*            Message message = Message.creator(
+                    new PhoneNumber(completeMobileNumber),
+                    new PhoneNumber(twilioPhoneNumber),
+                    messageBody
+            ).create();*/
+
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-        }*/
+        }
 
         return otp;
     }

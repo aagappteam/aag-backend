@@ -38,5 +38,7 @@ public class BankAccountDTO {
     @NotBlank(message = "Account type is required")
     private String accountType;
 
+
+
 }
 

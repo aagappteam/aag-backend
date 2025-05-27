@@ -23,7 +23,6 @@ import java.util.List;
 @Table(
         name = "players",
         indexes = {
-                @Index(name = "idx_player_name", columnList = "playerName"),
                 @Index(name = "idx_game_room_id", columnList = "game_room_id"),
                 @Index(name = "idx_league_room_id", columnList = "league_room_id"),
                 @Index(name = "idx_tournament_room_id", columnList = "tournament_room_id")
@@ -50,21 +49,25 @@ public class Player {
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "league_room_id")
+    @JsonBackReference(value = "leagueRoomReference")
     private LeagueRoom leagueRoom;
 
     @ManyToOne
     @JoinColumn(name = "team_id")
-//    @JsonBackReference(value = "teamPlayers")
+//    @JsonIgnore
+    @JsonBackReference(value = "teamPlayers")
     private LeagueTeam team;
 
-
-    @Column(name = "league_passes", nullable = false)
-    private int leaguePasses=0;
 
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "tournament_room_id")
     private TournamentRoom tournamentRoom;
+
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    private PlayerStatus status;
+
 
 
     @Column(name = "created_at", nullable = false)

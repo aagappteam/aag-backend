@@ -8,5 +8,5 @@ import lombok.Setter;
 public class LeaguePlayerDtoWinner {
     private Long playerId;
     private int score;
-    private Long teamId;
+//    private Long teamId;
 }

@@ -1,13 +1,15 @@
 package aagapp_backend.entity.league;
 
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.team.LeagueTeam;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 @Table(
@@ -29,10 +31,12 @@ public class LeagueResultRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull(message = "Room id can not be null")
     private Long roomId;
 
     @ManyToOne
     @JoinColumn(name = "league_id", nullable = false)
+    @NotNull
     private League league;
 
     @ManyToOne
@@ -41,7 +45,22 @@ public class LeagueResultRecord {
 
     private Integer totalScore=0;
 
+    @ManyToOne
+    @JoinColumn(name = "league_team_id")
+    @NotNull(message = "Team id can not be null")
+    private LeagueTeam leagueTeam;
+
+
     private Boolean isWinner;
 
     private LocalDateTime playedAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime updatedDate;
+
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = ZonedDateTime.now();
+    }
 }

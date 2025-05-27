@@ -48,7 +48,6 @@ public class PaymentEntity {
     @Column(name = "amount", nullable = false)
     private Double amount;
 
-
     @Column(name = "plan_id", nullable = false)  // Ensure this column name matches the one in your database
     private Long planId;
 
