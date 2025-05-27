@@ -562,7 +562,6 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
 
             if (earningOpt.isPresent()) {
                 InfluencerMonthlyEarning earning = earningOpt.get();
-                System.out.println("earning ID: " + earning.getId() + " " + earning.getPaymentId() + " " + earning.getRechargeAmount() + " " + earning.getEarnedAmount() + " " + earning.getMaxReturnAmount());
 
                 earnedAmount = earning.getEarnedAmount() != null ? earning.getEarnedAmount().doubleValue() : 0D;
                 rechargeAmount = earning.getRechargeAmount() != null ? earning.getRechargeAmount().doubleValue() : rechargeAmount;

@@ -211,11 +211,56 @@ public class AdminDetailsController {
         return ResponseEntity.ok(response);
     }
 
-
-
     @GetMapping("/withdrawal-requests")
     public ResponseEntity<?> getAllRequests(
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long influencerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+            Page<WithdrawalRequest> requestsPage;
+
+            // Validate status if provided
+            if (status != null && !status.isEmpty()) {
+                List<String> validStatuses = Arrays.asList("PENDING", "APPROVED", "REJECTED");
+                if (!validStatuses.contains(status.toUpperCase())) {
+                    return responseService.generateErrorResponse("Invalid status filter", HttpStatus.BAD_REQUEST);
+                }
+            }
+
+            // Apply filters based on presence of parameters
+            if (status != null && !status.isEmpty() && influencerId != null) {
+                requestsPage = withdrawalRepo.findByInfluencerIdAndStatus(influencerId, status.toUpperCase(), pageable);
+            } else if (status != null && !status.isEmpty()) {
+                requestsPage = withdrawalRepo.findByStatus(status.toUpperCase(), pageable);
+            } else if (influencerId != null) {
+                requestsPage = withdrawalRepo.findByInfluencerId(influencerId, pageable);
+            } else {
+                requestsPage = withdrawalRepo.findAll(pageable);
+            }
+
+            return responseService.generateSuccessResponseWithCount(
+                    "Withdrawal requests fetched successfully",
+                    requestsPage.getContent(),
+                    requestsPage.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+
+/*    @GetMapping("/withdrawal-requests")
+    public ResponseEntity<?> getAllRequests(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long influencerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -254,7 +299,7 @@ public class AdminDetailsController {
                     HttpStatus.BAD_REQUEST
             );
         }
-    }
+    }*/
 
 
     @PostMapping("/withdrawal/{id}/approve")

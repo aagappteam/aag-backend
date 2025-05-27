@@ -826,27 +826,6 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
     }
 
 
-    @GetMapping("/dashboard")
-    public ResponseEntity<?> dashboard(@RequestParam Long influencerId) {
-        String month = LocalDate.now().toString().substring(0, 7);
-        InfluencerMonthlyEarning e = earningRepo.findByInfluencerIdAndMonthYear(influencerId, month);
-        if (e == null) return ResponseEntity.ok(Map.of("message", "No earnings yet"));
-
-        BigDecimal maxReturn = e.getMaxReturnAmount();
-        BigDecimal cappedEarn = e.getEarnedAmount().min(maxReturn);
-        BigDecimal percent = cappedEarn.divide(maxReturn, 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
-
-        return ResponseEntity.ok(Map.of(
-                "rechargeAmount", e.getRechargeAmount(),
-                "earnedAmount", cappedEarn,
-                "maxReturn", maxReturn,
-                "returnX", cappedEarn.divide(e.getRechargeAmount(), 2, RoundingMode.HALF_UP) + "x",
-                "progressPercent", percent.min(BigDecimal.valueOf(100)).intValue(),
-                "filledBoxes", Math.min(10, percent.intValue() / 10),
-                "totalBoxes", 10
-        ));
-    }
-
     @PostMapping("/withdraw-request")
     public ResponseEntity<?> requestWithdraw(@RequestBody WithdrawalRequestSubmitDto dto) {
         try {
