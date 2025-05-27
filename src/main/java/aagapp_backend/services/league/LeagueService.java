@@ -2,6 +2,7 @@ package aagapp_backend.services.league;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.ZonedDateTimeAdapter;
+import aagapp_backend.components.pricelogic.PriceConstant;
 import aagapp_backend.dto.*;
 
 import aagapp_backend.entity.*;
@@ -690,33 +691,20 @@ public class LeagueService {
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
 
-        Wallet wallet = player.getCustomer().getWallet();
+       /* Wallet wallet = player.getCustomer().getWallet();
         Double unplayedBalance = wallet.getUnplayedBalance();
         BigDecimal winningAmount = wallet.getWinningAmount();
         Double leagueFee = league.getFee();
-
+*/
         // Check if player already has a league pass
         LeaguePass existingPass = leaguePassRepository.findByPlayerAndLeague(player, league).orElse(null);
         if (existingPass != null) {
             return responseService.generateErrorResponse("Player already entered the league. You can take extra passes to contribute to the league", HttpStatus.BAD_REQUEST);
         }
 
-        // Check if total balance (unplayed + winning) is sufficient
-        double totalAvailable = unplayedBalance + winningAmount.doubleValue();
-        if (leagueFee > totalAvailable) {
-            return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
-        }
 
-        // Deduct from unplayed first, then from winning
-        if (leagueFee <= unplayedBalance) {
-            wallet.setUnplayedBalance(unplayedBalance - leagueFee);
-        } else {
-            double remainingAmount = leagueFee - unplayedBalance;
-            wallet.setUnplayedBalance(0.0);
-            wallet.setWinningAmount(winningAmount.subtract(BigDecimal.valueOf(remainingAmount)));
-        }
+        commonService.deductFromWallet(playerId, league.getFee(), "Rs. " + league.getFee() + " deducted for playing " + league.getName() + " league");
 
-        walletRepo.save(wallet);
         // Create new LeaguePass with 3 passes
         LeaguePass pass = new LeaguePass();
         pass.setPlayer(player);
@@ -724,25 +712,17 @@ public class LeagueService {
         pass.setPassCount(3);
         leaguePassRepository.save(pass);
 
-        // Create Notification
-        CustomCustomer customer = customCustomerService.getCustomerById(playerId);
-        Notification notification = new Notification();
-        notification.setCustomerId(customer.getId());
-        notification.setDescription("Wallet balance deducted");
-        notification.setAmount(leagueFee);
-        notification.setDetails("Rs. " + leagueFee + " deducted for league entry: " + league.getName());
-        notificationRepository.save(notification);
 
-        // Prepare response
+       /* // Prepare response
         Map<String, Object> data = new HashMap<>();
         data.put("walletBalance", wallet.getUnplayedBalance());
         data.put("winningAmount", wallet.getWinningAmount());
         data.put("leaguePasses", pass.getPassCount());
         data.put("playerName", player.getPlayerName());
         data.put("leagueId", league.getId());
-        data.put("leagueName", league.getName());
+        data.put("leagueName", league.getName());*/
 
-        return responseService.generateSuccessResponse("League entry successful. 3 passes added.", data, HttpStatus.OK);
+        return responseService.generateSuccessResponse("League entry successful. 3 passes added.", "success", HttpStatus.OK);
     }
 
 
@@ -771,6 +751,10 @@ public class LeagueService {
             return responseService.generateErrorResponse("Player already selected a team", HttpStatus.BAD_REQUEST);
         }
 
+        BigDecimal entryFee = BigDecimal.valueOf(league.getFee());
+        BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
+        commonService.addVendorEarningForPayment(team.getVendor().getService_provider_id(), BigDecimal.valueOf(league.getFee()), vendorShareAmount);
+
         existingPass.setSelectedTeamId(teamId);
         team.setTeamPlayersCount(team.getTeamPlayersCount() + 1);
         player.setTeam(team);
@@ -789,16 +773,6 @@ public class LeagueService {
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
 
-        // Step 2: Get wallet and check balance
-        Wallet wallet = player.getCustomer().getWallet();
-        Double unplayedBalance = wallet.getUnplayedBalance();
-        BigDecimal winningAmount = wallet.getWinningAmount();
-        Double passCost = Constant.LEAGUE_PASSES_FEE;
-
-        double totalAvailable = unplayedBalance + winningAmount.doubleValue();
-        if (passCost > totalAvailable) {
-            return responseService.generateErrorResponse("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
-        }
 
         // Step 3: Check if player has already entered the league
         LeaguePass pass = leaguePassRepository.findByPlayerAndLeague(player, league).orElse(null);
@@ -806,21 +780,16 @@ public class LeagueService {
             return responseService.generateErrorResponse("Player has not entered the league yet. Please enter the league first.", HttpStatus.BAD_REQUEST);
         }
 
-        // Step 4: Deduct from unplayed and winning amount
-        if (passCost <= unplayedBalance) {
-            wallet.setUnplayedBalance(unplayedBalance - passCost);
-        } else {
-            double remaining = passCost - unplayedBalance;
-            wallet.setUnplayedBalance(0.0);
-            wallet.setWinningAmount(winningAmount.subtract(BigDecimal.valueOf(remaining)));
-        }
+        commonService.deductFromWallet(playerId, league.getFee(), "Rs. " + league.getFee() + " deducted for playing " + league.getName() + " league");
 
-        walletRepo.save(wallet);
+        BigDecimal entryFee = BigDecimal.valueOf(league.getFee());
+        BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
+        commonService.addVendorEarningForPayment(player.getTeam().getVendor().getService_provider_id(), BigDecimal.valueOf(league.getFee()), vendorShareAmount);
 
         // Step 5: Add 3 more passes
         pass.setPassCount(pass.getPassCount() + 3);
         leaguePassRepository.save(pass);
-
+/*
         // Step 6: Create Notification
         CustomCustomer customer = customCustomerService.getCustomerById(playerId);
         Notification notification = new Notification();
@@ -837,9 +806,9 @@ public class LeagueService {
         data.put("leaguePasses", pass.getPassCount());
         data.put("playerName", player.getPlayerName());
         data.put("leagueId", league.getId());
-        data.put("leagueName", league.getName());
+        data.put("leagueName", league.getName());*/
 
-        return responseService.generateSuccessResponse("3 more League passes added successfully", data, HttpStatus.OK);
+        return responseService.generateSuccessResponse("3 more League passes added successfully", "success", HttpStatus.OK);
     }
 
 

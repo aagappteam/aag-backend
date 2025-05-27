@@ -447,69 +447,6 @@ public class TournamentService {
 
 
     @Transactional
-    public Wallet deductAmountFromWalletToRegisterInTournament(Long customerId, Long tournamentId) {
-        try {
-            // Step 1: Retrieve the customer
-            CustomCustomer customer = customCustomerService.getCustomerById(customerId);
-            if (customer == null) {
-                throw new BusinessException("Customer not found for the given ID: " + customerId, HttpStatus.BAD_REQUEST);
-            }
-
-            // Step 2: Retrieve the wallet
-            Wallet wallet = walletRepository.findByCustomCustomer(customer);
-            if (wallet == null) {
-                throw new BusinessException("No wallet found for the customer", HttpStatus.BAD_REQUEST);
-            }
-
-            // Step 3: Fetch the game and get its fee
-            Tournament tournament = tournamentRepository.findById(tournamentId)
-                    .orElseThrow(() -> new BusinessException("Game not found with ID: " + tournamentId, HttpStatus.BAD_REQUEST));
-
-            Integer gameFee = tournament.getEntryFee();
-
-            // Step 4: Balance checks
-            Double unplayedBalance = wallet.getUnplayedBalance();
-            BigDecimal winningAmount = wallet.getWinningAmount();
-            double totalAvailable = unplayedBalance + winningAmount.doubleValue();
-
-            if (gameFee > totalAvailable) {
-                throw new BusinessException("Insufficient balance in the wallet", HttpStatus.BAD_REQUEST);
-            }
-
-            // Step 5: Deduct amount with priority logic
-            if (gameFee <= unplayedBalance) {
-                wallet.setUnplayedBalance(unplayedBalance - gameFee);
-            } else {
-                double remainingAmount = gameFee - unplayedBalance;
-                wallet.setUnplayedBalance(0.0);
-                wallet.setWinningAmount(winningAmount.subtract(BigDecimal.valueOf(remainingAmount)));
-            }
-
-
-            Notification notification = new Notification();
-            notification.setCustomerId(customer.getId());
-            notification.setDescription("Wallet balance deducted");
-            notification.setAmount(gameFee.doubleValue());
-            notification.setDetails("Rs. " + gameFee + " deducted to join tournament " + tournament.getName());
-            notificationRepository.save(notification);
-
-
-            // implement here to give 5% of the game fee to the tournament creator
-
-            walletRepository.save(wallet);
-
-            return wallet;
-
-        } catch (BusinessException e) {
-            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw e;
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while deducting game fee from wallet", e);
-        }
-    }
-
-    @Transactional
     public List<Player> getActivePlayers(Long tournamentId) {
         try {
             List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
