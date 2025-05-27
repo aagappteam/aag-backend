@@ -18,10 +18,12 @@ import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.services.exception.BusinessException;
+import aagapp_backend.services.payment.PaymentService;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -30,30 +32,60 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 @Service
 public class CommonService {
-    @Autowired
     private CustomCustomerService customCustomerService;
-    @Autowired
     private PlayerRepository playerRepository;
-
-    @Autowired
+    private PaymentService paymentService;
     private PaymentRepository paymentRepository;
-
-    @Autowired
     private InfluencerMonthlyEarningRepository earningRepository;
-
-    @Autowired
     private EntityManager entityManager;
-
-    @Autowired
     private NotificationRepository notificationRepository;
+    private NotificationShareRepository notificationShareRepository;
 
     @Autowired
-    private NotificationShareRepository notificationShareRepository;
+    public void setCustomCustomerService(CustomCustomerService customCustomerService) {
+        this.customCustomerService = customCustomerService;
+    }
+
+    @Autowired
+    public void setPlayerRepository(PlayerRepository playerRepository) {
+        this.playerRepository = playerRepository;
+    }
+
+    @Autowired
+    public void setPaymentService(@Lazy PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
+
+    @Autowired
+    public void setPaymentRepository(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
+
+    @Autowired
+    public void setEarningRepository(InfluencerMonthlyEarningRepository earningRepository) {
+        this.earningRepository = earningRepository;
+    }
+
+    @Autowired
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
+    @Autowired
+    public void setNotificationRepository(NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
+    }
+
+    @Autowired
+    public void setNotificationShareRepository(NotificationShareRepository notificationShareRepository) {
+        this.notificationShareRepository = notificationShareRepository;
+    }
 
     public <T> T findOrThrow(Optional<T> opt, String entityName, Object id) {
         return opt.orElseThrow(() -> new BusinessException(entityName + " not found with ID: " + id, HttpStatus.BAD_REQUEST));
@@ -134,85 +166,20 @@ public class CommonService {
         notificationRepository.save(notification);
     }
 
-/*
-    public void createOrUpdateMonthlyPlan(Long influencerId, BigDecimal rechargeAmount, int multiplier) {
-        String monthYear = LocalDate.now().toString().substring(0, 7);
-
-
-
-        PaymentStatus status = PaymentStatus.ACTIVE;
-
-        System.out.println("Influencer ID: " + vendorId);
-        // Get the current active plan
-        Optional<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(influencerId, LocalDateTime.now(), status);
-
-
-        if (activePlanOptional.isEmpty()) {
-            throw new BusinessException("No active plan found for the influencer.", HttpStatus.NOT_FOUND);
-        }
-
-        Long paymentId = activePlanOptional.get().getId();
-
-        InfluencerMonthlyEarning existing = earningRepository.findByInfluencerIdAndMonthYear(vendorId, monthYear);
-
-        if (existing == null) {
-            InfluencerMonthlyEarning newEarning = new InfluencerMonthlyEarning();
-            newEarning.setInfluencerId(vendorId);
-            newEarning.setPaymentId(paymentId);
-            newEarning.setMonthYear(monthYear);
-            newEarning.setRechargeAmount(rechargeAmount);
-            newEarning.setMultiplier(multiplier);
-            newEarning.setEarnedAmount(BigDecimal.ZERO);
-            earningRepository.save(newEarning);
-        } else {
-            existing.setRechargeAmount(rechargeAmount);
-            existing.setMultiplier(multiplier);
-            earningRepository.save(existing);
-        }
-    }
-*/
-
-    /*@Transactional
-    public void addVendorEarningForPayment(Long vendorId, BigDecimal paymentAmount, BigDecimal vendorSharePercent) {
-        String monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
-        InfluencerMonthlyEarning earning = earningRepository.findByInfluencerIdAndMonthYear(vendorId, monthYear);
-
-        if (earning == null) {
-            earning = new InfluencerMonthlyEarning();
-            earning.setInfluencerId(vendorId);
-            earning.setMonthYear(monthYear);
-            earning.setRechargeAmount(BigDecimal.ZERO);
-            earning.setMultiplier(Constant.MULTIPLIER);
-            earning.setEarnedAmount(BigDecimal.ZERO);
-        }
-
-        // Calculate vendor share on payment (5 Rs * 5% = 0.25 Rs)
-        BigDecimal shareAmount = paymentAmount.multiply(vendorSharePercent);
-
-        earning.setEarnedAmount(earning.getEarnedAmount().add(shareAmount));
-
-        NotificationShare notification = new NotificationShare();
-        notification.setVendorId(vendorId);
-        notification.setDescription("Vendor Earning for Payment");
-        notification.setAmount(shareAmount.doubleValue());
-        notification.setDetails("Rs. " + shareAmount + " earned for payment");
-        notificationShareRepository.save(notification);
-
-        earningRepository.save(earning);
-    }*/
 
     @Transactional
     public void addVendorEarningForPayment(Long vendorId, BigDecimal paymentAmount, BigDecimal vendorSharePercent) {
         String monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
-        PaymentStatus status = PaymentStatus.ACTIVE;
-        Optional<PaymentEntity> activePlanOpt = paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
+        List<PaymentEntity> activePlanOptional = paymentService.getActivePlanByVendorId(vendorId);
 
-        if (activePlanOpt.isEmpty()) {
+
+        if (activePlanOptional.isEmpty()) {
             throw new IllegalStateException("No active payment plan found for vendor ID: " + vendorId);
         }
 
-        PaymentEntity activePlan = activePlanOpt.get();
+
+        PaymentEntity activePlan = activePlanOptional.get(0);
         Long paymentId = activePlan.getId();
         Optional<InfluencerMonthlyEarning> earningOpt = earningRepository.findLatestByInfluencerId(vendorId);
 
@@ -239,33 +206,34 @@ public class CommonService {
         notification.setVendorId(vendorId);
         notification.setDescription("Vendor Earning for Payment");
         notification.setAmount(shareAmount.doubleValue());
-        notification.setDetails("Rs. " + shareAmount + " earned for payment");
+        notification.setDetails("Rs. " + shareAmount.doubleValue() + " earned for payment");
         notificationShareRepository.save(notification);
     }
 
 
-    public void createOrUpdateMonthlyPlan(Long serviceProviderId, BigDecimal ammount, int multiplier) {
+    public void createOrUpdateMonthlyPlan(Long vendorId, BigDecimal ammount, int multiplier) {
 
         String monthYear = LocalDate.now().toString().substring(0, 7); // e.g., "2025-05"
         PaymentStatus status = PaymentStatus.ACTIVE;
 
-        Optional<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(serviceProviderId, LocalDateTime.now(), status);
+//        Optional<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(serviceProviderId, LocalDateTime.now(), status);
+        List<PaymentEntity> activePlanOptional = paymentService.getActivePlanByVendorId(vendorId);
 
 
         if (activePlanOptional.isEmpty()) {
             throw new BusinessException("No active plan found for the influencer.", HttpStatus.NOT_FOUND);
         }
 
-        Long paymentId = activePlanOptional.get().getId();
+        Long paymentId = activePlanOptional.get(0).getId();
 
         Optional<InfluencerMonthlyEarning> existingOpt = earningRepository.findByInfluencerIdAndPaymentId(
-                serviceProviderId, paymentId
+                vendorId, paymentId
         );
 
         if (existingOpt.isEmpty()) {
             // Create new record
             InfluencerMonthlyEarning newEarning = new InfluencerMonthlyEarning();
-            newEarning.setInfluencerId(serviceProviderId);
+            newEarning.setInfluencerId(vendorId);
             newEarning.setPaymentId(paymentId);
             newEarning.setMonthYear(monthYear);
             newEarning.setRechargeAmount(ammount);

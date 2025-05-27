@@ -362,7 +362,7 @@ public void updateDailylimit() {
 
             BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
 
-            BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
+            BigDecimal vendorShareAmount = (PriceConstant.VENDOR_REVENUE_PERCENT);
 
 
             if (isPlayerInRoom(player)) {
@@ -373,7 +373,7 @@ public void updateDailylimit() {
 
 
             commonservice.deductFromWallet(playerId, game.getFee(),"Rs. " + game.getFee() + " deducted for playing " + game.getName() + " game");
-//            commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
+           commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
             boolean playerJoined = addPlayerToRoom(gameRoom, player);
 
             if (!playerJoined) {

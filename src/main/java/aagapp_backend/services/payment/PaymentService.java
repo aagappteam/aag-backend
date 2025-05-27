@@ -29,6 +29,7 @@ import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -54,31 +55,61 @@ public class PaymentService {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
 
-    @Autowired
     private PaymentRepository paymentRepository;
-
-    @Autowired
     private CommonService commonService;
-
-    @Autowired
     private InfluencerMonthlyEarningRepository earningRepository;
-
-    @Autowired
     private PlanRepository planRepository;
-
-    @Autowired
     private EntityManager entityManager;
-
-    @Autowired
     private VendorReferralRepository vendorReferralRepository;
-    @Autowired
     private NotificationService notificationService;
-
-    @Autowired
     private NotificationRepository notificationRepository;
+    private JavaMailSender mailSender;
 
     @Autowired
-    private JavaMailSender mailSender;
+    public void setPaymentRepository(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
+
+    @Autowired
+    public void setCommonService(@Lazy CommonService commonService) {
+        this.commonService = commonService;
+    }
+
+
+    @Autowired
+    public void setEarningRepository(InfluencerMonthlyEarningRepository earningRepository) {
+        this.earningRepository = earningRepository;
+    }
+
+    @Autowired
+    public void setPlanRepository(PlanRepository planRepository) {
+        this.planRepository = planRepository;
+    }
+
+    @Autowired
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
+    @Autowired
+    public void setVendorReferralRepository(VendorReferralRepository vendorReferralRepository) {
+        this.vendorReferralRepository = vendorReferralRepository;
+    }
+
+    @Autowired
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    @Autowired
+    public void setNotificationRepository(NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
+    }
+
+    @Autowired
+    public void setMailSender(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
 
     public List<PaymentEntity> findActivePlansByVendorId(Long vendorId) {
@@ -490,18 +521,29 @@ public class PaymentService {
         }
     }
 */
+
+//    get active plan for evndor
+    public List<PaymentEntity> getActivePlanByVendorId(Long vendorId) {
+        PaymentStatus status = PaymentStatus.ACTIVE;
+        System.out.println("Vendor ID: " + vendorId);
+        System.out.println("Current Time: " + LocalDateTime.now());
+        System.out.println("Status: " + status);
+        return paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
+    }
+
 public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendorId, Integer dailyPercentage, Integer publishedLimit, Integer dailyLimit) {
     PaymentStatus status = PaymentStatus.ACTIVE;
 
-    Optional<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
+    List<PaymentEntity> activePlanOptional = getActivePlanByVendorId(vendorId);
 
+    System.out.println("Active Plan Optional: " + activePlanOptional);
     if (activePlanOptional.isEmpty()) {
         return Optional.of(new PaymentDashboardDTO(
                 "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
         ));
     }
 
-    PaymentEntity paymentEntity = activePlanOptional.get();
+    PaymentEntity paymentEntity = activePlanOptional.get(0);
     Long paymentId = paymentEntity.getId(); // NOT planId, use actual PaymentEntity ID
 
     System.out.println("Payment ID: " + paymentId);
@@ -711,7 +753,5 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
         System.out.println("Number of plans expired for vendor " + vendorId + ": " + updatedCount);
     }
 
-    public PaymentEntity findActivePlanByVendorId(Long serviceProviderId) {
-        return paymentRepository.findActivePlanByVendorId(serviceProviderId, LocalDateTime.now(), PaymentStatus.ACTIVE).orElse(null);
-    }
+
 }

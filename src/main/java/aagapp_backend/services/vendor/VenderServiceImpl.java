@@ -325,9 +325,6 @@ public class VenderServiceImpl implements VenderService {
         List<ReferralDTO> sentReferrals = getSentReferrals(vendorEntity.getService_provider_id());
         ReferralDTO receivedReferral = getReceivedReferral(vendorEntity.getService_provider_id());
 
-        PaymentEntity paymentEntity = paymentService.findActivePlanByVendorId(vendorEntity.getService_provider_id());
-
-
         Map<String, Object> data = new HashMap<>();
         data.put("venderDetails", vendorEntity);
         data.put("sentReferrals", sentReferrals);

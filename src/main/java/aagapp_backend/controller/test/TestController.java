@@ -1,14 +1,13 @@
 package aagapp_backend.controller.test;
 
+import aagapp_backend.components.Constant;
+import aagapp_backend.components.pricelogic.PriceConstant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
-import aagapp_backend.services.ApiConstants;
-import aagapp_backend.services.CustomCustomerService;
-import aagapp_backend.services.EmailService;
-import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.*;
 import aagapp_backend.services.download.InfluencerEarningsService;
 import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
@@ -29,31 +28,60 @@ import java.util.List;
 @RequestMapping("/test")
 public class TestController {
 
-    @Autowired
     private EmailService emailService;
-
-    @Autowired
+    private CommonService commonService;
     private InfluencerMonthlyEarningRepository earningRepository;
-
-    @Autowired
     private ResponseService responseService;
-
-    @Autowired
     private TournamentService tournamentService;
-
-    @Autowired
     private NotoficationFirebase notoficationFirebase;
-
-
-    @Autowired
     private FAQService faqService;
-
-    @Autowired
     private EntityManager entityManager;
-
-    @Autowired
     private CustomCustomerService customCustomerService;
 
+    @Autowired
+    public void setEmailService(EmailService emailService) {
+        this.emailService = emailService;
+    }
+
+    @Autowired
+    public void setCommonService(CommonService commonService) {
+        this.commonService = commonService;
+    }
+
+    @Autowired
+    public void setEarningRepository(InfluencerMonthlyEarningRepository earningRepository) {
+        this.earningRepository = earningRepository;
+    }
+
+    @Autowired
+    public void setResponseService(ResponseService responseService) {
+        this.responseService = responseService;
+    }
+
+    @Autowired
+    public void setTournamentService(TournamentService tournamentService) {
+        this.tournamentService = tournamentService;
+    }
+
+    @Autowired
+    public void setNotoficationFirebase(NotoficationFirebase notoficationFirebase) {
+        this.notoficationFirebase = notoficationFirebase;
+    }
+
+    @Autowired
+    public void setFaqService(FAQService faqService) {
+        this.faqService = faqService;
+    }
+
+    @Autowired
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
+    @Autowired
+    public void setCustomCustomerService(CustomCustomerService customCustomerService) {
+        this.customCustomerService = customCustomerService;
+    }
     // POST method to send onboarding email
     @PostMapping("/sendOnboardingEmail")
     public void sendOnboardingEmail(@RequestParam String email,
@@ -153,10 +181,12 @@ public class TestController {
     }
 
     @PostMapping("/createOrUpdateMonthlyPlan")
-    public ResponseEntity<?> createOrUpdateMonthlyPlan(@RequestParam Long influencerId, @RequestParam  BigDecimal rechargeAmount, int multiplier) {
+    public ResponseEntity<?> createOrUpdateMonthlyPlan(@RequestParam Long vendorid, @RequestParam  BigDecimal rechargeAmount, int multiplier) {
         String monthYear = LocalDate.now().toString().substring(0, 7); // "2025-05"
-
-        InfluencerMonthlyEarning existing = earningRepository.findByInfluencerIdAndMonthYear(influencerId, monthYear);
+        BigDecimal entryFee = BigDecimal.valueOf(3);
+        BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
+        commonService.addVendorEarningForPayment(vendorid,entryFee, vendorShareAmount);
+/*        InfluencerMonthlyEarning existing = earningRepository.findByInfluencerIdAndMonthYear(influencerId, monthYear);
 
         if (existing == null) {
             // Insert new row
@@ -176,6 +206,8 @@ public class TestController {
             earningRepository.save(existing);
             return responseService.generateSuccessResponse("Monthly plan created/updated successfully", existing, HttpStatus.OK);
 
-        }
+        }*/
+
+        return responseService.generateSuccessResponse("Monthly plan created/updated successfully", null, HttpStatus.OK);
     }
 }
