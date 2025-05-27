@@ -20,6 +20,7 @@ public interface InfluencerMonthlyEarningRepository extends JpaRepository<Influe
         WHERE e2.influencerId = :influencerId
     )
     ORDER BY e.id DESC  LIMIT 1
+
     """)
     Optional<InfluencerMonthlyEarning> findLatestByInfluencerId(@Param("influencerId") Long influencerId);
 
