@@ -272,7 +272,6 @@ public class WalletController {
             // Call the wallet service to withdraw the amount
             Wallet updatedWallet = walletService.withdrawalAmountFromWallet(customerId, amount);
 
-
             // Now create a single notification for the vendor
             Notification notification = new Notification();
             notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
