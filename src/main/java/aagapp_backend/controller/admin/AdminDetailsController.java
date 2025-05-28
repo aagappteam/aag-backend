@@ -3,6 +3,7 @@ package aagapp_backend.controller.admin;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
 import aagapp_backend.dto.MonthlyEarningWithVendorDTO;
+import aagapp_backend.dto.WithdrawalRequestHistoryDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.repository.vendor.VendorRepository;
@@ -241,9 +242,21 @@ public class AdminDetailsController {
                 requestsPage = withdrawalRepo.findAll(pageable);
             }
 
+            List<WithdrawalRequestHistoryDTO> dtoList = requestsPage.getContent().stream().map(request -> {
+                VendorEntity vendor = vendorRepository.findById(request.getInfluencerId()).orElse(null);
+                String name = vendor != null
+                        ? (vendor.getFirst_name() != null ? vendor.getFirst_name() : "") +
+                        (vendor.getLast_name() != null ? " " + vendor.getLast_name() : "")
+                        : "";
+                String mobile = vendor.getMobileNumber() != null ? vendor.getMobileNumber() : "N/A";
+                String email = vendor.getPrimary_email() != null ? vendor.getPrimary_email() : "N/A";
+
+                return new WithdrawalRequestHistoryDTO(request, name.trim(), mobile, email);
+            }).collect(Collectors.toList());
+
             return responseService.generateSuccessResponseWithCount(
                     "Withdrawal requests fetched successfully",
-                    requestsPage.getContent(),
+                    dtoList,
                     requestsPage.getTotalElements(),
                     HttpStatus.OK
             );
