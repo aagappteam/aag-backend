@@ -144,6 +144,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
+/* <<<<<<<<<<<<<<  ✨ Windsurf Command ⭐ >>>>>>>>>>>>>>>> */
+    /**
+     * Check if the given request URI should be bypassed for authentication.
+     * The request URI is matched against the regular expression in
+     * {@link #UNSECURED_URI_PATTERN}. If the request URI matches, then
+     * authentication is bypassed. If there is an exception, then
+     * authentication is not bypassed.
+     *
+     * @param requestURI the request URI to check
+     * @return true if the request URI should be bypassed, false otherwise
+     */
+/* <<<<<<<<<<  124a8b5e-1b20-4f89-838f-ac5804040f25  >>>>>>>>>>> */
     private boolean bypassimages(String requestURI) {
         try {
             return UNSECURED_URI_PATTERN.matcher(requestURI).matches();
@@ -171,7 +183,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isUnsecuredUri(String requestURI) {
-        return requestURI.startsWith("/account")
+        return "/".equals(requestURI)
+                || requestURI.startsWith("/account")
                 || requestURI.startsWith("/winning")
 
                 || requestURI.startsWith("/otp")
