@@ -7,6 +7,7 @@ import aagapp_backend.dto.*;
 
 import aagapp_backend.entity.*;
 import aagapp_backend.entity.game.AagAvailableGames;
+import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.league.*;
 
 
@@ -18,6 +19,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -603,7 +605,7 @@ public class LeagueService {
 
 
     private String generateShareableLink(Long gameId) {
-        return "https://example.com/leagues/" + gameId;
+        return "https://backend.aagapp.com/leagues/" + gameId;
     }
 
 
@@ -1976,5 +1978,14 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         }
     }
 
+    public League getLeagueById(Long id) throws GameNotFoundException {
+        Optional<League> league = leagueRepository.findById(id);
+
+        if (league.isEmpty()) {
+            throw new GameNotFoundException("League not found with ID: " + id);
+        }
+
+        return league.get();
+    }
 
 }

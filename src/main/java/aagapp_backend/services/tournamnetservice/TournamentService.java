@@ -14,6 +14,7 @@ import aagapp_backend.entity.tournament.*;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.TournamentStatus;
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
@@ -558,7 +559,6 @@ public class TournamentService {
     @Transactional
     public Page<Tournament> getAllActiveTournamentsByVendor(Pageable pageable, Long vendorId) {
         try {
-            // Check if 'status' and 'vendorId' are provided and build a query accordingly
             TournamentStatus status = TournamentStatus.ACTIVE;
             if (status != null && vendorId != null) {
                 return tournamentRepository.findTournamentByStatusAndVendorId(status, vendorId, pageable);
@@ -613,7 +613,7 @@ public class TournamentService {
     }
 
     private String generateShareableLink(Long gameId) {
-        return "https://example.com/tournament/" + gameId;
+        return "https://backend.aagapp.com/tournament/" + gameId;
     }
 
     private void updateTournamentStatus(Tournament tournament, TournamentStatus status, String reason) {
@@ -2285,4 +2285,12 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         }
     }
 
+    public Tournament findTournamentById(Long id) throws GameNotFoundException {
+        Optional<Tournament> tournament = tournamentRepository.findById(id);
+        if (tournament.isPresent()) {
+            return tournament.get();
+        } else {
+            throw new GameNotFoundException("Tournament not found");
+        }
+    }
 }

@@ -10,6 +10,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.*;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.TournamentStatus;
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.tournament.TournamentPlayerRegistrationRepository;
@@ -114,6 +115,20 @@ public class TournamentController {
 
             return responseService.generateSuccessResponseWithCount("Tournaments fetched successfully", gameList, totalCount, HttpStatus.OK);
         } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+//    get tuournment by id
+    @GetMapping("/get-tournament-by-id/{id}")
+    public ResponseEntity<?> getTournamentById(@PathVariable Long id) {
+        try {
+            Tournament tournament = tournamentService.findTournamentById(id);
+            return responseService.generateSuccessResponse("Tournament fetched successfully", tournament, HttpStatus.OK);
+        }catch (GameNotFoundException e){
+            return responseService.generateErrorResponse("Game Not Found", HttpStatus.BAD_REQUEST);
+        }
+        catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

@@ -12,6 +12,7 @@ import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
 
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.league.LeagueRepository;
@@ -187,6 +188,19 @@ public class LeagueController {
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching leagues", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+//    getleague by id
+    @GetMapping("/get-league-by-id/{id}")
+    public ResponseEntity<?> getLeagueById(@PathVariable Long id) {
+        try {
+            League league = leagueService.getLeagueById(id);
+            return responseService.generateSuccessResponse("League retrieved successfully.", league, HttpStatus.OK);
+        }catch (GameNotFoundException e){
+            return responseService.generateErrorResponse("Game Not Found", HttpStatus.BAD_REQUEST);
+
+        }catch (Exception e) {
+            return responseService.generateErrorResponse("Error retrieving league: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

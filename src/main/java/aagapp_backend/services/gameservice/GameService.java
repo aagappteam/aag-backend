@@ -14,6 +14,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.*;
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.aagavailblegames.AagAvailbleGamesRepository;
 import aagapp_backend.repository.game.*;
@@ -731,7 +732,7 @@ public void updateDailylimit() {
 
 
     private String generateShareableLink(Long gameId) {
-        return "https://example.com/games/" + gameId;
+        return "https://backend.aagapp.com/games/" + gameId;
     }
 
     @Transactional
@@ -748,6 +749,7 @@ public void updateDailylimit() {
             if (vendorId != null) {
                 sql.append(" AND g.vendor_id = :vendorId");
             }
+            sql.append(" ORDER BY g.created_date DESC");
 
             Query query = em.createNativeQuery(sql.toString(), Game.class);
 
@@ -1239,6 +1241,18 @@ public void updateDailylimit() {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error retrieving game room by ID: " + roomId, e);
         }
+    }
+
+    public GetGameResponseDTO getGameById(Long gameId) throws GameNotFoundException {
+        Optional<Game> game = gameRepository.findById(gameId);
+
+        if (game.isEmpty()) {
+            throw new GameNotFoundException("Game not found with ID: " + gameId);
+        }
+
+
+
+        return new GetGameResponseDTO(game.get());
     }
 
 }
