@@ -53,6 +53,7 @@ public class SecurityConfig {
                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
                .authorizeRequests(auth -> auth
                        .requestMatchers(
+                               "/",
                                "/swagger-ui.html",           // Swagger UI path
                                "/swagger-ui/**",             // Swagger UI resources
                                "/swagger-resources/**",      // Swagger resources
@@ -86,6 +87,20 @@ public class SecurityConfig {
 
        return http.build();
    }
+/* <<<<<<<<<<<<<<  ✨ Windsurf Command ⭐ >>>>>>>>>>>>>>>> */
+    /**
+     * Provides a {@link CorsConfigurationSource} that allows CORS requests from any origin.
+     * <p>
+     * This configuration allows GET, POST, PUT, DELETE, PATCH, and OPTIONS requests from any origin,
+     * with any headers, and allows credentials (cookies, etc.) to be sent.
+     * This is useful for testing and development purposes, but should not be used in production.
+     * <p>
+     * To customize the CORS configuration, you can modify this method or create your own
+     * {@link CorsConfigurationSource} bean.
+     *
+     * @return a {@link CorsConfigurationSource} that allows CORS requests from any origin
+     */
+/* <<<<<<<<<<  3b5f11de-9a34-4307-a7fa-add4816ab48a  >>>>>>>>>>> */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
