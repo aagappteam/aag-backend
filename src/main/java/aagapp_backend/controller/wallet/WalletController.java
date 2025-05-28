@@ -244,6 +244,9 @@ public class WalletController {
             String token = authorization.substring(7);
             Long customerId = addBalanceRequest.getCustomerId();
 
+            Integer role = jwtUtil.extractRoleId(token);
+
+
             // Validate JWT Token
             Long userId = jwtUtil.extractId(token);
             if (userId == null) {
@@ -268,6 +271,26 @@ public class WalletController {
             }
             // Call the wallet service to withdraw the amount
             Wallet updatedWallet = walletService.withdrawalAmountFromWallet(customerId, amount);
+
+
+            // Now create a single notification for the vendor
+            Notification notification = new Notification();
+            notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
+
+            if (role == Constant.VENDOR_ROLE) {
+                VendorEntity vendor = vendorService.getServiceProviderById(userId);
+                notification.setVendorId(vendor.getService_provider_id());
+            } else if (role == Constant.CUSTOMER_ROLE) {
+                CustomCustomer customer = customCustomerService.getCustomerById(userId);
+                notification.setCustomerId(customer.getId());
+            }
+
+            notification.setDescription("Wallet balance withdrawn"); // Clear and correct description
+            notification.setAmount((double) amount);
+            notification.setDetails("Rs. " + amount + " withdrawn from your wallet"); // Clear and grammatically correct details
+
+
+            notificationRepository.save(notification);
 
             return responseService.generateSuccessResponse("Balance withdrawn successfully", updatedWallet, HttpStatus.OK);
         }catch (BusinessException e){
