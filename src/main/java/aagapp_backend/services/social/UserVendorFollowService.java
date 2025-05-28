@@ -489,6 +489,64 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
 
     }
 
+    public Map<String, Object> getFeedOfVendorId(Long vendorId, int page, int size) {
+        Optional<VendorEntity> optionalVendor = vendorRepo.findById(vendorId);
+        if (!optionalVendor.isPresent()) {
+            throw new RuntimeException("Vendor not found with ID: " + vendorId);
+        }
+
+        VendorEntity vendor = optionalVendor.get();
+        Map<String, Object> vendorInfo = new HashMap<>();
+
+        Long spId = vendor.getService_provider_id();
+
+        vendorInfo.put("name", vendor.getName());
+        vendorInfo.put("id", spId);
+        vendorInfo.put("profilePic", vendor.getProfilePic());
+        vendorInfo.put("email", vendor.getPrimary_email());
+        vendorInfo.put("followerCount", followRepo.countByVendorId(spId));
+        vendorInfo.put("isFollowing", true);
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Games - paginated
+        Page<GetGameResponseDTO> games = gameService.getAllGames("ACTIVE", spId, pageable, null);
+        vendorInfo.put("games", games.getContent() != null ? games.getContent() : Collections.emptyList());
+        vendorInfo.put("gamesPage", Map.of(
+                "pageNumber", games.getNumber(),
+                "pageSize", games.getSize(),
+                "totalPages", games.getTotalPages(),
+                "totalElements", games.getTotalElements(),
+                "last", games.isLast()
+        ));
+
+        Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(pageable, spId);
+        vendorInfo.put("leagues", leaguesPage.getContent() != null ? leaguesPage.getContent() : Collections.emptyList());
+        vendorInfo.put("leaguesPage", Map.of(
+                "pageNumber", leaguesPage.getNumber(),
+                "pageSize", leaguesPage.getSize(),
+                "totalPages", leaguesPage.getTotalPages(),
+                "totalElements", leaguesPage.getTotalElements(),
+                "last", leaguesPage.isLast()
+        ));
+
+        // Tournaments - paginated
+        Page<Tournament> tournamentsPage = tournamentService.getAllActiveTournamentsByVendor(pageable, spId);
+        vendorInfo.put("tournaments", tournamentsPage.getContent() != null ? tournamentsPage.getContent() : Collections.emptyList());
+        vendorInfo.put("tournamentsPage", Map.of(
+                "pageNumber", tournamentsPage.getNumber(),
+                "pageSize", tournamentsPage.getSize(),
+                "totalPages", tournamentsPage.getTotalPages(),
+                "totalElements", tournamentsPage.getTotalElements(),
+                "last", tournamentsPage.isLast()
+        ));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("vendor", vendorInfo);
+
+        return response;
+    }
+
 
   /*  public Map<String, Object> getFeedOfVendors(int page, int size) {
         Pageable fetchPageable = PageRequest.of(0, 200); // Fetch enough vendors

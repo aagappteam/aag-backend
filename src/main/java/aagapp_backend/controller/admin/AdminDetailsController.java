@@ -142,10 +142,12 @@ public class AdminDetailsController {
     public ResponseEntity<?> getMonthlyEarnings(
             @RequestParam(required = false) Long influencerId,
             @RequestParam(required = false) String monthYear,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "10") Integer size) {
+        int pageSize = (limit != null) ? limit : (size != null ? size : 10);
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
         Page<InfluencerMonthlyEarning> resultPage;
 
         if (influencerId != null && monthYear != null) {
@@ -188,10 +190,13 @@ public class AdminDetailsController {
     @GetMapping("/vendor-history")
     public ResponseEntity<Map<String, Object>> getVendorHistory(
             @RequestParam Long vendorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "10") Integer size
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+        int pageSize = (limit != null) ? limit : (size != null ? size : 10);
+
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
         Page<InfluencerMonthlyEarning> earningsPage = earningRepo.findByInfluencerId(vendorId, pageable);
 
         List<Map<String, Object>> responseList = earningsPage
@@ -216,11 +221,14 @@ public class AdminDetailsController {
     public ResponseEntity<?> getAllRequests(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long influencerId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "10") Integer size) {
 
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+            int pageSize = (limit != null) ? limit : (size != null ? size : 10);
+
+            Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
             Page<WithdrawalRequest> requestsPage;
 
             // Validate status if provided
@@ -269,50 +277,6 @@ public class AdminDetailsController {
         }
     }
 
-
-/*    @GetMapping("/withdrawal-requests")
-    public ResponseEntity<?> getAllRequests(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long influencerId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
-
-            Page<WithdrawalRequest> requestsPage;
-
-
-
-            if (status == null || status.isEmpty()) {
-                requestsPage = withdrawalRepo.findAll(pageable);
-            } else {
-                List<String> validStatuses = Arrays.asList("PENDING", "APPROVED", "REJECTED");
-
-                if (status != null && !validStatuses.contains(status.toUpperCase())) {
-                    return responseService.generateErrorResponse(
-                            "Invalid status filter",
-                            HttpStatus.BAD_REQUEST
-                    );
-                }
-
-                requestsPage = withdrawalRepo.findByStatus(status, pageable);
-            }
-
-            return responseService.generateSuccessResponseWithCount(
-                    "Withdrawal requests fetched successfully",
-                    requestsPage.getContent(),
-                    requestsPage.getTotalElements(),
-                    HttpStatus.OK
-            );
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse(
-                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
-                    HttpStatus.BAD_REQUEST
-            );
-        }
-    }*/
 
 
     @PostMapping("/withdrawal/{id}/approve")
