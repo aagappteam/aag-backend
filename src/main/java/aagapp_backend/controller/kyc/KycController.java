@@ -53,7 +53,9 @@ public class KycController {
     ) {
         try {
 
-           /* // Check for null or empty fields
+
+            panNo = panNo.toUpperCase();
+            // Check for null or empty fields
             if (userOrVendorId == null || role == null || role.isBlank() ||
                     adharNo == null || adharNo.isBlank() ||
                     panNo == null || panNo.isBlank()) {
@@ -84,7 +86,7 @@ public class KycController {
             long maxFileSize = 5 * 1024 * 1024; // 5MB
             if (adharImage.getSize() > maxFileSize || panImage.getSize() > maxFileSize) {
                 return ResponseService.generateErrorResponse("Each file must be under 5MB", HttpStatus.BAD_REQUEST);
-            }*/
+            }
 
 
             boolean exists = false;

@@ -1,9 +1,10 @@
 package aagapp_backend.services.admin;
 
-
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.invoice.InvoiceAdmin;
+import aagapp_backend.entity.kyc.KycEntity;
 import aagapp_backend.repository.admin.InvoiceAdminRepository;
+import aagapp_backend.repository.kycRepository.KycRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.Locale;
-
 
 @Service
 public class InvoiceServiceAdmin {
@@ -28,71 +28,77 @@ public class InvoiceServiceAdmin {
     @Autowired
     private EntityManager entityManager;
 
+    @Autowired
+    private KycRepository kycRepository;
+
     public void createInvoice(Double paymentAmount, Long vendorId) {
+        try {
+            VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
+            if (existingVendor == null)
+                throw new RuntimeException("Vendor not found");
 
-        VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
-        if (existingVendor == null)
-            throw new RuntimeException("Vendor not found");
+            KycEntity kycEntity = kycRepository.findByUserOrVendorIdAndRole(vendorId, "vendor");
 
-        InvoiceAdmin invoice = new InvoiceAdmin();
+            InvoiceAdmin invoice = new InvoiceAdmin();
 
-        // Vendor ki state
-        String vendorState = existingVendor.getState();
-        boolean isFromUP = "Uttar Pradesh".equalsIgnoreCase(vendorState);
+            // Vendor ki state
+            String vendorState = existingVendor.getState();
+            boolean isFromUP = "Uttar Pradesh".equalsIgnoreCase(vendorState);
 
-        // Static GST Rate
-        BigDecimal gstRate = new BigDecimal("18.00");
+            // Static GST Rate
+            BigDecimal gstRate = new BigDecimal("18.00");
 
-        // Payment amount as taxable value
-        BigDecimal taxableValue = BigDecimal.valueOf(paymentAmount);
-        BigDecimal gstAmount = taxableValue.multiply(gstRate).divide(new BigDecimal("100"));
+            // Payment amount as taxable value
+            BigDecimal taxableValue = BigDecimal.valueOf(paymentAmount);
+            BigDecimal gstAmount = taxableValue.multiply(gstRate).divide(new BigDecimal("100"));
 
-        BigDecimal cgst = BigDecimal.ZERO;
-        BigDecimal sgst = BigDecimal.ZERO;
-        BigDecimal igst = BigDecimal.ZERO;
+            BigDecimal cgst = BigDecimal.ZERO;
+            BigDecimal sgst = BigDecimal.ZERO;
+            BigDecimal igst = BigDecimal.ZERO;
 
-        String serviceType;
+            String serviceType;
 
-        if (isFromUP) {
-            // Intra-state supply
-            cgst = gstAmount.divide(new BigDecimal("2"));
-            sgst = gstAmount.divide(new BigDecimal("2"));
-            serviceType = "INFLUENCER WITHIN STATE";
-            igst = BigDecimal.ZERO;
-        } else {
-            // Inter-state supply
-            igst = gstAmount;
-            serviceType = "INFLUENCER OUTSIDE STATE";
+            if (isFromUP) {
+                // Intra-state supply
+                cgst = gstAmount.divide(new BigDecimal("2"));
+                sgst = gstAmount.divide(new BigDecimal("2"));
+                serviceType = "INFLUENCER WITHIN STATE";
+                igst = BigDecimal.ZERO;
+            } else {
+                // Inter-state supply
+                igst = gstAmount;
+                serviceType = "INFLUENCER OUTSIDE STATE";
+            }
+
+            // Set all invoice values
+            invoice.setRecipientState("Uttar Pradesh"); // Your business base state
+            invoice.setRecipientType("Registered");
+            invoice.setPlaceOfSupply(vendorState); // Vendor's state
+            invoice.setGstn("-"); // Placeholder until KYC is done
+
+            invoice.setTaxableValue(taxableValue);
+            invoice.setGstRate(gstRate); // 18%
+            invoice.setCgst(cgst);
+            invoice.setSgst(sgst);
+            invoice.setIgst(igst);
+            invoice.setTotalInvoiceValue(taxableValue.add(gstAmount));
+            invoice.setServiceType(serviceType);
+
+            invoice.setInvoiceDate(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
+            invoice.setPan(kycEntity.getPanNo());
+            invoice.setPanTypeCheck(checkPanType(kycEntity.getPanNo()));
+
+            // Set unique invoice number
+            invoice.setInvoiceNo(generateInvoiceNumber());
+
+            // Save the invoice
+            invoiceAdminRepository.save(invoice);
+        } catch (Exception e) {
+            // Log the error or rethrow if needed
+            e.printStackTrace();
+            throw new RuntimeException("Error while creating invoice: " + e.getMessage(), e);
         }
-
-        // Set all invoice values
-        invoice.setRecipientState("Uttar Pradesh"); // Your business base state
-        invoice.setRecipientType("Registered");
-        invoice.setPlaceOfSupply(vendorState); // Vendor's state
-        invoice.setGstn("-"); // Placeholder until KYC is done
-        invoice.setPan("N/A");
-
-        invoice.setTaxableValue(taxableValue);
-        invoice.setGstRate(gstRate); // 18%
-        invoice.setCgst(cgst);
-        invoice.setSgst(sgst);
-        invoice.setIgst(igst);
-        invoice.setTotalInvoiceValue(taxableValue.add(gstAmount)); // total = amount + GST
-        invoice.setServiceType(serviceType);
-
-        invoice.setInvoiceNo("INV-" + System.currentTimeMillis());
-
-        invoice.setInvoiceDate(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
-
-        //set unique invoice number
-        invoice.setInvoiceNo(generateInvoiceNumber());
-
-
-        // Save the invoice
-        invoiceAdminRepository.save(invoice);
     }
-
-
 
     public String generateInvoiceNumber() {
         LocalDate today = LocalDate.now();
@@ -117,7 +123,7 @@ public class InvoiceServiceAdmin {
         String prefix = "AAG/" + financialYear + "/" + monthStr + "/";
 
         // Get the last invoice number with the same prefix
-        String lastInvoiceNo = invoiceAdminRepository.findLastInvoiceNo(prefix);  // You need to implement this in the repo
+        String lastInvoiceNo = invoiceAdminRepository.findLastInvoiceNo(prefix);
 
         int nextSerial = 1;
         if (lastInvoiceNo != null && lastInvoiceNo.startsWith(prefix)) {
@@ -131,4 +137,25 @@ public class InvoiceServiceAdmin {
         return prefix + serialFormatted;
     }
 
+    public String checkPanType(String pan) {
+        if (pan == null || pan.length() != 10) {
+            return "Invalid PAN format";
+        }
+
+        char typeChar = Character.toUpperCase(pan.charAt(3));
+
+        switch (typeChar) {
+            case 'P': return "Individual";
+            case 'C': return "Company";
+            case 'H': return "HUF";
+            case 'A': return "AOP";
+            case 'B': return "BOI";
+            case 'G': return "Government Agency";
+            case 'J': return "Artificial Juridical Person";
+            case 'L': return "Local Authority";
+            case 'F': return "Firm/Partnership";
+            case 'T': return "Trust";
+            default: return "Unknown PAN type";
+        }
+    }
 }

@@ -16,6 +16,11 @@ public interface KycRepository extends JpaRepository<KycEntity, Long> {
 
     Page<KycEntity> findByRoleAndMobileNumber(String role, String mobileNumber, Pageable pageable);
 
+    @Query("SELECT k FROM KycEntity k WHERE k.userOrVendorId = :userOrVendorId AND k.role = :role")
+    KycEntity findByUserOrVendorIdAndRole(@Param("userOrVendorId") Long userOrVendorId,
+                                          @Param("role") String role);
+
+
 }
 /*
 public interface KycRepository extends JpaRepository<KycEntity, Long> {
