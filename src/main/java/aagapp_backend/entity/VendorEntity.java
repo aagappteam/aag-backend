@@ -73,6 +73,9 @@ public class VendorEntity {
     @Nullable
     private String country_code;
 
+    @Nullable
+    private String state;
+
     private String mobileNumber;
     private String otp;
 

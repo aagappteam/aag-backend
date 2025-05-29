@@ -1,11 +1,13 @@
 package aagapp_backend.controller.admin.vendorsubmission;
 
 import aagapp_backend.entity.faqs.FAQs;
+import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
+import aagapp_backend.services.admin.InvoiceServiceAdmin;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.faqs.FAQService;
 import jakarta.validation.Valid;
@@ -57,6 +59,9 @@ public class AdminReviewController {
     public void setResponseService(ResponseService responseService) {
         this.responseService = responseService;
     }
+
+    @Autowired
+    private InvoiceServiceAdmin invoiceServiceAdmin;
 
     @PutMapping("/approve/{id}")
     public ResponseEntity<?> approveSubmission(@PathVariable Long id) {
@@ -267,6 +272,13 @@ public class AdminReviewController {
         } catch (Exception e) {
             return ResponseService.generateErrorResponse("Error deleting FAQ: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+
+    @PostMapping("/invoices")
+    public ResponseEntity<?> createDefaultInvoice(@RequestParam Double paymentAmount, @RequestParam Long vendorId) {
+        invoiceServiceAdmin.createInvoice(paymentAmount, vendorId);
+        return ResponseEntity.ok("invoice");
     }
 
 }
