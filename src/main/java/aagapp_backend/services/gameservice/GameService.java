@@ -291,6 +291,8 @@ public void updateDailylimit() {
             if (gameRequest.getMaxPlayersPerTeam() != null) {
                 game.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
             }
+            vendorEntity.setTotal_game_published((vendorEntity.getTotal_game_published() == null ? 0 : vendorEntity.getTotal_game_published()) + 1);
+
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
 
@@ -310,7 +312,7 @@ public void updateDailylimit() {
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(savedGame.getId());
             savedGame.setShareableLink(shareableLink);
-            // Return the saved game with the shareable link
+
             return gameRepository.save(savedGame);
 
 

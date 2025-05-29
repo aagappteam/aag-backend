@@ -8,14 +8,12 @@ import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.otp.Otp;
 import aagapp_backend.services.vendor.VenderServiceImpl;
-import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
-import com.twilio.Twilio;
 import com.twilio.exception.ApiException;
 
 import jakarta.persistence.EntityManager;
@@ -24,9 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Random;
-
-import com.twilio.rest.api.v2010.account.Message;
-import com.twilio.type.PhoneNumber;
 
 @Service
 public class TwilioService {
@@ -68,7 +63,7 @@ public class TwilioService {
         try {
             String otp = generateOTP();
 
-         otpservice.sendOtp(countryCode,mobileNumber,otp);
+         otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
 /*
@@ -148,7 +143,7 @@ public class TwilioService {
 
         try {
             String otp = generateOTP();
-          otpservice.sendOtp(countryCode,mobileNumber,otp);
+          otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
 
             VendorEntity existingServiceProvider = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
 
