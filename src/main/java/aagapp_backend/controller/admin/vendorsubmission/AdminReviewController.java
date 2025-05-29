@@ -331,7 +331,6 @@ public class AdminReviewController {
         }
     }
 
-
     @GetMapping("/invoices-details")
     public ResponseEntity<?> getInvoices(
             @RequestParam(required = false) Long id,
@@ -400,6 +399,12 @@ public class AdminReviewController {
     }
 
 
+
+    @PostMapping("/invoices")
+    public ResponseEntity<?> createDefaultInvoice(@RequestParam Double paymentAmount, @RequestParam Long vendorId) {
+        invoiceServiceAdmin.createInvoice(paymentAmount, vendorId);
+        return ResponseEntity.ok("invoice");
+    }
 
 
 }
