@@ -295,7 +295,13 @@ public class TournamentService {
 
             int totalRounds = (int) Math.ceil(Math.log(totalPlayers) / Math.log(2));
 
-            BigDecimal roomprize = revenueAmmountforuser.divide(BigDecimal.valueOf(totalRounds));
+
+
+
+//           BigDecimal roomprize = revenueAmmountforuser.divide(BigDecimal.valueOf(totalRounds));
+            BigDecimal roomprize = revenueAmmountforuser.divide(
+                    BigDecimal.valueOf(totalRounds), 2, RoundingMode.HALF_UP
+            );
 
             // Set Vendor and Theme to the Game
             tournament.setName(gameAvailable.get().getGameName());
@@ -349,9 +355,8 @@ public class TournamentService {
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(tournament.getId());
             tournament.setShareableLink(shareableLink);
-
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
-
+            vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);
             // Return the saved game with the shareable link
             return tournamentRepository.save(tournament);
 
@@ -565,6 +570,25 @@ public class TournamentService {
             } else {
                 return tournamentRepository.findAll(pageable);
             }
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
+    public Page<Tournament> getAllActiveScheduledTournamentsByVendor(Pageable pageable, Long vendorId) {
+        try {
+            TournamentStatus status = TournamentStatus.ACTIVE;
+            TournamentStatus status1 = TournamentStatus.SCHEDULED;
+            List<TournamentStatus> statuses = new ArrayList<>();
+            statuses.add(status);
+            statuses.add(status1);
+            return tournamentRepository.findByStatusInAndVendorId(statuses, vendorId, pageable);
+
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
             throw e;

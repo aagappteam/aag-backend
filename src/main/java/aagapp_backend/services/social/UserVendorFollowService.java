@@ -505,6 +505,12 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         vendorInfo.put("profilePic", vendor.getProfilePic());
         vendorInfo.put("email", vendor.getPrimary_email());
         vendorInfo.put("followerCount", followRepo.countByVendorId(spId));
+        int totalGamePublished = vendor.getTotal_game_published() != null ? vendor.getTotal_game_published() : 0;
+        int totalLeaguePublished = vendor.getTotal_league_published() != null ? vendor.getTotal_league_published() : 0;
+        int totalTournamentPublished = vendor.getTotal_tournament_published() != null ? vendor.getTotal_tournament_published() : 0;
+        int totalHostedGames = totalGamePublished + totalLeaguePublished + totalTournamentPublished;
+
+        vendorInfo.put("hostedgames", totalHostedGames);
         vendorInfo.put("isFollowing", true);
 
         Pageable pageable = PageRequest.of(page, size);
@@ -531,7 +537,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         ));
 
         // Tournaments - paginated
-        Page<Tournament> tournamentsPage = tournamentService.getAllActiveTournamentsByVendor(pageable, spId);
+        Page<Tournament> tournamentsPage = tournamentService.getAllActiveScheduledTournamentsByVendor(pageable, spId);
         vendorInfo.put("tournaments", tournamentsPage.getContent() != null ? tournamentsPage.getContent() : Collections.emptyList());
         vendorInfo.put("tournamentsPage", Map.of(
                 "pageNumber", tournamentsPage.getNumber(),

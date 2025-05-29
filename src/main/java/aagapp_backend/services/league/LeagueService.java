@@ -496,6 +496,8 @@ public class LeagueService {
             savedLeague.setShareableLink(shareableLink);
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
             opponentVendor.setPublishedLimit((opponentVendor.getPublishedLimit() == null ? 0 : opponentVendor.getPublishedLimit()) + 1);
+            vendorEntity.setTotal_league_published(vendorEntity.getTotal_league_published() == null ? 0 : vendorEntity.getTotal_league_published() + 1);
+            opponentVendor.setTotal_league_published(opponentVendor.getTotal_league_published() == null ? 0 : opponentVendor.getTotal_league_published() + 1);
             // Return the saved game with the shareable link
 
             String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
