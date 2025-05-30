@@ -25,29 +25,6 @@ public class Otp {
     private ResponseService responseService;
     private EntityManager entityManager;
 
-/*    @Value("${service.provider.sid}")
-    private String serviceProviderSid;*/
-
-    @Autowired
-    public void setExceptionHandling(ExceptionHandlingImplement exceptionHandling) {
-        this.exceptionHandling = exceptionHandling;
-    }
-
-/*    @Value("${twilio.accountSid}")
-    public void setAccountSid(String accountSid) {
-        this.accountSid = accountSid;
-    }
-
-
-    @Value("${twilio.authToken}")
-    public void setAuthToken(String authToken) {
-        this.authToken = authToken;
-    }
-
-    @Value("${twilio.phoneNumber}")
-    public void setTwilioPhoneNumber(String twilioPhoneNumber) {
-        this.twilioPhoneNumber = twilioPhoneNumber;
-    }*/
 
     @Autowired
     @Lazy
@@ -70,7 +47,7 @@ public class Otp {
 
     public String sendOtponmobilenumber(String countryCode, String mobileNumber, String otp) {
 
-        Twilio.init(accountSid, authToken);
+//        Twilio.init(accountSid, authToken);
         String completeMobileNumber = countryCode + mobileNumber;
 
         String messageBody = "Your OTP for AAG app (Aapka Apna Game is: " + otp + ". Please use this code to verify your identity - AAG App";

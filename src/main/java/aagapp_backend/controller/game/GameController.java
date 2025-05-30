@@ -119,7 +119,6 @@ public class GameController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "gamename", required = false) String gamename,
-
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {

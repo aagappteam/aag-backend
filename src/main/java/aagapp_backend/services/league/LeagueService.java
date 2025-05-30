@@ -40,10 +40,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -492,7 +494,7 @@ public class LeagueService {
             leagueRoomRepository.save(leagueRoom);
 
             // Generate a shareable link for the game
-            String shareableLink = generateShareableLink(savedLeague.getId());
+            String shareableLink = generateShareableLink(savedLeague.getId(),vendorId);
             savedLeague.setShareableLink(shareableLink);
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
             opponentVendor.setPublishedLimit((opponentVendor.getPublishedLimit() == null ? 0 : opponentVendor.getPublishedLimit()) + 1);
@@ -606,12 +608,17 @@ public class LeagueService {
     }
 
 
-    private String generateShareableLink(Long gameId) {
+/*    private String generateShareableLink(Long gameId) {
         return "https://backend.aagapp.com/leagues/" + gameId;
+    }*/
+
+    private String generateShareableLink(Long gameId,Long vendorId) {
+        return "https://backend.aagapp.com/vendor/"+  vendorId  +"/leagues/" + gameId ;
     }
 
 
-    public Page<League> getAllLeagues(Pageable pageable, LeagueStatus status, Long vendorId) {
+
+    /*public Page<League> getAllLeagues(Pageable pageable, LeagueStatus status, Long vendorId,String gamename) {
         try {
             // Fetch the leagues from the repository based on the parameters
             Page<League> leagues;
@@ -632,7 +639,61 @@ public class LeagueService {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching leagues: " + e.getMessage(), e);
         }
+    }*/
+
+    @Transactional
+    public Page<League> getAllLeagues(Pageable pageable, LeagueStatus status, Long vendorId, String gameName) {
+        try {
+            if (gameName != null && gameName.trim().isEmpty()) {
+                gameName = null;
+            }
+
+            StringBuilder sql = new StringBuilder("SELECT * FROM aag_league l WHERE 1=1");
+            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM aag_league l WHERE 1=1");
+
+            Map<String, Object> params = new HashMap<>();
+
+            if (status != null) {
+                sql.append(" AND l.status = :status");
+                countSql.append(" AND l.status = :status");
+                params.put("status", status.name());
+            }
+
+            if (vendorId != null) {
+                sql.append(" AND (l.vendor_id = :vendorId OR l.opponent_vendor_id = :vendorId)");
+                countSql.append(" AND (l.vendor_id = :vendorId OR l.opponent_vendor_id = :vendorId)");
+                params.put("vendorId", vendorId);
+            }
+
+            if (gameName != null) {
+                sql.append(" AND LOWER(l.game_name) LIKE :gameName");
+                countSql.append(" AND LOWER(l.game_name) LIKE :gameName");
+                params.put("gameName", "%" + gameName.toLowerCase() + "%");
+            }
+
+            sql.append(" ORDER BY l.created_date DESC");
+
+            // Main query
+            Query query = em.createNativeQuery(sql.toString(), League.class);
+            params.forEach(query::setParameter);
+            query.setFirstResult((int) pageable.getOffset());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<League> leagues = query.getResultList();
+
+            // Count query
+            Query countQuery = em.createNativeQuery(countSql.toString());
+            params.forEach(countQuery::setParameter);
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            return new PageImpl<>(leagues, pageable, total);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error fetching leagues: " + e, e);
+        }
     }
+
 
 
     public Page<League> getAllActiveLeaguesByVendor(Pageable pageable, Long vendorId) {

@@ -70,4 +70,16 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
 
     @Query("SELECT g FROM Tournament g WHERE g.vendorId = :vendorId AND g.status = :status ORDER BY g.createdDate DESC")
     List<Tournament> findActiveTournaments( @Param("vendorId") Long vendorId,  @Param("status") TournamentStatus status);
+
+    @Query("SELECT t FROM Tournament t " +
+            "WHERE (:statuses IS NULL OR t.status IN :statuses) " +
+            "AND (:vendorId IS NULL OR t.vendorId = :vendorId) " +
+            "AND (:gameName IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :gameName, '%')))")
+    Page<Tournament> findByFilters(
+            @Param("statuses") List<TournamentStatus> statuses,
+            @Param("vendorId") Long vendorId,
+            @Param("gameName") String gameName,
+            Pageable pageable
+    );
+
 }

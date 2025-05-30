@@ -100,6 +100,7 @@ public class TournamentController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) List<TournamentStatus> status,
+            @RequestParam(value = "gamename", required = false) String gamename,
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {
@@ -108,7 +109,7 @@ public class TournamentController {
 //            Pageable pageable = PageRequest.of(page, size);
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
-            Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId);
+            Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId,gamename);
 
             List<Tournament> gameList = games.getContent();
             long totalCount = games.getTotalElements();

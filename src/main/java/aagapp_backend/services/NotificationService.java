@@ -100,10 +100,9 @@ public class NotificationService {
                     // Filter by non-null amount
                     notificationsPage = notificationRepository.findByVendorIdAndAmountIsNotNullOrderByCreatedDateDesc(id, pageable);
                 } else if (activity != null && !activity.isEmpty()) {
-                    // Filter by activity (description or details)
                     notificationsPage = notificationRepository.findByVendorIdAndAmountIsNullOrderByCreatedDateDesc(id, pageable);
                 } else {
-                    // Regular fetch without additional filters
+
                     notificationsPage = notificationRepository.findByVendorIdOrderByCreatedDateDesc(id, pageable);
                 }
             } else if ("customer".equalsIgnoreCase(role)) {

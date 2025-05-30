@@ -2,12 +2,15 @@ package aagapp_backend.controller.admin;
 
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
+import aagapp_backend.dto.DashboardResponseAdmin;
 import aagapp_backend.dto.MonthlyEarningWithVendorDTO;
+import aagapp_backend.dto.NotificationDTO;
 import aagapp_backend.dto.WithdrawalRequestHistoryDTO;
+import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.repository.vendor.VendorRepository;
-import org.checkerframework.checker.units.qual.A;
+import aagapp_backend.services.admin.DashboardAdmin;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
@@ -38,6 +41,9 @@ import java.util.stream.Collectors;
 @RequestMapping("/admin")
 
 public class AdminDetailsController {
+
+    @Autowired
+    private DashboardAdmin dashboardAdmin;
 
     @Autowired
     private InfluencerMonthlyEarningRepository earningRepo;
@@ -115,6 +121,63 @@ public class AdminDetailsController {
     public void setResponseService(ResponseService responseService) {
         this.responseService = responseService;
     }
+
+
+
+//    dashboard
+    @GetMapping("/dashboard")
+    public ResponseEntity<?> getDashboard(
+    ) {
+        try {
+            DashboardResponseAdmin response = dashboardAdmin.getDashboard();
+            return responseService.generateSuccessResponse("Dashboard retrieved successfully.", response, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return responseService.generateErrorResponse("Error retrieving dashboard: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error retrieving dashboard: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+//    get game result records
+/*
+    @GetMapping("/game-results")
+    public ResponseEntity<?> getAllGameResults(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "playedAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<GameResultRecordDTO> resultPage = dashboardAdmin.getAllGameResults(pageable);
+
+        return new ResponseEntity<>(resultPage, HttpStatus.OK);
+    }
+*/
+
+/*//    get all notifications
+    @GetMapping("/notifications")
+    public ResponseEntity<?> getNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<NotificationDTO> resultPage = dashboardAdmin.getAllNotifications(page, size);
+        return new ResponseEntity<>(resultPage, HttpStatus.OK);
+    }
+
+//    get all vendor notification shares
+    @GetMapping("/vendor-notifications")
+    public ResponseEntity<?> getVendorNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<NotificationDTO> resultPage = dashboardAdmin.getAllVendorNotifications(page, size);
+        return new ResponseEntity<>(resultPage, HttpStatus.OK);
+    }*/
+
+
 
     @Transactional
     @PatchMapping("/update")
