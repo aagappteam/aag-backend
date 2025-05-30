@@ -48,7 +48,16 @@ public interface LeagueRepository extends JpaRepository<League, Long> {
     Page<League> findByVendorServiceProviderId(@Param("serviceProviderId") Long serviceProviderId, Pageable pageable);
 
     Page<League> findAll(Pageable pageable);
-
+    @Query("SELECT l FROM League l " +
+            "WHERE (:status IS NULL OR l.status = :status) " +
+            "AND (:vendorId IS NULL OR l.vendorEntity.service_provider_id = :vendorId OR l.opponentVendorId = :vendorId) " +
+            "AND (:gameName IS NULL OR LOWER(l.gameName) LIKE LOWER(CONCAT('%', :gameName, '%')))")
+    Page<League> findLeaguesByFilters(
+            @Param("status") LeagueStatus status,
+            @Param("vendorId") Long vendorId,
+            @Param("gameName") String gameName,
+            Pageable pageable
+    );
 
 //    List<League> findByVendorEntityAndScheduledAtBetween(VendorEntity vendorEntity, ZonedDateTime startTimeUTC, ZonedDateTime endTimeUTC);
 

@@ -115,13 +115,17 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) LeagueStatus status,
-
+            @RequestParam(value = "gamename", required = false) String gamename,
             @RequestParam(value = "vendorId", required = false) Long vendorId
     ) {
         try {
             Pageable pageable = PageRequest.of(page, size);
 
-            Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId);
+            System.out.println("Status: " + status);
+            System.out.println("Vendor ID: " + vendorId);
+            System.out.println("Game Name: " + gamename);
+
+            Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId,gamename);
 
             if (leaguesPage.isEmpty()) {
                 return responseService.generateResponse(HttpStatus.OK, ApiConstants.NO_RECORDS_FOUND, null);

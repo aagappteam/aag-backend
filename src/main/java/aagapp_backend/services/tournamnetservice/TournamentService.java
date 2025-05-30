@@ -33,9 +33,11 @@ import aagapp_backend.services.gameservice.GameService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
@@ -353,7 +355,7 @@ public class TournamentService {
 
 
             // Generate a shareable link for the game
-            String shareableLink = generateShareableLink(tournament.getId());
+            String shareableLink = generateShareableLink(tournament.getId(),vendorId);
             tournament.setShareableLink(shareableLink);
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
             vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);
@@ -538,9 +540,63 @@ public class TournamentService {
         }
 
     }
-
     @Transactional
-    public Page<Tournament> getAllTournaments(Pageable pageable, List<TournamentStatus> statuses, Long vendorId) {
+    public Page<Tournament> getAllTournaments(Pageable pageable, List<TournamentStatus> statuses, Long vendorId, String gamename) {
+        try {
+            StringBuilder sql = new StringBuilder("SELECT * FROM tournament t WHERE 1=1");
+            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM tournament t WHERE 1=1");
+
+            Map<String, Object> params = new HashMap<>();
+
+            if (statuses != null && !statuses.isEmpty()) {
+                sql.append(" AND t.status IN :statuses");
+                countSql.append(" AND t.status IN :statuses");
+//                params.put("statuses", statuses);
+                params.put("statuses", statuses.stream().map(Enum::name).collect(Collectors.toList()));
+
+            }
+
+            if (vendorId != null) {
+                sql.append(" AND t.vendorId = :vendorId");
+                countSql.append(" AND t.vendorId = :vendorId");
+                params.put("vendorId", vendorId);
+            }
+
+            if (gamename != null && !gamename.trim().isEmpty()) {
+                sql.append(" AND LOWER(t.name) LIKE :gamename");
+                countSql.append(" AND LOWER(t.name) LIKE :gamename");
+                params.put("gamename", "%" + gamename.trim().toLowerCase() + "%");
+            }
+
+            sql.append(" ORDER BY t.createddate DESC");
+
+            // Main query
+            Query query = em.createNativeQuery(sql.toString(), Tournament.class);
+            params.forEach(query::setParameter);
+            query.setFirstResult((int) pageable.getOffset());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<Tournament> tournaments = query.getResultList();
+
+            // Count query
+            Query countQuery = em.createNativeQuery(countSql.toString());
+            params.forEach(countQuery::setParameter);
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            return new PageImpl<>(tournaments, pageable, total);
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error fetching tournaments: " + e.getMessage(), e);
+        }
+    }
+
+
+
+/*    @Transactional
+    public Page<Tournament> getAllTournaments(Pageable pageable, List<TournamentStatus> statuses, Long vendorId,String gamename) {
         try {
             if (statuses != null && !statuses.isEmpty() && vendorId != null) {
                 return tournamentRepository.findByStatusInAndVendorId(statuses, vendorId, pageable);
@@ -558,7 +614,7 @@ public class TournamentService {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error fetching tournaments: " + e.getMessage(), e);
         }
-    }
+    }*/
 
 
     @Transactional
@@ -636,8 +692,8 @@ public class TournamentService {
         return game.isPresent(); // Return true if the game is found, false otherwise
     }
 
-    private String generateShareableLink(Long gameId) {
-        return "https://backend.aagapp.com/tournament/" + gameId;
+    private String generateShareableLink(Long gameId,Long vendorId) {
+        return "https://backend.aagapp.com/vendor/"+  vendorId  +"/tournament/" + gameId ;
     }
 
     private void updateTournamentStatus(Tournament tournament, TournamentStatus status, String reason) {

@@ -21,7 +21,7 @@ public class NotificationDTO {
     private Long customerId;
     private String description;
     private String details;
-    private String createdDate; // formatted date string
+    private String createdDate;
     private Double amount;
 
     public NotificationDTO(Notification notification) {
@@ -35,7 +35,6 @@ public class NotificationDTO {
 
         ZonedDateTime createdDate = notification.getCreatedDate();
         if (createdDate != null) {
-            // Convert to specific time zone if needed, e.g., Asia/Kolkata
             ZonedDateTime indiaTime = createdDate.withZoneSameInstant(java.time.ZoneId.of("Asia/Kolkata"));
             this.createdDate = indiaTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         } else {
@@ -43,5 +42,4 @@ public class NotificationDTO {
         }
     }
 
-    // Getters and setters (or use Lombok)
 }

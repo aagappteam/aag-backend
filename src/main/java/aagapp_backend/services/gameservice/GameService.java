@@ -310,7 +310,7 @@ public void updateDailylimit() {
             gameRoomRepository.save(gameRoom);
 
             // Generate a shareable link for the game
-            String shareableLink = generateShareableLink(savedGame.getId());
+            String shareableLink = generateShareableLink(savedGame.getId(),vendorId);
             savedGame.setShareableLink(shareableLink);
 
             return gameRepository.save(savedGame);
@@ -733,9 +733,14 @@ public void updateDailylimit() {
     }
 
 
-    private String generateShareableLink(Long gameId) {
+/*    private String generateShareableLink(Long gameId) {
         return "https://backend.aagapp.com/games/" + gameId;
+
+    }*/
+    private String generateShareableLink(Long gameId,Long vendorId) {
+        return "https://backend.aagapp.com/vendor/"+  vendorId  +"/games/" + gameId ;
     }
+
 
     @Transactional
     public Page<GetGameResponseDTO> getAllGames(String status, Long vendorId, Pageable pageable,String gamename) {

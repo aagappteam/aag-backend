@@ -32,4 +32,9 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     List<Player> findByLeagueRoom_Id(Long leagueRoomId);
 
+    long countByTournamentRoomIsNotNull();
+
+    long countByGameRoomIsNotNull();
+
+    long countByLeagueRoomIsNotNull();
 }

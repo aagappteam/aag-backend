@@ -206,19 +206,16 @@ public class AdminReviewController {
     public ResponseEntity<?> getTicketsByStatusAndRole(
             @RequestParam(required = false) TicketEnum status,
             @RequestParam(required = false) String role,
-
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(required = false) Integer limit,
             @RequestParam(defaultValue = "10") Integer size
     ) {
         try {
-          Pageable pageable = PageRequest.of(page, size);
+//           Pageable pageable = PageRequest.of(page, size);
 
             int pageSize = (limit != null) ? limit : (size != null ? size : 10);
 
-//            Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("created_date")));
-
-
+           Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
 
             Page<Ticket> ticketPage;
 
@@ -233,12 +230,10 @@ public class AdminReviewController {
                 ticketPage = ticketRepository.findByStatusAndRole(status, role, pageable);
             }
 
-            // Check if tickets were found
-            /*if (ticketPage.isEmpty()) {
-                return responseService.generateErrorResponse("No tickets found with the given filters", HttpStatus.NOT_FOUND);
-            }*/
+            if (ticketPage.isEmpty()) {
+                return responseService.generateSuccessResponse("No tickets found", null, HttpStatus.OK);
+            }
 
-            // Convert to DTO
             List<TicketResponseDto> dtoList = ticketPage.stream().map(ticket -> {
                 TicketResponseDto dto = new TicketResponseDto();
                 dto.setId(ticket.getId());
@@ -253,20 +248,29 @@ public class AdminReviewController {
                 dto.setUpdatedDate(ticket.getUpdatedDate());
 
                 // Set name depending on the role
-                /*if ("Customer".equalsIgnoreCase(ticket.getRole())) {
+                if ("Customer".equalsIgnoreCase(ticket.getRole())) {
                     Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
                     customerOpt.ifPresent(customer -> dto.setName(customer.getName()));
-                } else if ("Vendor".equalsIgnoreCase(ticket.getRole())) {
-                    Optional<VendorEntity> vendorOpt = vendorRepository.findById(ticket.getCustomerOrVendorId());
-                    vendorOpt.ifPresent(vendor -> dto.setName(vendor.getName()));
                 }
-*/
+                else if ("Vendor".equalsIgnoreCase(ticket.getRole())) {
+                    Long id = ticket.getCustomerOrVendorId();
+                    if (id != null) {
+                        Optional<VendorEntity> vendorOpt = vendorRepository.findById(id);
+                        vendorOpt.ifPresent(vendor -> {
+                            String influencerName = (vendor.getFirst_name() != null ? vendor.getFirst_name() : "") +
+                                    (vendor.getLast_name() != null ? " " + vendor.getLast_name() : "");
+                            dto.setName(influencerName.trim());
+                        });
+                    } else {
+                        dto.setName("Unknown Vendor"); // or some other fallback
+                    }
+                }
+
                 return dto;
             }).collect(Collectors.toList());
             return responseService.generateSuccessResponseWithCount(
                     "Tickets retrieved successfully", dtoList, ticketPage.getTotalElements(), HttpStatus.OK
             );
-//            return responseService.generateSuccessResponseWithCount("Tickets retrieved successfully", ticketPage.getContent(), ticketPage.getTotalElements(), HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
