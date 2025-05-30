@@ -22,6 +22,12 @@ public class InvoiceAdmin {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String name;
+
+    private String email;
+
+    private String mobile;
+
     // GSTN (IN CASE OF INFLUENCER)
     private String gstn;
 

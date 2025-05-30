@@ -11,6 +11,7 @@ import aagapp_backend.enums.NotificationType;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.admin.InvoiceServiceAdmin;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.vendor.VenderService;
@@ -47,6 +48,9 @@ public class WalletController {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private InvoiceServiceAdmin invoiceServiceAdmin;
 
     // Endpoint to add balance to the wallet
     @PostMapping("/addBalance")
@@ -106,6 +110,7 @@ public class WalletController {
             notification.setDetails("Rs. " +amount + " added to Wallet"); // Example NotificationType for a successful
 
             notificationRepository.save(notification);
+            invoiceServiceAdmin.createInvoiceForCustomer((double)amount, customerId);
 
             return responseService.generateSuccessResponse("Balance added successfully", updatedWallet, HttpStatus.OK);
         }catch (BusinessException e){

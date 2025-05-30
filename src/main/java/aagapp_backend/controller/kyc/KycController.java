@@ -54,6 +54,10 @@ public class KycController {
         try {
 
 
+            // Check if KYC already exists for the given user/vendor
+            if (kycRepository.existsByUserOrVendorIdAndRole(userOrVendorId, role)) {
+                return ResponseService.generateErrorResponse("KYC already submitted. You cannot submit again.", HttpStatus.CONFLICT);
+            }
             panNo = panNo.toUpperCase();
             // Check for null or empty fields
             if (userOrVendorId == null || role == null || role.isBlank() ||
