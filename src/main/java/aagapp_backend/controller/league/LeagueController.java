@@ -12,6 +12,7 @@ import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
 
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.league.LeagueRepository;
@@ -114,13 +115,17 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) LeagueStatus status,
-
+            @RequestParam(value = "gamename", required = false) String gamename,
             @RequestParam(value = "vendorId", required = false) Long vendorId
     ) {
         try {
             Pageable pageable = PageRequest.of(page, size);
 
-            Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId);
+            System.out.println("Status: " + status);
+            System.out.println("Vendor ID: " + vendorId);
+            System.out.println("Game Name: " + gamename);
+
+            Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId,gamename);
 
             if (leaguesPage.isEmpty()) {
                 return responseService.generateResponse(HttpStatus.OK, ApiConstants.NO_RECORDS_FOUND, null);
@@ -187,6 +192,19 @@ public class LeagueController {
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching leagues", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+//    getleague by id
+    @GetMapping("/get-league-by-id/{id}")
+    public ResponseEntity<?> getLeagueById(@PathVariable Long id) {
+        try {
+            League league = leagueService.getLeagueById(id);
+            return responseService.generateSuccessResponse("League retrieved successfully.", league, HttpStatus.OK);
+        }catch (GameNotFoundException e){
+            return responseService.generateErrorResponse("Game Not Found", HttpStatus.BAD_REQUEST);
+
+        }catch (Exception e) {
+            return responseService.generateErrorResponse("Error retrieving league: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

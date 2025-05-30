@@ -10,6 +10,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.*;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.TournamentStatus;
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.tournament.TournamentPlayerRegistrationRepository;
@@ -99,6 +100,7 @@ public class TournamentController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) List<TournamentStatus> status,
+            @RequestParam(value = "gamename", required = false) String gamename,
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {
@@ -107,13 +109,27 @@ public class TournamentController {
 //            Pageable pageable = PageRequest.of(page, size);
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
-            Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId);
+            Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId,gamename);
 
             List<Tournament> gameList = games.getContent();
             long totalCount = games.getTotalElements();
 
             return responseService.generateSuccessResponseWithCount("Tournaments fetched successfully", gameList, totalCount, HttpStatus.OK);
         } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+//    get tuournment by id
+    @GetMapping("/get-tournament-by-id/{id}")
+    public ResponseEntity<?> getTournamentById(@PathVariable Long id) {
+        try {
+            Tournament tournament = tournamentService.findTournamentById(id);
+            return responseService.generateSuccessResponse("Tournament fetched successfully", tournament, HttpStatus.OK);
+        }catch (GameNotFoundException e){
+            return responseService.generateErrorResponse("Game Not Found", HttpStatus.BAD_REQUEST);
+        }
+        catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

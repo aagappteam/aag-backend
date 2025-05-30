@@ -163,4 +163,21 @@ public class UserVendorFollowController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/all-feed/{vendorId}")
+    public ResponseEntity<Map<String, Object>> getFeedOfUser(
+            @PathVariable Long vendorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Map<String, Object> data = followService.getFeedOfVendorId( vendorId,page, size);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "User feed Vendors List");
+        response.put("status", "OK");
+        response.put("status_code", 200);
+        response.put("data", data);
+
+        return ResponseEntity.ok(response);
+    }
+
 }

@@ -2,12 +2,15 @@ package aagapp_backend.controller.admin;
 
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
+import aagapp_backend.dto.DashboardResponseAdmin;
 import aagapp_backend.dto.MonthlyEarningWithVendorDTO;
+import aagapp_backend.dto.NotificationDTO;
 import aagapp_backend.dto.WithdrawalRequestHistoryDTO;
+import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.repository.vendor.VendorRepository;
-import org.checkerframework.checker.units.qual.A;
+import aagapp_backend.services.admin.DashboardAdmin;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
@@ -38,6 +41,9 @@ import java.util.stream.Collectors;
 @RequestMapping("/admin")
 
 public class AdminDetailsController {
+
+    @Autowired
+    private DashboardAdmin dashboardAdmin;
 
     @Autowired
     private InfluencerMonthlyEarningRepository earningRepo;
@@ -116,6 +122,63 @@ public class AdminDetailsController {
         this.responseService = responseService;
     }
 
+
+
+//    dashboard
+    @GetMapping("/dashboard")
+    public ResponseEntity<?> getDashboard(
+    ) {
+        try {
+            DashboardResponseAdmin response = dashboardAdmin.getDashboard();
+            return responseService.generateSuccessResponse("Dashboard retrieved successfully.", response, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return responseService.generateErrorResponse("Error retrieving dashboard: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error retrieving dashboard: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+//    get game result records
+/*
+    @GetMapping("/game-results")
+    public ResponseEntity<?> getAllGameResults(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "playedAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<GameResultRecordDTO> resultPage = dashboardAdmin.getAllGameResults(pageable);
+
+        return new ResponseEntity<>(resultPage, HttpStatus.OK);
+    }
+*/
+
+/*//    get all notifications
+    @GetMapping("/notifications")
+    public ResponseEntity<?> getNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<NotificationDTO> resultPage = dashboardAdmin.getAllNotifications(page, size);
+        return new ResponseEntity<>(resultPage, HttpStatus.OK);
+    }
+
+//    get all vendor notification shares
+    @GetMapping("/vendor-notifications")
+    public ResponseEntity<?> getVendorNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<NotificationDTO> resultPage = dashboardAdmin.getAllVendorNotifications(page, size);
+        return new ResponseEntity<>(resultPage, HttpStatus.OK);
+    }*/
+
+
+
     @Transactional
     @PatchMapping("/update")
     public ResponseEntity<?> updateAdmin(@RequestParam Long userId, @RequestBody Map<String, Object> adminDetails) throws Exception {
@@ -142,10 +205,12 @@ public class AdminDetailsController {
     public ResponseEntity<?> getMonthlyEarnings(
             @RequestParam(required = false) Long influencerId,
             @RequestParam(required = false) String monthYear,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "10") Integer size) {
+        int pageSize = (limit != null) ? limit : (size != null ? size : 10);
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
         Page<InfluencerMonthlyEarning> resultPage;
 
         if (influencerId != null && monthYear != null) {
@@ -188,10 +253,13 @@ public class AdminDetailsController {
     @GetMapping("/vendor-history")
     public ResponseEntity<Map<String, Object>> getVendorHistory(
             @RequestParam Long vendorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "10") Integer size
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+        int pageSize = (limit != null) ? limit : (size != null ? size : 10);
+
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
         Page<InfluencerMonthlyEarning> earningsPage = earningRepo.findByInfluencerId(vendorId, pageable);
 
         List<Map<String, Object>> responseList = earningsPage
@@ -216,11 +284,14 @@ public class AdminDetailsController {
     public ResponseEntity<?> getAllRequests(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long influencerId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "10") Integer size) {
 
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+            int pageSize = (limit != null) ? limit : (size != null ? size : 10);
+
+            Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
             Page<WithdrawalRequest> requestsPage;
 
             // Validate status if provided
@@ -269,50 +340,6 @@ public class AdminDetailsController {
         }
     }
 
-
-/*    @GetMapping("/withdrawal-requests")
-    public ResponseEntity<?> getAllRequests(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long influencerId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
-
-            Page<WithdrawalRequest> requestsPage;
-
-
-
-            if (status == null || status.isEmpty()) {
-                requestsPage = withdrawalRepo.findAll(pageable);
-            } else {
-                List<String> validStatuses = Arrays.asList("PENDING", "APPROVED", "REJECTED");
-
-                if (status != null && !validStatuses.contains(status.toUpperCase())) {
-                    return responseService.generateErrorResponse(
-                            "Invalid status filter",
-                            HttpStatus.BAD_REQUEST
-                    );
-                }
-
-                requestsPage = withdrawalRepo.findByStatus(status, pageable);
-            }
-
-            return responseService.generateSuccessResponseWithCount(
-                    "Withdrawal requests fetched successfully",
-                    requestsPage.getContent(),
-                    requestsPage.getTotalElements(),
-                    HttpStatus.OK
-            );
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse(
-                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
-                    HttpStatus.BAD_REQUEST
-            );
-        }
-    }*/
 
 
     @PostMapping("/withdrawal/{id}/approve")

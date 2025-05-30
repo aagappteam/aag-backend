@@ -1,16 +1,22 @@
 package aagapp_backend.controller.admin.vendorsubmission;
 
+import aagapp_backend.dto.ticketdto.TicketResponseDto;
+import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.faqs.FAQs;
 import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.enums.TicketEnum;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
 import aagapp_backend.services.admin.InvoiceServiceAdmin;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.faqs.FAQService;
 import jakarta.validation.Valid;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,10 +34,17 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/adminreview")
 public class AdminReviewController {
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
+
+    @Autowired
+    private VendorRepository vendorRepository;
 
     private AdminReviewService reviewService;
     private ExceptionHandlingImplement exceptionHandling;
@@ -203,12 +216,16 @@ public class AdminReviewController {
     public ResponseEntity<?> getTicketsByStatusAndRole(
             @RequestParam(required = false) TicketEnum status,
             @RequestParam(required = false) String role,
-
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "10") Integer size
     ) {
         try {
-            Pageable pageable = PageRequest.of(page, size);
+//           Pageable pageable = PageRequest.of(page, size);
+
+            int pageSize = (limit != null) ? limit : (size != null ? size : 10);
+
+           Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
 
             Page<Ticket> ticketPage;
 
@@ -223,15 +240,50 @@ public class AdminReviewController {
                 ticketPage = ticketRepository.findByStatusAndRole(status, role, pageable);
             }
 
-            // Check if tickets were found
             if (ticketPage.isEmpty()) {
-                return responseService.generateErrorResponse("No tickets found with the given filters", HttpStatus.NOT_FOUND);
+                return responseService.generateSuccessResponse("No tickets found", null, HttpStatus.OK);
             }
 
-            return responseService.generateSuccessResponseWithCount("Tickets retrieved successfully", ticketPage.getContent(), ticketPage.getTotalElements(), HttpStatus.OK);
+            List<TicketResponseDto> dtoList = ticketPage.stream().map(ticket -> {
+                TicketResponseDto dto = new TicketResponseDto();
+                dto.setId(ticket.getId());
+                dto.setSubject(ticket.getSubject());
+                dto.setDescription(ticket.getDescription());
+                dto.setStatus(ticket.getStatus());
+                dto.setRemark(ticket.getRemark());
+                dto.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
+                dto.setRole(ticket.getRole());
+                dto.setEmail(ticket.getEmail());
+                dto.setCreatedDate(ticket.getCreatedDate());
+                dto.setUpdatedDate(ticket.getUpdatedDate());
+
+                // Set name depending on the role
+                if ("Customer".equalsIgnoreCase(ticket.getRole())) {
+                    Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
+                    customerOpt.ifPresent(customer -> dto.setName(customer.getName()));
+                }
+                else if ("Vendor".equalsIgnoreCase(ticket.getRole())) {
+                    Long id = ticket.getCustomerOrVendorId();
+                    if (id != null) {
+                        Optional<VendorEntity> vendorOpt = vendorRepository.findById(id);
+                        vendorOpt.ifPresent(vendor -> {
+                            String influencerName = (vendor.getFirst_name() != null ? vendor.getFirst_name() : "") +
+                                    (vendor.getLast_name() != null ? " " + vendor.getLast_name() : "");
+                            dto.setName(influencerName.trim());
+                        });
+                    } else {
+                        dto.setName("Unknown Vendor"); // or some other fallback
+                    }
+                }
+
+                return dto;
+            }).collect(Collectors.toList());
+            return responseService.generateSuccessResponseWithCount(
+                    "Tickets retrieved successfully", dtoList, ticketPage.getTotalElements(), HttpStatus.OK
+            );
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

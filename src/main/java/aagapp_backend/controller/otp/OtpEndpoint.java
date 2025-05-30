@@ -8,7 +8,6 @@ import aagapp_backend.dto.VendorDeviceDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.ProfileStatus;
@@ -490,7 +489,7 @@ public class OtpEndpoint {
             Bucket bucket = rateLimiterService.resolveBucket(mobileNumber, "/otp/vendor-signup");
             if (bucket.tryConsume(1)) {
 
-              otpservice.sendOtp(countryCode,mobileNumber,otp);
+              otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
                 VendorEntity existingServiceProviderwithoutsigneup = serviceProviderService.findActiveServiceProviderByPhone(mobileNumber, countryCode);
                 if(existingServiceProviderwithoutsigneup==null){
                     VendorEntity vendorEntity = new VendorEntity();

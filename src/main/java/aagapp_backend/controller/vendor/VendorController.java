@@ -866,11 +866,15 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
     @GetMapping("/withdraw-history")
     public ResponseEntity<?> getWithdrawHistory(
             @RequestParam Long influencerId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "10") Integer size) {
 
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+
+            int pageSize = (limit != null) ? limit : (size != null ? size : 10);
+
+            Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
 
             Page<WithdrawalRequest> requestsPage = withdrawalRepo.findByInfluencerId(influencerId, pageable);
 

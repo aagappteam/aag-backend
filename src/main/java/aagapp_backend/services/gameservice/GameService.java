@@ -14,6 +14,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.*;
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.aagavailblegames.AagAvailbleGamesRepository;
 import aagapp_backend.repository.game.*;
@@ -290,6 +291,8 @@ public void updateDailylimit() {
             if (gameRequest.getMaxPlayersPerTeam() != null) {
                 game.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
             }
+            vendorEntity.setTotal_game_published((vendorEntity.getTotal_game_published() == null ? 0 : vendorEntity.getTotal_game_published()) + 1);
+
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
 
@@ -307,9 +310,9 @@ public void updateDailylimit() {
             gameRoomRepository.save(gameRoom);
 
             // Generate a shareable link for the game
-            String shareableLink = generateShareableLink(savedGame.getId());
+            String shareableLink = generateShareableLink(savedGame.getId(),vendorId);
             savedGame.setShareableLink(shareableLink);
-            // Return the saved game with the shareable link
+
             return gameRepository.save(savedGame);
 
 
@@ -730,9 +733,14 @@ public void updateDailylimit() {
     }
 
 
-    private String generateShareableLink(Long gameId) {
-        return "https://example.com/games/" + gameId;
+/*    private String generateShareableLink(Long gameId) {
+        return "https://backend.aagapp.com/games/" + gameId;
+
+    }*/
+    private String generateShareableLink(Long gameId,Long vendorId) {
+        return "https://backend.aagapp.com/vendor/"+  vendorId  +"/games/" + gameId ;
     }
+
 
     @Transactional
     public Page<GetGameResponseDTO> getAllGames(String status, Long vendorId, Pageable pageable,String gamename) {
@@ -748,6 +756,7 @@ public void updateDailylimit() {
             if (vendorId != null) {
                 sql.append(" AND g.vendor_id = :vendorId");
             }
+            sql.append(" ORDER BY g.created_date DESC");
 
             Query query = em.createNativeQuery(sql.toString(), Game.class);
 
@@ -1239,6 +1248,18 @@ public void updateDailylimit() {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error retrieving game room by ID: " + roomId, e);
         }
+    }
+
+    public GetGameResponseDTO getGameById(Long gameId) throws GameNotFoundException {
+        Optional<Game> game = gameRepository.findById(gameId);
+
+        if (game.isEmpty()) {
+            throw new GameNotFoundException("Game not found with ID: " + gameId);
+        }
+
+
+
+        return new GetGameResponseDTO(game.get());
     }
 
 }

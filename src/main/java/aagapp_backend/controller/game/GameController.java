@@ -11,6 +11,7 @@ import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.enums.NotificationType;
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.repository.game.PlayerRepository;
@@ -118,7 +119,6 @@ public class GameController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "gamename", required = false) String gamename,
-
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {
@@ -178,6 +178,25 @@ public class GameController {
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching games by vendor : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //   get game by game id
+    @GetMapping("/get-game-by-id/{gameId}")
+    public ResponseEntity<?> getGameById(@PathVariable Long gameId) {
+        try {
+            GetGameResponseDTO game = gameService.getGameById(gameId);
+
+            return responseService.generateSuccessResponse("Game fetched successfully", game, HttpStatus.OK);
+        }catch (GameNotFoundException e) {
+            return responseService.generateErrorResponse("Game Not Found", HttpStatus.BAD_REQUEST);
+        }
+
+        catch (BusinessException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error fetching game by id: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

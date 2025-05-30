@@ -49,7 +49,7 @@ public class NotificationController {
             @RequestParam(required = false) String activity) { // New filter: activity
 
         try {
-            // Fetch notifications from the service layer with pagination and filters
+            // Fetch notificationxs from the service layer with pagination and filters
             List<Notification> notifications = notificationService.getNotifications(id, role, page, size, transaction, activity);
 
             if (notifications.isEmpty()) {
@@ -62,7 +62,6 @@ public class NotificationController {
 
             return responseService.generateSuccessResponse("Notifications fetched successfully", notificationDTOs, HttpStatus.OK);
 
-//         return responseService.generateSuccessResponse("Notifications fetched successfully", notifications, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching notifications: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
