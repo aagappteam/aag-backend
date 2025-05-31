@@ -4,6 +4,7 @@ import aagapp_backend.dto.ticketdto.TicketResponseDto;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.faqs.FAQs;
+import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -11,6 +12,7 @@ import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
+import aagapp_backend.services.admin.InvoiceServiceAdmin;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.faqs.FAQService;
 import jakarta.validation.Valid;
@@ -20,10 +22,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,6 +77,9 @@ public class AdminReviewController {
     public void setResponseService(ResponseService responseService) {
         this.responseService = responseService;
     }
+
+    @Autowired
+    private InvoiceServiceAdmin invoiceServiceAdmin;
 
     @PutMapping("/approve/{id}")
     public ResponseEntity<?> approveSubmission(@PathVariable Long id) {
@@ -320,5 +330,76 @@ public class AdminReviewController {
             return ResponseService.generateErrorResponse("Error deleting FAQ: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
+    @GetMapping("/invoices-details")
+    public ResponseEntity<?> getInvoices(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String mobile,
+            @RequestParam(required = false) String gstn,
+            @RequestParam(required = false) String pan,
+            @RequestParam(required = false) String panTypeCheck,
+            @RequestParam(required = false) String invoiceNo,
+            @RequestParam(required = false) String invoiceDate,
+            @RequestParam(required = false) String recipientState,
+            @RequestParam(required = false) String recipientType,
+            @RequestParam(required = false) String placeOfSupply,
+            @RequestParam(required = false) String serviceType,
+            Pageable pageable
+    ) {
+        try {
+            List<InvoiceAdmin> invoiceList = invoiceServiceAdmin.getInvoices(
+                    id, name, email, mobile, gstn, pan, panTypeCheck, invoiceNo, invoiceDate,
+                    recipientState, recipientType, placeOfSupply, serviceType, pageable
+            );
+
+            if (invoiceList.isEmpty()) {
+                return ResponseService.generateSuccessResponse("No invoices found", invoiceList, HttpStatus.OK);
+            } else {
+                return ResponseService.generateSuccessResponse("Invoices fetched successfully", invoiceList, HttpStatus.OK);
+            }
+        } catch (Exception e) {
+            return ResponseService.generateErrorResponse("Error fetching invoices: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+    @GetMapping("/download/{id}")
+    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Long id) {
+        try {
+            byte[] pdfData = invoiceServiceAdmin.generateInvoicePdf(id);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice-" + id + ".pdf")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfData);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
+        }
+    }
+
+
+    @GetMapping("/export-excel")
+    public ResponseEntity<byte[]> exportInvoicesToExcel(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            byte[] excelData = invoiceServiceAdmin.generateInvoicesExcel(startDate, endDate);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoices.xlsx")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                    .body(excelData);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+
+
 
 }

@@ -7,6 +7,7 @@ import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.admin.InvoiceServiceAdmin;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentService;
 import jakarta.mail.MessagingException;
@@ -42,6 +43,9 @@ public class PaymentController {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private InvoiceServiceAdmin invoiceServiceAdmin;
 
     // Create payment with authorization check and input validation
     @PostMapping("/create/{vendorId}")
@@ -79,6 +83,7 @@ public class PaymentController {
 
 
             PaymentEntity payment = paymentService.createPayment(paymentRequest, vendorId);
+            invoiceServiceAdmin.createInvoiceForVendor(payment.getAmount(), vendorId);
             return responseService.generateSuccessResponse("Payment created successfully", payment, HttpStatus.CREATED);
 
         } catch (Exception e) {

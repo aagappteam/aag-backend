@@ -53,7 +53,13 @@ public class KycController {
     ) {
         try {
 
-           /* // Check for null or empty fields
+
+            // Check if KYC already exists for the given user/vendor
+            if (kycRepository.existsByUserOrVendorIdAndRole(userOrVendorId, role)) {
+                return ResponseService.generateErrorResponse("KYC already submitted. You cannot submit again.", HttpStatus.CONFLICT);
+            }
+            panNo = panNo.toUpperCase();
+            // Check for null or empty fields
             if (userOrVendorId == null || role == null || role.isBlank() ||
                     adharNo == null || adharNo.isBlank() ||
                     panNo == null || panNo.isBlank()) {
@@ -84,7 +90,7 @@ public class KycController {
             long maxFileSize = 5 * 1024 * 1024; // 5MB
             if (adharImage.getSize() > maxFileSize || panImage.getSize() > maxFileSize) {
                 return ResponseService.generateErrorResponse("Each file must be under 5MB", HttpStatus.BAD_REQUEST);
-            }*/
+            }
 
 
             boolean exists = false;
