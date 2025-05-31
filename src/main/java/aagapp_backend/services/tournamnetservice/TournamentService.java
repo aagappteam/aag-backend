@@ -1483,6 +1483,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                     + "&moves=" + move;
 
             HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer UFBZINFPQQPQ6RZ6Z5BFCI8K");
             headers.set("Content-Type", "application/json");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);

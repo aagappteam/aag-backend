@@ -560,6 +560,8 @@ public class LeagueService {
             System.out.println("url: " + url);
             // Create headers (optional, but good practice to include Content-Type for clarity)
             HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer UFBZINFPQQPQ6RZ6Z5BFCI8K");
+
             headers.set("Content-Type", "application/json");
 
             // Create the HttpEntity with headers (no body needed for query parameters)
