@@ -332,6 +332,8 @@ public void updateDailylimit() {
                     + "&moves=" + move;
             HttpHeaders headers = new HttpHeaders();
             headers.set("Content-Type", "application/json");
+            headers.set("Authorization", "Bearer UFBZINFPQQPQ6RZ6Z5BFCI8K");
+
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
