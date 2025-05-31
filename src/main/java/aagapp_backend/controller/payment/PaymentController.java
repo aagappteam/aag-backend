@@ -84,7 +84,7 @@ public class PaymentController {
 
             PaymentEntity payment = paymentService.createPayment(paymentRequest, vendorId);
 
-            invoiceServiceAdmin.createInvoice(payment.getAmount(), vendorId);
+            invoiceServiceAdmin.createInvoiceForVendor(payment.getAmount(), vendorId);
             return responseService.generateSuccessResponse("Payment created successfully", payment, HttpStatus.CREATED);
 
         } catch (Exception e) {
