@@ -2,10 +2,7 @@ package aagapp_backend.controller.admin;
 
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
-import aagapp_backend.dto.DashboardResponseAdmin;
-import aagapp_backend.dto.MonthlyEarningWithVendorDTO;
-import aagapp_backend.dto.NotificationDTO;
-import aagapp_backend.dto.WithdrawalRequestHistoryDTO;
+import aagapp_backend.dto.*;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
@@ -140,7 +137,6 @@ public class AdminDetailsController {
     }
 
 //    get game result records
-/*
     @GetMapping("/game-results")
     public ResponseEntity<?> getAllGameResults(
             @RequestParam(defaultValue = "0") int page,
@@ -155,9 +151,8 @@ public class AdminDetailsController {
 
         return new ResponseEntity<>(resultPage, HttpStatus.OK);
     }
-*/
 
-/*//    get all notifications
+//    get all notifications
     @GetMapping("/notifications")
     public ResponseEntity<?> getNotifications(
             @RequestParam(defaultValue = "0") int page,
@@ -167,15 +162,33 @@ public class AdminDetailsController {
         return new ResponseEntity<>(resultPage, HttpStatus.OK);
     }
 
-//    get all vendor notification shares
-    @GetMapping("/vendor-notifications")
+    @GetMapping("/vendor-earnings")
     public ResponseEntity<?> getVendorNotifications(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String vendorName,
+            @RequestParam(required = false) String details,
+            @RequestParam(required = false) Double amount
     ) {
-        Page<NotificationDTO> resultPage = dashboardAdmin.getAllVendorNotifications(page, size);
-        return new ResponseEntity<>(resultPage, HttpStatus.OK);
-    }*/
+        try {
+            // Call the service method which now returns Page<NotificationDTO> instead of Page<Map<String, Object>>
+            Page<NotificationDTOAdmin> resultPage = dashboardAdmin.getAllVendorNotifications(page, size, vendorName, details, amount);
+
+            // Generate the success response with DTO content
+            return responseService.generateSuccessResponseWithCount(
+                    "Vendor notifications retrieved successfully.",
+                    resultPage.getContent(),
+                    resultPage.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Some error getting: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
 
 
 

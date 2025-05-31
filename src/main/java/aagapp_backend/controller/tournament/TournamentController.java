@@ -203,7 +203,7 @@ public class TournamentController {
 
            Tournament publishedGame = tournamentService.publishTournament(tournamentRequest, vendorId);
 
-            // Now create a single notification for the vendor
+/*            // Now create a single notification for the vendor
             Notification notification = new Notification();
             notification.setRole("Vendor");
             
@@ -224,7 +224,7 @@ public class TournamentController {
             }
 
 
-            notificationRepository.save(notification);
+            notificationRepository.save(notification);*/
 
             if (tournamentRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("Tournament scheduled successfully", publishedGame, HttpStatus.CREATED);

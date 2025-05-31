@@ -34,9 +34,6 @@ public class NotificationShare {
     @Column(name = "vendorId")
     private Long vendorId;
 
-/*    @Enumerated(EnumType.STRING)
-    private NotificationType type;*/
-
     private String description;
 
     private Double amount;  // If applicable, for wallet credit/debit

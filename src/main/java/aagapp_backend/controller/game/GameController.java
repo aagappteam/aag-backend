@@ -216,28 +216,28 @@ public class GameController {
 
 
             // Now create a single notification for the vendor
-            Notification notification = new Notification();
+/*            Notification notification = new Notification();
             notification.setRole("Vendor");
 
 
             notification.setVendorId(vendorId);
             if (gameRequest.getScheduledAt() != null) {
-/*
+*//*
                 notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
-*/
+*//*
                 notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
                 notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
             }else{
-/*
+*//*
                 notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
-*/
+*//*
                 notification.setDescription("Published Game"); // Example NotificationType for a successful
                 notification.setDetails("Game has been Published"); // Example NotificationType for a successful
             }
 
 
 
-            notificationRepository.save(notification);
+            notificationRepository.save(notification);*/
 
             if (gameRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("Game scheduled successfully", publishedGame, HttpStatus.CREATED);
