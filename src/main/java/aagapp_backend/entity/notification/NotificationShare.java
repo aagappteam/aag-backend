@@ -18,7 +18,9 @@ import java.time.ZonedDateTime;
         indexes = {
                 @Index(name = "idx_vendor_id_notificationshare", columnList = "vendorId"),
                 @Index(name = "idx_created_date_notificationshare", columnList = "created_date"),
-                @Index(name = "idx_vendor_created_date_notification_share", columnList = "vendorId, created_date")
+                @Index(name = "idx_vendor_created_date_notificationshare", columnList = "vendorId, created_date"),
+                @Index(name = "idx_details_notificationshare", columnList = "details"),
+                @Index(name = "idx_amount_notificationshare", columnList = "amount")
         }
 )
 @Getter
@@ -34,12 +36,9 @@ public class NotificationShare {
     @Column(name = "vendorId")
     private Long vendorId;
 
-/*    @Enumerated(EnumType.STRING)
-    private NotificationType type;*/
-
     private String description;
 
-    private Double amount;  // If applicable, for wallet credit/debit
+    private Double amount;
 
     private String details;  // Additional details like game name, tournament name
 
