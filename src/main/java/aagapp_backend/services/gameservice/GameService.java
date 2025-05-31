@@ -334,7 +334,6 @@ public void updateDailylimit() {
             headers.set("Content-Type", "application/json");
             headers.set("Authorization", "Bearer UFBZINFPQQPQ6RZ6Z5BFCI8K");
 
-            System.out.println("url: " + url);
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
