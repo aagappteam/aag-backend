@@ -41,7 +41,8 @@ public class SecurityConfig {
                 "/resp",
                 "/enq",
                 "/MerchantAcknowledgement",
-                "/Bank"
+                "/Bank",
+                "/.well-known/**"
         );
     }
     @Bean
