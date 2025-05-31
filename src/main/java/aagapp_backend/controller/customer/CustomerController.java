@@ -124,7 +124,9 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long customerId,
-            @RequestParam(required = false) String mobileNumber
+            @RequestParam(required = false) String mobileNumber,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email      // new email param
     ) {
         try {
             if (customerId != null) {
@@ -143,6 +145,18 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
                 baseQuery.append(" AND c.mobileNumber = :mobileNumber");
                 countQueryStr.append(" AND c.mobileNumber = :mobileNumber");
                 params.put("mobileNumber", mobileNumber);
+            }
+
+            if (name != null && !name.trim().isEmpty()) {
+                baseQuery.append(" AND LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))");
+                countQueryStr.append(" AND LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))");
+                params.put("name", name.trim());
+            }
+
+            if (email != null && !email.trim().isEmpty()) {
+                baseQuery.append(" AND LOWER(c.email) LIKE LOWER(CONCAT('%', :email, '%'))");
+                countQueryStr.append(" AND LOWER(c.email) LIKE LOWER(CONCAT('%', :email, '%'))");
+                params.put("email", email.trim());
             }
 
             baseQuery.append(" ORDER BY c.createdDate DESC");

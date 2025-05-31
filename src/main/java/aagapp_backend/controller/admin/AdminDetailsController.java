@@ -152,31 +152,41 @@ public class AdminDetailsController {
         return new ResponseEntity<>(resultPage, HttpStatus.OK);
     }
 
-//    get all notifications
-    @GetMapping("/notifications")
-    public ResponseEntity<?> getNotifications(
+    //    get all notifications
+    @GetMapping("/vendor-share")
+    public ResponseEntity<?> vendorShare(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Double amount,
+            @RequestParam(required = false) String vendorName
     ) {
-        Page<NotificationDTO> resultPage = dashboardAdmin.getAllNotifications(page, size);
-        return new ResponseEntity<>(resultPage, HttpStatus.OK);
+        try {
+            Page<NotificationDTOAdmin> resultPage = dashboardAdmin.getAllNotifications(page, size, amount, vendorName);
+            return responseService.generateSuccessResponseWithCount(
+                    "Notifications retrieved successfully.",
+                    resultPage.getContent(),
+                    resultPage.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Some error getting: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
     }
 
-    @GetMapping("/vendor-earnings")
-    public ResponseEntity<?> getVendorNotifications(
+    @GetMapping("/all-app-transaction")
+    public ResponseEntity<?> allAppTransactions(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String vendorName,
-            @RequestParam(required = false) String details,
             @RequestParam(required = false) Double amount
     ) {
         try {
-            // Call the service method which now returns Page<NotificationDTO> instead of Page<Map<String, Object>>
-            Page<NotificationDTOAdmin> resultPage = dashboardAdmin.getAllVendorNotifications(page, size, vendorName, details, amount);
+            Page<NotificationDTOAdmin> resultPage = dashboardAdmin.getAllVendorNotifications(page, size, vendorName, amount);
 
-            // Generate the success response with DTO content
             return responseService.generateSuccessResponseWithCount(
-                    "Vendor notifications retrieved successfully.",
+                    "Notifications retrieved successfully.",
                     resultPage.getContent(),
                     resultPage.getTotalElements(),
                     HttpStatus.OK

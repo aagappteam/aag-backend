@@ -19,7 +19,9 @@ import java.time.ZonedDateTime;
                 @Index(name = "idx_vendor_id_notification", columnList = "vendorId"),
                 @Index(name = "idx_customer_id_notification", columnList = "customerId"),
                 @Index(name = "idx_created_date_notification", columnList = "created_date"),
-                @Index(name = "idx_vendor_customer_created_date_notification", columnList = "vendorId, customerId, created_date")
+                @Index(name = "idx_vendor_customer_created_date_notification", columnList = "vendorId, customerId, created_date"),
+                @Index(name = "idx_details_notification", columnList = "details"),
+                @Index(name = "idx_amount_notification", columnList = "amount")
         }
 )
 @Getter

@@ -1948,12 +1948,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         BigDecimal finalPayoutPerWinner = prizePerWinner.add(bonusPerWinner);
 
-        System.out.println("Total Prize: " + finalPayoutPerWinner);
-        System.out.println("Round Prize: " + roundPrize);
-        System.out.println("Winners: " + winnersCount);
-        System.out.println("Prize per Winner: " + prizePerWinner);
-        System.out.println("Entry Fee: " + entryFee);
-        System.out.println("Total Players in Round: " + totalPlayersInRound);
 
         for (TournamentResultRecord winner : uniqueWinners) {
             Notification notification = new Notification();

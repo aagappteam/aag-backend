@@ -204,7 +204,7 @@ public class CommonService {
         notification.setVendorId(vendorId);
         notification.setDescription("Vendor Earning for Payment");
         notification.setAmount(shareAmount.doubleValue());
-        notification.setDetails("Rs. " + shareAmount.doubleValue() + " earned for payment");
+        notification.setDetails("You earned Rs. " + shareAmount.doubleValue() + " from a recent game played by a user.");
         notificationShareRepository.save(notification);
     }
 

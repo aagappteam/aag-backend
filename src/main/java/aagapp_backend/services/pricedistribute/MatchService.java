@@ -356,6 +356,7 @@ public class MatchService {
         if (roomPlayers.isEmpty()) {
             return;
         }
+        int totalPlayers = gameRoom.getMaxPlayers();
 
         List<PlayerDtoWinner> validPlayers = gameResult.getPlayers().stream()
                 .filter(p -> p.getPlayerId() != 0)
@@ -372,7 +373,7 @@ public class MatchService {
                 .collect(Collectors.joining(", ")));
 
         BigDecimal totalCollection = BigDecimal.valueOf(game.getFee())
-                .multiply(BigDecimal.valueOf(roomPlayers.size()));
+                .multiply(BigDecimal.valueOf(totalPlayers));
         BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(Constant.USER_WIN_PERCENT));
         System.out.println("userWin" + userWin);
 
@@ -383,7 +384,8 @@ public class MatchService {
                 .toList();
 
         BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
-        int totalPlayers = roomPlayers.size();
+//        int totalPlayers = roomPlayers.size();
+//        int totalPlayers = gameRoom.getMaxPlayers();
         int totalWinners = winners.size();
 
         BigDecimal singleBonus = entryFee.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT));
@@ -479,7 +481,7 @@ public class MatchService {
             loserRecord.setPlayedAt(LocalDateTime.now());
             gameResultRecordRepository.save(loserRecord);
 
-            Notification notification = new Notification();
+/*            Notification notification = new Notification();
             notification.setAmount(0.0);
             notification.setDetails("Better luck next time! You did not win in Game " + game.getName());
             notification.setDescription("Game Result");
@@ -489,7 +491,7 @@ public class MatchService {
             notification.setCustomerId(loserPlayer.getCustomer().getId());
             notificationRepository.save(notification);
 
-            System.out.println("[INFO] Loser record created for PlayerId=" + loser.getPlayerId());
+            System.out.println("[INFO] Loser record created for PlayerId=" + loser.getPlayerId());*/
         }
 
         // Add vendor share and update total balance
