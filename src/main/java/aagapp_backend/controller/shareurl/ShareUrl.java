@@ -28,21 +28,6 @@ public class ShareUrl {
         this.vendorService = vendorService;
     }
 
-/*    @GetMapping("/games/{gameId}")
-    public String shareGamePage(@PathVariable Long vendorId,
-                                @PathVariable Long gameId,
-                                Model model) throws GameNotFoundException {
-        // Fetch game and vendor data
-        GetGameResponseDTO game = gameService.getGameById(gameId);
-        VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
-
-        // Populate model attributes for Thymeleaf
-        model.addAttribute("game", game);
-        model.addAttribute("vendor", vendor);
-
-        return "gameSharePage";
-    }*/
-
     @GetMapping("/{vendorId}/games/{gameId}")
     public String shareGamePage(@PathVariable Long vendorId,
                                 @PathVariable Long gameId,
@@ -55,6 +40,33 @@ public class ShareUrl {
 
         return "gameSharePage";
     }
+
+    @GetMapping("/{vendorId}/leagues/{gameId}")
+    public String shareGamePageLeague(@PathVariable Long vendorId,
+                                @PathVariable Long gameId,
+                                Model model) throws GameNotFoundException {
+        GetGameResponseDTO game = gameService.getGameById(gameId);
+        VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
+
+        model.addAttribute("game", game);
+        model.addAttribute("vendor", vendor);
+
+        return "gameSharePage";
+    }
+
+    @GetMapping("/{vendorId}/tournament/{gameId}")
+    public String shareGamePageLeagueTournment(@PathVariable Long vendorId,
+                                      @PathVariable Long gameId,
+                                      Model model) throws GameNotFoundException {
+        GetGameResponseDTO game = gameService.getGameById(gameId);
+        VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
+
+        model.addAttribute("game", game);
+        model.addAttribute("vendor", vendor);
+
+        return "gameSharePage";
+    }
+
 
 
 }
