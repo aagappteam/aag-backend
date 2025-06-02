@@ -219,9 +219,9 @@ public class PaymentService {
 /*
         notification.setType(NotificationType.PAYMENT_SUCCESS);  // Example NotificationType for a successful payment
 */
-        notification.setDescription("Plan purchased successfully"); // Example NotificationType for a successful
+        notification.setDescription("Plan purchased"); // Example NotificationType for a successful
         notification.setAmount(paymentRequest.getAmount());
-        notification.setDetails("Your subscription of Rs. " + paymentRequest.getAmount() + " has been processed");
+        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
 
         notificationRepository.save(notification);
         paymentRepository.save(paymentRequest);

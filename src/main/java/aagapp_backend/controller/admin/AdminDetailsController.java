@@ -180,10 +180,11 @@ public class AdminDetailsController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String vendorName,
+            @RequestParam(required = false) String role,
             @RequestParam(required = false) Double amount
     ) {
         try {
-            Page<NotificationDTOAdmin> resultPage = dashboardAdmin.getAllVendorNotifications(page, size, vendorName, amount);
+            Page<NotificationDTOAdmin> resultPage = dashboardAdmin.getAllVendorNotifications(page, size,role,vendorName, amount);
 
             return responseService.generateSuccessResponseWithCount(
                     "Notifications retrieved successfully.",
@@ -196,10 +197,6 @@ public class AdminDetailsController {
             return responseService.generateErrorResponse("Some error getting: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
-
-
 
 
     @Transactional

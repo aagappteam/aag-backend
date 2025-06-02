@@ -3,13 +3,16 @@ package aagapp_backend.controller.vendor;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
+import aagapp_backend.dto.GetGameResponseDTO;
 import aagapp_backend.dto.WithdrawalRequestDTO;
 import aagapp_backend.dto.WithdrawalRequestSubmitDto;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
+import aagapp_backend.services.gameservice.GameService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +36,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -47,6 +51,9 @@ import java.util.stream.Collectors;
 @RequestMapping("/vendor")
 
 public class VendorController {
+
+    @Autowired
+    private GameService gameService;
 
     @Autowired
     private InfluencerMonthlyEarningRepository earningRepo;
@@ -908,6 +915,10 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             );
         }
     }
+
+
+
+
 
 
 }

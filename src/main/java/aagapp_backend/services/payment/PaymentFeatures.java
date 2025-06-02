@@ -49,21 +49,13 @@ public class PaymentFeatures {
                 );
             }
 
-/*            if (activePlanOptional.isEmpty()) {
-                return ResponseService.generateErrorResponse(
-                        "No active plan found for the vendor.",
-                        HttpStatus.NOT_FOUND
-                );
-            }*/
-
             PaymentEntity activePlan = activePlanOptional.get(0);
 
             int dailyUsage = gameService.countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
 
-            // Compare daily usage with the daily limit
             if (dailyUsage >= activePlan.getDailyLimit()) {
                 return ResponseService.generateErrorResponse(
-                        "Daily publishing limit reached. You cannot publish more games today.",
+                        "Daily limit reached. You can't publish more games today.",
                         HttpStatus.FORBIDDEN
                 );
             }

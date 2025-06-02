@@ -331,16 +331,15 @@ public void updateDailylimit() {
                     + "&prize=" + prize
                     + "&moves=" + move;
             HttpHeaders headers = new HttpHeaders();
+
             headers.set("Content-Type", "application/json");
             headers.set("Authorization", "Bearer UFBZINFPQQPQ6RZ6Z5BFCI8K");
-
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
-            // Parse the response body (assuming it's a JSON response)
             String responseBody = response.getBody();
 
             // Assuming the response is JSON and contains "GamePassword"

@@ -114,6 +114,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+
             if (isApiKeyRequiredUri(request) && validateApiKey(request)) {
                 chain.doFilter(request, response);
                 return;
@@ -188,6 +189,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/winning")
 
                 || requestURI.startsWith("/otp")
+                || requestURI.startsWith("/vendor")
                 || requestURI.startsWith("/health")
                 || requestURI.startsWith("/test")
                 || requestURI.startsWith("/files/aagdocument/**")
@@ -204,7 +206,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/resp") // Added leading slash
                 || requestURI.startsWith("/enq") // Added leading slash
                 || requestURI.startsWith("/MerchantAcknowledgement") // Added leading slash
-                || requestURI.startsWith("/Bank"); // Added leading slash
+                || requestURI.startsWith("/Bank")// Added leading slash,
+                || requestURI.startsWith("/vendor/**/games/**") // Added leading slash
+                || requestURI.startsWith("/vendor/*/leagues/**") // Added leading slash
+                || requestURI.startsWith("/vendor/*/tournaments/**");
+
+
 
     }
 

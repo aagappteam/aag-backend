@@ -288,11 +288,10 @@ public class DashboardAdmin {
             throw new RuntimeException("Error fetching notifications: " + e.getMessage(), e);
         }
     }
-
-    @Transactional
-    public Page<NotificationDTOAdmin> getAllVendorNotifications(int page, int size,
-                                                                String vendorName,
-                                                                Double amount) {
+/*    @Transactional
+    public Page<NotificationDTOAdmin> getAllVendorNotificationsold(int page, int size,
+                                                                String name,
+                                                                Double amount,String role) {
         try {
             // Base queries
             StringBuilder sql = new StringBuilder(
@@ -427,129 +426,163 @@ public class DashboardAdmin {
         } catch (Exception e) {
             throw new RuntimeException("Error fetching notifications: " + e.getMessage(), e);
         }
-    }
-
-
-
-
-
+    }*/
 
     @Transactional
-    public Page<NotificationDTOAdmin> getAllVendorNotificationsOld(int page, int size,
-                                                                String vendorName,
-                                                                Double amount) {
+    public Page<NotificationDTOAdmin> getAllVendorNotifications(
+            int page, int size,
+            String role,
+            String name,
+            Double amount) {
+
         try {
-            // Build main SQL query
-            StringBuilder sql = new StringBuilder(
+            StringBuilder baseSelect = new StringBuilder(
                     "SELECT n.id, n.vendorId, n.role, n.customerId, n.description, " +
-                            "n.details, n.created_date, n.amount " +
-                            "FROM notification n WHERE 1=1");
+                            "n.details, n.created_date, n.amount ");
 
-            if (vendorName != null && !vendorName.isEmpty()) {
-                sql.append(" AND n.vendorId IN " +
-                        "(SELECT service_provider_id FROM vendor_table " +
-                        "WHERE first_name LIKE :vendorName)");
+            StringBuilder baseCount = new StringBuilder("SELECT COUNT(*) ");
+
+            StringBuilder baseFrom = new StringBuilder("FROM notification n ");
+
+            if (role == null || role.trim().isEmpty()) {
+                // Vendor join
+                baseSelect.append(", v.first_name, v.last_name, v.primary_email ");
+                baseFrom.append("LEFT JOIN vendor_table v ON n.vendorId = v.service_provider_id ");
+            } else if ("customer".equalsIgnoreCase(role.trim())) {
+                // Customer join
+                baseSelect.append(", c.name, c.email ");
+                baseFrom.append("LEFT JOIN CUSTOM_USER c ON n.customerId = c.customerId ");
+            } else {
+                throw new IllegalArgumentException("Unsupported role: " + role);
+            }
+
+            // Build WHERE clause
+            StringBuilder whereClause = new StringBuilder("WHERE 1=1 ");
+
+            if (role == null || role.trim().isEmpty()) {
+                whereClause.append("AND (n.role IS NULL OR LOWER(n.role) = 'vendor') ");
+            } else {
+                whereClause.append("AND LOWER(n.role) = 'customer' ");
+            }
+
+            if (name != null && !name.trim().isEmpty()) {
+                String[] nameParts = name.trim().split("\\s+");
+                if (role == null || role.trim().isEmpty()) {
+                    // Vendor name filter
+                    if (nameParts.length == 1) {
+                        whereClause.append("AND (LOWER(v.first_name) LIKE LOWER(CONCAT('%', :namePart, '%')) " +
+                                "OR LOWER(v.last_name) LIKE LOWER(CONCAT('%', :namePart, '%'))) ");
+                    } else {
+                        whereClause.append("AND (LOWER(v.first_name) LIKE LOWER(CONCAT('%', :firstPart, '%')) " +
+                                "OR LOWER(v.first_name) LIKE LOWER(CONCAT('%', :secondPart, '%')) " +
+                                "OR LOWER(v.last_name) LIKE LOWER(CONCAT('%', :firstPart, '%')) " +
+                                "OR LOWER(v.last_name) LIKE LOWER(CONCAT('%', :secondPart, '%'))) ");
+                    }
+                } else {
+                    // Customer name filter
+                    whereClause.append("AND LOWER(c.name) LIKE LOWER(CONCAT('%', :customerName, '%')) ");
+                }
             }
 
             if (amount != null) {
-                sql.append(" AND n.amount = :amount");
+                whereClause.append("AND n.amount = :amount ");
             }
 
-            sql.append(" ORDER BY n.created_date DESC ");
-            sql.append(" LIMIT :limit OFFSET :offset"); // Explicit pagination
+            // Compose full queries
+            String sql = baseSelect.toString() + baseFrom.toString() + whereClause.toString() + " ORDER BY n.created_date DESC ";
+            String countSql = baseCount.toString() + baseFrom.toString() + whereClause.toString();
 
-            // Build count query
-            StringBuilder countSql = new StringBuilder(
-                    "SELECT COUNT(*) FROM notification n WHERE 1=1");
+            Query query = entityManager.createNativeQuery(sql);
+            Query countQuery = entityManager.createNativeQuery(countSql);
 
-            if (vendorName != null && !vendorName.isEmpty()) {
-                countSql.append(" AND n.vendorId IN " +
-                        "(SELECT service_provider_id FROM vendor_table " +
-                        "WHERE first_name LIKE :vendorName)");
+            // Set parameters for name
+            if (name != null && !name.trim().isEmpty()) {
+                String[] nameParts = name.trim().split("\\s+");
+                if (role == null || role.trim().isEmpty()) {
+                    if (nameParts.length == 1) {
+                        query.setParameter("namePart", nameParts[0]);
+                        countQuery.setParameter("namePart", nameParts[0]);
+                    } else {
+                        query.setParameter("firstPart", nameParts[0]);
+                        query.setParameter("secondPart", nameParts[1]);
+                        countQuery.setParameter("firstPart", nameParts[0]);
+                        countQuery.setParameter("secondPart", nameParts[1]);
+                    }
+                } else {
+                    query.setParameter("customerName", name.trim());
+                    countQuery.setParameter("customerName", name.trim());
+                }
             }
 
-            if (amount != null) {
-                countSql.append(" AND n.amount = :amount");
-            }
-
-            // Execute main query
-            Query query = entityManager.createNativeQuery(sql.toString());
-
-            if (vendorName != null && !vendorName.isEmpty()) {
-                query.setParameter("vendorName", "%" + vendorName + "%");
-            }
-
+            // Set amount parameter
             if (amount != null) {
                 query.setParameter("amount", amount);
+                countQuery.setParameter("amount", amount);
             }
 
-            query.setParameter("limit", size);
-            query.setParameter("offset", page * size);
+            // Pagination - only on data query
+            query.setFirstResult(page * size);
+            query.setMaxResults(size);
 
+            @SuppressWarnings("unchecked")
             List<Object[]> rows = query.getResultList();
+
             List<NotificationDTOAdmin> resultDtoList = new ArrayList<>();
 
             for (Object[] row : rows) {
-                Long id = (Long) row[0];
-                Long vendorId = (Long) row[1];
-                String role = (String) row[2];
-                Long customerId = row[3] != null ? (Long) row[3] : null;
-                String description = (String) row[4];
-                String detailsStr = (String) row[5];
+                Long id = row[0] != null ? ((Number) row[0]).longValue() : null;
+                Long vendorId = row[1] != null ? ((Number) row[1]).longValue() : null;
+                String fetchedRole = row[2] != null ? (String) row[2] : null;
+                Long customerId = row[3] != null ? ((Number) row[3]).longValue() : null;
+                String description = row[4] != null ? (String) row[4] : null;
+                String detailsStr = row[5] != null ? (String) row[5] : null;
+
                 ZonedDateTime createdDate = ((Instant) row[6]).atZone(ZoneId.of("Asia/Kolkata"));
                 String formattedDate = createdDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                Double amountValue = row[7] != null ? (Double) row[7] : null;
+                Double amountValue = row[7] != null ? ((Number) row[7]).doubleValue() : null;
 
-                String name = "";
-                String email = "";
+                String displayName = "N/A";
+                String displayEmail = "N/A";
 
-                if ("VENDOR".equalsIgnoreCase(role) && vendorId != null) {
-                    VendorEntity vendor = entityManager.find(VendorEntity.class, vendorId);
-                    if (vendor != null) {
-                        name = vendor.getFirst_name() != null ? vendor.getFirst_name() : "N/A";
-                        email = vendor.getPrimary_email() != null ? vendor.getPrimary_email() : "N/A";
-                    }
-                } else if ("CUSTOMER".equalsIgnoreCase(role) && customerId != null) {
-                    CustomCustomer customer = entityManager.find(CustomCustomer.class, customerId);
-                    if (customer != null) {
-                        name = customer.getName() != null ? customer.getName() : "N/A";
-                        email = customer.getEmail() != null ? customer.getEmail() : "N/A";
-                    }
+                if (role == null || role.trim().isEmpty()) {
+                    // Vendor columns at index 8,9,10
+                    String vendorFirstName = row[8] != null ? (String) row[8] : null;
+                    String vendorLastName = row[9] != null ? (String) row[9] : null;
+                    String vendorEmail = row[10] != null ? (String) row[10] : null;
+                    displayName = ((vendorFirstName != null ? vendorFirstName : "") + " " + (vendorLastName != null ? vendorLastName : "")).trim();
+                    displayEmail = vendorEmail != null ? vendorEmail : "N/A";
+                } else {
+                    // Customer columns at index 8,9
+                    String customerName = row[8] != null ? (String) row[8] : null;
+                    String customerEmail = row[9] != null ? (String) row[9] : null;
+                    displayName = customerName != null ? customerName : "N/A";
+                    displayEmail = customerEmail != null ? customerEmail : "N/A";
                 }
 
                 NotificationDTOAdmin dto = new NotificationDTOAdmin(
                         id,
                         vendorId,
-                        role,
+                        fetchedRole,
                         customerId,
                         description,
                         detailsStr,
                         formattedDate,
                         amountValue,
-                        name,
-                        email
+                        displayName,
+                        displayEmail
                 );
                 resultDtoList.add(dto);
-            }
-
-            // Execute count query
-            Query countQuery = entityManager.createNativeQuery(countSql.toString());
-
-            if (vendorName != null && !vendorName.isEmpty()) {
-                countQuery.setParameter("vendorName", "%" + vendorName + "%");
-            }
-
-            if (amount != null) {
-                countQuery.setParameter("amount", amount);
             }
 
             Long total = ((Number) countQuery.getSingleResult()).longValue();
 
             return new PageImpl<>(resultDtoList, PageRequest.of(page, size), total);
+
         } catch (Exception e) {
             throw new RuntimeException("Error fetching notifications: " + e.getMessage(), e);
         }
     }
+
 
 
     // Helper Methods
