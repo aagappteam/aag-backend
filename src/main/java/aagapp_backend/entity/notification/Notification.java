@@ -8,9 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -19,7 +19,9 @@ import java.time.ZonedDateTime;
                 @Index(name = "idx_vendor_id_notification", columnList = "vendorId"),
                 @Index(name = "idx_customer_id_notification", columnList = "customerId"),
                 @Index(name = "idx_created_date_notification", columnList = "created_date"),
-                @Index(name = "idx_vendor_customer_created_date_notification", columnList = "vendorId, customerId, created_date")
+                @Index(name = "idx_vendor_customer_created_date_notification", columnList = "vendorId, customerId, created_date"),
+                @Index(name = "idx_details_notification", columnList = "details"),
+                @Index(name = "idx_amount_notification", columnList = "amount")
         }
 )
 @Getter
@@ -49,15 +51,19 @@ public class Notification {
 
     private String details;  // Additional details like game name, tournament name
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")  // Updated format
-    @CreationTimestamp
-    @Column(name = "created_date", updatable = false)
-    private LocalDateTime createdDate;
-
     @Nullable
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime  updatedDate;
+
+    @Column(name = "created_date", updatable = false)
+    private ZonedDateTime createdDate;
+
+    @PrePersist
+    public void setCreatedDate() {
+        this.createdDate = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+    }
+
 
 
 }

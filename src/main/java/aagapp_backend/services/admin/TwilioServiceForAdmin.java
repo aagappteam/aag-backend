@@ -7,8 +7,6 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.otp.Otp;
 import com.twilio.Twilio;
 import com.twilio.exception.ApiException;
-import com.twilio.rest.api.v2010.account.Message;
-import com.twilio.type.PhoneNumber;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,8 +20,6 @@ import org.springframework.stereotype.Service;
 import jakarta.persistence.*;
 
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
     @Service
@@ -96,7 +92,7 @@ import java.util.Random;
                 Twilio.init(accountSid, authToken);
                 String completeMobileNumber = countryCode + mobileNumber;
                 String otp = generateOTPForAdmin();
-                otpservice.sendOtp(countryCode,mobileNumber,otp);
+               otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
 
 
                 CustomAdmin existingAdmin = adminService.findAdminByPhone(mobileNumber,countryCode);

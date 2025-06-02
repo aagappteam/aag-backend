@@ -3,11 +3,19 @@ package aagapp_backend.controller.vendor;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.BankAccountDTO;
+import aagapp_backend.dto.WithdrawalRequestDTO;
+import aagapp_backend.dto.WithdrawalRequestSubmitDto;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.repository.social.UserVendorFollowRepository;
+import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
+import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
+import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.repository.withdrawrequest.WithdrawalRequestRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
@@ -27,6 +35,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,6 +47,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/vendor")
 
 public class VendorController {
+
+    @Autowired
+    private InfluencerMonthlyEarningRepository earningRepo;
+
+    @Autowired
+    private WithdrawalRequestRepository withdrawalRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -540,6 +559,8 @@ public class VendorController {
                 return ResponseService.generateErrorResponse("No bank accounts found for this vendor", HttpStatus.NOT_FOUND);
             }
 
+
+
             return ResponseService.generateSuccessResponse("Bank accounts fetched successfully!", bankAccounts, HttpStatus.OK);
 
         } catch (Exception e) {
@@ -803,5 +824,90 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(), HttpStatus.BAD_REQUEST);}//catch
 
     }
+
+
+    @PostMapping("/withdraw-request")
+    public ResponseEntity<?> requestWithdraw(@RequestBody WithdrawalRequestSubmitDto dto) {
+        try {
+            String month = LocalDate.now().toString().substring(0, 7);
+
+            VendorEntity vendor = vendorRepository.findById(dto.getInfluencerId()).orElse(null);
+            if (vendor == null)
+                return responseService.generateErrorResponse("Vendor not found", HttpStatus.BAD_REQUEST);
+
+            WithdrawalRequest req = new WithdrawalRequest();
+            req.setInfluencerId(dto.getInfluencerId());
+            req.setAmount(dto.getAmount());
+            req.setMonthYear(month);
+            req.setStatus("PENDING");
+            req.setRequestedAt(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+            if (dto.getReason() != null && !dto.getReason().trim().isEmpty()) {
+                req.setReason(dto.getReason());
+            }
+
+            withdrawalRepo.save(req);
+
+            return responseService.generateSuccessResponse(
+                    "Withdraw request submitted",
+                    null,
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+
+    @GetMapping("/withdraw-history")
+    public ResponseEntity<?> getWithdrawHistory(
+            @RequestParam Long influencerId,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "10") Integer size) {
+
+        try {
+
+            int pageSize = (limit != null) ? limit : (size != null ? size : 10);
+
+            Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
+
+            Page<WithdrawalRequest> requestsPage = withdrawalRepo.findByInfluencerId(influencerId, pageable);
+
+            VendorEntity vendor = vendorRepository.findById(influencerId).orElse(null);
+            if (vendor == null){
+                return responseService.generateErrorResponse("Vendor not found", HttpStatus.BAD_REQUEST);
+
+            }
+
+            // Assuming you have a method to get the influencer's name
+            String influencerName = (vendor.getFirst_name() != null ? vendor.getFirst_name() : "") +
+                    (vendor.getLast_name() != null ? " " + vendor.getLast_name() : "");
+
+            // Convert to DTOs
+            List<WithdrawalRequestDTO> dtoList = requestsPage.getContent()
+                    .stream()
+                    .map(request -> new WithdrawalRequestDTO(request, influencerName))
+                    .collect(Collectors.toList());
+
+            return responseService.generateSuccessResponseWithCount(
+                    "Withdrawal history fetched successfully",
+                    dtoList,
+                    requestsPage.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
 
 }

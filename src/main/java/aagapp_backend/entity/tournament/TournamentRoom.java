@@ -1,6 +1,8 @@
 package aagapp_backend.entity.tournament;
 
 import aagapp_backend.entity.players.Player;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -8,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,8 +35,8 @@ public class TournamentRoom {
 
     @ManyToOne
     @JoinColumn(name = "tournament_id")
+    @JsonIgnore
     private Tournament tournament;
-
 
     private int maxParticipants;
     private int currentParticipants;
@@ -46,4 +50,21 @@ public class TournamentRoom {
     private List<Player> currentPlayers = new ArrayList<>();
 
     private String status;
+
+    @Column(name = "created_date", updatable = false)
+    private ZonedDateTime createdDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
+    private ZonedDateTime updatedDate;
+
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedDate = ZonedDateTime.now();
+    }
+
+    @PrePersist
+    public void setCreatedDate() {
+        this.createdDate = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+    }
 }

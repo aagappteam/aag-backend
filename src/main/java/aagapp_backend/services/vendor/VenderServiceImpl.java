@@ -6,7 +6,17 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.*;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.entity.game.Game;
+import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.enums.GameStatus;
+import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
+import aagapp_backend.repository.game.GameRepository;
+import aagapp_backend.repository.league.LeagueRepository;
+import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.*;
@@ -38,12 +48,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class VenderServiceImpl implements VenderService {
+    private final GameRepository gameRepository;
+    private final LeagueRepository leagueRepository;
+    private final TournamentRepository tournamentRepository;
     private UserVendorFollowService followService;
 
     private final EntityManager entityManager;
@@ -63,6 +79,9 @@ public class VenderServiceImpl implements VenderService {
     private final PasswordEncoder passwordEncoder;
     @Autowired
     public VenderServiceImpl(
+            GameRepository gameRepository,
+            LeagueRepository leagueRepository,
+            TournamentRepository tournamentRepository,
             @Lazy UserVendorFollowService followService,
             EntityManager entityManager,
             @Lazy PaymentService paymentService,
@@ -80,6 +99,9 @@ public class VenderServiceImpl implements VenderService {
             @Lazy RateLimiterService rateLimiterService,
             PasswordEncoder passwordEncoder
     ) {
+        this.gameRepository = gameRepository;
+        this.leagueRepository = leagueRepository;
+        this.tournamentRepository = tournamentRepository;
         this.followService = followService;
         this.entityManager = entityManager;
         this.paymentService = paymentService;
@@ -306,6 +328,8 @@ public class VenderServiceImpl implements VenderService {
         Map<String, Object> data = new HashMap<>();
         data.put("venderDetails", vendorEntity);
         data.put("sentReferrals", sentReferrals);
+//        data.put("vendorLevelPlan", sentReferrals);
+
         data.put("receivedReferral", receivedReferral); // Assuming this is a single referral
         responseBody.put("status_code", HttpStatus.OK.value());
         responseBody.put("data", data);
@@ -640,20 +664,131 @@ public class VenderServiceImpl implements VenderService {
     public Map<String, Object> getDashboardData(Long serviceProviderId) {
 
         VendorEntity existingVendor = getServiceProviderById(serviceProviderId);
+        ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        ZonedDateTime startOfDayInKolkata = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
+        ZonedDateTime endOfDayInKolkata = startOfDayInKolkata.plusDays(1).minusSeconds(1);
 
-        List<GetGameResponseDashboardDTO> games = aagGameService.getAllGamesDashboard(0,10);
+        ZonedDateTime startTimeUTC = startOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
+        ZonedDateTime endTimeUTC = endOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
+        List<GetGameResponseDashboardDTO> activegames = aagGameService.getAllGamesDashboard(0,10);
         Map<String, Object> result = new HashMap<>();
-        result.put("availablegames", games);
+        result.put("availablegames", activegames);
         VendorLevelPlan level = existingVendor.getVendorLevelPlan();
 
-        List<GetGameResponseDashboardDTO> gamesPage = gameService.findActivegamesByVendorId(serviceProviderId,  0,10);
-        result.put("activeGames", gamesPage);
-        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit(),existingVendor.getDailyLimit());
+/*        List<GetGameResponseDashboardDTO> gamesPage = gameService.findActivegamesByVendorId(serviceProviderId,  0,10);
+        result.put("activeGames", gamesPage);*/
+
+        // Fetch active games/leagues/tournaments
+        List<Game> games = gameRepository.findActiveGames(existingVendor, GameStatus.ACTIVE);
+        List<League> leagues = leagueRepository.findActiveLeagues(serviceProviderId, LeagueStatus.ACTIVE);
+        List<Tournament> tournaments = tournamentRepository.findActiveTournaments(serviceProviderId, TournamentStatus.ACTIVE);
+
+        // Merge all into one list of GetGameResponseDashboardDTO
+        List<GetGameResponseDashboardDTO> activeContent = new ArrayList<>();
+
+        // Games
+        activeContent.addAll(games.stream()
+                .map(game -> new GetGameResponseDashboardDTO(
+                        game.getId(),
+                        game.getName() != null ? game.getName() : "n/a",
+                        (game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getTheme().getImageUrl()
+
+                ))
+                .collect(Collectors.toList()));
+
+        // Leagues
+        activeContent.addAll(leagues.stream()
+                .map(league -> new GetGameResponseDashboardDTO(
+                        league.getId(),
+                        league.getName() != null ? league.getName() : "n/a",
+                        (league.getTheme() != null && league.getTheme().getGameimageUrl() != null) ? league.getTheme().getGameimageUrl() : league.getTheme().getImageUrl()
+
+                ))
+                .collect(Collectors.toList()));
+
+        // Tournaments
+        activeContent.addAll(tournaments.stream()
+                .map(tournament -> new GetGameResponseDashboardDTO(
+                        tournament.getId(),
+                        tournament.getName() != null ? tournament.getName() : "n/a",
+                        (tournament.getTheme() != null && tournament.getTheme().getGameimageUrl() != null) ? tournament.getTheme().getGameimageUrl() : tournament.getTheme().getImageUrl()
+                ))
+                .collect(Collectors.toList()));
+
+        // Now you can set this list directly to the response map
+        result.put("activeGames", activeContent);
+
+        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit()!=null?existingVendor.getPublishedLimit():0,existingVendor.getDailyLimit()!=null?existingVendor.getDailyLimit():0);
         result.put("subscriptionPlanCards", transactions);
 
         return result;
 
     }
+
+/*    @Override
+    public Map<String, Object> getDashboardData(Long serviceProviderId) {
+
+        VendorEntity existingVendor = getServiceProviderById(serviceProviderId);
+        ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        ZonedDateTime startOfDayInKolkata = nowInKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
+        ZonedDateTime endOfDayInKolkata = startOfDayInKolkata.plusDays(1).minusSeconds(1);
+
+        ZonedDateTime startTimeUTC = startOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
+        ZonedDateTime endTimeUTC = endOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
+        List<GetGameResponseDashboardDTO> activegames = aagGameService.getAllGamesDashboard(0,10);
+        Map<String, Object> result = new HashMap<>();
+        result.put("availablegames", activegames);
+        VendorLevelPlan level = existingVendor.getVendorLevelPlan();
+
+*//*        List<GetGameResponseDashboardDTO> gamesPage = gameService.findActivegamesByVendorId(serviceProviderId,  0,10);
+        result.put("activeGames", gamesPage);*//*
+
+        // Fetch active games/leagues/tournaments
+        List<Game> games = gameRepository.findActiveGames(existingVendor, GameStatus.ACTIVE);
+        List<League> leagues = leagueRepository.findActiveLeagues(serviceProviderId, LeagueStatus.ACTIVE);
+        List<Tournament> tournaments = tournamentRepository.findActiveTournaments(serviceProviderId, TournamentStatus.ACTIVE);
+
+        // Merge all into one list of GetGameResponseDashboardDTO
+                List<GetGameResponseDashboardDTO> activeContent = new ArrayList<>();
+
+        // Games
+                activeContent.addAll(games.stream()
+                        .map(game -> new GetGameResponseDashboardDTO(
+                                game.getId(),
+                                game.getName() != null ? game.getName() : "n/a",
+                                (game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getTheme().getImageUrl()
+
+                        ))
+                        .collect(Collectors.toList()));
+
+        // Leagues
+                activeContent.addAll(leagues.stream()
+                        .map(league -> new GetGameResponseDashboardDTO(
+                                league.getId(),
+                                league.getName() != null ? league.getName() : "n/a",
+                                (league.getTheme() != null && league.getTheme().getGameimageUrl() != null) ? league.getTheme().getGameimageUrl() : league.getTheme().getImageUrl()
+
+                        ))
+                        .collect(Collectors.toList()));
+
+        // Tournaments
+        activeContent.addAll(tournaments.stream()
+                        .map(tournament -> new GetGameResponseDashboardDTO(
+                                tournament.getId(),
+                                tournament.getName() != null ? tournament.getName() : "n/a",
+                                (tournament.getTheme() != null && tournament.getTheme().getGameimageUrl() != null) ? tournament.getTheme().getGameimageUrl() : tournament.getTheme().getImageUrl()
+                        ))
+                        .collect(Collectors.toList()));
+
+        // Now you can set this list directly to the response map
+                result.put("activeGames", activeContent);
+
+        Optional<PaymentDashboardDTO> transactions = paymentService.getActiveTransactionsByVendorId(serviceProviderId,level.getReturnMultiplier(),existingVendor.getPublishedLimit(),existingVendor.getDailyLimit());
+        result.put("subscriptionPlanCards", transactions);
+
+        return result;
+
+    }*/
 
 
 }

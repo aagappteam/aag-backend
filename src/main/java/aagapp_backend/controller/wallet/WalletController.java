@@ -11,6 +11,8 @@ import aagapp_backend.enums.NotificationType;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.admin.InvoiceServiceAdmin;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.services.wallet.WalletService;
@@ -46,6 +48,9 @@ public class WalletController {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private InvoiceServiceAdmin invoiceServiceAdmin;
 
     // Endpoint to add balance to the wallet
     @PostMapping("/addBalance")
@@ -102,12 +107,15 @@ public class WalletController {
 */
             notification.setDescription("Wallet balance added"); // Example NotificationType for a successful
             notification.setAmount((double) amount);
-            notification.setDetails(amount + "added to Wallet"); // Example NotificationType for a successful
+            notification.setDetails("Rs. " +amount + " added to Wallet"); // Example NotificationType for a successful
 
             notificationRepository.save(notification);
+            invoiceServiceAdmin.createInvoiceForCustomer((double)amount, customerId);
 
-            // Return success response
             return responseService.generateSuccessResponse("Balance added successfully", updatedWallet, HttpStatus.OK);
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (IllegalStateException e) {
             // Handle specific case when the wallet is not found
             return responseService.generateErrorResponse("No wallet found for customer with ID " + addBalanceRequest.getCustomerId(), HttpStatus.NOT_FOUND);
@@ -152,6 +160,9 @@ public class WalletController {
 
             }
             return wallet;
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error retrieving balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -214,11 +225,14 @@ public class WalletController {
 */
             notification.setDescription("Wallet balance deducted"); // Example NotificationType for a successful
             notification.setAmount((double) amount);
-            notification.setDetails(amount + "debited from Wallet"); // Example NotificationType for a successful
+            notification.setDetails("Rs. "  + amount + "debited from Wallet"); // Example NotificationType for a successful
 
             notificationRepository.save(notification);
             return responseService.generateSuccessResponse("Balance deducted successfully", updatedWallet, HttpStatus.OK);
 
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error deducting balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -234,6 +248,9 @@ public class WalletController {
 
             String token = authorization.substring(7);
             Long customerId = addBalanceRequest.getCustomerId();
+
+            Integer role = jwtUtil.extractRoleId(token);
+
 
             // Validate JWT Token
             Long userId = jwtUtil.extractId(token);
@@ -260,7 +277,29 @@ public class WalletController {
             // Call the wallet service to withdraw the amount
             Wallet updatedWallet = walletService.withdrawalAmountFromWallet(customerId, amount);
 
+            // Now create a single notification for the vendor
+            Notification notification = new Notification();
+            notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
+
+            if (role == Constant.VENDOR_ROLE) {
+                VendorEntity vendor = vendorService.getServiceProviderById(userId);
+                notification.setVendorId(vendor.getService_provider_id());
+            } else if (role == Constant.CUSTOMER_ROLE) {
+                CustomCustomer customer = customCustomerService.getCustomerById(userId);
+                notification.setCustomerId(customer.getId());
+            }
+
+            notification.setDescription("Wallet balance withdrawn"); // Clear and correct description
+            notification.setAmount((double) amount);
+            notification.setDetails("Rs. " + amount + " withdrawn from your wallet"); // Clear and grammatically correct details
+
+
+            notificationRepository.save(notification);
+
             return responseService.generateSuccessResponse("Balance withdrawn successfully", updatedWallet, HttpStatus.OK);
+        }catch (BusinessException e){
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         }catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error withdrawing balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

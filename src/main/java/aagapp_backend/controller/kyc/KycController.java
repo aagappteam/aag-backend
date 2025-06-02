@@ -1,5 +1,6 @@
 package aagapp_backend.controller.kyc;
 
+import aagapp_backend.dto.KycDTO;
 import aagapp_backend.entity.kyc.KycEntity;
 import aagapp_backend.enums.KycStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -12,10 +13,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -48,7 +53,13 @@ public class KycController {
     ) {
         try {
 
-           /* // Check for null or empty fields
+
+            // Check if KYC already exists for the given user/vendor
+            if (kycRepository.existsByUserOrVendorIdAndRole(userOrVendorId, role)) {
+                return ResponseService.generateErrorResponse("KYC already submitted. You cannot submit again.", HttpStatus.CONFLICT);
+            }
+            panNo = panNo.toUpperCase();
+            // Check for null or empty fields
             if (userOrVendorId == null || role == null || role.isBlank() ||
                     adharNo == null || adharNo.isBlank() ||
                     panNo == null || panNo.isBlank()) {
@@ -79,7 +90,7 @@ public class KycController {
             long maxFileSize = 5 * 1024 * 1024; // 5MB
             if (adharImage.getSize() > maxFileSize || panImage.getSize() > maxFileSize) {
                 return ResponseService.generateErrorResponse("Each file must be under 5MB", HttpStatus.BAD_REQUEST);
-            }*/
+            }
 
 
             boolean exists = false;
@@ -103,7 +114,7 @@ public class KycController {
         }
     }
 
-    @GetMapping("/all")
+/*    @GetMapping("/all")
     public ResponseEntity<?> getAllKycs(
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String mobileNumber,
@@ -114,9 +125,13 @@ public class KycController {
             Pageable pageable = PageRequest.of(page, size);
             Page<KycEntity> kycEntityPage;
 
+            System.out.println("Role: " + role);
+            System.out.println("Mobile Number: " + mobileNumber);
+
             if ((role == null || role.isEmpty()) && (mobileNumber == null || mobileNumber.isEmpty())) {
                 kycEntityPage = kycRepository.findAll(pageable);
             } else if (role != null && !role.isEmpty() && (mobileNumber == null || mobileNumber.isEmpty())) {
+
                 kycEntityPage = kycRepository.findByRole(role, pageable);
             } else if ((role == null || role.isEmpty()) && mobileNumber != null && !mobileNumber.isEmpty()) {
                 kycEntityPage = kycRepository.findByMobileNumber(mobileNumber, pageable);
@@ -134,8 +149,43 @@ public class KycController {
         } catch (Exception e) {
             return ResponseService.generateErrorResponse("Failed to fetch KYC records: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
+@GetMapping("/all")
+public ResponseEntity<?> getAllKycs(
+        @RequestParam(required = false) String role,
+        @RequestParam(required = false) String mobileNumber,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+) {
+    try {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        Page<KycEntity> kycPage;
 
+
+        if ((role == null || role.isEmpty()) && (mobileNumber == null || mobileNumber.isEmpty())) {
+            kycPage = kycRepository.findAll(pageable);
+        } else if (role != null && !role.isEmpty() && (mobileNumber == null || mobileNumber.isEmpty())) {
+            kycPage = kycRepository.findByRole(role, pageable);
+        } else if ((role == null || role.isEmpty()) && mobileNumber != null && !mobileNumber.isEmpty()) {
+            kycPage = kycRepository.findByMobileNumber(mobileNumber, pageable);
+        } else {
+            kycPage = kycRepository.findByRoleAndMobileNumber(role, mobileNumber, pageable);
+        }
+        List<KycDTO> responseList = kycPage.getContent().stream()
+                .map(kyc -> new KycDTO(kyc, kycService.getKycStatus(kyc)))
+                .collect(Collectors.toList());
+
+        return ResponseService.generateSuccessResponseWithCount(
+                "KYC records retrieved successfully",
+                responseList,
+                kycPage.getTotalElements(),
+                HttpStatus.OK
+        );
+
+    } catch (Exception e) {
+        return ResponseService.generateErrorResponse("Failed to fetch KYC records: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
 
     @PutMapping("/verify")
     public ResponseEntity<?> updateKycVerificationStatus(

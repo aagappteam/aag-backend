@@ -5,6 +5,7 @@ import aagapp_backend.entity.VendorSubmissionEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -29,13 +30,13 @@ public class EmailService {
         String messageBody = template
                 .replace("{firstName}", customerFirstName)
                 .replace("{lastName}", customerLastName);
-
         try {
             sendEmail(to, Constant.ONBOARDING_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending onboarding email: " + e.getMessage(), e);
         }
     }
+
     public void sendProfileVerificationEmail(
             VendorEntity vendorEntity,
             String generatedPassword
@@ -44,10 +45,9 @@ public class EmailService {
         // Load HTML template
         String template = loadTemplate("email-templates/vendora-approve-mail.html");
 
-        // Extract required data
         String firstName = vendorEntity.getFirst_name();
         String mobileNumber = vendorEntity.getMobileNumber();  // or from vendorSubmissionEntity if applicable
-
+        String to = vendorEntity.getPrimary_email();
         // Replace placeholders
         String messageBody = template
                 .replace("{firstName}", firstName)
@@ -56,7 +56,7 @@ public class EmailService {
 
         try {
             // Send email
-            sendEmail(vendorEntity.getPrimary_email(), Constant.APPROVED_EMAIL_SUBJECT, messageBody,true);
+            sendEmail(to, Constant.APPROVED_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
         }
@@ -67,19 +67,19 @@ public class EmailService {
     ) throws IOException {
 
         // Load HTML template
-        String template = loadTemplate("email-templates/vendor-rejection.html");
+        String template = loadTemplate("email-templates/vendor-rejection-mail.html");
 
-        // Extract required data
         String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
 
         // Replace placeholders
         String messageBody = template
-                .replace("{firstName}", firstName);
+                .replace("{firstName}", firstName  );
 
 
         try {
             // Send email
-            sendEmail(vendorEntity.getPrimary_email(), Constant.REJCTED_EMAIL_SUBJECT, messageBody,true);
+            sendEmail(to, Constant.REJCTED_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
         }
@@ -108,7 +108,6 @@ public class EmailService {
         }
     }
 
-
     public String loadTemplate(String templateName) throws IOException {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(templateName)) {
             if (inputStream == null) {
@@ -118,4 +117,26 @@ public class EmailService {
             return scanner.useDelimiter("\\A").next();
         }
     }
+
+    public void sendErrorEmail(String subject, String body) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
+
+            helper.setFrom(fromEmail, "AAG App Team");
+            helper.setTo(new String[] {
+                    "anilkant.mishra@celestialitverse.com",
+                    "juned.idreesh@celestialitverse.com"
+            });
+            helper.setSubject(subject);
+
+            message.setText(body, "utf-8");
+
+            mailSender.send(message);
+        } catch (MessagingException | MailException | UnsupportedEncodingException e) {
+            System.err.println("Failed to send error email: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 }

@@ -8,7 +8,6 @@ import aagapp_backend.dto.VendorDeviceDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.ProfileStatus;
@@ -396,6 +395,72 @@ public class OtpEndpoint {
 
     }
 
+    @Transactional
+    @PostMapping("/refreshfcm-token")
+    public ResponseEntity<?> refreshFcmToken(@RequestBody Map<String, Object> loginDetails, HttpSession session, HttpServletRequest request) {
+        String mobileNumber = (String) loginDetails.get("mobileNumber");
+        Integer role = (Integer) loginDetails.get("role");
+        String countryCode = (String) loginDetails.get("countryCode");
+        String fcm_token = (String) loginDetails.get("fcm_token");
+
+        if (countryCode == null) {
+            countryCode = Constant.COUNTRY_CODE;
+        }
+
+
+        String ipAddress = request.getRemoteAddr();
+
+        String userAgent = request.getHeader("User-Agent");
+
+        if (roleService.findRoleName(role).equals(Constant.roleUser)) {
+            CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
+
+            if (existingCustomer == null) {
+                return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+            }
+
+
+            String newToken = jwtUtil.generateToken(existingCustomer.getId(), role, ipAddress, userAgent);
+            if(fcm_token!= null){
+                existingCustomer.setFcmToken(fcm_token);
+            }
+            existingCustomer.setToken(newToken);
+            em.persist(existingCustomer);
+            return responseService.generateSuccessResponse("New token has been generated", existingCustomer.getToken(), HttpStatus.OK);
+        } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {
+
+            VendorEntity vendorEntity = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);
+            if (vendorEntity == null) {
+                return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+            }
+
+            String newToken = jwtUtil.generateToken(vendorEntity.getService_provider_id(), role, ipAddress, userAgent);
+
+            if(fcm_token!= null){
+                vendorEntity.setFcmToken(fcm_token);
+            }
+
+            vendorEntity.setToken(newToken);
+            em.persist(vendorEntity);
+            return responseService.generateSuccessResponse("New token has been generated", vendorEntity.getToken(), HttpStatus.OK);
+
+        }  else if (roleService.findRoleName(role).equals(Constant.ADMIN) || roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(role).equals(Constant.SUPPORT)) {
+            CustomAdmin customAdmin = adminService.findAdminByPhone(mobileNumber, countryCode);
+            if (customAdmin == null) {
+                return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
+            }
+
+            String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), role, ipAddress, userAgent);
+            customAdmin.setToken(newToken);
+            em.persist(customAdmin);
+            return responseService.generateSuccessResponse("New token has been generated", customAdmin.getToken(), HttpStatus.OK);
+
+
+        } else {
+            return responseService.generateErrorResponse(ApiConstants.INVALID_ROLE, HttpStatus.BAD_REQUEST);
+        }
+
+    }
 
     @Transactional
     @PostMapping("/vendor-signup")
@@ -424,7 +489,7 @@ public class OtpEndpoint {
             Bucket bucket = rateLimiterService.resolveBucket(mobileNumber, "/otp/vendor-signup");
             if (bucket.tryConsume(1)) {
 
-                otpservice.sendOtp(countryCode,mobileNumber,otp);
+              otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
                 VendorEntity existingServiceProviderwithoutsigneup = serviceProviderService.findActiveServiceProviderByPhone(mobileNumber, countryCode);
                 if(existingServiceProviderwithoutsigneup==null){
                     VendorEntity vendorEntity = new VendorEntity();
@@ -473,9 +538,9 @@ public class OtpEndpoint {
 
 
             mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
-            if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
+/*            if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
                 return responseService.generateErrorResponse(ApiConstants.NUMBER_REGISTERED_AS_CUSTOMER, HttpStatus.BAD_REQUEST);
-            }
+            }*/
 
             if (countryCode == null || countryCode.isEmpty()) {
                 countryCode = Constant.COUNTRY_CODE;

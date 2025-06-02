@@ -1,6 +1,7 @@
 package aagapp_backend.repository.social;
 
 import aagapp_backend.dto.TopVendorDto;
+import aagapp_backend.dto.TopVendorWeekDto;
 import aagapp_backend.entity.social.UserVendorFollow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,11 +35,40 @@ public interface UserVendorFollowRepository extends JpaRepository<UserVendorFoll
             "FROM VendorEntity v LEFT JOIN UserVendorFollow f ON f.vendor.service_provider_id = v.service_provider_id " +
             "GROUP BY v.service_provider_id, v.first_name ORDER BY COUNT(f.id) DESC")
     List<TopVendorDto> findTopVendorsWithFollowerCount();
+/*@Query("SELECT new aagapp_backend.dto.TopVendorDto(" +
+        "v.service_provider_id, v.first_name, COUNT(f.id), " +
+        "v.user_name, v.first_name, v.last_name, v.profilePic, v.primary_email) " +
+        "FROM VendorEntity v " +
+        "LEFT JOIN UserVendorFollow f ON f.vendor.service_provider_id = v.service_provider_id " +
+        "GROUP BY v.service_provider_id, v.first_name, v.user_name, v.last_name, v.profilePic, v.primary_email " +
+        "ORDER BY COUNT(f.id) DESC")
+List<TopVendorDto> findTopVendorsWithFollowerCount();*/
 
     @Query("SELECT COUNT(f.id) " +
             "FROM UserVendorFollow f " +
             "WHERE f.vendor.service_provider_id = :vendorId")
     Long countFollowersByVendorId(@Param("vendorId") Long vendorId);
+
+
+
+    @Query("SELECT new aagapp_backend.dto.TopVendorWeekDto(" +
+            "uvf.vendor.service_provider_id, " +
+            "CONCAT(uvf.vendor.first_name, ' ', uvf.vendor.last_name), " +
+            "COUNT(uvf), " +
+            "uvf.vendor.primary_email, " +
+            "uvf.vendor.profilePic) " +
+            "FROM UserVendorFollow uvf " +
+            "WHERE uvf.followedAt >= :startOfWeek AND uvf.followedAt <= :endOfWeek " +
+            "GROUP BY uvf.vendor.service_provider_id, uvf.vendor.first_name, uvf.vendor.last_name, uvf.vendor.primary_email, uvf.vendor.profilePic " +
+            "ORDER BY COUNT(uvf) DESC")
+    List<TopVendorWeekDto> findTopVendorsThisWeek(@Param("startOfWeek") LocalDateTime startOfWeek,
+                                                  @Param("endOfWeek") LocalDateTime endOfWeek);
+
+    //feed
+
+
+
+
 
 }
 

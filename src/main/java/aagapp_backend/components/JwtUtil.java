@@ -205,11 +205,9 @@ public class JwtUtil {
             int role=extractRoleId(token);
             String roleName = roleService.findRoleName(role); // Get the role name from the role ID
 
-            System.out.println(roleName + " " + role);
             CustomCustomer existingCustomer=null;
             VendorEntity existingServiceProvider=null;
             CustomAdmin existingAdmin=null;
-            System.out.println(roleName + " " + id);
 
             if(roleService.findRoleName(role).equals(Constant.roleUser)){
 

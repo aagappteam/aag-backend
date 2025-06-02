@@ -144,6 +144,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
+/* <<<<<<<<<<<<<<  ✨ Windsurf Command ⭐ >>>>>>>>>>>>>>>> */
+    /**
+     * Check if the given request URI should be bypassed for authentication.
+     * The request URI is matched against the regular expression in
+     * {@link #UNSECURED_URI_PATTERN}. If the request URI matches, then
+     * authentication is bypassed. If there is an exception, then
+     * authentication is not bypassed.
+     *
+     * @param requestURI the request URI to check
+     * @return true if the request URI should be bypassed, false otherwise
+     */
+/* <<<<<<<<<<  124a8b5e-1b20-4f89-838f-ac5804040f25  >>>>>>>>>>> */
     private boolean bypassimages(String requestURI) {
         try {
             return UNSECURED_URI_PATTERN.matcher(requestURI).matches();
@@ -171,11 +183,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isUnsecuredUri(String requestURI) {
+        return "/".equals(requestURI)
+                || requestURI.startsWith("/account")
+                || requestURI.startsWith("/winning")
+
+                || requestURI.startsWith("/otp")
+                || requestURI.startsWith("/health")
+                || requestURI.startsWith("/test")
+                || requestURI.startsWith("/files/aagdocument/**")
+                || requestURI.startsWith("/files/**")
+                || requestURI.startsWith("/aagdocument/**")
+                || requestURI.startsWith("/swagger-ui.html")
+                || requestURI.startsWith("/swagger-resources")
+                || requestURI.startsWith("/v2/api-docs")
+                || requestURI.startsWith("/images")
+                || requestURI.startsWith("/webjars")
+                || requestURI.startsWith("/initate-payment") // Added leading slash
+                || requestURI.startsWith("/.well-known/assetlinks.json") // Added leading slash
+                || requestURI.startsWith("/response") // Added leading slash
+                || requestURI.startsWith("/resp") // Added leading slash
+                || requestURI.startsWith("/enq") // Added leading slash
+                || requestURI.startsWith("/MerchantAcknowledgement") // Added leading slash
+                || requestURI.startsWith("/Bank"); // Added leading slash
+
+    }
+
+    /*private boolean isUnsecuredUri(String requestURI) {
         return requestURI.startsWith("/api/v1/account")
                 || requestURI.startsWith("/api/v1/winning")
+
                 || requestURI.startsWith("/api/v1/otp")
                 || requestURI.startsWith("/api/v1/health")
-
                 || requestURI.startsWith("/api/v1/test")
                 || requestURI.startsWith("/api/v1/files/aagdocument/**")
                 || requestURI.startsWith("/api/v1/files/**")
@@ -184,8 +222,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/api/v1/swagger-resources")
                 || requestURI.startsWith("/api/v1/v2/api-docs")
                 || requestURI.startsWith("/api/v1/images")
-                || requestURI.startsWith("/api/v1/webjars");
-    }
+                || requestURI.startsWith("/api/v1/webjars")
+                || requestURI.startsWith("/api/v1/initate-payment") // Added leading slash
+                || requestURI.startsWith("/api/v1/.well-known/assetlinks.json") // Added leading slash
+                || requestURI.startsWith("/api/v1/response") // Added leading slash
+                || requestURI.startsWith("/api/v1/resp") // Added leading slash
+                || requestURI.startsWith("/api/v1/enq") // Added leading slash
+                || requestURI.startsWith("/api/v1/MerchantAcknowledgement") // Added leading slash
+                || requestURI.startsWith("/api/v1/Bank"); // Added leading slash
+
+    }*/
+
 
     private boolean authenticateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         final String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);

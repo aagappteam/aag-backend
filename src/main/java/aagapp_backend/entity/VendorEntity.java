@@ -73,6 +73,9 @@ public class VendorEntity {
     @Nullable
     private String country_code;
 
+    @Nullable
+    private String state;
+
     private String mobileNumber;
     private String otp;
 
@@ -95,8 +98,6 @@ public class VendorEntity {
 
     @Column(name = "follower_count",nullable = false)
     private Integer followercount = 0;
-
-
 
     private int isVerified = 0;
 

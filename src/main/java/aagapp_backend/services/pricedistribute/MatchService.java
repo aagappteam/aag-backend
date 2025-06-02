@@ -1,4 +1,5 @@
 package aagapp_backend.services.pricedistribute;
+import aagapp_backend.components.Constant;
 import aagapp_backend.dto.GameResult;
 import aagapp_backend.dto.LeaderboardDto;
 import aagapp_backend.dto.PlayerDto;
@@ -8,13 +9,14 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.game.GameResultRecord;
 import aagapp_backend.entity.game.GameRoom;
-import aagapp_backend.entity.game.GameRoomWinner;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueRoom;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.GameRoomStatus;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.*;
 import aagapp_backend.repository.league.LeagueRepository;
@@ -23,31 +25,27 @@ import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.tournament.TournamentRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.gameservice.GameService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class MatchService {
 
-    private static final double TAX_PERCENT = 0.28;
-    private static final double VENDOR_PERCENT = 0.05;
-    private static final double PLATFORM_PERCENT = 0.04;
-    private static final double USER_WIN_PERCENT = 0.63;
-    private static final double BONUS_PERCENT = 0.20;
+    @Autowired
+    private NotificationRepository notificationRepository;
 
-    private GameRoomWinnerRepository gameRoomWinnerRepository;
     private GameResultRecordRepository gameResultRecordRepository;
     private LeagueRoomRepository leagueRoomRepository;
     private TournamentRepository tournamentRepository;
@@ -60,11 +58,6 @@ public class MatchService {
     private GameRoomRepository gameRoomRepository;
     private GameRepository gameRepository;
     private WalletRepository walletRepo;
-
-    @Autowired
-    public void setGameRoomWinnerRepository(GameRoomWinnerRepository repo) {
-        this.gameRoomWinnerRepository = repo;
-    }
 
     @Autowired
     public void setGameResultRecordRepository(GameResultRecordRepository repo) {
@@ -127,109 +120,7 @@ public class MatchService {
         this.walletRepo = repo;
     }
 
-/*
-    public List<PlayerDto> processMatch(GameResult gameResult) {
-        // Fetch the GameRoom based on roomId
-        Optional<GameRoom> gameRoomOpt = gameRoomRepository.findById(gameResult.getRoomId());
-        if (gameRoomOpt.isEmpty()) {
-            throw new RuntimeException("Game room not found with ID: " + gameResult.getRoomId());
-        }
-        GameRoom gameRoom = gameRoomOpt.get();
-        // Fetch the Game associated with the gameId
-        Optional<Game> gameOpt = gameRepository.findById(gameRoom.getGame().getId());
-        if (gameOpt.isEmpty()) {
-            throw new RuntimeException("Game not found with ID: " + gameRoom.getGame().getId());
-        }
-        Game game = gameOpt.get();
-
-        // Calculate the total collection and shares
-        BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
-        BigDecimal tax = totalCollection.multiply(BigDecimal.valueOf(TAX_PERCENT));
-        BigDecimal vendorShare = totalCollection.multiply(BigDecimal.valueOf(VENDOR_PERCENT));
-        BigDecimal platformShare = totalCollection.multiply(BigDecimal.valueOf(PLATFORM_PERCENT));
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
-//        BigDecimal bonus = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(BONUS_PERCENT));
-        BigDecimal finalAmountToUser = userWin;
-
-        // Process the players to find the winner
-        PlayerDtoWinner winner = determineWinner(gameResult.getPlayers()); // Get the winner
-
-        // Identify the loser
-        PlayerDtoWinner loser = gameResult.getPlayers().stream()
-                .filter(p -> !p.getPlayerId().equals(winner.getPlayerId()))
-                .findFirst().orElseThrow(() -> new RuntimeException("No loser found"));
-
-        // Update winner's wallet with the prize amount
-        Wallet wallet = walletRepo.findByCustomCustomer_Id(winner.getPlayerId());
-        if (wallet == null) {
-            throw new RuntimeException("Wallet not found for user ID: " + winner.getPlayerId());
-        }
-
-        gameService.leaveRoom(winner.getPlayerId(), game.getId());
-        gameService.leaveRoom(loser.getPlayerId(), game.getId());
-
-
-        // Add the prize to the winner's wallet
-        BigDecimal updatedWinning = wallet.getWinningAmount().add(finalAmountToUser);
-        wallet.setWinningAmount(updatedWinning);
-        wallet.setUpdatedAt(LocalDateTime.now());
-        walletRepo.save(wallet);
-
-        // Add vendor share and update total balance
-        this.addToVendorWalletAndTotalBalance(game.getVendorEntity().getService_provider_id(), vendorShare);
-
-        // Fetch Player entity using playerId
-        Optional<Player> winnerPlayerOpt = playerRepository.findById(winner.getPlayerId());
-        if (winnerPlayerOpt.isEmpty()) {
-            throw new RuntimeException("Player not found with ID: " + winner.getPlayerId());
-        }
-        Player winnerPlayer = winnerPlayerOpt.get();
-
-        GameRoomWinner gameRoomWinner = new GameRoomWinner();
-        gameRoomWinner.setGame(game);  // Set the game
-        gameRoomWinner.setPlayer(winnerPlayer);  // Set the player (winner)
-        gameRoomWinner.setScore(winner.getScore());  // Set the score
-        gameRoomWinner.setWinTimestamp(LocalDateTime.now());  // Set the win timestamp
-
-        // Save the winner record into the database
-        gameRoomWinnerRepository.save(gameRoomWinner);
-
-        GameResultRecord winnerRecord = new GameResultRecord();
-        winnerRecord.setRoomId(gameRoom.getId());
-        winnerRecord.setGame(game);
-        winnerRecord.setPlayer(winnerPlayer); // already fetched
-        winnerRecord.setScore(winner.getScore());
-        winnerRecord.setIsWinner(true);
-        winnerRecord.setPlayedAt(LocalDateTime.now());
-
-        Player loserPlayer = playerRepository.findById(loser.getPlayerId())
-                .orElseThrow(() -> new RuntimeException("Player not found"));
-
-        GameResultRecord loserRecord = new GameResultRecord();
-        loserRecord.setRoomId(gameRoom.getId());
-        loserRecord.setGame(game);
-        loserRecord.setPlayer(loserPlayer);
-        loserRecord.setScore(loser.getScore());
-        loserRecord.setIsWinner(false);
-        loserRecord.setPlayedAt(LocalDateTime.now());
-
-        gameResultRecordRepository.saveAll(List.of(winnerRecord, loserRecord));
-
-
-*/
-/*        gameRoom.setStatus(GameRoomStatus.COMPLETED);
-        gameRoomRepository.save(gameRoom);*//*
-
-
-        // Optional: Update AAG Wallet if needed
-        // updateAAGWallet(platformShare, tax);
-
-        // Return all players' details (including updated amount for the winner)
-        return getAllPlayersDetails(gameResult, gameRoomOpt, game, winner, loser);
-    }
-*/
-
-    public void processMatch(GameResult gameResult) {
+    /*public void processMatch(GameResult gameResult) {
         // Fetch GameRoom
         Optional<GameRoom> gameRoomOpt = gameRoomRepository.findById(gameResult.getRoomId());
         if (gameRoomOpt.isEmpty()) {
@@ -323,7 +214,290 @@ public class MatchService {
 
         // Return updated player details
 //        return getAllPlayersDetails(gameResult, gameRoomOpt, game, winners, losers);
+    }*/
+
+/*    public void processMatchfirstone(GameResult gameResult) {
+
+
+        if (gameResult.getGameWinner().equals("NONE")) {
+//            no need to procees further
+            return;
+        }
+
+        GameRoom gameRoom = gameRoomRepository.findById(gameResult.getRoomId())
+                .orElseThrow(() -> new RuntimeException("Game room not found with ID: " + gameResult.getRoomId()));
+
+        // Fetch Game
+        Game game = gameRepository.findById(gameRoom.getGame().getId())
+                .orElseThrow(() -> new RuntimeException("Game not found with ID: " + gameRoom.getGame().getId()));
+
+        // Fetch players from the room
+        List<Player> roomPlayers = playerRepository.findByRoomId(gameResult.getRoomId());
+        if (roomPlayers.isEmpty()) {
+            return;
+
+//            throw new RuntimeException("No players found in room " + gameResult.getRoomId());
+        }
+
+        // Fetch players from gameResult and replace playerId 0 with a valid one from the room
+        List<PlayerDtoWinner> playersToProcess = gameResult.getPlayers().stream()
+                .map(p -> {
+                    if (p.getPlayerId() == 0) {
+                        // Find the first available player from the room that is not assigned yet
+                        Player availablePlayer = roomPlayers.stream()
+                                .filter(rp -> gameResult.getPlayers().stream()
+                                        .noneMatch(existingPlayer -> existingPlayer.getPlayerId() == rp.getPlayerId()))
+                                .findFirst()
+                                .orElseThrow(() -> new RuntimeException("No valid player found in room"));
+
+                        // Assign the playerId from the available room player
+                        p.setPlayerId(availablePlayer.getPlayerId());
+                    }
+                    return p;
+                })
+                .collect(Collectors.toList());
+
+        // Calculate total collection and shares
+        BigDecimal totalCollection = BigDecimal.valueOf(game.getFee())
+                .multiply(BigDecimal.valueOf(playersToProcess.size()));
+        BigDecimal tax = totalCollection.multiply(BigDecimal.valueOf(TAX_PERCENT));
+        BigDecimal vendorShare = totalCollection.multiply(BigDecimal.valueOf(VENDOR_PERCENT));
+        BigDecimal platformShare = totalCollection.multiply(BigDecimal.valueOf(PLATFORM_PERCENT));
+        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
+
+        // Determine winners and losers
+        List<PlayerDtoWinner> winners = determineWinners(playersToProcess);
+        List<PlayerDtoWinner> losers = playersToProcess.stream()
+                .filter(p -> winners.stream().noneMatch(w -> w.getPlayerId().equals(p.getPlayerId())))
+                .collect(Collectors.toList());
+
+        // Logs to help debug
+        System.out.println("[INFO] Winners: " + winners.size());
+        if (!winners.isEmpty()) {
+            System.out.println("[INFO] Winner PlayerId: " + winners.get(0).getPlayerId());
+        }
+        if (!losers.isEmpty()) {
+            System.out.println("[INFO] Loser PlayerId: " + losers.get(0).getPlayerId());
+        }
+
+        // Calculate individual winning amount
+        BigDecimal individualWinningAmount;
+        if (winners.size() == 1) {
+            individualWinningAmount = userWin;
+        } else {
+            individualWinningAmount = userWin.divide(BigDecimal.valueOf(winners.size()), RoundingMode.HALF_UP);
+        }
+
+        // Process winners
+        for (PlayerDtoWinner winner : winners) {
+            Wallet wallet = walletRepo.findByCustomCustomer_Id(winner.getPlayerId());
+            if (wallet == null) {
+                throw new RuntimeException("Wallet not found for user ID: " + winner.getPlayerId());
+            }
+
+            gameService.leaveRoom(winner.getPlayerId(), game.getId());
+            wallet.setWinningAmount(individualWinningAmount);
+            wallet.setUpdatedAt(LocalDateTime.now());
+            walletRepo.save(wallet);
+
+            Player winnerPlayer = playerRepository.findById(winner.getPlayerId())
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + winner.getPlayerId()));
+
+            GameResultRecord winnerRecord = new GameResultRecord();
+            winnerRecord.setRoomId(gameRoom.getId());
+            winnerRecord.setGame(game);
+            winnerRecord.setPlayer(winnerPlayer);
+            winnerRecord.setScore(winner.getScore());
+            winnerRecord.setWinningammount(individualWinningAmount);
+            winnerRecord.setIsWinner(true);
+            winnerRecord.setPlayedAt(LocalDateTime.now());
+            gameResultRecordRepository.save(winnerRecord);
+        }
+
+        // Process losers
+        for (PlayerDtoWinner loser : losers) {
+            gameService.leaveRoom(loser.getPlayerId(), game.getId());
+
+            Player loserPlayer = playerRepository.findById(loser.getPlayerId())
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + loser.getPlayerId()));
+
+            GameResultRecord loserRecord = new GameResultRecord();
+            loserRecord.setRoomId(gameRoom.getId());
+            loserRecord.setGame(game);
+            loserRecord.setPlayer(loserPlayer);
+            loserRecord.setScore(loser.getScore());
+            loserRecord.setIsWinner(false);
+            loserRecord.setWinningammount(BigDecimal.ZERO);
+            loserRecord.setPlayedAt(LocalDateTime.now());
+            gameResultRecordRepository.save(loserRecord);
+        }
+
+        // Add vendor share and update total balance
+        this.addToVendorWalletAndTotalBalance(game.getVendorEntity().getService_provider_id(), vendorShare);
+
+        // Optional: update AAG wallet if required
+        // updateAAGWallet(platformShare, tax);
+    }*/
+
+
+    @Transactional
+    public void processMatch(GameResult gameResult) {
+        if (gameResult.getGameWinner().equals("NONE")) {
+            return;
+        }
+
+        GameRoom gameRoom = gameRoomRepository.findById(gameResult.getRoomId())
+                .orElseThrow(() -> new RuntimeException("Game room not found with ID: " + gameResult.getRoomId()));
+
+        Game game = gameRepository.findById(gameRoom.getGame().getId())
+                .orElseThrow(() -> new RuntimeException("Game not found with ID: " + gameRoom.getGame().getId()));
+
+        List<Player> roomPlayers = playerRepository.findByRoomId(gameResult.getRoomId());
+        if (roomPlayers.isEmpty()) {
+            return;
+        }
+        int totalPlayers = gameRoom.getMaxPlayers();
+
+        List<PlayerDtoWinner> validPlayers = gameResult.getPlayers().stream()
+                .filter(p -> p.getPlayerId() != 0)
+                .filter(p -> roomPlayers.stream().anyMatch(rp -> rp.getPlayerId().equals(p.getPlayerId())))
+                .collect(Collectors.toList());
+
+        if (validPlayers.isEmpty()) {
+            System.out.println("[WARN] No valid players found in input. Skipping match processing.");
+            return;
+        }
+
+        System.out.println("[INFO] Valid players: " + validPlayers.stream()
+                .map(p -> "PlayerId=" + p.getPlayerId() + " Score=" + p.getScore())
+                .collect(Collectors.joining(", ")));
+
+        BigDecimal totalCollection = BigDecimal.valueOf(game.getFee())
+                .multiply(BigDecimal.valueOf(totalPlayers));
+        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(Constant.USER_WIN_PERCENT));
+        System.out.println("userWin" + userWin);
+
+        // Determine winners (can be 1 or more)
+        List<PlayerDtoWinner> winners = determineWinners(validPlayers);
+        List<Long> winnerIds = winners.stream()
+                .map(PlayerDtoWinner::getPlayerId)
+                .toList();
+
+        BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
+//        int totalPlayers = roomPlayers.size();
+//        int totalPlayers = gameRoom.getMaxPlayers();
+        int totalWinners = winners.size();
+
+        BigDecimal singleBonus = entryFee.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT));
+        BigDecimal totalBonusCollected = singleBonus.multiply(BigDecimal.valueOf(totalPlayers));
+
+
+
+        BigDecimal totalBonusToDistribute = totalBonusCollected.multiply(BigDecimal.valueOf(2));
+
+        BigDecimal bonusPerWinner = totalBonusToDistribute.divide(BigDecimal.valueOf(totalWinners), 2, RoundingMode.HALF_UP);
+
+        BigDecimal individualPrize = userWin.divide(BigDecimal.valueOf(totalWinners), 2, RoundingMode.HALF_UP);
+
+        System.out.println("bonusPerWinner = " + bonusPerWinner);
+
+
+        BigDecimal finalWinnerAmount = individualPrize.add(bonusPerWinner);
+//       BigDecimal individualWinningAmount = userWin.divide(BigDecimal.valueOf(winners.size()), 2, RoundingMode.HALF_UP);
+
+        System.out.println("[INFO] Winners: " + winnerIds + " Split amount per winner = " + individualPrize  + " Final amount = " + finalWinnerAmount);
+
+        // Process winners
+        for (PlayerDtoWinner winner : winners) {
+            Wallet winnerWallet = walletRepo.findByCustomCustomer_Id(winner.getPlayerId());
+            if (winnerWallet == null) {
+                throw new RuntimeException("Wallet not found for user ID: " + winner.getPlayerId());
+            }
+
+            gameService.leaveRoom(winner.getPlayerId(), game.getId());
+
+            winnerWallet.setWinningAmount(winnerWallet.getWinningAmount().add(individualPrize));
+
+            winnerWallet.setUpdatedAt(LocalDateTime.now());
+            walletRepo.save(winnerWallet);
+
+            CustomCustomer winnerCustomer = customCustomerRepository.findById(winner.getPlayerId())
+                    .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + winner.getPlayerId()));
+
+            BigDecimal currentBonus = winnerCustomer.getBonusBalance();
+            if (currentBonus == null) {
+                currentBonus = BigDecimal.ZERO;
+            }
+            System.out.println("currentBonus = " + currentBonus);
+            winnerCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
+
+
+            customCustomerRepository.save(winnerCustomer);
+
+            Player winnerPlayer = playerRepository.findById(winner.getPlayerId())
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + winner.getPlayerId()));
+
+            GameResultRecord winnerRecord = new GameResultRecord();
+            winnerRecord.setRoomId(gameRoom.getId());
+            winnerRecord.setGame(game);
+            winnerRecord.setPlayer(winnerPlayer);
+            winnerRecord.setScore(winner.getScore());
+            winnerRecord.setWinningammount(finalWinnerAmount);
+            winnerRecord.setIsWinner(true);
+            winnerRecord.setPlayedAt(LocalDateTime.now());
+            gameResultRecordRepository.save(winnerRecord);
+
+            Notification notification = new Notification();
+            notification.setAmount(finalWinnerAmount.doubleValue());
+            notification.setDetails("You won Rs. " + finalWinnerAmount + " in Game " + game.getName());
+            notification.setDescription("Game Winning Prize");
+            notification.setRole("Customer");
+
+
+            notification.setCustomerId(winnerPlayer.getCustomer().getId());
+            notificationRepository.save(notification);
+
+            System.out.println("[INFO] Winner record created for PlayerId=" + winner.getPlayerId());
+        }
+
+        // Process losers
+        List<PlayerDtoWinner> losers = validPlayers.stream()
+                .filter(p -> !winnerIds.contains(p.getPlayerId()))
+                .collect(Collectors.toList());
+
+        for (PlayerDtoWinner loser : losers) {
+            gameService.leaveRoom(loser.getPlayerId(), game.getId());
+
+            Player loserPlayer = playerRepository.findById(loser.getPlayerId())
+                    .orElseThrow(() -> new RuntimeException("Player not found with ID: " + loser.getPlayerId()));
+
+            GameResultRecord loserRecord = new GameResultRecord();
+            loserRecord.setRoomId(gameRoom.getId());
+            loserRecord.setGame(game);
+            loserRecord.setPlayer(loserPlayer);
+            loserRecord.setScore(loser.getScore());
+            loserRecord.setIsWinner(false);
+            loserRecord.setWinningammount(BigDecimal.ZERO);
+            loserRecord.setPlayedAt(LocalDateTime.now());
+            gameResultRecordRepository.save(loserRecord);
+
+/*            Notification notification = new Notification();
+            notification.setAmount(0.0);
+            notification.setDetails("Better luck next time! You did not win in Game " + game.getName());
+            notification.setDescription("Game Result");
+            notification.setRole("Customer");
+
+
+            notification.setCustomerId(loserPlayer.getCustomer().getId());
+            notificationRepository.save(notification);
+
+            System.out.println("[INFO] Loser record created for PlayerId=" + loser.getPlayerId());*/
+        }
+
+        // Add vendor share and update total balance
+//        this.addToVendorWalletAndTotalBalance(game.getVendorEntity().getService_provider_id(), vendorShare);
     }
+
 
     private List<PlayerDtoWinner> determineWinners(List<PlayerDtoWinner> players) {
         int maxScore = players.stream()
@@ -335,7 +509,6 @@ public class MatchService {
                 .filter(p -> p.getScore() == maxScore)
                 .collect(Collectors.toList());
     }
-
 
     //method to get wiining ammount from game room to user
     public BigDecimal getWinningAmount(GameRoom gameRoom) {
@@ -354,13 +527,10 @@ public class MatchService {
         // Calculate the total collection and shares
         BigDecimal totalCollection = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(gameOpt.get().getMaxPlayersPerTeam()));
 
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
+        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(Constant.USER_WIN_PERCENT));
         BigDecimal finalAmountToUser = userWin;
         return finalAmountToUser;
     }
-
-
-
 
     public BigDecimal getWinningAmountLeague(LeagueRoom leagueRoom) {
         Optional<LeagueRoom> leagueRoomOptional = leagueRoomRepository.findById(leagueRoom.getId());
@@ -378,13 +548,11 @@ public class MatchService {
         // Calculate the total collection and shares
         BigDecimal totalCollection = BigDecimal.valueOf(league.getFee()).multiply(BigDecimal.valueOf(leagueOpt.get().getMaxPlayersPerTeam()));
 
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
+        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(Constant.USER_WIN_PERCENT));
         BigDecimal finalAmountToUser = userWin;
 
         return finalAmountToUser;
     }
-
-
 
 
     private Player getPlayerById(Long playerId) {
@@ -402,40 +570,6 @@ public class MatchService {
                 .orElseThrow(() -> new RuntimeException("No players found"));
     }
 
-    // Get all players' details (including amount for the winner)
-    public List<PlayerDto> getAllPlayersDetails(GameResult gameResult, Optional<GameRoom> gameRoomOpt, Game game, PlayerDtoWinner winner, PlayerDtoWinner loser) {
-        List<PlayerDto> playersDetails = new ArrayList<>();
-
-        // Calculate the total collection first
-        BigDecimal totalCollection = BigDecimal.valueOf(game.getFee())
-                .multiply(BigDecimal.valueOf(gameResult.getPlayers().size()));
-
-        BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(USER_WIN_PERCENT));
-//        BigDecimal bonus = BigDecimal.valueOf(game.getFee()).multiply(BigDecimal.valueOf(BONUS_PERCENT));
-
-        // Iterate over all players and set their details
-        for (PlayerDtoWinner player : gameResult.getPlayers()) {
-            PlayerDto playerDto = new PlayerDto();
-            // Set player details based on whether they are the winner or loser
-            if (player.getPlayerId().equals(winner.getPlayerId())) {
-                // Winner gets the prize
-                playerDto.setPlayerId(player.getPlayerId());
-                playerDto.setScore(player.getScore());
-                playerDto.setAmount(userWin);  // Set prize for winner
-                playerDto.setPictureUrl(fetchPlayerPicture(player.getPlayerId()));
-            } else {
-                // Loser gets no prize (amount = 0)
-                playerDto.setPlayerId(player.getPlayerId());
-                playerDto.setScore(player.getScore());
-                playerDto.setAmount(BigDecimal.ZERO);  // No prize for loser
-                playerDto.setPictureUrl(fetchPlayerPicture(player.getPlayerId()));
-            }
-
-            playersDetails.add(playerDto);
-        }
-
-        return playersDetails;
-    }
 
     // Fetch player's picture URL based on player ID
     private String fetchPlayerPicture(Long playerId) {
@@ -443,36 +577,6 @@ public class MatchService {
         return customCustomer.map(CustomCustomer::getProfilePic).orElse(null); // Return profile picture URL or null if not found
     }
 
-    // Method to add the vendor share to the vendor's wallet
-    @Transactional
-    public void addToVendorWalletAndTotalBalance(Long vendorId, BigDecimal vendorShare) {
-        // 1. Fetch Vendor
-        VendorEntity vendor = vendorRepo.findById(vendorId)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
-
-        // 2. Get or create wallet for vendor
-        VendorWallet wallet = vendor.getWallet();
-        if (wallet == null) {
-            wallet = new VendorWallet();
-            wallet.setVendorEntity(vendor);
-            wallet.setWinningAmount(BigDecimal.ZERO);  // Initializing as BigDecimal
-            wallet.setIsTest(false);
-            vendor.setWallet(wallet); // Set wallet in vendor
-        }
-
-        // 3. Update the vendor's wallet with the new share
-        BigDecimal currentWinningAmount = wallet.getWinningAmount();
-        BigDecimal newWinningAmount = currentWinningAmount.add(vendorShare);
-        wallet.setWinningAmount(newWinningAmount);
-        wallet.setUpdatedAt(LocalDateTime.now());
-
-        // 4. Update the total wallet balance
-        BigDecimal updatedBalance = vendor.getTotalWalletBalance().add(vendorShare);
-        vendor.setTotalWalletBalance(updatedBalance);
-
-        // 5. Save the vendor (wallet will be saved due to cascading)
-        vendorRepo.save(vendor);
-    }
     public List<LeaderboardDto> getLeaderboard(Long gameId, Long roomId, Boolean winnerFlag) {
         List<GameResultRecord> results;
 

@@ -1,6 +1,7 @@
 package aagapp_backend.controller.vendor.notification;
 
 import aagapp_backend.dto.CreateNotificationRequest;
+import aagapp_backend.dto.NotificationDTO;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.services.NotificationService;
 import aagapp_backend.services.ResponseService;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/notifications")
@@ -47,15 +49,19 @@ public class NotificationController {
             @RequestParam(required = false) String activity) { // New filter: activity
 
         try {
-            // Fetch notifications from the service layer with pagination and filters
+            // Fetch notificationxs from the service layer with pagination and filters
             List<Notification> notifications = notificationService.getNotifications(id, role, page, size, transaction, activity);
 
             if (notifications.isEmpty()) {
                 return responseService.generateErrorResponse("No notifications found", HttpStatus.OK);
             }
 
-            // Return the notifications wrapped in ResponseEntity
-            return responseService.generateSuccessResponse("Notifications fetched successfully", notifications, HttpStatus.OK);
+            List<NotificationDTO> notificationDTOs = notifications.stream()
+                    .map(NotificationDTO::new)
+                    .collect(Collectors.toList());
+
+            return responseService.generateSuccessResponse("Notifications fetched successfully", notificationDTOs, HttpStatus.OK);
+
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching notifications: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

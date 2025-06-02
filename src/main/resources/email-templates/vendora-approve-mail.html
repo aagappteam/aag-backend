@@ -1,101 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!--  <link rel="stylesheet" href="./approved.css">-->
-  <title>Document</title>
-  <style>
-    h2,h4,p{padding: 0;margin: 0;}
-.approved{
-    background: linear-gradient(178.47deg, #210732 34.12%, #641598 95.08%);
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-
-}
-.approved .approved-content{width: 30%; margin: 0 auto; display: flex; justify-content: center; align-items: center;}
-.approved .approve-logo{display: flex; justify-content: center; }
-.approved .greeting{display: flex; flex-direction: column; align-items: center;}
-.approved .profile{display: flex; flex-direction: column; gap: 30px; padding-top: 50px ;}
-.approved .footer{display: flex;flex-direction: column; align-items: center;}
-.footer .footer-text{display: flex; justify-content: center; align-items: center; gap: 2px; flex-direction: column; padding: 30px 0;}
-  </style>
+  <title>Vendor Account Approved</title>
 </head>
+<!--<body style="margin:0; padding:0;  font-family: Arial, sans-serif;">
+
+<table align="center" cellpadding="0" cellspacing="0" width="100%" style="background: linear-gradient(178.47deg, #210732 34.12%, #641598 95.08%);">-->
+<body style="margin:0; padding:0; background-color:#ffffff; font-family: Arial, sans-serif;">
+
+<!-- Outer Wrapper -->
+<table align="center" cellpadding="0" cellspacing="0" width="100%" style="background-color:#ffffff;">
+<tr>
+    <td align="center" style="padding: 40px 16px;">
+      <!-- Card Container -->
+      <table width="380" cellpadding="0" cellspacing="0" style="border-radius: 20px; background: linear-gradient(178.47deg, #210732 34.12%, #641598 95.08%); color: #ffffff; text-align: center; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
+
+        <!-- Logo -->
+        <tr>
+          <td align="center" style="padding-bottom: 20px;">
+            <img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/aagveer+logo.png" alt="AAG Veer Logo" width="80" style="display:block;">
+          </td>
+        </tr>
+
+        <!-- Greeting -->
+        <tr>
+          <td style="font-size: 20px; font-weight: 400; color: #bbbbbb; padding-bottom: 10px;">
+            Welcome <span style="color: #FF6B35; font-weight: bold;">{firstName}</span>
+          </td>
+        </tr>
+
+        <!-- Phone Image -->
+        <tr>
+          <td style="padding-bottom: 30px;">
+            <img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/emailer_phones.png" alt="App Preview" width="180" style="display:block; margin: 0 auto;">
+          </td>
+        </tr>
+
+        <!-- Approval Text -->
+        <tr>
+          <td style="font-size: 16px; color: #ffffff; padding-bottom: 7px;">
+            Vendor account has been
+          </td>
+        </tr>
+        <tr>
+          <td style=" font-weight: bold; padding-bottom: 30px;">
+            Approved.
+          </td>
+        </tr>
+
+        <!-- Credential Box -->
+        <tr>
+          <td align="center" style="padding: 0 16px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 328px; background-color: #3d1d65; border-radius: 16px; padding: 16px; color: #ffffff;">
+              <tr>
+                <td style="text-align: left; font-size: 14px; padding: 10px;">
+                  <strong>Mobile Number</strong><br>
+                  <span style="font-size: 16px; ">{mobileNumber}</span>
+                </td>
+                <td align="right" style="padding: 10px;">
+                  <img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg" width="32" alt="User Icon">
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2"><div style="height: 1px; background-color: #6a4f96;"></div></td>
+              </tr>
+              <tr>
+                <td style="text-align: left; font-size: 14px; padding: 10px;">
+                  <strong>Password</strong><br>
+                  <span style="font-size: 16px; ">{password}</span>
+                </td>
+                <td align="right" style="padding: 10px;">
+                  <img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/emailer_lock.png" width="32" alt="Lock Icon">
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
 
 
-<body>
-<div class="approved">
-  <div class="approved-content">
-    <div class="approved-box">
-      <div class="approve-logo">
-        <img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Group-1000005218.png"
-             alt="AAG Veer Logo" style="width: 150px; " />
-      </div>
-      <div
-              style="display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 10px;padding-top: 50px;">
-        <h2 style="font-size: 20px;font-weight: 400;color: #fff;">Hi,</h2>
-        <h4 style="font-size: 30px;color: #FF6B35;font-weight: 800;">Priyanka Sahu</h4>
-      </div>
+        <!-- Security Note -->
+        <tr>
+          <td style="font-size: 13px; color: #bbbbbb; padding: 20px 0 30px;">
+            Please keep this information secure and do not share your password with anyone.
+          </td>
+        </tr>
 
-      <!-- Section: Profile Verification -->
-      <div class="profile">
-        <div style="display: flex; align-items: center; text-align: left; gap: 15px;">
-          <img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(6)/profile+verification+1.png"
-               alt="Profile Verification" style="width: 40px;" />
-          <div>
-            <h3 style="margin: 0; font-size: 16px;color: #fff;">Profile Verification</h3>
-            <p style="color: #bbbbbb; font-size: 13px; margin: 5px 0 0;">We are currently verifying your
-              profile. This may take some time.</p>
-          </div>
-        </div>
-        <div style="display: flex; align-items: center; text-align: left; gap: 15px;">
-          <img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(6)/emailer+1.png"
-               alt="Next Steps" style="width: 40px;" />
-          <div>
-            <h3 style="margin: 0; font-size: 16px;color: #fff;">Next Steps</h3>
-            <p style="color: #bbbbbb; font-size: 13px; margin: 5px 0 0;">After verification, you will
-              receive an email with further instructions.</p>
-          </div>
-        </div>
 
-        <!-- Section: Payment and Activation -->
-        <div style="display: flex; align-items: center; text-align: left; gap: 15px; ">
-          <img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(6)/Bill+or+receipt+and+credit+card+3D+illustration+%5BConverted%5D-01+1.png"
-               alt="Payment and Activation" style="width: 40px;" />
-          <div>
-            <h3 style="margin: 0; font-size: 16px;color: #fff;">Payment and Activation</h3>
-            <p style="color: #bbbbbb; font-size: 13px; margin: 5px 0 0;">Complete your payment to
-              activate your account</p>
-          </div>
-        </div>
-      </div>
-      <div class="footer">
-        <div class="footer-text">
-          <p style="font-size: 14px; font-weight: bold;color: #fff;">Need Assistance?</p>
-          <p style="font-size: 13px; color: #cccccc; ">Please contact us if you require any help.</p>
-        </div>
 
-        <div style="display: flex; justify-content: center; gap: 12px;">
-          <a href="#"><img
-                  src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Facebook_white.png"
-                  width="22" alt="Facebook" /></a>
-          <a href="#"><img
-                  src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Instagram_white.png"
-                  width="22" alt="Instagram" /></a>
-          <a href="https://x.com/aapkapnagame" target="_blank"><img
-                  src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Twitter_white.png"
-                  width="22" alt="Twitter" /></a>
-          <a href="#"><img
-                  src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Mail_white.png"
-                  width="22" alt="Mail" /></a>
-        </div>
-      </div>
+        <!-- Social Icons -->
+        <tr>
+          <td align="center" style="padding:20px 20px 20px">
+            <p style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">Need Assistance?</p>
+            <p style="font-size: 13px; color: #cccccc; margin-bottom: 20px;">Please contact us if you require any help.</p>
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding: 0 6px;">
+                  <a href="#"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Facebook_white.png" width="22" alt="Facebook"></a>
+                </td>
+                <td style="padding: 0 6px;">
+                  <a href="#"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Instagram_white.png" width="22" alt="Instagram"></a>
+                </td>
+                <td style="padding: 0 6px;">
+                  <a href="https://x.com/aapkapnagame" target="_blank"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Twitter_white.png" width="22" alt="Twitter"></a>
+                </td>
+                <td style="padding: 0 6px;">
+                  <a href="#"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Mail_white.png" width="22" alt="Mail"></a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
 
-    </div>
-  </div></div>
+      </table>
+
+    </td>
+  </tr>
+</table>
+
 </body>
-
 </html>

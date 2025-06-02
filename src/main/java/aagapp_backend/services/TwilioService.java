@@ -3,23 +3,18 @@ package aagapp_backend.services;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.players.Player;
-import aagapp_backend.enums.PlayerStatus;
+
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.otp.Otp;
 import aagapp_backend.services.vendor.VenderServiceImpl;
-import com.twilio.rest.verify.v2.service.Verification;
-import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
-import com.twilio.Twilio;
 import com.twilio.exception.ApiException;
-import org.springframework.beans.factory.annotation.Value;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -28,20 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.Random;
 
-import com.twilio.rest.api.v2010.account.Message;
-import com.twilio.type.PhoneNumber;
-
 @Service
 public class TwilioService {
 
     private ExceptionHandlingImplement exceptionHandling;
-
-
-    private static final Dotenv dotenv = Dotenv.load();
-    private String accountSid = dotenv.get("TWILIO_ACCOUNT_SID");
-    private String authToken = dotenv.get("TWILIO_AUTH_TOKEN");
-    private String twilioPhoneNumber = dotenv.get("TWILIO_PHONE_NUMBER");
-    private String serviceProviderSid = dotenv.get("SERVICE_PROVIDER_SID");
 
     private CustomCustomerService customCustomerService;
     private EntityManager entityManager;
@@ -78,7 +63,7 @@ public class TwilioService {
         try {
             String otp = generateOTP();
 
-          otpservice.sendOtp(countryCode,mobileNumber,otp);
+         otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
 /*
@@ -91,6 +76,11 @@ public class TwilioService {
                 customerDetails.setMobileNumber(mobileNumber);
                 customerDetails.setOtp(otp);
                 customerDetails.setProfileStatus(ProfileStatus.PENDING);
+
+
+
+
+
                 entityManager.persist(customerDetails);
                 /*Player player = new Player();
                 player.setPlayerId(customerDetails.getId());
@@ -153,7 +143,7 @@ public class TwilioService {
 
         try {
             String otp = generateOTP();
-            otpservice.sendOtp(countryCode,mobileNumber,otp);
+          otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
 
             VendorEntity existingServiceProvider = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
 

@@ -19,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -68,6 +70,8 @@ public class NotificationService {
         notification.setAmount(notificationRequest.getAmount());
         notification.setDetails(notificationRequest.getDetails());
 
+
+
         notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
 
         if (role == Constant.VENDOR_ROLE) {
@@ -96,10 +100,9 @@ public class NotificationService {
                     // Filter by non-null amount
                     notificationsPage = notificationRepository.findByVendorIdAndAmountIsNotNullOrderByCreatedDateDesc(id, pageable);
                 } else if (activity != null && !activity.isEmpty()) {
-                    // Filter by activity (description or details)
                     notificationsPage = notificationRepository.findByVendorIdAndAmountIsNullOrderByCreatedDateDesc(id, pageable);
                 } else {
-                    // Regular fetch without additional filters
+
                     notificationsPage = notificationRepository.findByVendorIdOrderByCreatedDateDesc(id, pageable);
                 }
             } else if ("customer".equalsIgnoreCase(role)) {
@@ -125,7 +128,8 @@ public class NotificationService {
             e.printStackTrace();
             throw new RuntimeException("Failed to retrieve notifications", e);
 
-        } }
+        }
+    }
 
 
 }

@@ -1,25 +1,34 @@
 package aagapp_backend.controller.league;
 
+import aagapp_backend.components.ZonedDateTimeAdapter;
 import aagapp_backend.dto.*;
 import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.league.LeagueResultRecord;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
 
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.league.LeagueRoomRepository;
+import aagapp_backend.repository.league.LeagueTeamRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.exception.BusinessException;
+import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.pricedistribute.MatchService;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -32,8 +41,10 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -52,6 +63,15 @@ public class LeagueController {
     private LeagueRoomRepository leagueRoomRepository;
     @Autowired
     private MatchService matchService;
+
+    @Autowired
+    private ExceptionHandlingService exceptionHandlingImplement;
+
+    @Autowired
+    private LeagueRepository leagueRepository;
+
+    @Autowired
+    private LeagueTeamRepository leagueTeamRepository;
 
     @Autowired
     public void setChallangeRepository(@Lazy ChallangeRepository challangeRepository) {
@@ -95,13 +115,17 @@ public class LeagueController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) LeagueStatus status,
-
+            @RequestParam(value = "gamename", required = false) String gamename,
             @RequestParam(value = "vendorId", required = false) Long vendorId
     ) {
         try {
             Pageable pageable = PageRequest.of(page, size);
 
-            Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId);
+            System.out.println("Status: " + status);
+            System.out.println("Vendor ID: " + vendorId);
+            System.out.println("Game Name: " + gamename);
+
+            Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId,gamename);
 
             if (leaguesPage.isEmpty()) {
                 return responseService.generateResponse(HttpStatus.OK, ApiConstants.NO_RECORDS_FOUND, null);
@@ -168,6 +192,19 @@ public class LeagueController {
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching leagues", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+//    getleague by id
+    @GetMapping("/get-league-by-id/{id}")
+    public ResponseEntity<?> getLeagueById(@PathVariable Long id) {
+        try {
+            League league = leagueService.getLeagueById(id);
+            return responseService.generateSuccessResponse("League retrieved successfully.", league, HttpStatus.OK);
+        }catch (GameNotFoundException e){
+            return responseService.generateErrorResponse("Game Not Found", HttpStatus.BAD_REQUEST);
+
+        }catch (Exception e) {
+            return responseService.generateErrorResponse("Error retrieving league: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -264,12 +301,9 @@ public class LeagueController {
         }
     }
 
-
     @PostMapping("/publishLeague/{vendorId}/{challengeId}")
     public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @PathVariable Long challengeId) {
         try {
-
-
             Challenge challenge = challangeRepository.findById(challengeId)
                     .orElseThrow(() -> new RuntimeException("This Challange is  not found"));
             if (vendorId != challenge.getOpponentVendorId()) {
@@ -277,7 +311,7 @@ public class LeagueController {
             }
 
             if (challenge.getChallengeStatus() != Challenge.ChallengeStatus.PENDING) {
-                throw new IllegalArgumentException("The challenge is no longer pending.");
+                throw new BusinessException("The challenge is no longer pending.",HttpStatus.BAD_REQUEST);
             }
 
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
@@ -289,34 +323,41 @@ public class LeagueController {
             League publishedLeague = leagueService.publishLeague(challenge, vendorId);
 
 
-            // Now create a single notification for the vendor
+/*            // Now create a single notification for the vendor
             Notification notification = new Notification();
             notification.setRole("Vendor");
 
             notification.setVendorId(vendorId);
             if (challenge.getScheduledAt() != null) {
-/*
+*//*
                 notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
-*/
+*//*
                 notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
                 notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
             } else {
-/*
+*//*
                 notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
-*/
+*//*
                 notification.setDescription("Published Game"); // Example NotificationType for a successful
                 notification.setDetails("Game has been Published"); // Example NotificationType for a successful
             }
 
 
-            notificationRepository.save(notification);
+
+
+
+            notificationRepository.save(notification);*/
 
             if (challenge.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("League scheduled successfully", publishedLeague, HttpStatus.CREATED);
             } else {
                 return responseService.generateSuccessResponse("League published successfully", publishedLeague, HttpStatus.CREATED);
             }
-        } catch (LimitExceededException e) {
+        }catch (BusinessException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
+        catch (LimitExceededException e) {
             return responseService.generateErrorResponse("Exceeded maximum allowed games ", HttpStatus.TOO_MANY_REQUESTS);
 
         } catch (NoSuchElementException e) {
@@ -355,20 +396,51 @@ public class LeagueController {
         }
     }
 
-    @PostMapping("/buy-league-pass/{playerId}")
-    public ResponseEntity<?> buyLeaguePass(@PathVariable Long playerId) {
-        try {
-            // Call the service method
-            return leagueService.takePassForLeague(playerId);
 
+    @PostMapping("/entry-league-pass/{playerId}/{leagueId}")
+    public ResponseEntity<?> buyLeaguePassEntryFee(@PathVariable Long playerId, @PathVariable Long leagueId) {
+        try {
+            return leagueService.takeEntryForLeague(playerId, leagueId);
         } catch (RuntimeException e) {
-            // Handle known business logic errors
+            return responseService.generateErrorResponse(
+                    "Failed to purchase league pass to take entry in this league: " + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "An unexpected error occurred while purchasing league pass and taking entry in this league.",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    @PostMapping("/select-league-team/{playerId}/{leagueId}/{teamId}")
+    public ResponseEntity<?> selectLeagueTeam(@PathVariable Long playerId, @PathVariable Long leagueId, @PathVariable Long teamId) {
+        try {
+            return leagueService.selectLeagueTeam(playerId, leagueId, teamId);
+        } catch (RuntimeException e) {
+            return responseService.generateErrorResponse(
+                    "Failed to select team for this league: " + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "An unexpected error occurred while selecting team for this league.",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    @PostMapping("/buy-league-pass/{playerId}/{leagueId}")
+    public ResponseEntity<?> buyLeaguePass(@PathVariable Long playerId, @PathVariable Long leagueId) {
+        try {
+            return leagueService.takePassForLeague(playerId, leagueId);
+        } catch (RuntimeException e) {
             return responseService.generateErrorResponse(
                     "Failed to purchase league pass: " + e.getMessage(),
                     HttpStatus.BAD_REQUEST
             );
         } catch (Exception e) {
-            // Handle unknown/internal errors
             return responseService.generateErrorResponse(
                     "An unexpected error occurred while purchasing league pass.",
                     HttpStatus.INTERNAL_SERVER_ERROR
@@ -377,21 +449,14 @@ public class LeagueController {
     }
 
 
+
     @PostMapping("/joinLeague")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinLeagueRequest joinLeagueRequest) {
-        try {
-            return leagueService.joinRoom(
-                    joinLeagueRequest.getPlayerId(),
-                    joinLeagueRequest.getLeagueId(),
-                    joinLeagueRequest.getTeamId() // <-- Added
-            );
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse(
-                    "Error in joining game room: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return leagueService.joinRoom(
+                joinLeagueRequest.getPlayerId(),
+                joinLeagueRequest.getLeagueId(),
+                joinLeagueRequest.getTeamId() // <-- Added
+        );
     }
 
 
@@ -409,11 +474,12 @@ public class LeagueController {
     @PostMapping("/leftLeague")
     public ResponseEntity<?> leaveGameRoom(@RequestBody JoinLeagueRequest leaveRoomRequest) {
         try {
-            return leagueService.leaveRoom(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId());
+            return leagueService.leaveLeague(leaveRoomRequest.getPlayerId(), leaveRoomRequest.getLeagueId());
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error in leaving game room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+
     }
 
     @GetMapping("/by-league/{leagueId}")
@@ -430,15 +496,12 @@ public class LeagueController {
         }
     }
 
-    @GetMapping("/get-league-pasess/{playerId}")
-    public ResponseEntity<?> getLeaguePasses(@PathVariable Long playerId) {
-        try {
-            return leagueService.getLeaguePasses(playerId);
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            return responseService.generateErrorResponse("Error fetching league passes: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    @GetMapping("/get-league-passes/{playerId}/{leagueId}")
+    public ResponseEntity<?> getLeaguePasses(@PathVariable Long playerId, @PathVariable Long leagueId) {
+            return leagueService.getLeaguePasses(playerId, leagueId);
+
     }
+
 
     @GetMapping("/active-game-rooms")
     public ResponseEntity<?> getAllActiveGameRooms() {
@@ -460,6 +523,53 @@ public class LeagueController {
         // Return the response wrapped in a success response
         return responseService.generateSuccessResponse("Fetching active game rooms from all leagues", gameRoomResponseDTOS, HttpStatus.OK);
     }
+
+
+    @GetMapping("/player")
+    public Map<String, Object> getPlayerStats(
+            @RequestParam Long leagueId,
+            @RequestParam Long playerId
+    ) {
+        return leagueService.getPlayerStats(leagueId, playerId);
+    }
+
+    @GetMapping("/teams")
+    public ResponseEntity<?> getTeamScores(
+            @RequestParam Long leagueId,
+            @RequestParam(required = false) Long playerId
+    ) {
+        try {
+            leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.NOT_FOUND));
+
+            Map<String, Object> result = leagueService.getTeamScoresByLeague(leagueId, playerId);
+            return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", result);
+        } catch (Exception e) {
+            exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error fetching leaderboard: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @GetMapping("/team-details/{leagueId}")
+    public ResponseEntity<?> getTeamDetails(
+            @PathVariable Long leagueId,
+            @RequestParam Long playerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return leagueService.getLeagueTeamDetails(leagueId, playerId, page, size);
+    }
+
+
+
+    @GetMapping("/distribute-prize/{leagueId}")
+    public ResponseEntity<?> distributePrize(@PathVariable Long leagueId) {
+        return leagueService.distributePrizePool(leagueId);
+    }
+
+
+
 
 
 }
