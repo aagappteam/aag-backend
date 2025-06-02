@@ -58,6 +58,7 @@ public class VendorSubmissionService {
             if (existingSubmission != null) {
                 throw new VendorSubmissionException("Data already exists for the given vendor.");
             }
+            System.out.println("efdfdc");
 
             // Check for invalid URLs
             for (Map.Entry<String, String> entry : submissionEntity.getSocialMediaUrls().entrySet()) {
@@ -67,6 +68,8 @@ public class VendorSubmissionService {
                     throw new VendorSubmissionException("Url is not valid for " + platform);
                 }
             }
+
+
 
             // Data persistence only after all validation checks pass
             VendorSubmissionEntity newEntity = new VendorSubmissionEntity();
