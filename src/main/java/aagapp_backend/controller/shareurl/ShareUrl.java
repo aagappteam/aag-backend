@@ -41,6 +41,7 @@ public class ShareUrl {
         return "gameSharePage";
     }
 
+
     @GetMapping("/{vendorId}/leagues/{gameId}")
     public String shareGamePageLeague(@PathVariable Long vendorId,
                                 @PathVariable Long gameId,
