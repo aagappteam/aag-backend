@@ -62,8 +62,6 @@ public class VendorSubmission {
 
             VendorEntity vendorEntity = venderService.getServiceProviderById(id);
 
-            System.out.println(vendorEntity.getService_provider_id());
-
             if(vendorEntity==null){
                 return ResponseService.generateErrorResponse("No Data not found for this vendor ", HttpStatus.NOT_FOUND);
             }
@@ -135,6 +133,8 @@ public class VendorSubmission {
             );
         }
     }
+
+
 
 
 
