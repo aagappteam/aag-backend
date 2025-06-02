@@ -214,7 +214,6 @@ public class GameController {
 
             Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId, existinggameId);
 
-
             // Now create a single notification for the vendor
 /*            Notification notification = new Notification();
             notification.setRole("Vendor");

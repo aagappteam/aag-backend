@@ -42,7 +42,8 @@ public class SecurityConfig {
                 "/enq",
                 "/MerchantAcknowledgement",
                 "/Bank",
-                "/.well-known/**"
+                "/.well-known/**",
+                "/vendor/**"
         );
     }
     @Bean
@@ -78,7 +79,8 @@ public class SecurityConfig {
                                "/MerchantAcknowledgement",
                                "/subPaisa/**",
                                "/Bank",
-                               "/.well-known/**"
+                               "/.well-known/**",
+                               "/vendor/**"
 
                        ).permitAll() // Allow public access to Swagger UI and some other resources
                        .anyRequest().authenticated() // Require authentication for all other paths
