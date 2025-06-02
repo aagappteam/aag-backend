@@ -53,9 +53,6 @@ import java.util.stream.Collectors;
 public class VendorController {
 
     @Autowired
-    private GameService gameService;
-
-    @Autowired
     private InfluencerMonthlyEarningRepository earningRepo;
 
     @Autowired
