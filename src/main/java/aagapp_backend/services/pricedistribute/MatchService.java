@@ -457,7 +457,6 @@ public class MatchService {
             notification.setCustomerId(winnerPlayer.getCustomer().getId());
             notificationRepository.save(notification);
 
-            System.out.println("[INFO] Winner record created for PlayerId=" + winner.getPlayerId());
         }
 
         // Process losers
