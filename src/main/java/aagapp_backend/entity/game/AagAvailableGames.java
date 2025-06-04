@@ -41,16 +41,24 @@ public class AagAvailableGames {
     private String gameImage;
 
     // Cascading all operations on themes: persist, merge, remove, refresh, detach
-    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+/*    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinTable(
             name = "game_themes",
             joinColumns = @JoinColumn(name = "game_id"),
             inverseJoinColumns = @JoinColumn(name = "theme_id")
     )
     @JsonManagedReference
+    private List<ThemeEntity> themes;*/
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "game_themes",
+            joinColumns = @JoinColumn(name = "game_id"),
+            inverseJoinColumns = @JoinColumn(name = "theme_id")
+    )
+    @OrderBy("id ASC")
+    @JsonManagedReference
     private List<ThemeEntity> themes;
-
-
 
 
     // Cascading all operations on prices: persist, merge, remove, refresh, detach
