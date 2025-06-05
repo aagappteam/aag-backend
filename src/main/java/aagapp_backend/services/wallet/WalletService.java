@@ -1,5 +1,6 @@
 package aagapp_backend.services.wallet;
 
+import aagapp_backend.dto.WalletBalanceDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -85,7 +86,18 @@ public class WalletService {
                 return responseService.generateErrorResponse("No wallet found for the customer with ID: " + customerId, HttpStatus.NOT_FOUND);
             }
 
-            return responseService.generateSuccessResponse("Wallet balance retrieved successfully", wallet, HttpStatus.OK);
+            // Convert to DTO
+            WalletBalanceDTO dto = new WalletBalanceDTO(
+                    wallet.getWalletId(),
+                    wallet.getUnplayedBalance(),
+                    wallet.getWinningAmount(),
+                    customer.getBonusBalance(),
+                    wallet.getIsTest(),
+                    wallet.getCreatedAt(),
+                    wallet.getUpdatedAt()
+            );
+
+            return responseService.generateSuccessResponse("Wallet balance retrieved successfully", dto, HttpStatus.OK);
         }catch (BusinessException e){
             exceptionHandlingService.handleException(HttpStatus.BAD_REQUEST, e);
             throw e;

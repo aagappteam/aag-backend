@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +56,7 @@ public class KycService {
             // Fetch mobile number based on role
             String mobileNumber;
             String mailId;
+            String name;
 
             if (role.equalsIgnoreCase("vendor")) {
                 VendorEntity vendor = vendorRepository.findById(userOrVendorId)
@@ -62,12 +64,14 @@ public class KycService {
                 mobileNumber = vendor.getMobileNumber();
                 mailId=vendor.getPrimary_email();
                 vendor.setKycStatus(KycStatus.PENDING);
+                name=vendor.getName();
             } else if (role.equalsIgnoreCase("user") || role.equalsIgnoreCase("customer")) {
                 CustomCustomer user = customCustomerRepository.findById(userOrVendorId)
                         .orElseThrow(() -> new RuntimeException("User not found"));
                 mobileNumber = user.getMobileNumber();
                 mailId= user.getEmail();
                 user.setKycStatus(KycStatus.PENDING);
+                name=user.getName();
             } else {
                 throw new RuntimeException("Invalid role");
             }
@@ -83,6 +87,8 @@ public class KycService {
             String panKey = "kyc/pan/" + System.currentTimeMillis() + panExtension;
             s3Service.uploadPhoto(panKey, panImage);
             String panUrl = s3Service.getFileUrl(panKey);
+
+            emailService.sendKycUploadEmail(mailId,name);
 
             // Save KYC entry
             KycEntity kycEntity = new KycEntity();
@@ -112,16 +118,19 @@ public class KycService {
         // Get the role and update corresponding entity
         Long userOrVendorId = kyc.getUserOrVendorId();
         String role = kyc.getRole();
+        String name;
 
         if ("VENDOR".equalsIgnoreCase(role)) {
             VendorEntity vendor = vendorRepository.findById(userOrVendorId)
                     .orElseThrow(() -> new RuntimeException("Vendor not found"));
             vendor.setKycStatus(isVerified);
+            name=vendor.getName();
             vendorRepository.save(vendor);
         } else if ("USER".equalsIgnoreCase(role)) {
             CustomCustomer user = customCustomerRepository.findById(userOrVendorId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
             user.setKycStatus(isVerified);
+            name=user.getName();
             customCustomerRepository.save(user);
         } else {
             throw new RuntimeException("Invalid role specified in KYC record");
@@ -130,23 +139,15 @@ public class KycService {
         try {
             if (isVerified == KycStatus.VERIFIED) {
                 if(email!=null){
-                    emailService.sendEmail(
-                            email,
-                            "Your KYC Verified from AAG Team",
-                            "Dear User,\n\nYour KYC has been successfully verified.\n\nRegards,\nAAG App Team",false
-                    );
+                    emailService.sendKycVerifiedEmail(email, name);
                 }
 
             } else if (isVerified == KycStatus.REJECTED) {
                if(email!=null){
-                   emailService.sendEmail(
-                           email,
-                           "Your KYC Rejected from AAG Team",
-                           "Dear User,\n\nUnfortunately, your KYC has been rejected. Please review your submitted documents and try again.\n\nRegards,\nAAG App Team",false
-                   );
+                   emailService.sendKycRejectedEmail(email, name);
                }
             }
-        } catch (MessagingException e) {
+        } catch (IOException e) {
             throw new RuntimeException("KYC updated but failed to send email: " + e.getMessage(), e);
         }
 
