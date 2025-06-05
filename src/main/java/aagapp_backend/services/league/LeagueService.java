@@ -758,11 +758,11 @@ public class LeagueService {
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
 
-       /* Wallet wallet = player.getCustomer().getWallet();
-        Double unplayedBalance = wallet.getUnplayedBalance();
+        Wallet wallet = player.getCustomer().getWallet();
+        /*Double unplayedBalance = wallet.getUnplayedBalance();
         BigDecimal winningAmount = wallet.getWinningAmount();
-        Double leagueFee = league.getFee();
-*/
+        Double leagueFee = league.getFee();*/
+
         // Check if player already has a league pass
         LeaguePass existingPass = leaguePassRepository.findByPlayerAndLeague(player, league).orElse(null);
         if (existingPass != null) {
@@ -776,20 +776,20 @@ public class LeagueService {
         LeaguePass pass = new LeaguePass();
         pass.setPlayer(player);
         pass.setLeague(league);
-        pass.setPassCount(3);
+        pass.setPassCount(Constant.LEAGUE_PASS_COUNT);
         leaguePassRepository.save(pass);
 
 
-       /* // Prepare response
+        // Prepare response
         Map<String, Object> data = new HashMap<>();
         data.put("walletBalance", wallet.getUnplayedBalance());
         data.put("winningAmount", wallet.getWinningAmount());
         data.put("leaguePasses", pass.getPassCount());
         data.put("playerName", player.getPlayerName());
         data.put("leagueId", league.getId());
-        data.put("leagueName", league.getName());*/
+        data.put("leagueName", league.getName());
 
-        return responseService.generateSuccessResponse("League entry successful. 3 passes added.", "success", HttpStatus.OK);
+        return responseService.generateSuccessResponse("League entry successful. 3 passes added.", data, HttpStatus.OK);
     }
 
 
@@ -836,6 +836,7 @@ public class LeagueService {
         // Step 1: Get Player and League
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
+        Wallet wallet = player.getCustomer().getWallet();
 
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
@@ -847,7 +848,7 @@ public class LeagueService {
             return responseService.generateErrorResponse("Player has not entered the league yet. Please enter the league first.", HttpStatus.BAD_REQUEST);
         }
 
-        commonService.deductFromWallet(playerId, league.getFee(), "Rs. " + league.getFee() + " deducted for playing " + league.getName() + " league");
+        commonService.deductFromWallet(playerId, league.getFee(), "Rs. " + league.getFee() + " deducted for Extra Pass " + league.getName() + " league");
 
         BigDecimal entryFee = BigDecimal.valueOf(league.getFee());
         BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
@@ -856,15 +857,15 @@ public class LeagueService {
         // Step 5: Add 3 more passes
         pass.setPassCount(pass.getPassCount() + 3);
         leaguePassRepository.save(pass);
-/*
-        // Step 6: Create Notification
+
+        /*// Step 6: Create Notification
         CustomCustomer customer = customCustomerService.getCustomerById(playerId);
         Notification notification = new Notification();
         notification.setCustomerId(customer.getId());
         notification.setDescription("Wallet balance deducted");
         notification.setAmount(passCost);
         notification.setDetails("Rs. " + passCost + " deducted to take extra passes for league: " + league.getName());
-        notificationRepository.save(notification);
+        notificationRepository.save(notification);*/
 
         // Step 7: Prepare response
         Map<String, Object> data = new HashMap<>();
@@ -873,9 +874,9 @@ public class LeagueService {
         data.put("leaguePasses", pass.getPassCount());
         data.put("playerName", player.getPlayerName());
         data.put("leagueId", league.getId());
-        data.put("leagueName", league.getName());*/
+        data.put("leagueName", league.getName());
 
-        return responseService.generateSuccessResponse("3 more League passes added successfully", "success", HttpStatus.OK);
+        return responseService.generateSuccessResponse("3 more League passes added successfully", data, HttpStatus.OK);
     }
 
 
