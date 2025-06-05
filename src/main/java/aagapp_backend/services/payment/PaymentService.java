@@ -17,6 +17,7 @@ import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.payment.PlanRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
 import aagapp_backend.services.CommonService;
+import aagapp_backend.services.EmailService;
 import aagapp_backend.services.NotificationService;
 
 import aagapp_backend.services.exception.BusinessException;
@@ -39,6 +40,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -64,6 +66,9 @@ public class PaymentService {
     private NotificationService notificationService;
     private NotificationRepository notificationRepository;
     private JavaMailSender mailSender;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     public void setPaymentRepository(PaymentRepository paymentRepository) {
@@ -225,6 +230,12 @@ public class PaymentService {
 
         notificationRepository.save(notification);
         paymentRepository.save(paymentRequest);
+        //send mail
+        try {
+            emailService.sendPlanPurchasedEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         commonService.createOrUpdateMonthlyPlan(existingVendor.getService_provider_id(), BigDecimal.valueOf(paymentRequest.getAmount()), Constant.MULTIPLIER);
 
 

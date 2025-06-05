@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -34,6 +36,54 @@ public class EmailService {
             sendEmail(to, Constant.ONBOARDING_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending onboarding email: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendKycUploadEmail(String to, String name) throws IOException {
+        String template = loadTemplate("email-templates/apply-kyc-verification.html");
+        String messageBody = template
+                .replace("{Name}", name);
+        try {
+            sendEmail(to, Constant.APPLYING_KYC_EMAIL_SUBJECT, messageBody,true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending kyc upload email: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendKycVerifiedEmail(String to, String name) throws IOException {
+        String template = loadTemplate("email-templates/KYC Verified -AAGVEER.html");
+        String messageBody = template
+                .replace("{Name}", name);
+        try {
+            sendEmail(to, Constant.KYC_APPROVED_EMAIL_SUBJECT, messageBody,true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending kyc verification email: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendKycRejectedEmail(String to, String name) throws IOException {
+        String template = loadTemplate("email-templates/KYC Rejected-AAGVEER.html");
+        String messageBody = template
+                .replace("{Name}", name);
+        try {
+            sendEmail(to, Constant.KYC_REJECTED_EMAIL_SUBJECT, messageBody,true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending kyc rejection email: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendPlanPurchasedEmail(String to, String name, LocalDateTime date, String plan, Double amount) throws IOException {
+        String template = loadTemplate("email-templates/Subscription Plan Purchased.html");
+        String formattedDate = date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        String messageBody = template
+                .replace("{Name}", name)
+                .replace("{Date}", formattedDate)
+                .replace("{Plan}", plan)
+                .replace("{Amount}", amount.toString());
+        try {
+            sendEmail(to, Constant.KYC_REJECTED_EMAIL_SUBJECT, messageBody,true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending plan purchase email: " + e.getMessage(), e);
         }
     }
 

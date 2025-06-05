@@ -73,6 +73,9 @@ public class Constant {
     public static final String ONBOARDING_EMAIL_SUBJECT = "Registration Received – Next Steps to Become AAGVEER! ";
     public static final String APPROVED_EMAIL_SUBJECT = "AAG Veer - Vendor Account Approved";
     public static final String REJCTED_EMAIL_SUBJECT = "AAG Veer - Vendor Account Rejected";
+    public static final String APPLYING_KYC_EMAIL_SUBJECT = "AAG Veer - Customer Kyc Submitted";
+    public static final String KYC_APPROVED_EMAIL_SUBJECT = "AAG Veer - Customer Kyc Approved";
+    public static final String KYC_REJECTED_EMAIL_SUBJECT = "AAG Veer - Customer Kyc Rejected";
 
 
 }
