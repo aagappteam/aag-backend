@@ -81,7 +81,7 @@ public class EmailService {
                 .replace("{Plan}", plan)
                 .replace("{Amount}", amount.toString());
         try {
-            sendEmail(to, Constant.KYC_REJECTED_EMAIL_SUBJECT, messageBody,true);
+            sendEmail(to, Constant.PLAN_PURCHASED_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending plan purchase email: " + e.getMessage(), e);
         }

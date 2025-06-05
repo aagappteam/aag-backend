@@ -76,6 +76,8 @@ public class Constant {
     public static final String APPLYING_KYC_EMAIL_SUBJECT = "AAG Veer - Customer Kyc Submitted";
     public static final String KYC_APPROVED_EMAIL_SUBJECT = "AAG Veer - Customer Kyc Approved";
     public static final String KYC_REJECTED_EMAIL_SUBJECT = "AAG Veer - Customer Kyc Rejected";
+    public static final String PLAN_PURCHASED_EMAIL_SUBJECT = "AAG Veer - Subscription Plan Purchased";
+
 
 
 }
