@@ -1959,17 +1959,27 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
             notificationRepository.save(notification);
 
-            winner.setAmmount(winner.getAmmount().add(prizePerWinner));
+            Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
+
+            if(wallet.getWinningAmount() == null){
+                wallet.setWinningAmount(BigDecimal.ZERO);
+            }
+            wallet.setWinningAmount(wallet.getWinningAmount().add(prizePerWinner));
+            walletRepository.save(wallet);
+
+            winner.setAmmount(
+                    (winner.getAmmount() != null ? winner.getAmmount() : BigDecimal.ZERO).add(prizePerWinner)
+            );
+
             CustomCustomer customCustomer = winner.getPlayer().getCustomer();
 
             BigDecimal currentBonus = customCustomer.getBonusBalance();
             if (currentBonus == null) {
                 currentBonus = BigDecimal.ZERO;
             }
-            System.out.println("Current Bonus: " + currentBonus);
+
             customCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
 
-//            customCustomer.setBonusBalance(customCustomer.getBonusBalance().add(bonusPerWinner));
             customCustomerRepository.save(customCustomer);
 
             tournamentResultRecordRepository.save(winner);
