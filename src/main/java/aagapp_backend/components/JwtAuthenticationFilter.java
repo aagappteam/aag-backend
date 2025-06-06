@@ -187,6 +187,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         return "/".equals(requestURI)
                 || requestURI.startsWith("/account")
+                || requestURI.startsWith("/actuator")
                 || requestURI.startsWith("/winning")
                 || requestURI.startsWith("/otp")
                 || "vendor".equals(firstSegment) // Only allow URIs that start with '/vendor/...'

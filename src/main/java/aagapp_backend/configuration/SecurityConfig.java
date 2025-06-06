@@ -38,6 +38,7 @@ public class SecurityConfig {
                 "/initate-payment",
                 "/.well-known/**",
                 "/response",
+                "/actuator/**",
                 "/resp",
                 "/enq",
                 "/MerchantAcknowledgement",
@@ -64,6 +65,8 @@ public class SecurityConfig {
                                "/images/**",
                                "/aagdocument/**",
                                "/api/aagdocument/**",
+                               "/actuator/**",
+
                                "/otp/**",
                                "/health/**",
                                "/winning/**",
