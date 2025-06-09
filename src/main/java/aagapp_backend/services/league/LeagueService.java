@@ -48,6 +48,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -71,6 +72,9 @@ public class LeagueService {
 
     @Autowired
     private CommonService commonService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     private CustomCustomerService customCustomerService;
@@ -879,7 +883,15 @@ public class LeagueService {
         return responseService.generateSuccessResponse("3 more League passes added successfully", data, HttpStatus.OK);
     }
 
+    public void notifyLeagueRoomUpdate(LeagueRoom room) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Player joined the Game Room");
+        response.put("data", room);
+        response.put("status", "OK");
+        response.put("status_code", 200);
 
+        messagingTemplate.convertAndSend("/topic/league-room/" + room.getId(), response);
+    }
 
     @Transactional
     public ResponseEntity<?> joinRoom(Long playerId, Long leagueId, Long teamId) {
@@ -942,6 +954,7 @@ public class LeagueService {
             leaguePass.setPassCount(leaguePass.getPassCount() - 1);
             leaguePassRepository.save(leaguePass);
 
+            notifyLeagueRoomUpdate(leagueRoom);
 
             if (leagueRoom.getCurrentPlayers().size() == leagueRoom.getMaxPlayers()) {
 
