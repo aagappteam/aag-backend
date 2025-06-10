@@ -146,47 +146,67 @@ public class CustomCustomerService {
                 updates.remove("mobileNumber");
             }
 
+            String updatedName = null;
+
             for (Map.Entry<String, Object> entry : updates.entrySet()) {
                 String fieldName = entry.getKey();
                 Object newValue = entry.getValue();
-
-                Field field = CustomCustomer.class.getDeclaredField(fieldName);
-                field.setAccessible(true);
 
                 if (newValue == null || newValue.toString().isEmpty()) {
                     continue;
                 }
 
+                // Email validation
                 if ("email".equals(fieldName)) {
-                    // You can add your own email validation logic here if required
-                    if (newValue != null && !isValidEmail((String) newValue)) {
+                    if (!isValidEmail((String) newValue)) {
                         return ResponseEntity.badRequest().body("Invalid email format");
                     }
                 }
 
-
+                // Mobile number should not be updated, but still handled
                 if ("mobileNumber".equals(fieldName)) {
-                    // Validate mobile number if it's being updated (this should not happen)
-                    if (newValue != null && !isValidMobileNumber((String) newValue)) {
+                    if (!isValidMobileNumber((String) newValue)) {
                         return ResponseEntity.badRequest().body("Invalid mobile number format");
                     }
                 }
 
-                // Set the value if no validation errors occurred
-                if (newValue != null && !newValue.toString().isEmpty()) {
+                // Capture name for gender-based logic
+                if ("name".equals(fieldName)) {
+                    updatedName = newValue.toString();
+                }
+
+                // Set value using reflection
+                try {
+                    Field field = CustomCustomer.class.getDeclaredField(fieldName);
+                    field.setAccessible(true);
                     field.set(existingCustomer, newValue);
+                } catch (NoSuchFieldException ignored) {
+                    // Unknown fields are ignored
                 }
             }
 
-            // Persist the updated customer entity
+            // Gender-based profilePic assignment if name is provided
+            if (updatedName != null && !updatedName.isBlank()) {
+                String gender = getGenderByName(updatedName);
+
+                if ("male".equalsIgnoreCase(gender)) {
+                    existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/avtars/maleAvtars/image+10.png");
+                } else if ("female".equalsIgnoreCase(gender)) {
+                    existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/avtars/femaleAvatars/image+51.png");
+                }
+                else {
+                    existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
+                }
+            }
+
             entityManager.merge(existingCustomer);
             return ResponseEntity.ok().body("Customer updated successfully");
-        } catch (NoSuchFieldException e) {
-            return ResponseEntity.badRequest().body("Invalid field name: " + e.getMessage());
+
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error updating customer: " + e.getMessage());
         }
     }
+
 
     public boolean isValidEmail(String email) {
         return email != null && email.matches(Constant.EMAIL_REGEXP);

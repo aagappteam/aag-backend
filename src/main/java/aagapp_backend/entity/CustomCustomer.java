@@ -60,7 +60,7 @@ public class CustomCustomer {
 
     @Nullable
     @Column(name = "profile_picture")
-    private String profilePic="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
+    private String profilePic;
 
     @Nullable
     @Column(name = "profile_status")
