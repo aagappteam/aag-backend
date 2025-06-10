@@ -296,5 +296,12 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
         }
     }
 
+    @PutMapping("/profile-pic/{id}")
+    public ResponseEntity<?> updateProfilePicture(
+            @PathVariable Long id,
+            @RequestParam String profilePic) {
+        return customCustomerService.updateProfilePic(id, profilePic);
+    }
+
 
 }
