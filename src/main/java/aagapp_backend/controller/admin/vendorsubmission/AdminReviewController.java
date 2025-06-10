@@ -381,6 +381,23 @@ public class AdminReviewController {
     }
 
 
+    @GetMapping("/previewInvoice/{id}")
+    public ResponseEntity<byte[]> previewInvoice(@PathVariable Long id) {
+        try {
+            byte[] pdfData = invoiceServiceAdmin.generateInvoicePdf(id);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=invoice-" + id + ".pdf")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfData);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
+        }
+    }
+
+
     @GetMapping("/export-excel")
     public ResponseEntity<byte[]> exportInvoicesToExcel(
             @RequestParam(required = false) String startDate,
@@ -395,5 +412,21 @@ public class AdminReviewController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
+    @GetMapping("/preview-excel")
+    public ResponseEntity<byte[]> previewInvoicesExcel(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            byte[] excelData = invoiceServiceAdmin.generateInvoicesExcel(startDate, endDate);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=invoices.xlsx")
+                    .header(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .body(excelData);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
 
 }
