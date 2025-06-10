@@ -202,4 +202,20 @@ public class CustomCustomerService {
         }
         return "unknown";
     }
+
+    @Transactional
+    public ResponseEntity<?> updateProfilePic(Long customerId, String profilePicUrl) {
+        try {
+            CustomCustomer customer = entityManager.find(CustomCustomer.class, customerId);
+            if (customer == null) {
+                return ResponseEntity.status(404).body("Customer not found");
+            }
+
+            customer.setProfilePic(profilePicUrl);
+            entityManager.merge(customer);
+            return ResponseService.generateSuccessResponse("Profile picture updated successfully", customer, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error to update profile picture: " + e.getMessage());
+        }
+    }
 }
