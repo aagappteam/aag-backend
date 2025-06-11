@@ -12,17 +12,13 @@ import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic"); // Simple broker
-        config.setApplicationDestinationPrefixes("/app"); // Prefix for the client messages
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws").setAllowedOrigins("*").withSockJS(); // fallback
     }
 
-
     @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ludo-websocket")
-                .setAllowedOrigins("http://localhost:8080","http://localhost:8081", "https://yourdomain.com") // Allow specific domains
-
-                .withSockJS(); // Enable SockJS fallback
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic");
+        registry.setApplicationDestinationPrefixes("/app");
     }
 }

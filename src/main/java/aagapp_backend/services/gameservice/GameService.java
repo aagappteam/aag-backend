@@ -48,6 +48,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -71,6 +72,8 @@ public class GameService {
 
     @Autowired
     private CommonService commonservice;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     private CustomCustomerService   customCustomerService;
@@ -355,6 +358,19 @@ public void updateDailylimit() {
             throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
         }
     }
+    public void notifyRoomUpdate(GameRoom room) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Player joined the Game Room");
+        response.put("data", room);
+        response.put("status", "OK");
+        response.put("status_code", 200);
+
+        messagingTemplate.convertAndSend("/topic/room/" + room.getId(), response);
+
+
+    }
+
+
     @Transactional
     public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
         try {
@@ -385,6 +401,8 @@ public void updateDailylimit() {
             if (!playerJoined) {
                 return responseService.generateErrorResponse("Room is already full with game ID: " + game.getId(), HttpStatus.BAD_REQUEST);
             }
+            // ✅ Send real-time update to all users in the room
+            notifyRoomUpdate(gameRoom);
 
             if (gameRoom.getCurrentPlayers().size() == gameRoom.getMaxPlayers()) {
                 transitionRoomToOngoing(gameRoom);
