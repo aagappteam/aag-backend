@@ -1,6 +1,7 @@
 package aagapp_backend.dto;
 
 
+import aagapp_backend.entity.VendorReferral;
 import lombok.*;
 
 @Data
