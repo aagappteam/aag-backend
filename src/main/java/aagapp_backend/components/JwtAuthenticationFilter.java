@@ -190,7 +190,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/actuator")
                 || requestURI.startsWith("/winning")
                 || requestURI.startsWith("/otp")
-                || "vendor".equals(firstSegment) // Only allow URIs that start with '/vendor/...'
+//                || "vendor".equals(firstSegment) // Only allow URIs that start with '/vendor/...'
                 || requestURI.startsWith("/health")
                 || requestURI.startsWith("/test")
                 || requestURI.startsWith("/files/aagdocument/**")

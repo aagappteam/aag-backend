@@ -43,8 +43,8 @@ public class SecurityConfig {
                 "/enq",
                 "/MerchantAcknowledgement",
                 "/Bank",
-                "/.well-known/**",
-                "/vendor/**"
+                "/.well-known/**"
+               /* "/vendor/**"*/
         );
     }
     @Bean
@@ -54,7 +54,7 @@ public class SecurityConfig {
                .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
                .authorizeRequests(auth -> auth
-                       .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+//                       .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                        .requestMatchers(
                                "/",
                                "/swagger-ui.html",           // Swagger UI path
@@ -83,8 +83,8 @@ public class SecurityConfig {
                                "/MerchantAcknowledgement",
                                "/subPaisa/**",
                                "/Bank",
-                               "/.well-known/**",
-                               "/vendor/**"
+                               "/.well-known/**"
+                            /*   "/vendor/**"*/
 
                        ).permitAll() // Allow public access to Swagger UI and some other resources
                        .anyRequest().authenticated() // Require authentication for all other paths
