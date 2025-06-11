@@ -143,6 +143,18 @@ public class PaymentService {
         if (existingVendor == null) {
             throw new RuntimeException("Vendor not found with ID: " + vendorId);
         }
+
+        // Set vendor level based on plan name
+        String planName = planEntity.getPlanName().toUpperCase();
+        VendorLevelPlan initialLevel = VendorLevelPlan.STANDARD_A; // default
+
+        if (planName.contains("PRO")) {
+            initialLevel = VendorLevelPlan.PRO_A;
+        } else if (planName.contains("ELITE")) {
+            initialLevel = VendorLevelPlan.ELITE_A;
+        }
+
+
        /* List<String> planFeatures = planEntity.getFeatures();
         Integer dailyGameLimit = extractDailyGameLimitByPlan(planFeatures); // Implement logic for extracting game limit*/
 
@@ -161,7 +173,7 @@ public class PaymentService {
 */
 
             existingVendor.setDailyLimit(dailyGameLimit);
-
+            existingVendor.setVendorLevelPlan(initialLevel);
 /*
             existingVendor.setDailyLimit(level.getDailyGameLimit());
 */
