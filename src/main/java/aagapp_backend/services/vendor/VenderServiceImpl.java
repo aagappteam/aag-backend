@@ -322,7 +322,7 @@ public class VenderServiceImpl implements VenderService {
     private ResponseEntity<Map<String, Object>> createAuthResponse(String token, VendorEntity vendorEntity) {
         Map<String, Object> responseBody = new HashMap<>();
 
-        List<Long> sentReferrals = getSentReferralIds(vendorEntity);
+        List<ReferrarDTO> sentReferrals = getSentReferralIds(vendorEntity);
         ReferralDTO receivedReferral = getReceivedReferral(vendorEntity.getService_provider_id());
 
         Map<String, Object> data = new HashMap<>();
@@ -345,7 +345,7 @@ public class VenderServiceImpl implements VenderService {
 
 
 
-        List<Long> sentReferrals = getSentReferralIds(vendorEntity);
+        List<ReferrarDTO> sentReferrals = getSentReferralIds(vendorEntity);
         ReferralDTO receivedReferral = getReceivedReferral(vendorEntity.getService_provider_id());
 
         Map<String, Object> data = new HashMap<>();
@@ -639,12 +639,14 @@ public class VenderServiceImpl implements VenderService {
         return referralDTOs;
     }*/
 
-    public List<Long> getSentReferralIds(VendorEntity referrer) {
+    public List<ReferrarDTO> getSentReferralIds(VendorEntity referrer) {
         List<VendorReferral> referrals = vendorReferralRepository.findByReferrerId(referrer);
+
         return referrals.stream()
-                .map(referral -> referral.getReferredId().getService_provider_id())
+                .map(referral -> new ReferrarDTO(referral.getReferredId().getService_provider_id()))
                 .collect(Collectors.toList());
     }
+
 
 
     @Override
