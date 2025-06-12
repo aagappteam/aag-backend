@@ -347,15 +347,17 @@ public class AdminReviewController {
             Pageable pageable
     ) {
         try {
-            List<InvoiceAdmin> invoiceList = invoiceServiceAdmin.getInvoices(
+            Page<InvoiceAdmin> invoicePage = invoiceServiceAdmin.getInvoices(
                     id, name, email, mobile, gstn, pan, panTypeCheck, invoiceNo, invoiceDate,
                     recipientState, recipientType, placeOfSupply, serviceType, pageable
             );
 
-            if (invoiceList.isEmpty()) {
-                return ResponseService.generateSuccessResponse("No invoices found", invoiceList, HttpStatus.OK);
+
+
+            if (invoicePage.isEmpty()) {
+                return ResponseService.generateSuccessResponseWithCount("No invoices found", invoicePage.getContent(),invoicePage.getTotalElements(), HttpStatus.OK);
             } else {
-                return ResponseService.generateSuccessResponse("Invoices fetched successfully", invoiceList, HttpStatus.OK);
+                return ResponseService.generateSuccessResponseWithCount("Invoices fetched successfully", invoicePage.getContent(),invoicePage.getTotalElements(),  HttpStatus.OK);
             }
         } catch (Exception e) {
             return ResponseService.generateErrorResponse("Error fetching invoices: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

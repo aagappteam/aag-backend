@@ -21,6 +21,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -288,7 +289,7 @@ public class InvoiceServiceAdmin {
 
 
 
-    public List<InvoiceAdmin> getInvoices(
+    public Page<InvoiceAdmin> getInvoices(
             Long id,
             String name,
             String email,
@@ -319,7 +320,7 @@ public class InvoiceServiceAdmin {
                 .and(InvoiceAdminSpecification.hasPlaceOfSupply(placeOfSupply))
                 .and(InvoiceAdminSpecification.hasServiceType(serviceType));
 
-        return invoiceAdminRepository.findAll(spec, pageable).getContent();
+        return invoiceAdminRepository.findAll(spec, pageable);
     }
 
 
