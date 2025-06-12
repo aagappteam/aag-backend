@@ -123,6 +123,13 @@ public class CustomCustomer {
     @Column(name = "state")
     private String state;
 
+    @Column(name = "sms_permission", nullable = false)
+    private Boolean smsPermission = false;
+
+    @Column(name = "whatsapp_permission", nullable = false)
+    private Boolean whatsappPermission = false;
+
+
    /* @Nullable
     @Column(name = "district")
     private String district;

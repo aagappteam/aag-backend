@@ -2,6 +2,7 @@ package aagapp_backend.controller.customer;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
+import aagapp_backend.dto.PermissionUpdateRequest;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.services.ApiConstants;
@@ -302,6 +303,28 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
             @RequestParam String profilePic) {
         return customCustomerService.updateProfilePic(id, profilePic);
     }
+
+
+    @PutMapping("/permissions/{vendorId}")
+    public ResponseEntity<?> updatePermissions(
+            @PathVariable Long vendorId,
+            @RequestBody PermissionUpdateRequest request) {
+        try {
+            Map<String, Boolean> updatedPermissions = customCustomerService.updatePermissions(vendorId, request);
+            return responseService.generateSuccessResponse(
+                    "Permissions updated successfully",
+                    updatedPermissions,
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
 
 
 }

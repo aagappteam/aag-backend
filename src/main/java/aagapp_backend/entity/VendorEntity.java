@@ -121,6 +121,12 @@ public class VendorEntity {
     @Column(name = "pause_reason")
     private String pauseReason;
 
+    @Column(name = "sms_permission", nullable = false)
+    private Boolean smsPermission = false;
+
+    @Column(name = "whatsapp_permission", nullable = false)
+    private Boolean whatsappPermission = false;
+
     @Nullable
     @Column(name = "referral_code", unique = true)
     private String referralCode;

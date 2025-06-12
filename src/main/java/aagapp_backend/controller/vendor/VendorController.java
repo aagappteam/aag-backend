@@ -2,10 +2,7 @@ package aagapp_backend.controller.vendor;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
-import aagapp_backend.dto.BankAccountDTO;
-import aagapp_backend.dto.GetGameResponseDTO;
-import aagapp_backend.dto.WithdrawalRequestDTO;
-import aagapp_backend.dto.WithdrawalRequestSubmitDto;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
@@ -922,6 +919,27 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
                     "Withdrawal history fetched successfully",
                     dtoList,
                     requestsPage.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+
+    @PutMapping("/permissions/{vendorId}")
+    public ResponseEntity<?> updatePermissions(
+            @PathVariable Long vendorId,
+            @RequestBody PermissionUpdateRequest request) {
+        try {
+            Map<String, Boolean> updatedPermissions = serviceProviderService.updatePermissions(vendorId, request);
+            return responseService.generateSuccessResponse(
+                    "Permissions updated successfully",
+                    updatedPermissions,
                     HttpStatus.OK
             );
         } catch (Exception e) {

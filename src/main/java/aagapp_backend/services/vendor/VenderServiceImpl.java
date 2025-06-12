@@ -800,5 +800,35 @@ public class VenderServiceImpl implements VenderService {
 
     }*/
 
+    @Transactional
+    public Map<String, Boolean> updatePermissions(Long vendorId, PermissionUpdateRequest request) {
+        try {
+            VendorEntity vendor = vendorRepository.findById(vendorId)
+                    .orElseThrow(() -> new RuntimeException("Vendor not found"));
+
+            if (request.getSmsPermission() != null) {
+                vendor.setSmsPermission(request.getSmsPermission());
+            }
+            if (request.getWhatsappPermission() != null) {
+                vendor.setWhatsappPermission(request.getWhatsappPermission());
+            }
+            vendorRepository.save(vendor);
+
+            Map<String, Boolean> response = new HashMap<>();
+            response.put("smsPermission", vendor.getSmsPermission());
+            response.put("whatsappPermission", vendor.getWhatsappPermission());
+
+            return response;
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update permissions", e);
+        }
+    }
+
+
+
+
 
 }

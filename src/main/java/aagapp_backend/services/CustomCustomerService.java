@@ -1,8 +1,10 @@
 package aagapp_backend.services;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.dto.PermissionUpdateRequest;
 import aagapp_backend.entity.CustomCustomer;
 
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.ProfileStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import jakarta.persistence.EntityManager;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -238,4 +241,37 @@ public class CustomCustomerService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error to update profile picture: " + e.getMessage());
         }
     }
+
+    @Transactional
+    public Map<String, Boolean> updatePermissions(Long customerId, PermissionUpdateRequest request) {
+        try {
+            CustomCustomer customer = entityManager.find(CustomCustomer.class, customerId);
+            if (customer == null) {
+                throw new RuntimeException("Customer not found");
+            }
+
+            if (request.getSmsPermission() != null) {
+                customer.setSmsPermission(request.getSmsPermission());
+            }
+            if (request.getWhatsappPermission() != null) {
+                customer.setWhatsappPermission(request.getWhatsappPermission());
+            }
+
+            entityManager.merge(customer);
+
+            Map<String, Boolean> response = new HashMap<>();
+            response.put("smsPermission", customer.getSmsPermission());
+            response.put("whatsappPermission", customer.getWhatsappPermission());
+
+            return response;
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update permissions", e);
+        }
+    }
+
 }
+
+
