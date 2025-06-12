@@ -43,7 +43,14 @@ public class SecurityConfig {
                 "/enq",
                 "/MerchantAcknowledgement",
                 "/Bank",
-                "/.well-known/**"
+                "/.well-known/**",
+                // 🧠 Add SockJS/WebSocket internal paths
+                "/ws/**",
+                "/ws/info/**",
+                "/ws/info",
+                "/app/**",
+                "/topic/**",
+                "/ludo-websocket/**"
                /* "/vendor/**"*/
         );
     }
@@ -83,8 +90,16 @@ public class SecurityConfig {
                                "/MerchantAcknowledgement",
                                "/subPaisa/**",
                                "/Bank",
-                               "/.well-known/**"
-                            /*   "/vendor/**"*/
+                               "/.well-known/**",
+                               // 🧠 Add SockJS/WebSocket internal paths
+                               "/ws/**",
+                               "/ws/info/**",
+                               "/ws/info",
+                               "/app/**",
+                               "/topic/**",
+                               "/ludo-websocket/**"
+
+                               /*   "/vendor/**"*/
 
                        ).permitAll() // Allow public access to Swagger UI and some other resources
                        .anyRequest().authenticated() // Require authentication for all other paths
