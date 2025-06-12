@@ -96,6 +96,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
             return;
         }
+        if (requestURI.startsWith("/ws") || requestURI.startsWith("/websocket")) {
+            logger.info("Bypassing JWT filter for WebSocket/SockJS request: " + requestURI);
+            chain.doFilter(request, response);
+            return;
+        }
+
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
             return;
@@ -207,7 +213,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/resp")
                 || requestURI.startsWith("/enq")
                 || requestURI.startsWith("/MerchantAcknowledgement")
-                || requestURI.startsWith("/Bank");
+                || requestURI.startsWith("/Bank")
+
+                ;
     }
 
 
