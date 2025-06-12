@@ -145,6 +145,8 @@ public class CustomCustomerService {
                 return ResponseEntity.status(404).body("Customer with ID " + customerId + " not found");
             }
 
+            String oldName = existingCustomer.getName();
+
             if (updates.containsKey("mobileNumber")) {
                 updates.remove("mobileNumber");
             }
@@ -188,17 +190,19 @@ public class CustomCustomerService {
                 }
             }
 
-            // Gender-based profilePic assignment if name is provided
+            // Gender-based profilePic assignment only if gender has changed
             if (updatedName != null && !updatedName.isBlank()) {
-                String gender = getGenderByName(updatedName);
+                String oldGender = getGenderByName(oldName);
+                String newGender = getGenderByName(updatedName);
 
-                if ("male".equalsIgnoreCase(gender)) {
-                    existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/avtars/maleAvtars/image+10.png");
-                } else if ("female".equalsIgnoreCase(gender)) {
-                    existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/avtars/femaleAvatars/image+51.png");
-                }
-                else {
-                    existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
+                if (!oldGender.equalsIgnoreCase(newGender)) {
+                    if ("male".equalsIgnoreCase(newGender)) {
+                        existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/avtars/maleAvtars/image+10.png");
+                    } else if ("female".equalsIgnoreCase(newGender)) {
+                        existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/avtars/femaleAvatars/image+51.png");
+                    } else {
+                        existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
+                    }
                 }
             }
 
