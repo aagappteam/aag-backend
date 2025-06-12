@@ -135,9 +135,6 @@ public class SecurityConfig {
         return source;
     }
 
-
-
-
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
         return new JwtAuthenticationFilter();
