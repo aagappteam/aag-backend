@@ -60,7 +60,7 @@ public class CustomCustomer {
 
     @Nullable
     @Column(name = "profile_picture")
-    private String profilePic="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg";
+    private String profilePic;
 
     @Nullable
     @Column(name = "profile_status")
@@ -122,6 +122,13 @@ public class CustomCustomer {
     @Nullable
     @Column(name = "state")
     private String state;
+
+    @Column(name = "sms_permission", nullable = false)
+    private Boolean smsPermission = false;
+
+    @Column(name = "whatsapp_permission", nullable = false)
+    private Boolean whatsappPermission = false;
+
 
    /* @Nullable
     @Column(name = "district")

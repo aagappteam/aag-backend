@@ -21,14 +21,19 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
@@ -284,7 +289,7 @@ public class InvoiceServiceAdmin {
 
 
 
-    public List<InvoiceAdmin> getInvoices(
+    public Page<InvoiceAdmin> getInvoices(
             Long id,
             String name,
             String email,
@@ -315,7 +320,7 @@ public class InvoiceServiceAdmin {
                 .and(InvoiceAdminSpecification.hasPlaceOfSupply(placeOfSupply))
                 .and(InvoiceAdminSpecification.hasServiceType(serviceType));
 
-        return invoiceAdminRepository.findAll(spec, pageable).getContent();
+        return invoiceAdminRepository.findAll(spec, pageable);
     }
 
 
@@ -355,8 +360,11 @@ public class InvoiceServiceAdmin {
             titleCell.setPaddingBottom(10);
             headerTable.addCell(titleCell);
 
-            Image logo = Image.getInstance("https://aag-data.s3.ap-south-1.amazonaws.com/default-data/final+logo+of+AAG.png");
-            logo.scaleToFit(80, 80);
+//            Image logo = Image.getInstance("https://aag-data.s3.ap-south-1.amazonaws.com/default-data/final+logo+of+AAG.png");
+            Image logo = loadLogo();
+            logo.scaleToFit(60, 60);
+
+//            logo.scaleToFit(80, 80);
             PdfPCell logoCell = new PdfPCell(logo, false);
             logoCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             logoCell.setBorder(Rectangle.NO_BORDER);
@@ -470,6 +478,26 @@ public class InvoiceServiceAdmin {
 
         return out.toByteArray();
     }
+
+    private Image loadLogo() throws IOException, BadElementException {
+        URL logoUrl = getClass().getClassLoader().getResource("images/aag_logo.png");
+        if (logoUrl == null) {
+            throw new FileNotFoundException("Logo image not found in resources");
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (InputStream is = logoUrl.openStream()) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, bytesRead);
+            }
+        }
+
+        return Image.getInstance(baos.toByteArray());
+    }
+
+
 
     private PdfPCell getLabelCell(String text, Font font) {
         PdfPCell cell = new PdfPCell(new Phrase(text, font));

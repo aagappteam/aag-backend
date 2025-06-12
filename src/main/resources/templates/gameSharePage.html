@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <title th:text="'Play ' + ${game.gamename} + ' of Vendor ' + ${vendor.name}">Game Detail</title>
+
+  <!-- Open Graph Meta Tags for WhatsApp, Facebook -->
+  <meta property="og:title" th:content="'Play ' + ${game.gamename} + ' of Vendor ' + ${vendor.name}" />
+  <meta property="og:description" th:content="'Play exciting game ' + ${game.gamename} + ' with Vendor ' + ${vendor.name}" />
+  <meta property="og:image" th:content="${game.gameIcon}" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <meta property="og:url" th:content="${game.shareableLink}" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" th:content="'Play ' + ${game.gamename} + ' of Vendor ' + ${vendor.name}" />
+  <meta name="twitter:description" th:content="'Play exciting game ' + ${game.gamename}" />
+  <meta name="twitter:image" th:content="${game.gameIcon}" />
+
+  <!-- Mobile Responsiveness -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f8f9fa;
+    }
+
+    .game-banner {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .vendor-info {
+      display: flex;
+      align-items: center;
+      margin-top: 30px;
+      gap: 15px;
+    }
+
+    .vendor-profile-pic {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #ddd;
+    }
+
+    .vendor-name {
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+<h1 th:text="'Play ' + ${game.gamename} + ' of Vendor ' + ${vendor.name}">Game Detail</h1>
+
+<img th:src="${game.gameIcon}" alt="Game Banner" class="game-banner" />
+
+<section class="vendor-info">
+  <img th:src="${vendor.profilePic}" alt="Vendor Profile Picture" class="vendor-profile-pic" />
+  <div class="vendor-name" th:text="${vendor.name}">Vendor Name</div>
+</section>
+
+</body>
+</html>

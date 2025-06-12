@@ -17,6 +17,7 @@ import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.payment.PlanRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
 import aagapp_backend.services.CommonService;
+import aagapp_backend.services.EmailService;
 import aagapp_backend.services.NotificationService;
 
 import aagapp_backend.services.exception.BusinessException;
@@ -39,6 +40,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -64,6 +66,9 @@ public class PaymentService {
     private NotificationService notificationService;
     private NotificationRepository notificationRepository;
     private JavaMailSender mailSender;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     public void setPaymentRepository(PaymentRepository paymentRepository) {
@@ -138,6 +143,18 @@ public class PaymentService {
         if (existingVendor == null) {
             throw new RuntimeException("Vendor not found with ID: " + vendorId);
         }
+
+        // Set vendor level based on plan name
+        String planName = planEntity.getPlanName().toUpperCase();
+        VendorLevelPlan initialLevel = VendorLevelPlan.STANDARD_A; // default
+
+        if (planName.contains("PRO")) {
+            initialLevel = VendorLevelPlan.PRO_A;
+        } else if (planName.contains("ELITE")) {
+            initialLevel = VendorLevelPlan.ELITE_A;
+        }
+
+
        /* List<String> planFeatures = planEntity.getFeatures();
         Integer dailyGameLimit = extractDailyGameLimitByPlan(planFeatures); // Implement logic for extracting game limit*/
 
@@ -156,7 +173,7 @@ public class PaymentService {
 */
 
             existingVendor.setDailyLimit(dailyGameLimit);
-
+            existingVendor.setVendorLevelPlan(initialLevel);
 /*
             existingVendor.setDailyLimit(level.getDailyGameLimit());
 */
@@ -219,12 +236,18 @@ public class PaymentService {
 /*
         notification.setType(NotificationType.PAYMENT_SUCCESS);  // Example NotificationType for a successful payment
 */
-        notification.setDescription("Plan purchased successfully"); // Example NotificationType for a successful
+        notification.setDescription("Plan purchased"); // Example NotificationType for a successful
         notification.setAmount(paymentRequest.getAmount());
-        notification.setDetails("Your subscription of Rs. " + paymentRequest.getAmount() + " has been processed");
+        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
 
         notificationRepository.save(notification);
         paymentRepository.save(paymentRequest);
+        //send mail
+        try {
+            emailService.sendPlanPurchasedEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         commonService.createOrUpdateMonthlyPlan(existingVendor.getService_provider_id(), BigDecimal.valueOf(paymentRequest.getAmount()), Constant.MULTIPLIER);
 
 

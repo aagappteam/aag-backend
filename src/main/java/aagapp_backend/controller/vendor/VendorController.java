@@ -2,14 +2,14 @@ package aagapp_backend.controller.vendor;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
-import aagapp_backend.dto.BankAccountDTO;
-import aagapp_backend.dto.WithdrawalRequestDTO;
-import aagapp_backend.dto.WithdrawalRequestSubmitDto;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
+import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
+import aagapp_backend.services.gameservice.GameService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +33,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -42,7 +43,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
-
 @RestController
 @RequestMapping("/vendor")
 
@@ -89,6 +89,8 @@ public class VendorController {
     @Autowired
     private VendorRepository vendorRepository;
 
+    @Autowired
+    private InfluencerMonthlyEarningRepository monthlyEarningRepository;
 
     @Transactional
     @PostMapping("create-or-update-password")
@@ -688,8 +690,8 @@ public ResponseEntity<?> topInvites(@RequestHeader("Authorization") String token
 @GetMapping("/leaderboards")
 public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String token,
                                       @RequestParam("filterType") String filterType,
-                                      @RequestParam("page") int page,
-                                      @RequestParam("size") int size) {
+                                      @RequestParam(value = "page", defaultValue = "0") int page,
+                                      @RequestParam(value = "size", defaultValue = "10") int size) {
     try {
         // Extract the token and find the authenticated vendor
         String jwtToken = token.replace("Bearer ", "");
@@ -698,15 +700,17 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
         // List to store the filtered vendor data
         List<VendorEntity> allVendors = new ArrayList<>();
+        List<InfluencerMonthlyEarning> filteredVendors = new ArrayList<>();
 
         // Apply the filter based on filterType and fetch all data
         switch (filterType.toLowerCase()) {
             case "referrals":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("refferalbalance"))); // Sorting by referral count
+                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("followercount"))); // Sorting by referral count
                 break;
 
             case "totalwallet":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance"))); // Sorting by wallet balance
+//                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance"))); // Sorting by wallet balance
+                filteredVendors = monthlyEarningRepository.findAll(Sort.by(Sort.Order.desc("earnedAmount")));
                 break;
 
             case "participants":
@@ -722,25 +726,42 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         }
 
         // Map the data for leaderboard
-        List<Map<String, Object>> leaderboard = allVendors.stream().map(vendor -> {
-            Map<String, Object> vendorData = new HashMap<>();
-            vendorData.put("service_provider_id", vendor.getService_provider_id());
-            vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
-            vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
-                    .map(firstName -> firstName + " " + vendor.getLast_name())
-                    .orElse(null));
+        List<Map<String, Object>> leaderboard = new ArrayList<>();
 
-            // Add specific data based on the filter type
-            if ("referrals".equalsIgnoreCase(filterType)) {
-                vendorData.put("referralCount", vendor.getRefferalbalance());
-            } else if ("totalwallet".equalsIgnoreCase(filterType)) {
-                vendorData.put("total_wallet_balance", vendor.getTotalWalletBalance());
-            } else if ("participants".equalsIgnoreCase(filterType)) {
-                vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
+        if ("totalwallet".equalsIgnoreCase(filterType)) {
+            for (InfluencerMonthlyEarning earning : filteredVendors) {
+                VendorEntity vendor = entityManager.find(VendorEntity.class, earning.getInfluencerId()); // get vendor details
+                if (vendor == null) continue;
+
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                        .map(firstName -> firstName + " " + vendor.getLast_name())
+                        .orElse(null));
+                vendorData.put("total_wallet_balance", earning.getEarnedAmount());
+
+                leaderboard.add(vendorData);
             }
+        } else {
+            leaderboard = allVendors.stream().map(vendor -> {
+                Map<String, Object> vendorData = new HashMap<>();
+                vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                        .map(firstName -> firstName + " " + vendor.getLast_name())
+                        .orElse(null));
 
-            return vendorData;
-        }).collect(Collectors.toList());
+                if ("referrals".equalsIgnoreCase(filterType)) {
+                    vendorData.put("referralCount", vendor.getFollowercount());
+                } else if ("participants".equalsIgnoreCase(filterType)) {
+                    vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
+                }
+
+                return vendorData;
+            }).collect(Collectors.toList());
+        }
+
 
         // Rank the vendors based on sorted list (1-based index)
         for (int i = 0; i < leaderboard.size(); i++) {
@@ -908,6 +929,31 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             );
         }
     }
+
+
+    @PutMapping("/permissions/{vendorId}")
+    public ResponseEntity<?> updatePermissions(
+            @PathVariable Long vendorId,
+            @RequestBody PermissionUpdateRequest request) {
+        try {
+            Map<String, Boolean> updatedPermissions = serviceProviderService.updatePermissions(vendorId, request);
+            return responseService.generateSuccessResponse(
+                    "Permissions updated successfully",
+                    updatedPermissions,
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    ApiConstants.INTERNAL_SERVER_ERROR + e.getMessage(),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+
+
+
 
 
 }

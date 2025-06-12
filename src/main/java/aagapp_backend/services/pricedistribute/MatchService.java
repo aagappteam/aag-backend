@@ -364,7 +364,6 @@ public class MatchService {
                 .collect(Collectors.toList());
 
         if (validPlayers.isEmpty()) {
-            System.out.println("[WARN] No valid players found in input. Skipping match processing.");
             return;
         }
 
@@ -428,10 +427,8 @@ public class MatchService {
             if (currentBonus == null) {
                 currentBonus = BigDecimal.ZERO;
             }
-            System.out.println("currentBonus = " + currentBonus);
+
             winnerCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
-
-
             customCustomerRepository.save(winnerCustomer);
 
             Player winnerPlayer = playerRepository.findById(winner.getPlayerId())
@@ -457,7 +454,6 @@ public class MatchService {
             notification.setCustomerId(winnerPlayer.getCustomer().getId());
             notificationRepository.save(notification);
 
-            System.out.println("[INFO] Winner record created for PlayerId=" + winner.getPlayerId());
         }
 
         // Process losers

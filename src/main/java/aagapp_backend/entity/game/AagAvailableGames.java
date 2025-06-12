@@ -50,6 +50,18 @@ public class AagAvailableGames {
     @JsonManagedReference
     private List<ThemeEntity> themes;
 
+/*
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "game_themes",
+            joinColumns = @JoinColumn(name = "game_id"),
+            inverseJoinColumns = @JoinColumn(name = "theme_id")
+    )
+    @OrderBy("id ASC")
+    @JsonManagedReference
+    private List<ThemeEntity> themes;
+*/
+
 
 
 

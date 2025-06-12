@@ -1,8 +1,10 @@
 package aagapp_backend.services;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.dto.PermissionUpdateRequest;
 import aagapp_backend.entity.CustomCustomer;
 
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.ProfileStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import jakarta.persistence.EntityManager;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -142,51 +145,75 @@ public class CustomCustomerService {
                 return ResponseEntity.status(404).body("Customer with ID " + customerId + " not found");
             }
 
+            String oldName = existingCustomer.getName();
+
             if (updates.containsKey("mobileNumber")) {
                 updates.remove("mobileNumber");
             }
+
+            String updatedName = null;
 
             for (Map.Entry<String, Object> entry : updates.entrySet()) {
                 String fieldName = entry.getKey();
                 Object newValue = entry.getValue();
 
-                Field field = CustomCustomer.class.getDeclaredField(fieldName);
-                field.setAccessible(true);
-
                 if (newValue == null || newValue.toString().isEmpty()) {
                     continue;
                 }
 
+                // Email validation
                 if ("email".equals(fieldName)) {
-                    // You can add your own email validation logic here if required
-                    if (newValue != null && !isValidEmail((String) newValue)) {
+                    if (!isValidEmail((String) newValue)) {
                         return ResponseEntity.badRequest().body("Invalid email format");
                     }
                 }
 
-
+                // Mobile number should not be updated, but still handled
                 if ("mobileNumber".equals(fieldName)) {
-                    // Validate mobile number if it's being updated (this should not happen)
-                    if (newValue != null && !isValidMobileNumber((String) newValue)) {
+                    if (!isValidMobileNumber((String) newValue)) {
                         return ResponseEntity.badRequest().body("Invalid mobile number format");
                     }
                 }
 
-                // Set the value if no validation errors occurred
-                if (newValue != null && !newValue.toString().isEmpty()) {
+                // Capture name for gender-based logic
+                if ("name".equals(fieldName)) {
+                    updatedName = newValue.toString();
+                }
+
+                // Set value using reflection
+                try {
+                    Field field = CustomCustomer.class.getDeclaredField(fieldName);
+                    field.setAccessible(true);
                     field.set(existingCustomer, newValue);
+                } catch (NoSuchFieldException ignored) {
+                    // Unknown fields are ignored
                 }
             }
 
-            // Persist the updated customer entity
+            // Gender-based profilePic assignment only if gender has changed
+            if (updatedName != null && !updatedName.isBlank()) {
+                String oldGender = getGenderByName(oldName);
+                String newGender = getGenderByName(updatedName);
+
+                if (!oldGender.equalsIgnoreCase(newGender)) {
+                    if ("male".equalsIgnoreCase(newGender)) {
+                        existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/avtars/maleAvtars/image+10.png");
+                    } else if ("female".equalsIgnoreCase(newGender)) {
+                        existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/avtars/femaleAvatars/image+51.png");
+                    } else {
+                        existingCustomer.setProfilePic("https://aag-data.s3.ap-south-1.amazonaws.com/default-data/profileImage.jpeg");
+                    }
+                }
+            }
+
             entityManager.merge(existingCustomer);
             return ResponseEntity.ok().body("Customer updated successfully");
-        } catch (NoSuchFieldException e) {
-            return ResponseEntity.badRequest().body("Invalid field name: " + e.getMessage());
+
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error updating customer: " + e.getMessage());
         }
     }
+
 
     public boolean isValidEmail(String email) {
         return email != null && email.matches(Constant.EMAIL_REGEXP);
@@ -202,4 +229,53 @@ public class CustomCustomerService {
         }
         return "unknown";
     }
+
+    @Transactional
+    public ResponseEntity<?> updateProfilePic(Long customerId, String profilePicUrl) {
+        try {
+            CustomCustomer customer = entityManager.find(CustomCustomer.class, customerId);
+            if (customer == null) {
+                return ResponseEntity.status(404).body("Customer not found");
+            }
+
+            customer.setProfilePic(profilePicUrl);
+            entityManager.merge(customer);
+            return ResponseService.generateSuccessResponse("Profile picture updated successfully", customer, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error to update profile picture: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public Map<String, Boolean> updatePermissions(Long customerId, PermissionUpdateRequest request) {
+        try {
+            CustomCustomer customer = entityManager.find(CustomCustomer.class, customerId);
+            if (customer == null) {
+                throw new RuntimeException("Customer not found");
+            }
+
+            if (request.getSmsPermission() != null) {
+                customer.setSmsPermission(request.getSmsPermission());
+            }
+            if (request.getWhatsappPermission() != null) {
+                customer.setWhatsappPermission(request.getWhatsappPermission());
+            }
+
+            entityManager.merge(customer);
+
+            Map<String, Boolean> response = new HashMap<>();
+            response.put("smsPermission", customer.getSmsPermission());
+            response.put("whatsappPermission", customer.getWhatsappPermission());
+
+            return response;
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update permissions", e);
+        }
+    }
+
 }
+
+

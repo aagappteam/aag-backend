@@ -89,6 +89,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws IOException, ServletException {
 
         String requestURI = request.getRequestURI();
+
         if (requestURI.startsWith("/ludo-websocket")) {
             // Log the WebSocket request and skip JWT authentication
             logger.info("Bypassing JWT authentication for WebSocket handshake");
@@ -108,11 +109,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-
             if (isUnsecuredUri(requestURI) || bypassimages(requestURI)) {
+
                 chain.doFilter(request, response);
                 return;
             }
+
+
 
             if (isApiKeyRequiredUri(request) && validateApiKey(request)) {
                 chain.doFilter(request, response);
@@ -144,18 +147,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
-/* <<<<<<<<<<<<<<  ✨ Windsurf Command ⭐ >>>>>>>>>>>>>>>> */
-    /**
-     * Check if the given request URI should be bypassed for authentication.
-     * The request URI is matched against the regular expression in
-     * {@link #UNSECURED_URI_PATTERN}. If the request URI matches, then
-     * authentication is bypassed. If there is an exception, then
-     * authentication is not bypassed.
-     *
-     * @param requestURI the request URI to check
-     * @return true if the request URI should be bypassed, false otherwise
-     */
-/* <<<<<<<<<<  124a8b5e-1b20-4f89-838f-ac5804040f25  >>>>>>>>>>> */
     private boolean bypassimages(String requestURI) {
         try {
             return UNSECURED_URI_PATTERN.matcher(requestURI).matches();
@@ -183,11 +174,51 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isUnsecuredUri(String requestURI) {
+        // Extract first segment after the leading '/'
+        String firstSegment = "";
+        if (requestURI != null && requestURI.length() > 1) {
+            // Remove the leading '/'
+            String trimmedUri = requestURI.substring(1);
+            String[] segments = trimmedUri.split("/");
+            if (segments.length > 0) {
+                firstSegment = segments[0];
+            }
+        }
+
+        return "/".equals(requestURI)
+                || requestURI.startsWith("/account")
+                || requestURI.startsWith("/actuator")
+                || requestURI.startsWith("/winning")
+                || requestURI.startsWith("/otp")
+//                || "vendor".equals(firstSegment) // Only allow URIs that start with '/vendor/...'
+                || requestURI.startsWith("/health")
+                || requestURI.startsWith("/test")
+                || requestURI.startsWith("/files/aagdocument/**")
+                || requestURI.startsWith("/files/**")
+                || requestURI.startsWith("/aagdocument/**")
+                || requestURI.startsWith("/swagger-ui.html")
+                || requestURI.startsWith("/swagger-resources")
+                || requestURI.startsWith("/v2/api-docs")
+                || requestURI.startsWith("/images")
+                || requestURI.startsWith("/webjars")
+                || requestURI.startsWith("/initate-payment")
+                || requestURI.startsWith("/.well-known/assetlinks.json")
+                || requestURI.startsWith("/response")
+                || requestURI.startsWith("/resp")
+                || requestURI.startsWith("/enq")
+                || requestURI.startsWith("/MerchantAcknowledgement")
+                || requestURI.startsWith("/Bank");
+    }
+
+
+/*    private boolean isUnsecuredUri(String requestURI) {
+
         return "/".equals(requestURI)
                 || requestURI.startsWith("/account")
                 || requestURI.startsWith("/winning")
 
                 || requestURI.startsWith("/otp")
+//                || requestURI.startsWith("/vendor")
                 || requestURI.startsWith("/health")
                 || requestURI.startsWith("/test")
                 || requestURI.startsWith("/files/aagdocument/**")
@@ -204,9 +235,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/resp") // Added leading slash
                 || requestURI.startsWith("/enq") // Added leading slash
                 || requestURI.startsWith("/MerchantAcknowledgement") // Added leading slash
-                || requestURI.startsWith("/Bank"); // Added leading slash
+                || requestURI.startsWith("/Bank");
 
-    }
+    }*/
 
     /*private boolean isUnsecuredUri(String requestURI) {
         return requestURI.startsWith("/api/v1/account")

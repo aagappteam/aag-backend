@@ -20,9 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/winning")
-
 public class Winning {
-
 
 @Autowired
 private GameRoomRepository gameRoomRepository;
