@@ -15,10 +15,10 @@ import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.draw.LineSeparator;
+import org.apache.poi.ss.usermodel.*;
 import jakarta.persistence.EntityManager;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -27,10 +27,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.awt.Color;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
@@ -604,4 +602,61 @@ public class InvoiceServiceAdmin {
 
         return out.toByteArray();
     }
+
+
+    public String generateInvoicesExcelAsHtml(String startDate, String endDate) throws Exception {
+        byte[] excelData = generateInvoicesExcel(startDate, endDate);
+        ByteArrayInputStream excelInputStream = new ByteArrayInputStream(excelData);
+        Workbook workbook = new XSSFWorkbook(excelInputStream);
+        Sheet sheet = workbook.getSheetAt(0);
+
+        StringBuilder html = new StringBuilder();
+        html.append("<html><head><style>")
+                .append("body { font-family: Calibri, sans-serif; background-color: #fff; }")
+                .append("table { border-collapse: collapse; width: 100%; font-size: 14px; }")
+                .append("th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; vertical-align: top; white-space: nowrap; }")
+                .append("th { background-color: #f3f3f3; font-weight: bold; color: #000; }")
+                .append("tr:nth-child(even) td { background-color: #fafafa; }")
+                .append("</style></head><body>");
+
+        html.append("<table>");
+
+        for (Row row : sheet) {
+            html.append("<tr>");
+            for (Cell cell : row) {
+                String tag = row.getRowNum() == 0 ? "th" : "td";
+                html.append("<").append(tag).append(">")
+                        .append(getCellValueAsString(cell))
+                        .append("</").append(tag).append(">");
+            }
+            html.append("</tr>");
+        }
+
+        html.append("</table></body></html>");
+        workbook.close();
+        return html.toString();
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                } else {
+                    return String.valueOf(cell.getNumericCellValue());
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            case BLANK:
+                return "";
+            default:
+                return "";
+        }
+    }
+
 }

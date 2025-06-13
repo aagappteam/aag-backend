@@ -416,17 +416,17 @@ public class AdminReviewController {
     }
 
     @GetMapping("/preview-excel")
-    public ResponseEntity<byte[]> previewInvoicesExcel(
+    public ResponseEntity<String> previewInvoicesExcelAsHtml(
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         try {
-            byte[] excelData = invoiceServiceAdmin.generateInvoicesExcel(startDate, endDate);
+            String htmlContent = invoiceServiceAdmin.generateInvoicesExcelAsHtml(startDate, endDate);
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=invoices.xlsx")
-                    .header(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                    .body(excelData);
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_HTML_VALUE)
+                    .body(htmlContent);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("<p>Error generating Excel preview</p>");
         }
     }
 
