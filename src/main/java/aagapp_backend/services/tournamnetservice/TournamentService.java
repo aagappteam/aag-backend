@@ -1699,9 +1699,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 .collect(Collectors.toList());
 
 
-
-
-
         // === Save WINNERS ===
         for (PlayerDtoWinner winner : winners) {
 
