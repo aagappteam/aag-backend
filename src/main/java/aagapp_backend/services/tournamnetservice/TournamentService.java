@@ -1474,7 +1474,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
     public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
-            // Construct the URL for the POST request, including query parameters
+            // Construct the URL with query parameters
             String url = baseUrl + "/CreateNewGame?gametype=TOURNAMENT"
                     + "&gameid=" + gameId
                     + "&roomid=" + roomId
@@ -1482,26 +1482,55 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                     + "&prize=" + prize
                     + "&moves=" + move;
 
+            System.out.println("Request URL: " + url);
+
+            // Set Authorization and Content-Type headers
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer UFBZINFPQQPQ6RZ6Z5BFCI8K");
-            headers.set("Content-Type", "application/json");
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            // Send POST request
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
+            // Parse the response
             String responseBody = response.getBody();
+            System.out.println("Response Body: " + responseBody);
 
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonResponse = objectMapper.readTree(responseBody);
-            String gamePassword = jsonResponse.get("GamePassword").asText();
 
-            return gamePassword;
+            String status = jsonResponse.path("Status").asText(null);
 
-        }catch (BusinessException e){
+            if (status == null) {
+                throw new BusinessException("Invalid response: 'Status' field missing", HttpStatus.BAD_REQUEST);
+            }
+
+            if ("SUCCESS".equalsIgnoreCase(status)) {
+                // If response is SUCCESS, return GamePassword
+                if (jsonResponse.has("GamePassword")) {
+                    String gamePassword = jsonResponse.get("GamePassword").asText();
+                    System.out.println("Game Password: " + gamePassword);
+                    return gamePassword;
+                } else {
+                    throw new BusinessException("GamePassword missing in SUCCESS response", HttpStatus.BAD_REQUEST);
+                }
+            } else if ("Error".equalsIgnoreCase(status)) {
+                // Handle API-level error with reason
+                String reason = jsonResponse.path("Reason").asText("Unknown error occurred");
+                throw new BusinessException("Game creation failed: " + reason, HttpStatus.BAD_REQUEST);
+            } else {
+                throw new BusinessException("Unexpected Status value: " + status, HttpStatus.BAD_REQUEST);
+            }
+
+        } catch (BusinessException e) {
+            // Handle known business exception (e.g. validation, game already exists)
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
             throw e;
         } catch (Exception e) {
+            // Handle other unexpected errors
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
         }
@@ -1697,7 +1726,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         List<PlayerDtoWinner> losers = validPlayers.stream()
                 .filter(p -> p.getScore() < maxScore)
                 .collect(Collectors.toList());
-
 
 
         // === Save WINNERS ===
