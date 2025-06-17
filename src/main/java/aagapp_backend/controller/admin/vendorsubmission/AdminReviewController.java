@@ -10,6 +10,7 @@ import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
 import aagapp_backend.services.admin.InvoiceServiceAdmin;
@@ -28,6 +29,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +45,9 @@ public class AdminReviewController {
 
     @Autowired
     private VendorRepository vendorRepository;
+
+    @Autowired
+    private CustomCustomerService customCustomerService;
 
     private AdminReviewService reviewService;
     private ExceptionHandlingImplement exceptionHandling;
@@ -427,6 +433,30 @@ public class AdminReviewController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("<p>Error generating Excel preview</p>");
+        }
+    }
+
+    @PostMapping("/provide-customer-bonus")
+    public ResponseEntity<?> provideBonus(@RequestParam Long userId, @RequestParam BigDecimal bonusAmount) {
+        try {
+            // Find user by ID
+            CustomCustomer user = customCustomerRepository.findById(userId).orElse(null);
+            if (user == null) {
+                return ResponseService.generateErrorResponse("User not found", HttpStatus.NOT_FOUND);
+            }
+
+            // Provide bonus and get updated user
+            CustomCustomer updatedUser = customCustomerService.provideBonus(user, bonusAmount);
+
+            // Prepare response data (could return full user, or just bonus info)
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("userId", updatedUser.getId());
+            responseData.put("name", updatedUser.getName());
+            responseData.put("newBonusBalance", updatedUser.getBonusBalance());
+
+            return ResponseService.generateSuccessResponse("Bonus provided successfully", responseData, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseService.generateErrorResponse("Error providing bonus: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
