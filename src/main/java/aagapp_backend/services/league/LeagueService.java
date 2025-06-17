@@ -553,8 +553,7 @@ public class LeagueService {
 
     public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
-            // Construct the URL for the POST request, including query parameters
-
+            // Construct the URL for the POST request with query params
             String url = baseUrl + "/CreateNewGame?gametype=LEAGUE"
                     + "&gameid=" + gameId
                     + "&roomid=" + roomId
@@ -562,32 +561,50 @@ public class LeagueService {
                     + "&prize=" + prize
                     + "&moves=" + move;
             System.out.println("url: " + url);
-            // Create headers (optional, but good practice to include Content-Type for clarity)
+
+            // Prepare HTTP headers, including Authorization with Bearer token
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer UFBZINFPQQPQ6RZ6Z5BFCI8K");
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-            headers.set("Content-Type", "application/json");
-
-            // Create the HttpEntity with headers (no body needed for query parameters)
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            // Send POST request to the external service
+            // Execute POST request
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
-            // Parse the response body (assuming it's a JSON response)
             String responseBody = response.getBody();
             System.out.println("responseBody: " + responseBody);
 
-            // Assuming the response is JSON and contains "GamePassword"
+            // Parse JSON response
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonResponse = objectMapper.readTree(responseBody);
-            String gamePassword = jsonResponse.get("GamePassword").asText();
-            System.out.println("gamePassword: " + gamePassword);
 
-            return gamePassword;
+            // Check "Status" field
+            String status = jsonResponse.path("Status").asText(null);
+            if (status == null) {
+                throw new IllegalStateException("Response missing 'Status' field");
+            }
+
+            if ("SUCCESS".equalsIgnoreCase(status)) {
+                // Success: get GamePassword
+                if (jsonResponse.has("GamePassword")) {
+                    String gamePassword = jsonResponse.get("GamePassword").asText();
+                    System.out.println("gamePassword: " + gamePassword);
+                    return gamePassword;
+                } else {
+                    throw new IllegalStateException("GamePassword missing in SUCCESS response");
+                }
+            } else if ("Error".equalsIgnoreCase(status)) {
+                // Error: get Reason and throw exception
+                String reason = jsonResponse.path("Reason").asText("Unknown error occurred");
+                throw new IllegalStateException("Game creation failed: " + reason);
+            } else {
+                throw new IllegalStateException("Unexpected Status value: " + status);
+            }
 
         } catch (Exception e) {
+            // Use your exception handling service (assumed injected)
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
         }

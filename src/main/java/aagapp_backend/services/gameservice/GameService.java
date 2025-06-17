@@ -326,17 +326,17 @@ public void updateDailylimit() {
     public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
             // Construct the URL for the POST request, including query parameters
-//            String url = baseUrl + "/CreateNewGame?gameid=" + gameId + "&roomid=" + roomId + "&players=" + players + "&prize=" + prize + "&moves=" + move + "&gametype=GAME";
-            String url = baseUrl + "/CreateNewGame?gametype=GAME"
+            String url = baseUrl + "/CreateNewGame?gametype=LEAGUE"
                     + "&gameid=" + gameId
                     + "&roomid=" + roomId
                     + "&players=" + players
                     + "&prize=" + prize
                     + "&moves=" + move;
-            HttpHeaders headers = new HttpHeaders();
+            System.out.println("url: " + url);
 
-            headers.set("Content-Type", "application/json");
+            HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer UFBZINFPQQPQ6RZ6Z5BFCI8K");
+            headers.set("Content-Type", "application/json");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -344,20 +344,37 @@ public void updateDailylimit() {
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
             String responseBody = response.getBody();
+            System.out.println("responseBody: " + responseBody);
 
-            // Assuming the response is JSON and contains "GamePassword"
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonResponse = objectMapper.readTree(responseBody);
-            String gamePassword = jsonResponse.get("GamePassword").asText();
 
-            return gamePassword;
+            String status = jsonResponse.path("Status").asText(null);
+            if (status == null) {
+                throw new IllegalStateException("Response missing 'Status' field");
+            }
+
+            if ("SUCCESS".equalsIgnoreCase(status)) {
+                if (jsonResponse.has("GamePassword")) {
+                    String gamePassword = jsonResponse.get("GamePassword").asText();
+                    System.out.println("gamePassword: " + gamePassword);
+                    return gamePassword;
+                } else {
+                    throw new IllegalStateException("GamePassword missing in SUCCESS response");
+                }
+            } else if ("Error".equalsIgnoreCase(status)) {
+                String reason = jsonResponse.path("Reason").asText("Unknown error occurred");
+                throw new IllegalStateException("Game creation failed: " + reason);
+            } else {
+                throw new IllegalStateException("Unexpected Status value: " + status);
+            }
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-
             throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
         }
     }
+
     public void notifyRoomUpdate(GameRoom room) {
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Player joined the Game Room");
