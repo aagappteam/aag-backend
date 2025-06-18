@@ -1,6 +1,7 @@
 package aagapp_backend.controller.kyc;
 
 import aagapp_backend.dto.KycDTO;
+import aagapp_backend.dto.KycVerificationRequest;
 import aagapp_backend.entity.kyc.KycEntity;
 import aagapp_backend.enums.KycStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -199,6 +200,19 @@ public ResponseEntity<?> getAllKycs(
             return ResponseService.generateErrorResponse("Failed to update KYC status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @PutMapping("/verify/bulk")
+    public ResponseEntity<?> updateBulkKycVerificationStatus(
+            @RequestBody List<KycVerificationRequest> requests
+    ) {
+        try {
+            List<KycEntity> updatedKycs = kycService.updateBulkKycVerificationStatus(requests);
+            return ResponseService.generateSuccessResponse("Bulk KYC status updated", updatedKycs, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseService.generateErrorResponse("Failed to update bulk KYC status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteKycById(@RequestParam Long kycId) {
