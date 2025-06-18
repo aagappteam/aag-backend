@@ -31,6 +31,7 @@ import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.pricedistribute.MatchService;
 import aagapp_backend.services.vendor.VenderService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
@@ -66,6 +67,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 @Service
 public class GameService {
@@ -325,55 +328,54 @@ public void updateDailylimit() {
 
     public String createNewGame(String baseUrl, Long gameId, Long roomId, Integer players, Integer move, BigDecimal prize) {
         try {
-            // Construct the URL for the POST request, including query parameters
-            String url = baseUrl + "/CreateNewGame?gametype=LEAGUE"
+            // Build the request URL
+            String url = baseUrl + "/CreateNewGame?gametype=GAME"
                     + "&gameid=" + gameId
                     + "&roomid=" + roomId
                     + "&players=" + players
                     + "&prize=" + prize
                     + "&moves=" + move;
-            System.out.println("url: " + url);
 
+            // Set headers
             HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer UFBZINFPQQPQ6RZ6Z5BFCI8K");
-            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
-
             RestTemplate restTemplate = new RestTemplate();
+
+            // Execute POST request
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
-            String responseBody = response.getBody();
-            System.out.println("responseBody: " + responseBody);
+            // Check response status
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new RuntimeException("Failed to create game: Server responded with status " + response.getStatusCode());
+            }
 
+            String responseBody = response.getBody();
+
+            // Parse JSON response
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonResponse = objectMapper.readTree(responseBody);
 
-            String status = jsonResponse.path("Status").asText(null);
-            if (status == null) {
-                throw new IllegalStateException("Response missing 'Status' field");
-            }
-
-            if ("SUCCESS".equalsIgnoreCase(status)) {
-                if (jsonResponse.has("GamePassword")) {
-                    String gamePassword = jsonResponse.get("GamePassword").asText();
-                    System.out.println("gamePassword: " + gamePassword);
-                    return gamePassword;
-                } else {
-                    throw new IllegalStateException("GamePassword missing in SUCCESS response");
-                }
-            } else if ("Error".equalsIgnoreCase(status)) {
-                String reason = jsonResponse.path("Reason").asText("Unknown error occurred");
-                throw new IllegalStateException("Game creation failed: " + reason);
+            if (jsonResponse.has("GamePassword")) {
+                return jsonResponse.get("GamePassword").asText();
+            } else if (jsonResponse.has("error")) {
+                String errorMsg = jsonResponse.get("error").asText();
+                throw new RuntimeException("Game server returned an error: " + errorMsg);
             } else {
-                throw new IllegalStateException("Unexpected Status value: " + status);
+                throw new RuntimeException("Unexpected response from game server: " + responseBody);
             }
 
+        }catch (JsonProcessingException jsonEx) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, jsonEx);
+            throw new RuntimeException("Failed to parse game server response: " + jsonEx.getMessage(), jsonEx);
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error occurred while creating the game on the server: " + e.getMessage(), e);
+            throw new RuntimeException("Unexpected error while creating the game: " + e.getMessage(), e);
         }
     }
+
 
     public void notifyRoomUpdate(GameRoom room) {
         Map<String, Object> response = new HashMap<>();
