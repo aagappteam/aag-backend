@@ -91,13 +91,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
 
         if (requestURI.startsWith("/ludo-websocket")) {
-            // Log the WebSocket request and skip JWT authentication
             logger.info("Bypassing JWT authentication for WebSocket handshake");
             chain.doFilter(request, response);
             return;
         }
+        System.out.println("Request URI: " + requestURI);
         if (requestURI.startsWith("/ws") || requestURI.startsWith("/websocket")) {
-            logger.info("Bypassing JWT filter for WebSocket/SockJS request: " + requestURI);
             chain.doFilter(request, response);
             return;
         }
@@ -109,6 +108,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
 
+            System.out.println("try " + requestURI);
 
             if (requestURI.startsWith("/swagger-ui") || requestURI.startsWith("/v3/api-docs")) {
                 chain.doFilter(request, response);

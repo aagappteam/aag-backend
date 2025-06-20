@@ -33,7 +33,7 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
 
         throw new RuntimeException("HTTP Error: " + statusCode + ", Response Body: " + responseBody);
     }
-
+    
     @Override
     public String handleHttpClientErrorException(HttpClientErrorException e) {
         HttpStatus statusCode = (HttpStatus) e.getStatusCode();
