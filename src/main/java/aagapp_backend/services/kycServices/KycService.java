@@ -1,5 +1,6 @@
 package aagapp_backend.services.kycServices;
 
+import aagapp_backend.dto.KycVerificationRequest;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.kyc.KycEntity;
@@ -153,6 +154,57 @@ public class KycService {
 
         return kyc;
     }
+
+
+    @Transactional
+    public List<KycEntity> updateBulkKycVerificationStatus(List<KycVerificationRequest> requests) {
+        List<KycEntity> updatedList = new ArrayList<>();
+
+        for (KycVerificationRequest request : requests) {
+            Long kycId = request.getKycId();
+            KycStatus isVerified = request.getStatus();
+
+            KycEntity kyc = kycRepository.findById(kycId)
+                    .orElseThrow(() -> new RuntimeException("KYC not found for ID: " + kycId));
+
+            String email = kyc.getMailId();
+            Long userOrVendorId = kyc.getUserOrVendorId();
+            String role = kyc.getRole();
+            String name;
+
+            if ("VENDOR".equalsIgnoreCase(role)) {
+                VendorEntity vendor = vendorRepository.findById(userOrVendorId)
+                        .orElseThrow(() -> new RuntimeException("Vendor not found for ID: " + userOrVendorId));
+                vendor.setKycStatus(isVerified);
+                name = vendor.getName();
+                vendorRepository.save(vendor);
+            } else if ("USER".equalsIgnoreCase(role)) {
+                CustomCustomer user = customCustomerRepository.findById(userOrVendorId)
+                        .orElseThrow(() -> new RuntimeException("User not found for ID: " + userOrVendorId));
+                user.setKycStatus(isVerified);
+                name = user.getName();
+                customCustomerRepository.save(user);
+            } else {
+                throw new RuntimeException("Invalid role specified for KYC ID: " + kycId);
+            }
+
+            try {
+                if (isVerified == KycStatus.VERIFIED && email != null) {
+                    emailService.sendKycVerifiedEmail(email, name);
+                } else if (isVerified == KycStatus.REJECTED && email != null) {
+                    emailService.sendKycRejectedEmail(email, name);
+                }
+            } catch (IOException e) {
+                // Logging the email failure but not stopping the bulk process
+                System.err.println("Email failed for KYC ID " + kycId + ": " + e.getMessage());
+            }
+
+            updatedList.add(kyc);
+        }
+
+        return updatedList;
+    }
+
 
     public void deleteKycById(Long kycId) {
         if (!kycRepository.existsById(kycId)) {

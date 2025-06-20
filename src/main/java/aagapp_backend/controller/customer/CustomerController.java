@@ -326,5 +326,12 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
     }
 
 
+    //get profile pic by id
+    @GetMapping("/get-profile-pic/{id}")
+    public ResponseEntity<?> getProfilePic(@PathVariable Long id) {
+        return customCustomerService.getProfilePicById(id);
+    }
+
+
 
 }

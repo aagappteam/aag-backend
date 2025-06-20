@@ -6,6 +6,7 @@ import aagapp_backend.entity.CustomCustomer;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.ProfileStatus;
+import aagapp_backend.services.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -285,6 +286,17 @@ public class CustomCustomerService {
     }
 
 
+    public ResponseEntity<?> getProfilePicById(Long id) {
+        try {
+            CustomCustomer customer = entityManager.find(CustomCustomer.class, id);
+            if (customer == null) {
+                throw new BusinessException("Customer not found", HttpStatus.NOT_FOUND);
+            }
+            return ResponseService.generateSuccessResponse("Profile picture", customer.getProfilePic(), HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseService.generateErrorResponse("Error to get profile picture: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
 
 
