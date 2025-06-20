@@ -16,7 +16,7 @@
 
     function connect() {
       const roomId = document.getElementById('roomId').value;
-      const socket = new SockJS('https://backend.aagapp.com/ws');
+      const socket = new SockJS('http://localhost:8080/ws');
       stompClient = Stomp.over(socket);
 
       stompClient.connect({}, function (frame) {

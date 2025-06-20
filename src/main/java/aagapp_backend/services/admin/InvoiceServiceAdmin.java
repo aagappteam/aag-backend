@@ -558,7 +558,7 @@ public class InvoiceServiceAdmin {
         } else if (endDate != null) {
             invoices = invoiceAdminRepository.findByInvoiceDateLessThanEqual(endDate);
         } else {
-            invoices = invoiceAdminRepository.findAll(); // export all
+            invoices = invoiceAdminRepository.findAll();
         }
 
         if (invoices.isEmpty()) {
