@@ -7,6 +7,7 @@ import aagapp_backend.entity.faqs.FAQs;
 import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.enums.TicketEnum;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
@@ -14,6 +15,7 @@ import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
 import aagapp_backend.services.admin.InvoiceServiceAdmin;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.faqs.FAQService;
 import jakarta.validation.Valid;
@@ -459,6 +461,17 @@ public class AdminReviewController {
             return ResponseService.generateErrorResponse("Error providing bonus: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
+    @PutMapping("/vendor/status/{id}")
+    public ResponseEntity<?> updateVendorStatus(@PathVariable Long id, @RequestParam VendorStatus newStatus) {
+        VendorEntity vendor = vendorRepository.findById(id).orElseThrow(() -> new BusinessException("Vendor not found with this id: " + id, HttpStatus.BAD_REQUEST));
+        vendor.setStatus(newStatus);
+        vendorRepository.save(vendor);
+//        return ResponseEntity.ok("Vendor status updated");
+        return ResponseService.generateSuccessResponse("Vendor status updated","vendor is "+ newStatus, HttpStatus.OK);
+    }
+
 
 
 }

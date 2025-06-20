@@ -8,6 +8,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.social.UserVendorFollow;
 import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.social.UserVendorFollowRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.data.domain.*;
 import org.springframework.http.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -141,6 +143,11 @@ public class UserVendorFollowService {
 
         VendorEntity vendor = vendorRepo.findById(vendorId)
                 .orElseThrow(() -> new NoSuchElementException("Vendor not found with ID: " + vendorId));
+
+        if (vendor.getStatus() != VendorStatus.ACTIVE) {
+            throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+        }
+
 
         UserVendorFollow follow = new UserVendorFollow();
         follow.setUser(user);

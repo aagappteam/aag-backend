@@ -12,6 +12,7 @@ import aagapp_backend.entity.team.LeagueTeam;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
 
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
@@ -29,6 +30,7 @@ import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.pricedistribute.MatchService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -37,6 +39,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
@@ -72,6 +75,9 @@ public class LeagueController {
 
     @Autowired
     private LeagueTeamRepository leagueTeamRepository;
+
+    @Autowired
+    private EntityManager em;
 
     @Autowired
     public void setChallangeRepository(@Lazy ChallangeRepository challangeRepository) {
@@ -217,6 +223,13 @@ public class LeagueController {
             if (paymentEntity.getStatusCode() != HttpStatus.OK) {
                 return paymentEntity;
             }
+            VendorEntity vendor = vendorRepository.findById(vendorId)
+                    .orElseThrow(() -> new BusinessException("Vendor not found with this id: " + vendorId, HttpStatus.BAD_REQUEST));
+
+            if (vendor.getStatus() != VendorStatus.ACTIVE) {
+                throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+            }
+
             Challenge challenge = leagueService.createChallenge(leagueRequest, vendorId);
             return responseService.generateSuccessResponse("Challenge created successfully. Awaiting opponent's response.", challenge, HttpStatus.OK);
         } catch (Exception e) {
@@ -320,6 +333,11 @@ public class LeagueController {
                 return paymentEntity;
             }
 
+            VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
+            if (vendorEntity.getStatus() != VendorStatus.ACTIVE) {
+                throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+            }
+
             League publishedLeague = leagueService.publishLeague(challenge, vendorId);
 
 
@@ -378,7 +396,12 @@ public class LeagueController {
     public ResponseEntity<?> getVendorsWithAvailableLeagues() {
         try {
             // Fetch all vendors with league status 'AVAILABLE'
-            List<VendorEntity> vendors = vendorRepository.findByLeagueStatus(LeagueStatus.AVAILABLE);
+//            List<VendorEntity> vendors = vendorRepository.findByLeagueStatus(LeagueStatus.AVAILABLE);
+            // Fetch vendors that are both AVAILABLE and ACTIVE
+            List<VendorEntity> vendors = vendorRepository.findByLeagueStatusAndStatus(
+                    LeagueStatus.AVAILABLE,
+                    VendorStatus.ACTIVE
+            );
 
             if (vendors.isEmpty()) {
                 return responseService.generateErrorResponse("No vendors with available leagues found", HttpStatus.NOT_FOUND);

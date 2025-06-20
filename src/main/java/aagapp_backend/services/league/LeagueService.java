@@ -19,6 +19,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
@@ -50,6 +51,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -163,6 +165,10 @@ public class LeagueService {
                         .orElseThrow(() -> new BusinessException("Opponent Vendor not found", HttpStatus.BAD_REQUEST));
                 challenge.setOpponentVendorName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
                 challenge.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
+
+                if (opponentVendor.getStatus() != VendorStatus.ACTIVE) {
+                    throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+                }
 
                 // Check if the opponent vendor's league status is available
                 if (opponentVendor.getLeagueStatus() != LeagueStatus.AVAILABLE) {
@@ -619,7 +625,11 @@ public class LeagueService {
 
     private VendorEntity getRandomAvailableVendor(Long excludeVendorId) {
         // Fetch available vendors excluding the vendor calling the method
-        List<VendorEntity> availableVendors = vendorRepository.findByLeagueStatus(LeagueStatus.AVAILABLE);
+        // Fetch vendors that are both AVAILABLE and ACTIVE
+        List<VendorEntity> availableVendors = vendorRepository.findByLeagueStatusAndStatus(
+                LeagueStatus.AVAILABLE,
+                VendorStatus.ACTIVE
+        );
         availableVendors.removeIf(vendor -> vendor.getService_provider_id().equals(excludeVendorId));
 
         if (availableVendors.isEmpty()) {

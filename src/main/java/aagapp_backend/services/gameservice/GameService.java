@@ -52,6 +52,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import javax.naming.LimitExceededException;
@@ -227,7 +228,17 @@ public void updateDailylimit() {
     @Transactional
     public Game publishLudoGame(GameRequest gameRequest, Long vendorId,Long existinggameId) throws LimitExceededException {
 
-            // Create a new Game entity
+        // Fetch Vendor and Theme Entities
+        VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
+        if (vendorEntity == null) {
+            throw new BusinessException("No records found for vendor" , HttpStatus.BAD_REQUEST);
+        }
+        if (vendorEntity.getStatus() != VendorStatus.ACTIVE) {
+            throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+        }
+
+
+        // Create a new Game entity
             Game game = new Game();
 
             boolean isAvailable = isGameAvailableById(existinggameId);
@@ -249,11 +260,7 @@ public void updateDailylimit() {
         game.setName(gameAvailable.get().getGameName());
 
 
-            // Fetch Vendor and Theme Entities
-            VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
-            if (vendorEntity == null) {
-                throw new BusinessException("No records found for vendor" , HttpStatus.BAD_REQUEST);
-            }
+
             ThemeEntity theme = em.find(ThemeEntity.class, gameRequest.getThemeId());
             if (theme == null) {
                 throw new BusinessException("No theme found with the provided ID " + gameRequest.getThemeId() , HttpStatus.BAD_REQUEST);
