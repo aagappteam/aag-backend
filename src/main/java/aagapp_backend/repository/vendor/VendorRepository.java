@@ -3,6 +3,7 @@ package aagapp_backend.repository.vendor;
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.LeagueStatus;
+import aagapp_backend.enums.VendorStatus;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,7 +15,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
-    List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
+//    List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
+List<VendorEntity> findByLeagueStatusAndStatus(LeagueStatus leagueStatus, VendorStatus status);
+
 
     List<VendorEntity> findTop3ByOrderByRefferalbalanceDesc();
 

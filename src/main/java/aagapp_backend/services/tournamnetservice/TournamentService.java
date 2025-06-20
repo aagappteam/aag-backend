@@ -14,6 +14,7 @@ import aagapp_backend.entity.tournament.*;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.TournamentStatus;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -43,6 +44,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -274,6 +276,10 @@ public class TournamentService {
         try {
 
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
+            if (vendorEntity.getStatus() != VendorStatus.ACTIVE) {
+                throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+            }
+
             Tournament tournament = new Tournament();
 
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(tournamentRequest.getExistinggameId());

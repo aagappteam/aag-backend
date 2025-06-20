@@ -11,6 +11,7 @@ import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.VendorLevelPlan;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
@@ -37,6 +38,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -133,6 +135,10 @@ public class PaymentService {
     @Transactional
     public PaymentEntity createPayment(PaymentEntity paymentRequest, Long vendorId) {
         VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
+
+        if (existingVendor.getStatus() != VendorStatus.ACTIVE) {
+            throw new AccessDeniedException("Vendor is suspended or blocked. Payment is not allowed.");
+        }
 
         Long planId = paymentRequest.getPlanId(); // Get planId from the payment request
         PlanEntity planEntity = entityManager.find(PlanEntity.class, planId);

@@ -6,6 +6,7 @@ import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.KycStatus;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.VendorLevelPlan;
+import aagapp_backend.enums.VendorStatus;
 import com.fasterxml.jackson.annotation.*;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -108,8 +109,10 @@ public class VendorEntity {
     @Column(length = 512)
     private String token;
 
-    @Column(name = "is_active")
-    private Boolean isActive;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vendor_status", nullable = false)
+    private VendorStatus status = VendorStatus.ACTIVE;
+
 
     @Column(name = "is_private")
     private Boolean isPrivate = false;
