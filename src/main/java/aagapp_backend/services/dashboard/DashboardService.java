@@ -9,6 +9,7 @@ import aagapp_backend.enums.GameStatus;
 import aagapp_backend.repository.game.GameRepository;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.services.gameservice.GameService;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -35,6 +36,9 @@ public class DashboardService {
 
     @Autowired
     private GameRoomRepository gameRoomRepository;
+
+    @Autowired
+    private GameService gameService;
 
     public DashboardResponse getDashboard(int latestPage, int popularPage, int feePage, int influencerPage, int size) {
         // Current timestamp for filtering expired games
@@ -108,6 +112,7 @@ public class DashboardService {
                 game.getEndDate() != null ? game.getEndDate() : null,
                 game.getMinPlayersPerTeam(),
                 game.getMaxPlayersPerTeam(),
+                gameService.calculateTotalPrizeNew(game),
                 game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
                 game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
         );
