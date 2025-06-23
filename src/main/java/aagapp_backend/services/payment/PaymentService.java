@@ -137,7 +137,7 @@ public class PaymentService {
         VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
 
         if (existingVendor.getStatus() != VendorStatus.ACTIVE) {
-            throw new AccessDeniedException("Vendor is suspended or blocked. Payment is not allowed.");
+            throw new BusinessException("Vendor is suspended or blocked. Payment is not allowed.", HttpStatus.BAD_REQUEST);
         }
 
         Long planId = paymentRequest.getPlanId(); // Get planId from the payment request

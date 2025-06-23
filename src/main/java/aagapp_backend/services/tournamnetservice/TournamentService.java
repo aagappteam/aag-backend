@@ -277,7 +277,7 @@ public class TournamentService {
 
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
             if (vendorEntity.getStatus() != VendorStatus.ACTIVE) {
-                throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+                throw new BusinessException("Vendor is suspended or blocked. Publishing is not allowed.", HttpStatus.BAD_REQUEST);
             }
 
             Tournament tournament = new Tournament();

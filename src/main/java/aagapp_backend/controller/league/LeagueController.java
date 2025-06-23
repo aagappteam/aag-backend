@@ -227,7 +227,7 @@ public class LeagueController {
                     .orElseThrow(() -> new BusinessException("Vendor not found with this id: " + vendorId, HttpStatus.BAD_REQUEST));
 
             if (vendor.getStatus() != VendorStatus.ACTIVE) {
-                throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+                throw new BusinessException("Vendor is suspended or blocked. Publishing is not allowed.", HttpStatus.BAD_REQUEST);
             }
 
             Challenge challenge = leagueService.createChallenge(leagueRequest, vendorId);
@@ -335,7 +335,7 @@ public class LeagueController {
 
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
             if (vendorEntity.getStatus() != VendorStatus.ACTIVE) {
-                throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+                throw new BusinessException("Vendor is suspended or blocked. Publishing is not allowed.", HttpStatus.BAD_REQUEST);
             }
 
             League publishedLeague = leagueService.publishLeague(challenge, vendorId);
