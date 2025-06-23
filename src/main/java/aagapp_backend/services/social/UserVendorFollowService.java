@@ -145,7 +145,7 @@ public class UserVendorFollowService {
                 .orElseThrow(() -> new NoSuchElementException("Vendor not found with ID: " + vendorId));
 
         if (vendor.getStatus() != VendorStatus.ACTIVE) {
-            throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+            throw new BusinessException("Vendor is suspended or blocked. Publishing is not allowed.", HttpStatus.BAD_REQUEST);
         }
 
 

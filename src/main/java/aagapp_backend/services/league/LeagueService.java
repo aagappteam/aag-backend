@@ -167,12 +167,12 @@ public class LeagueService {
                 challenge.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
 
                 if (opponentVendor.getStatus() != VendorStatus.ACTIVE) {
-                    throw new AccessDeniedException("Vendor is suspended or blocked. Publishing is not allowed.");
+                    throw new BusinessException("Vendor is suspended or blocked. Publishing is not allowed.", HttpStatus.BAD_REQUEST);
                 }
 
                 // Check if the opponent vendor's league status is available
                 if (opponentVendor.getLeagueStatus() != LeagueStatus.AVAILABLE) {
-                    throw new BusinessException("The opponent vendor's league status is not available.", HttpStatus.BAD_REQUEST);
+                    throw new BusinessException("Vendor is suspended or blocked. Publishing is not allowed.", HttpStatus.BAD_REQUEST);
                 }
             }
 
