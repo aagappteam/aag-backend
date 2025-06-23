@@ -180,6 +180,7 @@ public class GameLeagueTournamentService {
                             game.getEndDate() != null ? game.getEndDate() : null,
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
+                            gameService.calculateTotalPrizeNew(game),
                             game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
                             game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
                     ))

@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 
 @Getter
@@ -42,12 +43,13 @@ public class GetGameResponseDTO {
 
     private Integer minPlayersPerTeam;
     private Integer maxPlayersPerTeam;
+    private BigDecimal winningAmount;
 
     private String vendorName;
     private String vendorProfilePicUrl;
 
 
-    public GetGameResponseDTO(Game game) {
+    public GetGameResponseDTO(Game game, BigDecimal winningAmount) {
         this.id = game.getId();
         this.gamename = game.getName();
         this.fee = game.getFee();
@@ -56,6 +58,7 @@ public class GetGameResponseDTO {
         this.shareableLink = game.getShareableLink();
         this.aaggameid = game.getAaggameid();
         this.gameIcon = game.getImageUrl();
+        this.winningAmount = winningAmount;
         this.themeName = game.getTheme() != null ? game.getTheme().getName() : null;
         this.themeImageUrl = game.getTheme() != null ? game.getTheme().getImageUrl() : null;
         this.createdAt = game.getCreatedDate();

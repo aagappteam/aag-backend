@@ -396,6 +396,23 @@ public void updateDailylimit() {
 
     }
 
+    public BigDecimal calculateTotalPrizeNew(Game game) {
+        BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
+
+        BigDecimal singleBonus = entryFee.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT));
+        BigDecimal totalBonusCollected = singleBonus.multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
+
+        BigDecimal totalCollection = entryFee.multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
+        BigDecimal totalPrize = totalCollection.multiply(Constant.USER_PERCENTAGE);
+
+        BigDecimal finalWinnerAmount = totalPrize.add(totalBonusCollected.multiply(BigDecimal.valueOf(2)));
+
+        return finalWinnerAmount;
+    }
+
+
+
+
 
     @Transactional
     public ResponseEntity<?> joinRoom(Long playerId, Long gameId, String gametype) {
@@ -826,7 +843,6 @@ public void updateDailylimit() {
                     .map(game -> new GetGameResponseDTO(
                             game.getId(),
                             game.getName(),
-
                             game.getFee(),
                             game.getMove(),
                             game.getStatus(),
@@ -842,6 +858,7 @@ public void updateDailylimit() {
 
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
+                            calculateTotalPrizeNew(game),
                             game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
                             game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
                     ))
@@ -1136,6 +1153,7 @@ public void updateDailylimit() {
                             game.getEndDate() != null ? game.getEndDate() : null,
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
+                            calculateTotalPrizeNew(game),
                             game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
                             game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
                     ))
@@ -1304,7 +1322,7 @@ public void updateDailylimit() {
 
 
 
-        return new GetGameResponseDTO(game.get());
+        return new GetGameResponseDTO(game.get(), calculateTotalPrizeNew( game.get()));
     }
 
 }
