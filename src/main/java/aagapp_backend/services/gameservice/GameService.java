@@ -192,6 +192,8 @@ public void updateDailylimit() {
         String queryString = "SELECT v.id FROM VendorEntity v " +
                 "JOIN PaymentEntity p ON p.vendorEntity.id = v.id " +
                 "WHERE p.status = :activeStatus " +
+                "WHERE v.vendor_status = :isActiveStatus " +
+
                 "AND p.expiryAt IS NOT NULL " +
                 "AND p.expiryAt > :now " +
                 "AND p.id = (" +
@@ -205,6 +207,8 @@ public void updateDailylimit() {
 
         Query query = em.createQuery(queryString);
         query.setParameter("activeStatus", PaymentStatus.ACTIVE);
+        query.setParameter("isActiveStatus", VendorStatus.SUSPENDED);
+
         query.setParameter("now", now);
 
         query.setFirstResult(page * pageSize);
