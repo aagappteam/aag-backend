@@ -1,6 +1,7 @@
 package aagapp_backend.controller.social;
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.dto.TopVendorWeekDto;
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;

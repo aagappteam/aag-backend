@@ -472,6 +472,14 @@ public class AdminReviewController {
         return ResponseService.generateSuccessResponse("Vendor status updated","vendor is "+ newStatus, HttpStatus.OK);
     }
 
+    //user status updated
+    @PutMapping("/user/status/{id}")
+    public ResponseEntity<?> updateUserStatus(@PathVariable Long id, @RequestParam VendorStatus newStatus) {
+        CustomCustomer user = customCustomerRepository.findById(id).orElseThrow(() -> new BusinessException("User not found with this id: " + id, HttpStatus.BAD_REQUEST));
+        user.setStatus(newStatus);
+        customCustomerRepository.save(user);
+        return ResponseService.generateSuccessResponse("User status updated","user is "+ newStatus, HttpStatus.OK);
+    }
 
 
 }

@@ -5,6 +5,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.KycStatus;
 import aagapp_backend.enums.ProfileStatus;
+import aagapp_backend.enums.VendorStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -89,6 +90,10 @@ public class CustomCustomer {
     @NotNull(message = "Mobile number is required")
     @Column(name = "mobile_number", unique = true)
     private String mobileNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_status", nullable = false)
+    private VendorStatus status = VendorStatus.ACTIVE;
 
     @Nullable
     @Column(name = "country_code")

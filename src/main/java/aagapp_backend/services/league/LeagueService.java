@@ -789,6 +789,11 @@ public class LeagueService {
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
 
+
+        if (player.getCustomer().getStatus() != VendorStatus.ACTIVE) {
+            throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+        }
+
         Wallet wallet = player.getCustomer().getWallet();
         /*Double unplayedBalance = wallet.getUnplayedBalance();
         BigDecimal winningAmount = wallet.getWinningAmount();
@@ -835,6 +840,10 @@ public class LeagueService {
         LeagueTeam team = leagueTeamRepository.findById(teamId)
                 .orElseThrow(() -> new BusinessException("Team not found with ID: " + teamId, HttpStatus.BAD_REQUEST));
 
+        if (player.getCustomer().getStatus() != VendorStatus.ACTIVE) {
+            throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+        }
+
 
         if (!team.getLeague().getId().equals(league.getId())) {
             return responseService.generateErrorResponse("Selected team does not belong to the specified league", HttpStatus.BAD_REQUEST);
@@ -871,6 +880,10 @@ public class LeagueService {
 
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
+
+        if (player.getCustomer().getStatus() != VendorStatus.ACTIVE) {
+            throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+        }
 
 
         // Step 3: Check if player has already entered the league
@@ -929,12 +942,18 @@ public class LeagueService {
             League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
 
+            if (player.getCustomer().getStatus() != VendorStatus.ACTIVE) {
+                throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+            }
+
             LeaguePass leaguePass = leaguePassRepository.findByPlayerAndLeague(player, league)
                     .orElseThrow(() -> new BusinessException("No league passes found for this player in the selected league", HttpStatus.BAD_REQUEST));
 
             if (!teamId.equals(leaguePass.getSelectedTeamId())) {
                 return responseService.generateErrorResponse("You have not selected a team or you want to join with another team", HttpStatus.BAD_REQUEST);
             }
+
+
 
             if (leaguePass.getPassCount() == 0) {
                 return responseService.generateErrorResponse(
