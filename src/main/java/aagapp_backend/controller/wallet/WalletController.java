@@ -8,6 +8,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.NotificationType;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
@@ -63,6 +64,12 @@ public class WalletController {
 
             String token = authorization.substring(7);
             Long customerId = addBalanceRequest.getCustomerId();
+
+            CustomCustomer customer1 = customCustomerService.getCustomerById(customerId);
+
+            if (customer1.getStatus() != VendorStatus.ACTIVE) {
+                throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+            }
 
 
             // Extract user ID from the token and validate it
@@ -250,6 +257,12 @@ public class WalletController {
             Long customerId = addBalanceRequest.getCustomerId();
 
             Integer role = jwtUtil.extractRoleId(token);
+
+            CustomCustomer customer1 = customCustomerService.getCustomerById(customerId);
+
+            if (customer1.getStatus() != VendorStatus.ACTIVE) {
+                throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+            }
 
 
             // Validate JWT Token

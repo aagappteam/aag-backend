@@ -8,9 +8,11 @@ import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.GameRoomStatus;
 import aagapp_backend.enums.NotificationType;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.GameRoomRepository;
@@ -285,6 +287,11 @@ public class GameController {
     @PostMapping("/joinRoom")
     public ResponseEntity<?> joinGameRoom(@RequestBody JoinRoomRequest joinRoomRequest) {
         try {
+            Optional<Player> player = playerRepository.findById(joinRoomRequest.getPlayerId());
+
+            if (player.get().getCustomer().getStatus() != VendorStatus.ACTIVE) {
+                throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+            }
 
             return gameService.joinRoom(joinRoomRequest.getPlayerId(), joinRoomRequest.getGameId(), joinRoomRequest.getGametype());
         }catch (BusinessException e){

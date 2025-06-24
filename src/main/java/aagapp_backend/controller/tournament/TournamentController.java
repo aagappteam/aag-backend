@@ -10,6 +10,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.*;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.TournamentStatus;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.PlayerRepository;
@@ -256,6 +257,11 @@ public class TournamentController {
             @PathVariable Long tournamentId,
             @PathVariable Long playerId) {
         try {
+
+            Optional<Player> player = playerRepository.findById(playerId);
+            if (player.get().getCustomer().getStatus() != VendorStatus.ACTIVE) {
+                throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+            }
 
             TournamentPlayerRegistration registration = tournamentService.registerPlayer(tournamentId, playerId);
             return responseService.generateSuccessResponse("Player registered successfully", registration, HttpStatus.CREATED);

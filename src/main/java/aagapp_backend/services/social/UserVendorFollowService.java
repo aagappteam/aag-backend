@@ -107,8 +107,12 @@ public class UserVendorFollowService {
     @Transactional
     public String unfollowVendor(Long userId, Long vendorId) {
         // Check if user exists
-        userRepo.findById(userId)
+        CustomCustomer player = userRepo.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found with ID: " + userId));
+
+        if (player.getStatus() != VendorStatus.ACTIVE) {
+            throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+        }
 
         // Check if user is following the vendor
         UserVendorFollow follow = followRepo.findByUserIdAndVendorId(userId, vendorId)
@@ -140,6 +144,10 @@ public class UserVendorFollowService {
 
         CustomCustomer user = userRepo.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found with ID: " + userId));
+
+        if (user.getStatus() != VendorStatus.ACTIVE) {
+            throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+        }
 
         VendorEntity vendor = vendorRepo.findById(vendorId)
                 .orElseThrow(() -> new NoSuchElementException("Vendor not found with ID: " + vendorId));
