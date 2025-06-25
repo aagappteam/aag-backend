@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,4 +73,26 @@ public class ResponseService {
             return new ResponseEntity<>(map,httpStatus);
         }
     }
+
+    public ResponseEntity<Object> generateResponseForGame(String message, List<?> data, Long count, Long scheduledCount, Long activeCount, Long ExpiredCount, HttpStatus status){
+        Map<String, Object> response = new LinkedHashMap<>();
+        try {
+            response.put("message", message);
+            response.put("data", data);
+            response.put("totalCount", count);
+            response.put("scheduledCount", scheduledCount);
+            response.put("activeCount", activeCount);
+            response.put("ExpiredCount", ExpiredCount);
+            response.put("status", status);
+            response.put("status_code", status.value());
+            return new ResponseEntity<>(response, status);
+        } catch (Exception e) {
+            response.put("status", HttpStatus.INTERNAL_SERVER_ERROR);
+            response.put("isSuccess", false);
+            response.put("message", e.getMessage());
+            response.put("data", null);
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }
