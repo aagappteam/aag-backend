@@ -32,11 +32,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping("/adminreview")
@@ -218,82 +225,117 @@ public class AdminReviewController {
     }*/
 
     @GetMapping("/tickets")
-    public ResponseEntity<?> getTicketsByStatusAndRole(
+    public ResponseEntity<?> getTicketsByFilters(
             @RequestParam(required = false) TicketEnum status,
             @RequestParam(required = false) String role,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(required = false) Integer limit,
             @RequestParam(defaultValue = "10") Integer size
     ) {
         try {
-//           Pageable pageable = PageRequest.of(page, size);
-
             int pageSize = (limit != null) ? limit : (size != null ? size : 10);
-
-           Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
-
-            Page<Ticket> ticketPage;
 
             long openCount = ticketRepository.countByStatus(TicketEnum.OPEN);
             long closedCount = ticketRepository.countByStatus(TicketEnum.CLOSED);
+            long totalCount = ticketRepository.count();
 
-            // Filter by status and role
-            if (status == null && (role == null || role.isEmpty())) {
-                ticketPage = ticketRepository.findAll(pageable);
-            } else if (status != null && (role == null || role.isEmpty())) {
-                ticketPage = ticketRepository.findByStatus(status, pageable);
-            } else if ((status == null) && role != null && !role.isEmpty()) {
-                ticketPage = ticketRepository.findByRole(role, pageable);
-            } else {
-                ticketPage = ticketRepository.findByStatusAndRole(status, role, pageable);
-            }
+            // Convert dates to java.util.Date range (start of day / end of day)
+            Date start = (startDate != null) ? Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()) : null;
+            Date end = (endDate != null) ? Date.from(endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()) : null;
 
-            if (ticketPage.isEmpty()) {
-                return responseService.generateSuccessResponse("No tickets found", null, HttpStatus.OK);
-            }
+            // Apply filters in memory (for now)
+            List<Ticket> filteredTickets = ticketRepository.findAll().stream()
+                    .filter(t -> status == null || t.getStatus() == status)
+                    .filter(t -> role == null || t.getRole().equalsIgnoreCase(role))
+                    .filter(t -> email == null || (t.getEmail() != null && t.getEmail().toLowerCase().contains(email.toLowerCase())))
+                    .filter(t -> {
+                        if (start != null && end != null) {
+                            return !t.getCreatedDate().before(start) && t.getCreatedDate().before(end);
+                        } else if (start != null) {
+                            return !t.getCreatedDate().before(start);
+                        } else if (end != null) {
+                            return t.getCreatedDate().before(end);
+                        }
+                        return true;
+                    })
+                    .collect(Collectors.toList());
 
-            List<TicketResponseDto> dtoList = ticketPage.stream().map(ticket -> {
-                TicketResponseDto dto = new TicketResponseDto();
-                dto.setId(ticket.getId());
-                dto.setSubject(ticket.getSubject());
-                dto.setDescription(ticket.getDescription());
-                dto.setStatus(ticket.getStatus());
-                dto.setRemark(ticket.getRemark());
-                dto.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
-                dto.setRole(ticket.getRole());
-                dto.setEmail(ticket.getEmail());
-                dto.setCreatedDate(ticket.getCreatedDate());
-                dto.setUpdatedDate(ticket.getUpdatedDate());
+            // Map to DTO with name filter
+            List<TicketResponseDto> dtoList = filteredTickets.stream()
+                    .map(ticket -> {
+                        TicketResponseDto dto = new TicketResponseDto();
+                        dto.setId(ticket.getId());
+                        dto.setSubject(ticket.getSubject());
+                        dto.setDescription(ticket.getDescription());
+                        dto.setStatus(ticket.getStatus());
+                        dto.setRemark(ticket.getRemark());
+                        dto.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
+                        dto.setRole(ticket.getRole());
+                        dto.setEmail(ticket.getEmail());
+                        dto.setCreatedDate(ticket.getCreatedDate());
+                        dto.setUpdatedDate(ticket.getUpdatedDate());
 
-                // Set name depending on the role
-                if ("Customer".equalsIgnoreCase(ticket.getRole())) {
-                    Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
-                    customerOpt.ifPresent(customer -> dto.setName(customer.getName()));
-                }
-                else if ("Vendor".equalsIgnoreCase(ticket.getRole())) {
-                    Long id = ticket.getCustomerOrVendorId();
-                    if (id != null) {
-                        Optional<VendorEntity> vendorOpt = vendorRepository.findById(id);
-                        vendorOpt.ifPresent(vendor -> {
-                            String influencerName = (vendor.getFirst_name() != null ? vendor.getFirst_name() : "") +
-                                    (vendor.getLast_name() != null ? " " + vendor.getLast_name() : "");
-                            dto.setName(influencerName.trim());
-                        });
-                    } else {
-                        dto.setName("Unknown Vendor"); // or some other fallback
-                    }
-                }
+                        // Set name depending on role
+                        if ("Customer".equalsIgnoreCase(ticket.getRole())) {
+                            Long id = ticket.getCustomerOrVendorId();
+                            if (id != null) {
+                                Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(id);
+                                customerOpt.ifPresent(customer -> dto.setName(customer.getName()));
+                            } else {
+                                dto.setName("Unknown Customer");
+                            }
+                        } else if ("Vendor".equalsIgnoreCase(ticket.getRole())) {
+                            Long id = ticket.getCustomerOrVendorId();
+                            if (id != null) {
+                                Optional<VendorEntity> vendorOpt = vendorRepository.findById(id);
+                                vendorOpt.ifPresent(vendor -> {
+                                    String fullName = (vendor.getFirst_name() != null ? vendor.getFirst_name() : "") +
+                                            (vendor.getLast_name() != null ? " " + vendor.getLast_name() : "");
+                                    dto.setName(fullName.trim());
+                                });
+                            } else {
+                                dto.setName("Unknown Vendor");
+                            }
+                        }
 
-                return dto;
-            }).collect(Collectors.toList());
+
+                        return dto;
+                    })
+                    .filter(dto -> name == null || (dto.getName() != null && dto.getName().toLowerCase().contains(name.toLowerCase())))
+                    .collect(Collectors.toList());
+
+            // Sort by ID in descending order
+            dtoList = dtoList.stream()
+                    .sorted(Comparator.comparing(TicketResponseDto::getId).reversed())
+                    .collect(Collectors.toList());
+
+            // Paginate manually
+            int startIndex = page * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, dtoList.size());
+            List<TicketResponseDto> paginatedList = (startIndex < endIndex) ? dtoList.subList(startIndex, endIndex) : Collections.emptyList();
+
+
             return responseService.generateSuccessResponseForTicket(
-                    "Tickets retrieved successfully", dtoList, ticketPage.getTotalElements(),openCount,closedCount, HttpStatus.OK
+                    "Tickets retrieved successfully",
+                    paginatedList,
+                    totalCount,
+                    openCount,
+                    closedCount,
+                    HttpStatus.OK
             );
+
+        } catch (DateTimeParseException e) {
+            return responseService.generateErrorResponse("Invalid date format. Use YYYY-MM-DD", HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
+            return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
 
     // 2. Create a new FAQ
