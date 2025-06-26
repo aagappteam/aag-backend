@@ -617,6 +617,7 @@ public class LeagueService {
     }
 
 
+
     public boolean isGameAvailableById(Long gameId) {
         // Use the repository to find a game by its name
         Optional<AagAvailableGames> game = aagGameRepository.findById(gameId);
