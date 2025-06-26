@@ -8,6 +8,8 @@ import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.admin.DashboardAdmin;
+import aagapp_backend.spec.InfluencerMonthlyEarningSpecification;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
@@ -22,11 +24,15 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -220,53 +226,100 @@ public class AdminDetailsController {
     }
 
 
-    // Summary for current month
     @GetMapping("/monthly-earnings")
     public ResponseEntity<?> getMonthlyEarnings(
             @RequestParam(required = false) Long influencerId,
             @RequestParam(required = false) String monthYear,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) BigDecimal minEarning,
+            @RequestParam(required = false) BigDecimal maxEarning,
+            @RequestParam(required = false) BigDecimal minRecharge,
+            @RequestParam(required = false) BigDecimal maxRecharge,
+            @RequestParam(required = false) Integer multiplier,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(required = false) Integer limit,
-            @RequestParam(defaultValue = "10") Integer size) {
+            @RequestParam(required = false) Integer size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection
+    ) {
         int pageSize = (limit != null) ? limit : (size != null ? size : 10);
 
-        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
-        Page<InfluencerMonthlyEarning> resultPage;
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
+        Pageable pageable = PageRequest.of(page, pageSize, sort);
 
-        if (influencerId != null && monthYear != null) {
-            InfluencerMonthlyEarning record = earningRepo.findByInfluencerIdAndMonthYear(influencerId, monthYear);
-            VendorEntity vendor = vendorRepository.findByServiceProviderId(influencerId);
+        Specification<InfluencerMonthlyEarning> spec = InfluencerMonthlyEarningSpecification.filter(
+                influencerId, monthYear, startDate, endDate, minEarning, maxEarning,
+                minRecharge, maxRecharge, multiplier
+        );
 
-            if (record != null && vendor != null) {
-                MonthlyEarningWithVendorDTO dto = new MonthlyEarningWithVendorDTO(record, vendor);
-                return ResponseEntity.ok(List.of(dto));
-            }
-            return ResponseEntity.ok(List.of());
-        } else {
-            if (influencerId != null) {
-                resultPage = earningRepo.findByInfluencerId(influencerId, pageable);
-            } else if (monthYear != null) {
-                resultPage = earningRepo.findByMonthYear(monthYear, pageable);
-            } else {
-                resultPage = earningRepo.findAll(pageable);
-            }
+        Page<InfluencerMonthlyEarning> pageResult = earningRepo.findAll(spec, pageable);
+        List<MonthlyEarningWithVendorDTO> dtos = pageResult.stream()
+                .map(e -> new MonthlyEarningWithVendorDTO(e, vendorRepository.findByServiceProviderId(e.getInfluencerId())))
+                .collect(Collectors.toList());
 
-            List<MonthlyEarningWithVendorDTO> resultList = resultPage.getContent().stream()
-                    .map(e -> {
-                        VendorEntity vendor = vendorRepository.findByServiceProviderId(e.getInfluencerId());
-                        return new MonthlyEarningWithVendorDTO(e, vendor);
-                    })
-                    .collect(Collectors.toList());
-
-            return responseService.generateSuccessResponseWithCount(
-                    "Monthly earnings fetched successfully",
-                    resultList,
-                    resultPage.getTotalElements(),
-                    HttpStatus.OK
-            );
-        }
+        return responseService.generateSuccessResponseWithCount(
+                "Monthly earnings fetched successfully",
+                dtos,
+                pageResult.getTotalElements(),
+                HttpStatus.OK
+        );
     }
 
+    @GetMapping("/monthly-earnings/download")
+    public void downloadMonthlyEarningsCsv(
+            @RequestParam(required = false) Long influencerId,
+            @RequestParam(required = false) String monthYear,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) BigDecimal minEarning,
+            @RequestParam(required = false) BigDecimal maxEarning,
+            @RequestParam(required = false) BigDecimal minRecharge,
+            @RequestParam(required = false) BigDecimal maxRecharge,
+            @RequestParam(required = false) Integer multiplier,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection,
+            HttpServletResponse response
+    ) throws IOException {
+
+        // Build sort
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection.toUpperCase()), sortBy);
+
+        // Use the spec you already have
+        Specification<InfluencerMonthlyEarning> spec = InfluencerMonthlyEarningSpecification.filter(
+                influencerId, monthYear, startDate, endDate,
+                minEarning, maxEarning, minRecharge, maxRecharge, multiplier
+        );
+
+        List<InfluencerMonthlyEarning> earnings = earningRepo.findAll(spec, sort);
+
+        // CSV response headers
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=monthly_earnings.csv");
+
+        // Writer setup
+        PrintWriter writer = response.getWriter();
+        writer.println("ID,Influencer ID,Month,Recharge Amount,Multiplier,Earned Amount,Max Return,Vendor Name,Mobile");
+
+        for (InfluencerMonthlyEarning e : earnings) {
+            VendorEntity vendor = vendorRepository.findByServiceProviderId(e.getInfluencerId());
+
+            writer.printf(
+                    "%d,%d,%s,%s,%d,%s,%s,%s,%s%n",
+                    e.getId(),
+                    e.getInfluencerId(),
+                    e.getMonthYear(),
+                    e.getRechargeAmount(),
+                    e.getMultiplier(),
+                    e.getEarnedAmount(),
+                    e.getMaxReturnAmount(),
+                    vendor != null ? vendor.getName() : "",
+                    vendor != null ? vendor.getMobileNumber() : ""
+            );
+        }
+
+        writer.flush();
+    }
 
 
     // Vendor month wise history
