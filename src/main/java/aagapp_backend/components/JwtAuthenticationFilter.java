@@ -260,8 +260,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleUser)) {
-                return false;
-                /*customCustomer = customCustomerService.readCustomerById(id);
+//                return false;
+                customCustomer = customCustomerService.readCustomerById(id);
 
                 if (customCustomer != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -273,10 +273,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     jwtUtil.logoutUser(jwt);
                     respondWithUnauthorized(response, "Invalid data provided for this customer");
                     return true;
-                }*/
+                }
             } else if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.rolevendor)) {
-                return false;
-                /*serviceProvider = entityManager.find(VendorEntity.class, id);
+//                return false;
+                serviceProvider = entityManager.find(VendorEntity.class, id);
                 if (serviceProvider != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             serviceProvider.getService_provider_id(), null, new ArrayList<>());
@@ -286,10 +286,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 } else {
                     respondWithUnauthorized(response, "Invalid data provided for this vendor");
                     return true;
-                }*/
+                }
             } else if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleAdminServiceProvider)) {
-                return false;
-                /* cusomAdmin=entityManager.find(CustomAdmin.class,id);
+//                return false;
+                 cusomAdmin=entityManager.find(CustomAdmin.class,id);
                 if (cusomAdmin != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             cusomAdmin.getAdmin_id(), null, new ArrayList<>());
@@ -299,7 +299,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 } else {
                     respondWithUnauthorized(response, "Invalid data provided for this user");
                     return true;
-                }*/
+                }
             } else {
                 respondWithUnauthorized(response, "Invalid data provided for this user");
                 return true;
