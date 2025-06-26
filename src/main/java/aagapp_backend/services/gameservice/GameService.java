@@ -169,24 +169,24 @@ public class GameService {
         }
     }
 
-/// at 12 am cron should run daily
-@Scheduled(cron = "0 0 0 * * *")  // Every day at midnight
-@Transactional
-public void updateDailylimit() {
-    int page = 0;
-    int pageSize = 100;
-    List<Long> vendorIds;
+    /// at 12 am cron should run daily
+    @Scheduled(cron = "0 0 0 * * *")  // Every day at midnight
+    @Transactional
+    public void updateDailylimit() {
+        int page = 0;
+        int pageSize = 100;
+        List<Long> vendorIds;
 
-    while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
-        try {
-            logger.info("Updating daily limit for vendor IDs: {}", vendorIds);
-            vendorRepository.updateDailyLimitForVendors(vendorIds);
-        } catch (Exception e) {
-            logger.error("Failed to update daily limits for batch page {} with vendorIds: {}", page, vendorIds, e);
+        while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
+            try {
+                logger.info("Updating daily limit for vendor IDs: {}", vendorIds);
+                vendorRepository.updateDailyLimitForVendors(vendorIds);
+            } catch (Exception e) {
+                logger.error("Failed to update daily limits for batch page {} with vendorIds: {}", page, vendorIds, e);
+            }
+            page++;
         }
-        page++;
     }
-}
 
 
     public List<Long> getActiveVendorIdsInBatch(int page, int pageSize) {
@@ -246,15 +246,15 @@ public void updateDailylimit() {
 
 
         // Create a new Game entity
-            Game game = new Game();
+        Game game = new Game();
 
-            boolean isAvailable = isGameAvailableById(existinggameId);
+        boolean isAvailable = isGameAvailableById(existinggameId);
 
-            if (!isAvailable) {
-                throw new BusinessException("game is not available" , HttpStatus.BAD_REQUEST);
-            }
+        if (!isAvailable) {
+            throw new BusinessException("game is not available" , HttpStatus.BAD_REQUEST);
+        }
 //        check from gamerequestgamename that existing game exists or not for same vendor
-            Optional<AagAvailableGames> gameAvailable= aagGameRepository.findById(existinggameId);
+        Optional<AagAvailableGames> gameAvailable= aagGameRepository.findById(existinggameId);
 
 //            game.setImageUrl(gameAvailable.get().getGameImage());
         AagAvailableGames gameEntity = gameAvailable.orElseThrow(() ->
@@ -268,72 +268,72 @@ public void updateDailylimit() {
 
 
 
-            ThemeEntity theme = em.find(ThemeEntity.class, gameRequest.getThemeId());
-            if (theme == null) {
-                throw new BusinessException("No theme found with the provided ID " + gameRequest.getThemeId() , HttpStatus.BAD_REQUEST);
+        ThemeEntity theme = em.find(ThemeEntity.class, gameRequest.getThemeId());
+        if (theme == null) {
+            throw new BusinessException("No theme found with the provided ID " + gameRequest.getThemeId() , HttpStatus.BAD_REQUEST);
+        }
+
+        // Set Vendor and Theme to the Game
+        game.setVendorEntity(vendorEntity);
+        game.setTheme(theme);
+        game.setAaggameid(existinggameId);
+        // Calculate moves based on the selected fee
+        game.setFee(gameRequest.getFee());
+        if(gameRequest.getFee()>10){
+            game.setMove(Constant.TENMOVES);
+        } else{
+            game.setMove(Constant.SIXTEENMOVES);
+
+        }
+
+        // Get current time in Kolkata timezone
+        ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        if (gameRequest.getScheduledAt() != null) {
+            ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+            if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
+                throw new BusinessException("The game must be scheduled at least 4 hours in advance." , HttpStatus.BAD_REQUEST);
             }
+            game.setStatus(GameStatus.SCHEDULED);
+            game.setScheduledAt(scheduledInKolkata);
+            game.setEndDate(scheduledInKolkata.plusHours(4));
+        } else {
+            game.setStatus(GameStatus.SCHEDULED);
 
-            // Set Vendor and Theme to the Game
-            game.setVendorEntity(vendorEntity);
-            game.setTheme(theme);
-            game.setAaggameid(existinggameId);
-            // Calculate moves based on the selected fee
-            game.setFee(gameRequest.getFee());
-            if(gameRequest.getFee()>10){
-                game.setMove(Constant.TENMOVES);
-            } else{
-                game.setMove(Constant.SIXTEENMOVES);
+            game.setScheduledAt(nowInKolkata.plusMinutes(15));
+            game.setEndDate(nowInKolkata.plusHours(4));
 
-            }
+        }
 
-            // Get current time in Kolkata timezone
-            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-            if (gameRequest.getScheduledAt() != null) {
-                ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
-                    throw new BusinessException("The game must be scheduled at least 4 hours in advance." , HttpStatus.BAD_REQUEST);
-                }
-                game.setStatus(GameStatus.SCHEDULED);
-                game.setScheduledAt(scheduledInKolkata);
-                game.setEndDate(scheduledInKolkata.plusHours(4));
-            } else {
-                game.setStatus(GameStatus.SCHEDULED);
+        // Set the minimum and maximum players
+        if (gameRequest.getMinPlayersPerTeam() != null) {
+            game.setMinPlayersPerTeam(gameRequest.getMinPlayersPerTeam());
+        }
+        if (gameRequest.getMaxPlayersPerTeam() != null) {
+            game.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
+        }
+        vendorEntity.setTotal_game_published((vendorEntity.getTotal_game_published() == null ? 0 : vendorEntity.getTotal_game_published()) + 1);
 
-                game.setScheduledAt(nowInKolkata.plusMinutes(15));
-                game.setEndDate(nowInKolkata.plusHours(4));
-
-            }
-
-            // Set the minimum and maximum players
-            if (gameRequest.getMinPlayersPerTeam() != null) {
-                game.setMinPlayersPerTeam(gameRequest.getMinPlayersPerTeam());
-            }
-            if (gameRequest.getMaxPlayersPerTeam() != null) {
-                game.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
-            }
-            vendorEntity.setTotal_game_published((vendorEntity.getTotal_game_published() == null ? 0 : vendorEntity.getTotal_game_published()) + 1);
-
-            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
+        vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
 
 
-            // Set created and updated timestamps
-            game.setCreatedDate(nowInKolkata);
-            game.setUpdatedDate(nowInKolkata);
+        // Set created and updated timestamps
+        game.setCreatedDate(nowInKolkata);
+        game.setUpdatedDate(nowInKolkata);
 
-            // Save the game to get the game ID
-            Game savedGame = gameRepository.save(game);
+        // Save the game to get the game ID
+        Game savedGame = gameRepository.save(game);
 
-            // Create the first GameRoom (initialized, 2 players max)
-            GameRoom gameRoom = createNewEmptyRoom(savedGame);
+        // Create the first GameRoom (initialized, 2 players max)
+        GameRoom gameRoom = createNewEmptyRoom(savedGame);
 
-            // Save the game room
-            gameRoomRepository.save(gameRoom);
+        // Save the game room
+        gameRoomRepository.save(gameRoom);
 
-            // Generate a shareable link for the game
-            String shareableLink = generateShareableLink(savedGame.getId(),vendorId);
-            savedGame.setShareableLink(shareableLink);
+        // Generate a shareable link for the game
+        String shareableLink = generateShareableLink(savedGame.getId(),vendorId);
+        savedGame.setShareableLink(shareableLink);
 
-            return gameRepository.save(savedGame);
+        return gameRepository.save(savedGame);
 
 
     }
@@ -444,7 +444,7 @@ public void updateDailylimit() {
 
             commonservice.deductFromWallet(playerId, game.getFee(),"Rs. " + game.getFee() + " deducted for playing " + game.getName() + " game");
 
-           commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
+            commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
 
             boolean playerJoined = addPlayerToRoom(gameRoom, player);
 
@@ -579,7 +579,7 @@ public void updateDailylimit() {
                     .map(game -> {
                         Map<String, String> gameMap = new HashMap<>();
                         gameMap.put("imageUrl",(game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl()
-                                );
+                        );
                         gameMap.put("name", game.getName() != null ? game.getName() : "n/a");
                         gameMap.put("themename", game.getTheme().getName());
                         return gameMap;
@@ -598,7 +598,7 @@ public void updateDailylimit() {
                     .collect(Collectors.toList()));
 
 
-                    publishedContent.addAll(tournaments.stream()
+            publishedContent.addAll(tournaments.stream()
                     .map(tournament -> {
                         Map<String, String> gameMap = new HashMap<>();
                         gameMap.put("imageUrl",(tournament.getTheme() != null && tournament.getTheme().getGameimageUrl() != null) ? tournament.getTheme().getGameimageUrl() : tournament.getTheme().getImageUrl());
@@ -676,24 +676,24 @@ public void updateDailylimit() {
 
 
     public GameRoom findAvailableGameRoom(Game game) {
-            try{
-                // Find a game room that has available space and matches the specified game
-                List<GameRoom> availableRooms = gameRoomRepository.findByGameAndStatus(game, GameRoomStatus.INITIALIZED);
-                // Loop through the available rooms and return the first one with space
-                for (GameRoom room : availableRooms) {
-                    if (room.getCurrentPlayers().size() < room.getMaxPlayers()) {
-                        return room;
-                    }
+        try{
+            // Find a game room that has available space and matches the specified game
+            List<GameRoom> availableRooms = gameRoomRepository.findByGameAndStatus(game, GameRoomStatus.INITIALIZED);
+            // Loop through the available rooms and return the first one with space
+            for (GameRoom room : availableRooms) {
+                if (room.getCurrentPlayers().size() < room.getMaxPlayers()) {
+                    return room;
                 }
-
-                // If no available room is found, return null or create a new room
-                GameRoom newRoom = createNewEmptyRoom(game);
-                gameRoomRepository.save(newRoom); // Save the new room
-                return newRoom;
-            }catch (Exception e){
-                exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-                return null;
             }
+
+            // If no available room is found, return null or create a new room
+            GameRoom newRoom = createNewEmptyRoom(game);
+            gameRoomRepository.save(newRoom); // Save the new room
+            return newRoom;
+        }catch (Exception e){
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return null;
+        }
     }
 
 
@@ -802,10 +802,10 @@ public void updateDailylimit() {
     }
 
 
-/*    private String generateShareableLink(Long gameId) {
-        return "https://backend.aagapp.com/games/" + gameId;
+    /*    private String generateShareableLink(Long gameId) {
+            return "https://backend.aagapp.com/games/" + gameId;
 
-    }*/
+        }*/
     private String generateShareableLink(Long gameId,Long vendorId) {
         return "https://backend.aagapp.com/vendor/"+  vendorId  +"/games/" + gameId ;
     }
@@ -917,69 +917,69 @@ public void updateDailylimit() {
     @Transactional
     public ResponseEntity<?> updateGame(Long vendorId, Long gameId, GameRequest gameRequest) {
 
-      try {
-          String jpql = "SELECT g FROM Game g WHERE g.id = :gameId AND g.vendorEntity.id = :vendorId";
-          TypedQuery<Game> query = em.createQuery(jpql, Game.class);
-          query.setParameter("gameId", gameId);
-          query.setParameter("vendorId", vendorId);
+        try {
+            String jpql = "SELECT g FROM Game g WHERE g.id = :gameId AND g.vendorEntity.id = :vendorId";
+            TypedQuery<Game> query = em.createQuery(jpql, Game.class);
+            query.setParameter("gameId", gameId);
+            query.setParameter("vendorId", vendorId);
 
-          Game game = query.getResultList().stream()
-                  .findFirst()
-                  .orElseThrow(() -> new BusinessException("Game ID: " + gameId + " does not belong to Vendor ID: " + vendorId, HttpStatus.BAD_REQUEST));
+            Game game = query.getResultList().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException("Game ID: " + gameId + " does not belong to Vendor ID: " + vendorId, HttpStatus.BAD_REQUEST));
 
 
-          ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-          ZonedDateTime scheduledAtInKolkata = game.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime scheduledAtInKolkata = game.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
-          if (game.getStatus() == GameStatus.EXPIRED) {
-              throw new BusinessException("Game ID: " + game.getId() + " has already expired. No update allowed.", HttpStatus.BAD_REQUEST);
-          } else if (game.getStatus() == GameStatus.ACTIVE) {
-              throw new BusinessException("Game ID: " + game.getId() + " is already active. No update allowed.", HttpStatus.BAD_REQUEST);
-          }
+            if (game.getStatus() == GameStatus.EXPIRED) {
+                throw new BusinessException("Game ID: " + game.getId() + " has already expired. No update allowed.", HttpStatus.BAD_REQUEST);
+            } else if (game.getStatus() == GameStatus.ACTIVE) {
+                throw new BusinessException("Game ID: " + game.getId() + " is already active. No update allowed.", HttpStatus.BAD_REQUEST);
+            }
 
-          if (scheduledAtInKolkata != null) {
-              ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
+            if (scheduledAtInKolkata != null) {
+                ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
 
-              if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
+                if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
 
 
                /* if (gameRequest.getName() != null && !gameRequest.getName().isEmpty()) {
                     game.setName(gameRequest.getName());
                 }*/
 
-                  // Calculate moves based on the selected fee
+                    // Calculate moves based on the selected fee
 
-                  game.setFee(gameRequest.getFee());
-                  if(gameRequest.getFee()>10){
-                      game.setMove(Constant.TENMOVES);
-                  } else{
-                      game.setMove(Constant.SIXTEENMOVES);
-                  }
-                  ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+                    game.setFee(gameRequest.getFee());
+                    if(gameRequest.getFee()>10){
+                        game.setMove(Constant.TENMOVES);
+                    } else{
+                        game.setMove(Constant.SIXTEENMOVES);
+                    }
+                    ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
 
-                  game.setScheduledAt(scheduledInKolkata);
-                  game.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
-                  game.setEndDate(scheduledInKolkata.plusHours(4));
+                    game.setScheduledAt(scheduledInKolkata);
+                    game.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+                    game.setEndDate(scheduledInKolkata.plusHours(4));
 
-                  em.merge(game);
-                  return ResponseEntity.ok("Game updated successfully");
-              } else {
-                  throw new BusinessException("Game ID: " + game.getId() + " cannot be updated on the scheduled date or after.", HttpStatus.BAD_REQUEST);
-              }
-          } else {
-              throw new BusinessException("Game ID: " + game.getId() + " does not have a scheduled time.", HttpStatus.BAD_REQUEST);
-          }
+                    em.merge(game);
+                    return ResponseEntity.ok("Game updated successfully");
+                } else {
+                    throw new BusinessException("Game ID: " + game.getId() + " cannot be updated on the scheduled date or after.", HttpStatus.BAD_REQUEST);
+                }
+            } else {
+                throw new BusinessException("Game ID: " + game.getId() + " does not have a scheduled time.", HttpStatus.BAD_REQUEST);
+            }
 
-      }catch (BusinessException e) {
-          throw e;
-      }
+        }catch (BusinessException e) {
+            throw e;
+        }
 
-      catch (IllegalStateException e) {
-          return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
-      }catch (Exception e) {
-          exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-          return ResponseService.generateErrorResponse("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-      }
+        catch (IllegalStateException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return ResponseService.generateErrorResponse("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Transactional
@@ -1292,10 +1292,10 @@ public void updateDailylimit() {
             for (League league : leagues) {
 
 
-                    league.setStatus(LeagueStatus.ACTIVE);
-                    league.setScheduledAt(nowInKolkata);
-                    league.setUpdatedDate(nowInKolkata);
-                    leagueRepository.save(league);
+                league.setStatus(LeagueStatus.ACTIVE);
+                league.setScheduledAt(nowInKolkata);
+                league.setUpdatedDate(nowInKolkata);
+                leagueRepository.save(league);
 
             }
 
@@ -1423,4 +1423,3 @@ public void updateDailylimit() {
 
 
 }
-
