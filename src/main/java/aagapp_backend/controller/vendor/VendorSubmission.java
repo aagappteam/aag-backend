@@ -128,7 +128,7 @@ public class VendorSubmission {
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(e);
             return ResponseService.generateErrorResponse(
-                    "An error occurred while retrieving submissions.",
+                    "An error occurred while retrieving submissions."+ e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }

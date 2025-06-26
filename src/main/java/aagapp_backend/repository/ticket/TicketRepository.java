@@ -37,6 +37,5 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     Page<Ticket> findByStatusAndRole(TicketEnum status, String role, Pageable pageable);
 
 
-
-
+    long countByStatus(TicketEnum ticketEnum);
 }

@@ -314,6 +314,10 @@ public class AdminDetailsController {
             Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
             Page<WithdrawalRequest> requestsPage;
 
+            long approvedCount = withdrawalRepo.countByStatus("APPROVED");
+            long rejectedCount = withdrawalRepo.countByStatus("REJECTED");
+            long pendingCount = withdrawalRepo.countByStatus("PENDING");
+
             // Validate status if provided
             if (status != null && !status.isEmpty()) {
                 List<String> validStatuses = Arrays.asList("PENDING", "APPROVED", "REJECTED");
@@ -345,10 +349,13 @@ public class AdminDetailsController {
                 return new WithdrawalRequestHistoryDTO(request, name.trim(), mobile, email);
             }).collect(Collectors.toList());
 
-            return responseService.generateSuccessResponseWithCount(
+            return responseService.generateSuccessResponseForWithdrwalRequest(
                     "Withdrawal requests fetched successfully",
                     dtoList,
                     requestsPage.getTotalElements(),
+                    approvedCount,
+                    rejectedCount,
+                    pendingCount,
                     HttpStatus.OK
             );
         } catch (Exception e) {

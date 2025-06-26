@@ -18,5 +18,7 @@ public interface WithdrawalRequestRepository extends JpaRepository<WithdrawalReq
     Page<WithdrawalRequest> findByStatus(String status, Pageable pageable);
 
     Page<WithdrawalRequest> findByInfluencerIdAndStatus(Long influencerId, String upperCase, Pageable pageable);
+
+    long countByStatus(String approved);
 }
 
