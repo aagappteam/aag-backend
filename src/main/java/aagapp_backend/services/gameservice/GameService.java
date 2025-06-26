@@ -145,7 +145,7 @@ public class GameService {
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(GameService.class);
 
 
-    @Scheduled(cron = "0 * * * * *")  // Every minute
+/*    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
         int pageSize = 100;
@@ -163,7 +163,7 @@ public class GameService {
             }
             page++;
         }
-    }
+    }*/
 
 /// at 12 am cron should run daily
 @Scheduled(cron = "0 0 0 * * *")  // Every day at midnight
