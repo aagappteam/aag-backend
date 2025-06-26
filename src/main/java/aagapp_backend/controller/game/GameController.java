@@ -127,12 +127,15 @@ public class GameController {
             Pageable pageable = PageRequest.of(page, size);
             // Assuming your service returns Page<GetGameResponseDTO>
             Page<GetGameResponseDTO> games = gameService.getAllGames(status, vendorId, pageable,gamename);
+            Long scheduledCount = gameService.getScheduledCount();
+            Long activeCount = gameService.getActiveCount();
+            Long ExpiredCount = gameService.getExpiredCount();
 
             // Extract only the content (list of games) and return it
             List<GetGameResponseDTO> gameList = games.getContent();
             long totalCount = games.getTotalElements();
 
-            return responseService.generateSuccessResponseWithCount("Games fetched successfully", gameList, totalCount, HttpStatus.OK);
+            return responseService.generateResponseForGame("Games fetched successfully", gameList, totalCount, scheduledCount,activeCount,ExpiredCount, HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
