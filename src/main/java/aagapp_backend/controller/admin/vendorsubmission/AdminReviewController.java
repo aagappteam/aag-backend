@@ -234,6 +234,9 @@ public class AdminReviewController {
 
             Page<Ticket> ticketPage;
 
+            long openCount = ticketRepository.countByStatus(TicketEnum.OPEN);
+            long closedCount = ticketRepository.countByStatus(TicketEnum.CLOSED);
+
             // Filter by status and role
             if (status == null && (role == null || role.isEmpty())) {
                 ticketPage = ticketRepository.findAll(pageable);
@@ -283,8 +286,8 @@ public class AdminReviewController {
 
                 return dto;
             }).collect(Collectors.toList());
-            return responseService.generateSuccessResponseWithCount(
-                    "Tickets retrieved successfully", dtoList, ticketPage.getTotalElements(), HttpStatus.OK
+            return responseService.generateSuccessResponseForTicket(
+                    "Tickets retrieved successfully", dtoList, ticketPage.getTotalElements(),openCount,closedCount, HttpStatus.OK
             );
         } catch (Exception e) {
             exceptionHandling.handleException(e);
