@@ -104,38 +104,43 @@ public class VendorSubmission {
                 if (submissionsPage.isEmpty()) {
                     return responseService.generateResponse(HttpStatus.OK, "No Data found for the provided email", null);
                 }
-                return ResponseService.generateSuccessResponseWithCount(
+
+
+                long approvedCount = submissionService.countByApproved(true);
+                long rejectedCount = submissionService.countByApproved(false);
+                long pendingCount = submissionsPage.getTotalElements() - approvedCount - rejectedCount;
+                return ResponseService.generateSuccessResponseForWithdrwalRequest(
                         "List of submissions based on email: " ,
                         submissionsPage.getContent(),  // Get the content of the page
-                        submissionsPage.getTotalElements(),  // Total elements in the database
+                        submissionsPage.getTotalElements(),
+                        approvedCount, rejectedCount, pendingCount,// Total elements in the database
                         HttpStatus.OK
                 );
-           }
+            }
 
             Page<VendorSubmissionEntity> submissionsPage = submissionService.getSubmissionsByStatus(status, pageable);
 
             if (submissionsPage.isEmpty()) {
                 return responseService.generateResponse(HttpStatus.OK, "No Data found", null);
             }
-
-            // Return paginated response
-            return ResponseService.generateSuccessResponseWithCount(
+            long approvedCount = submissionService.countByApproved(true);
+            long rejectedCount = submissionService.countByApproved(false);
+            long pendingCount = submissionsPage.getTotalElements() - approvedCount - rejectedCount;
+            return ResponseService.generateSuccessResponseForWithdrwalRequest(
                     "List of submissions based on status: " + status,
                     submissionsPage.getContent(),  // Get the content of the page
-                    submissionsPage.getTotalElements(),  // Total elements in the database
+                    submissionsPage.getTotalElements(),
+                    approvedCount, rejectedCount, pendingCount,// Total elements in the database
                     HttpStatus.OK
             );
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(e);
             return ResponseService.generateErrorResponse(
-                    "An error occurred while retrieving submissions."+ e.getMessage(),
+                    "An error occurred while retrieving submissions.",
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
     }
-
-
-
 
 
 

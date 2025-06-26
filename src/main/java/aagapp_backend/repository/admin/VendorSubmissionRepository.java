@@ -26,4 +26,5 @@ public interface VendorSubmissionRepository extends JpaRepository<VendorSubmissi
 Page<VendorSubmissionEntity> findByEmail(String email, Pageable pageable);
 
 
+    long countByApproved(boolean b);
 }

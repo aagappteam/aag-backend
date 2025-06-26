@@ -201,5 +201,9 @@ public class VendorSubmissionService {
 
 
     }
+
+    public long countByApproved(boolean b) {
+        return submissionRepository.countByApproved(b);
+    }
 }
 
