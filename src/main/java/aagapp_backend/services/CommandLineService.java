@@ -389,6 +389,11 @@ public class CommandLineService implements CommandLineRunner {
         String ludo_league_roomsalterQuery = "ALTER TABLE ludo_league_rooms ADD COLUMN game_id BIGINT";
         Query ludo_league_roomsalterQueryquery = entityManager.createNativeQuery(ludo_league_roomsalterQuery);
         ludo_league_roomsalterQueryquery.executeUpdate();*/
+//
+//        String alterQuery = "ALTER TABLE vendor_table ADD COLUMN plan_name VARCHAR(255) DEFAULT 'Standard'";
+//        Query query = entityManager.createNativeQuery(alterQuery);
+//        query.executeUpdate();
+
 
     }
 

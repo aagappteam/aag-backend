@@ -196,6 +196,10 @@ public class VendorEntity {
     @Column(name = "fcm_token")
     private String fcmToken;
 
+    @Column(name = "plan_name")
+    private String planName = "Standard";
+
+
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
@@ -206,6 +210,11 @@ public class VendorEntity {
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
+
+    @Column(name = "last_active_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date lastActiveAt;
+
 
 /*    @Transient
     private Boolean isFollowing;*/

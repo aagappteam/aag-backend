@@ -30,6 +30,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,9 +39,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 @RestController
@@ -172,7 +171,7 @@ public class VendorController {
             return responseService.generateErrorResponse("Some error updating: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    @Transactional
+/*    @Transactional
     @GetMapping("/get-all-vendors")
     public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(required = false) Integer limit,
@@ -294,12 +293,197 @@ public class VendorController {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
+    }*/
+
+    @Transactional
+    @GetMapping("/get-all-vendors")
+    public ResponseEntity<?> getAllServiceProviders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "vendorId", required = false) Long vendorId,
+            @RequestParam(value = "vendorid", required = false) Long vendorid,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "firstName", required = false) String firstName,
+            @RequestParam(value = "planName", required = false) String planName,
+            @RequestParam(value = "isPaid", required = false) Boolean isPaid,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        try {
+            int finalLimit = (limit != null) ? limit : (size != null ? size : 10);
+            int startPosition = page * finalLimit;
+
+            if (vendorId != null) {
+                return this.getVendorDetailsById(vendorId, userId);
+            }
+
+            StringBuilder queryString = new StringBuilder("SELECT s FROM VendorEntity s");
+            StringBuilder countQueryString = new StringBuilder("SELECT COUNT(s) FROM VendorEntity s");
+
+            List<String> conditions = new ArrayList<>();
+
+            // Status filter
+            if (status != null && !status.isEmpty()) {
+                boolean isActive = Boolean.parseBoolean(status);
+                conditions.add("s.isActive = :status");
+            }
+
+            // Email filter
+            if (email != null && !email.isEmpty()) {
+                conditions.add("LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :email, '%'))");
+            }
+
+            // Name filter (first + last)
+            if (firstName != null && !firstName.trim().isEmpty()) {
+                String[] nameParts = firstName.trim().split("\\s+");
+                String firstNamePart = nameParts.length >= 1 ? nameParts[0].trim() : "";
+                String lastNamePart = nameParts.length >= 2 ? nameParts[1].trim() : "";
+
+                if (nameParts.length == 1) {
+                    conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
+                            "OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')))");
+                } else {
+                    if (!firstNamePart.isEmpty()) {
+                        conditions.add("LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))");
+                    }
+                    if (!lastNamePart.isEmpty()) {
+                        conditions.add("LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))");
+                    }
+                }
+            }
+
+            //  Plan Name filter
+            if (planName != null && !planName.isEmpty()) {
+                conditions.add("LOWER(s.planName) LIKE LOWER(CONCAT('%', :planName, '%'))");
+            }
+            if (vendorid != null) {
+                conditions.add("s.service_provider_id = :vendorid");
+            }
+
+            //  Payment status filter
+            if (isPaid != null) {
+                conditions.add("s.isPaid = :isPaid");
+            }
+            //  Date filter (createdAt column)
+            if (startDate != null && endDate != null) {
+                conditions.add("s.createdDate BETWEEN :startDate AND :endDate");
+            } else if (startDate != null) {
+                conditions.add("s.createdDate >= :startDate");
+            } else if (endDate != null) {
+                conditions.add("s.createdDate <= :endDate");
+            }
+
+            if (!conditions.isEmpty()) {
+                String whereClause = String.join(" AND ", conditions);
+                queryString.append(" WHERE ").append(whereClause);
+                countQueryString.append(" WHERE ").append(whereClause);
+            }
+
+            queryString.append(" ORDER BY s.service_provider_id DESC");
+
+            Query countQuery = entityManager.createQuery(countQueryString.toString());
+            Query query = entityManager.createQuery(queryString.toString(), VendorEntity.class);
+
+            // Set parameters
+            if (status != null && !status.isEmpty()) {
+                boolean isActive = Boolean.parseBoolean(status);
+                countQuery.setParameter("status", isActive);
+                query.setParameter("status", isActive);
+            }
+
+            if (email != null && !email.isEmpty()) {
+                countQuery.setParameter("email", email);
+                query.setParameter("email", email);
+            }
+
+            if (firstName != null && !firstName.trim().isEmpty()) {
+                String[] nameParts = firstName.trim().split("\\s+");
+                String firstNamePart = nameParts.length >= 1 ? nameParts[0].trim() : "";
+                String lastNamePart = nameParts.length >= 2 ? nameParts[1].trim() : "";
+
+                if (!firstNamePart.isEmpty()) {
+                    countQuery.setParameter("firstNamePart", firstNamePart);
+                    query.setParameter("firstNamePart", firstNamePart);
+                }
+                if (!lastNamePart.isEmpty()) {
+                    countQuery.setParameter("lastNamePart", lastNamePart);
+                    query.setParameter("lastNamePart", lastNamePart);
+                }
+            }
+
+            if (planName != null && !planName.isEmpty()) {
+                countQuery.setParameter("planName", planName);
+                query.setParameter("planName", planName);
+            }
+
+            if (vendorid != null) {
+                countQuery.setParameter("vendorid", vendorid);
+                query.setParameter("vendorid", vendorid);
+            }
+
+            if (isPaid != null) {
+                countQuery.setParameter("isPaid", isPaid);
+                query.setParameter("isPaid", isPaid);
+            }
+
+            if (startDate != null) {
+                Date start = Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+                countQuery.setParameter("startDate", start);
+                query.setParameter("startDate", start);
+            }
+            if (endDate != null) {
+                Date end = Date.from(endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+                countQuery.setParameter("endDate", end);
+                query.setParameter("endDate", end);
+            }
+
+
+            query.setFirstResult(startPosition);
+            query.setMaxResults(finalLimit);
+
+            Long totalCount = (Long) countQuery.getSingleResult();
+            List<VendorEntity> results = query.getResultList();
+
+            List<Map<String, Object>> vendorDetailList = new ArrayList<>();
+            for (VendorEntity vendor : results) {
+                Map<String, Object> vendorDetailsData = serviceProviderService.VendorDetails(vendor, userId).getBody();
+                if (vendorDetailsData != null && vendorDetailsData.containsKey("data")) {
+                    vendorDetailList.add((Map<String, Object>) vendorDetailsData.get("data"));
+                }
+            }
+            Long activeCount = this.getActiveInactiveCounts();
+            Long inactiveCount = totalCount - activeCount;
+
+
+
+          return ResponseService.generateSuccessResponseWithCountAndStatus("List of vendors", vendorDetailList, totalCount,activeCount,inactiveCount, HttpStatus.OK);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    public Long getActiveInactiveCounts() {
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        Date activeSince = Date.from(now.minusMinutes(10).toInstant());
+
+        Long active = vendorRepository.countActiveVendors(activeSince);
+
+
+        return active;
     }
 
 
 
 
-/*    @Transactional
+
+    /*    @Transactional
     @GetMapping("/get-all-vendors")
     public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(defaultValue = "10") int limit,
