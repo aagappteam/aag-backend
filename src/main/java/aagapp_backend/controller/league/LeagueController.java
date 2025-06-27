@@ -137,7 +137,7 @@ public class LeagueController {
             Long scheduledCount = leagueService.getScheduledCount();
             Long activeCount = leagueService.getActiveCount();
             Long ExpiredCount = leagueService.getExpiredCount();
-            long totalCount = scheduledCount+activeCount+ExpiredCount;
+            long totalCount = leaguesPage.getTotalElements();
             return responseService.generateResponseForGame("Leagues fetched successfully", leaguesPage.getContent(),totalCount,scheduledCount,activeCount,ExpiredCount, HttpStatus.OK);
 
         } catch (NoSuchElementException e) {

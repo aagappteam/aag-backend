@@ -116,7 +116,7 @@ public class TournamentController {
 
 
             List<Tournament> gameList = games.getContent();
-            long totalCount = scheduledCount+activeCount+ExpiredCount;
+            long totalCount = games.getTotalElements();
 
             return responseService.generateResponseForGame("Tournaments fetched successfully", gameList, totalCount, scheduledCount,activeCount,ExpiredCount,HttpStatus.OK);
         } catch (Exception e) {
