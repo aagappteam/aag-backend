@@ -67,8 +67,8 @@ public class NotificationShareSpecification {
             Join<NotificationShare, VendorEntity> vendor = root.join("vendor", JoinType.LEFT);
             String pattern = "%" + name.toLowerCase() + "%";
             return cb.or(
-                    cb.like(cb.lower(vendor.get("firstName")), pattern),
-                    cb.like(cb.lower(vendor.get("lastName")), pattern)
+                    cb.like(cb.lower(vendor.get("first_name")), pattern),
+                    cb.like(cb.lower(vendor.get("last_name")), pattern)
             );
         };
     }
