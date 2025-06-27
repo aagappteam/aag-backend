@@ -21,6 +21,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 @RestController
@@ -174,8 +176,9 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
 
             Long totalCount = countQuery.getSingleResult();
             List<CustomCustomer> results = dataQuery.getResultList();
-
-            return ResponseService.generateSuccessResponseWithCount("List of customers:", results, totalCount, HttpStatus.OK);
+            Long activeCount = this.getActiveInactiveCounts();
+            Long inactiveCount = totalCount - activeCount;
+            return ResponseService.generateSuccessResponseWithCountAndStatus("List of customers:", results, totalCount,activeCount,inactiveCount, HttpStatus.OK);
 
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -185,7 +188,15 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
         }
     }
 
+    public Long getActiveInactiveCounts() {
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        Date activeSince = Date.from(now.minusMinutes(10).toInstant());
 
+        Long active = customCustomerRepository.countActiveVendors(activeSince);
+
+
+        return active;
+    }
 
 
     @Transactional

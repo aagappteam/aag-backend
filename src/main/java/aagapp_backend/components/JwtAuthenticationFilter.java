@@ -5,10 +5,12 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.RoleService;
+import aagapp_backend.services.VendorActivityService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.ServletException;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,7 @@ import jakarta.servlet.FilterChain;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -35,6 +38,9 @@ import java.util.regex.Pattern;
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private VendorActivityService vendorActivityService;
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final String AUTHORIZATION_HEADER = "Authorization";
@@ -215,6 +221,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
 
+
     private boolean authenticateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         final String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);
         if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
@@ -268,6 +275,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             customCustomer.getId(), null, new ArrayList<>());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    vendorActivityService.updateCustomerLastActive(customCustomer.getId());
+
                     return false;
                 } else {
                     jwtUtil.logoutUser(jwt);
@@ -282,6 +291,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             serviceProvider.getService_provider_id(), null, new ArrayList<>());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    vendorActivityService.updateVendorLastActive(serviceProvider.getService_provider_id());
+
                     return false;
                 } else {
                     respondWithUnauthorized(response, "Invalid data provided for this vendor");

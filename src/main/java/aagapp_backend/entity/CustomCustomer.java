@@ -134,7 +134,9 @@ public class CustomCustomer {
     @Column(name = "whatsapp_permission", nullable = false)
     private Boolean whatsappPermission = false;
 
-
+    @Column(name = "last_active_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date lastActiveAt;
    /* @Nullable
     @Column(name = "district")
     private String district;
@@ -176,6 +178,7 @@ public class CustomCustomer {
     public void preUpdate() {
         this.updatedDate = new Date();
     }
+
 
 
 }
