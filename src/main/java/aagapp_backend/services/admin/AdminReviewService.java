@@ -62,6 +62,7 @@ public class AdminReviewService {
         try {
             Optional<VendorSubmissionEntity> submission = submissionRepository.findById(id);
 
+
             if (submission.isPresent()) {
                 VendorSubmissionEntity vendorSubmissionEntity = submission.get();
 

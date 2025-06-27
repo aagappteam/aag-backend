@@ -53,14 +53,14 @@ public class TicketCustomer
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
 
-            // ✅ Fetch using native query service method
+            // Fetch using native query service method
             Page<Ticket> ticketPage = ticketService.getTicketsByUserIdWithFilters(userId, status, role, pageable);
 
             if (ticketPage.isEmpty()) {
                 return responseService.generateSuccessResponse("No tickets found", null, HttpStatus.OK);
             }
 
-            // ✅ Map to DTO
+            //  Map to DTO
             List<TicketResponseDto> dtoList = ticketPage.stream().map(ticket -> {
                 TicketResponseDto dto = new TicketResponseDto();
                 dto.setId(ticket.getId());

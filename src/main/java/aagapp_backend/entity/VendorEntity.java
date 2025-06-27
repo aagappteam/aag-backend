@@ -150,6 +150,8 @@ public class VendorEntity {
     @Enumerated(EnumType.STRING)
     private VendorLevelPlan vendorLevelPlan = VendorLevelPlan.getDefaultLevel();
 
+
+
     @JsonBackReference("bankDetails-vendor")
     @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VendorBankDetails> bankDetails = new ArrayList<>();
