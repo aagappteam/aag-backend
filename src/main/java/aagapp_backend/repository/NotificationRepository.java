@@ -1,6 +1,8 @@
 package aagapp_backend.repository;
 
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.NotificationShare;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -25,4 +27,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     // Original methods for regular fetching
     Page<Notification> findByVendorIdOrderByCreatedDateDesc(Long vendorId, Pageable pageable);
     Page<Notification> findByCustomerIdOrderByCreatedDateDesc(Long customerId, Pageable pageable);
+
+
 }

@@ -1,5 +1,6 @@
 package aagapp_backend.entity.notification;
 
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.NotificationType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.annotation.Nullable;
@@ -42,10 +43,10 @@ public class NotificationShare {
 
     private String details;  // Additional details like game name, tournament name
 
-    @Nullable
-    @Column(name = "updated_date")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updatedDate;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vendorId", referencedColumnName = "service_provider_id", insertable = false, updatable = false)
+    private VendorEntity vendor;
+
 
     @Column(name = "created_date", updatable = false)
     private ZonedDateTime createdDate;

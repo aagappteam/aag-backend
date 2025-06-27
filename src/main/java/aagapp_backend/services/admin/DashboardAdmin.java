@@ -9,10 +9,12 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.NotificationShareRepository;
 import aagapp_backend.repository.game.GameResultRecordRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueResultRecordRepository;
 import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
+import aagapp_backend.spec.NotificationShareSpecification;
 import aagapp_backend.spec.NotificationSpecifications;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -23,6 +25,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -46,6 +49,9 @@ public class DashboardAdmin {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private NotificationShareRepository notificationShareRepository;
 
 
     public DashboardResponseAdmin getDashboard() {
@@ -168,7 +174,7 @@ public class DashboardAdmin {
             throw new RuntimeException("Error fetching notifications: " + e.getMessage(), e);
         }
     }*/
-    @Transactional
+    /*@Transactional
     public Page<NotificationDTOAdmin> getAllNotifications(int page, int size, Double amount, String vendorName) {
         try {
             // Main query with JOIN to vendor_table to fetch names/emails in one go
@@ -250,10 +256,10 @@ public class DashboardAdmin {
                 String details = row[3] != null ? (String) row[3] : null;
 
 
- /*               if (row[4] != null) {
+ *//*               if (row[4] != null) {
                     ZonedDateTime createdDateTime = ((java.sql.Timestamp) row[4]).toInstant().atZone(ZoneId.of("Asia/Kolkata"));
                     createdDate = createdDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                }*/
+                }*//*
 
                 ZonedDateTime createdDate = ((Instant) row[4]).atZone(ZoneId.of("Asia/Kolkata"));
                 String formattedDate = createdDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
@@ -291,6 +297,51 @@ public class DashboardAdmin {
             throw new RuntimeException("Error fetching notifications: " + e.getMessage(), e);
         }
     }
+*/
+
+
+    public Page<NotificationDTOAdmin> getAllNotifications(
+            int page, int size,
+            Double amount, String vendorName, String detailsTerm,
+            ZonedDateTime createdFrom, ZonedDateTime createdTo
+    ) {
+        Specification<NotificationShare> spec = Specification
+                .where(NotificationShareSpecification.hasAmount(amount))
+                .and(NotificationShareSpecification.vendorNameContains(vendorName))
+                .and(NotificationShareSpecification.detailsContains(detailsTerm))
+                .and(NotificationShareSpecification.createdBetween(createdFrom, createdTo));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Page<NotificationShare> pageResult = notificationShareRepository.findAll(spec, pageable);
+
+        List<NotificationDTOAdmin> dtos = pageResult.stream().map(ns -> {
+            VendorEntity v = ns.getVendor();
+            String name = v != null ? v.getFirst_name() + " " + v.getLast_name() : "N/A";
+            String email = v != null ? v.getPrimary_email() : "N/A";
+
+            String formatted = ns.getCreatedDate()
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+            return new NotificationDTOAdmin(
+                    ns.getId(),
+                    ns.getVendorId(),
+                    "Vendor",
+                    null,
+                    ns.getDescription(),
+                    ns.getDetails(),
+                    formatted,
+                    ns.getAmount(),
+                    name,
+                    email
+            );
+        }).toList();
+
+        return new PageImpl<>(dtos, pageable, pageResult.getTotalElements());
+    }
+
+
+
+
 /*    @Transactional
     public Page<NotificationDTOAdmin> getAllVendorNotificationsold(int page, int size,
                                                                 String name,

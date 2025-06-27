@@ -7,6 +7,7 @@ import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.NotificationShare;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.admin.DashboardAdmin;
@@ -167,7 +168,7 @@ public class AdminDetailsController {
         return new ResponseEntity<>(resultPage, HttpStatus.OK);
     }
 
-    //    get all notifications
+   /* //    get all notifications
     @GetMapping("/vendor-share")
     public ResponseEntity<?> vendorShare(
             @RequestParam(defaultValue = "0") int page,
@@ -188,7 +189,32 @@ public class AdminDetailsController {
             return responseService.generateErrorResponse("Some error getting: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
+    }*/
+
+    @GetMapping("/notification-shares")
+    public ResponseEntity<?> getNotificationShares(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Double amount,
+            @RequestParam(required = false) String vendorName,
+            @RequestParam(required = false) String details,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdTo
+    ) {
+        Page<NotificationDTOAdmin> result = dashboardAdmin.getAllNotifications(
+                page, size, amount, vendorName, details, createdFrom, createdTo
+        );
+        return responseService.generateSuccessResponseWithCount(
+                "Notifications retrieved successfully.",
+                result.getContent(),
+                result.getTotalElements(),
+                HttpStatus.OK
+        );
     }
+
+
 
     /*@GetMapping("/all-app-transaction")
     public ResponseEntity<?> allAppTransactions(
