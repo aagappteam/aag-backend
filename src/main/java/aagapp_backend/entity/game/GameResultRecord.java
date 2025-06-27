@@ -13,7 +13,15 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
 @Entity
-@Table(name = "game_result_record")
+@Table(
+        name = "game_result_record",
+        indexes = {
+                @Index(name = "idx_player_id_game_result_record", columnList = "player_id"),
+                @Index(name = "idx_game_id_game_result_record", columnList = "game_id"),
+            @Index(name = "idx_is_winner_game_result_record", columnList = "iswinner"),
+
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

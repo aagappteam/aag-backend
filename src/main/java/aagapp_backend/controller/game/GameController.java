@@ -163,6 +163,9 @@ public class GameController {
             return responseService.generateErrorResponse("Error fetching games by vendor : " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
+
     @GetMapping("/get-active-games-by-vendor/{vendorId}")
     public ResponseEntity<?> getActiveGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         try {

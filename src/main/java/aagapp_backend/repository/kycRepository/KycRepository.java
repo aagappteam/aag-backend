@@ -12,6 +12,9 @@ import org.springframework.stereotype.Repository;
 public interface KycRepository extends JpaRepository<KycEntity, Long> {
     Page<KycEntity> findByRole(String role, Pageable pageable);
 
+
+
+
     Page<KycEntity> findByMobileNumber(String mobileNumber, Pageable pageable);
 
     Page<KycEntity> findByRoleAndMobileNumber(String role, String mobileNumber, Pageable pageable);
@@ -19,6 +22,13 @@ public interface KycRepository extends JpaRepository<KycEntity, Long> {
     @Query("SELECT k FROM KycEntity k WHERE k.userOrVendorId = :userOrVendorId AND k.role = :role")
     KycEntity findByUserOrVendorIdAndRole(@Param("userOrVendorId") Long userOrVendorId,
                                           @Param("role") String role);
+    @Query("SELECT k FROM KycEntity k WHERE k.userOrVendorId = :userOrVendorId AND k.role = :role")
+    Page<KycEntity> findByUserOrVendorIdAndRole(
+            @Param("userOrVendorId") Long userOrVendorId,
+            @Param("role") String role,
+            Pageable pageable
+    );
+
 
 
     @Query("SELECT CASE WHEN COUNT(k) > 0 THEN true ELSE false END FROM KycEntity k WHERE k.userOrVendorId = :userOrVendorId AND k.role = :role")
