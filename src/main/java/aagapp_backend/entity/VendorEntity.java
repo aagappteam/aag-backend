@@ -211,6 +211,11 @@ public class VendorEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedDate;
 
+    @Column(name = "last_active_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date lastActiveAt;
+
+
 /*    @Transient
     private Boolean isFollowing;*/
 

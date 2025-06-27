@@ -49,6 +49,26 @@ public class ResponseService {
         return new ResponseEntity<>(response, status);
     }
 
+    public static ResponseEntity<?> generateSuccessResponseWithCountAndStatus(
+            String message,
+            List<?> data,
+            Long totalCount,
+            Long activeCount,
+            Long inactiveCount,
+            HttpStatus status
+    ) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", message);
+        response.put("data", data);
+        response.put("totalCount", totalCount);
+        response.put("activeCount", activeCount);
+        response.put("inactiveCount", inactiveCount);
+        response.put("status", status);
+        response.put("status_code", status.value());
+        return new ResponseEntity<>(response, status);
+    }
+
+
 
 
     public  ResponseEntity<Object> generateResponse(HttpStatus httpStatus,String msg,Object responseBody)

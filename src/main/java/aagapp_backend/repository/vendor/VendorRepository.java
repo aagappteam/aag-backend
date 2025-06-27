@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Date;
 import java.util.List;
 
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
@@ -49,4 +50,10 @@ List<VendorEntity> findByLeagueStatusAndStatus(LeagueStatus leagueStatus, Vendor
     @Query("SELECT v FROM VendorEntity v WHERE v.service_provider_id = :influencerId")
 
     VendorEntity findByServiceProviderId(@Param("influencerId") Long influencerId);
+
+    @Query("SELECT COUNT(v) FROM VendorEntity v WHERE v.lastActiveAt >= :activeSince")
+    Long countActiveVendors(@Param("activeSince") Date activeSince);
+
+    @Query("SELECT COUNT(v) FROM VendorEntity v WHERE v.lastActiveAt < :activeSince OR v.lastActiveAt IS NULL")
+    Long countInactiveVendors(@Param("activeSince") Date activeSince);
 }

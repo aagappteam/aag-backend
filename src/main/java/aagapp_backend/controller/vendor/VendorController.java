@@ -39,10 +39,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 @RestController
@@ -457,8 +454,12 @@ public class VendorController {
                     vendorDetailList.add((Map<String, Object>) vendorDetailsData.get("data"));
                 }
             }
+            Long activeCount = this.getActiveInactiveCounts();
+            Long inactiveCount = totalCount - activeCount;
 
-            return ResponseService.generateSuccessResponseWithCount("List of vendors", vendorDetailList, totalCount, HttpStatus.OK);
+
+
+          return ResponseService.generateSuccessResponseWithCountAndStatus("List of vendors", vendorDetailList, totalCount,activeCount,inactiveCount, HttpStatus.OK);
 
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -466,6 +467,16 @@ public class VendorController {
             exceptionHandling.handleException(e);
             return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
+    }
+
+    public Long getActiveInactiveCounts() {
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        Date activeSince = Date.from(now.minusMinutes(10).toInstant());
+
+        Long active = vendorRepository.countActiveVendors(activeSince);
+
+
+        return active;
     }
 
 
