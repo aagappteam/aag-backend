@@ -27,6 +27,7 @@ import java.util.Date;
         @Index(name = "idx_theme_id", columnList = "theme_id"),
         @Index(name = "idx_existinggame_id", columnList = "existinggameId"),
         @Index(name = "idx_participants", columnList = "participants"),
+        @Index(name = "idx_status_tournament", columnList = "status"),
         @Index(name = "idx_entry_fee", columnList = "entryFee"),
         @Index(name = "idx_scheduled_at", columnList = "scheduledAt"),
         @Index(name = "idx_shareable_link", columnList = "shareableLink"),

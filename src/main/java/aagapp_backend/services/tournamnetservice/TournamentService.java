@@ -2412,4 +2412,25 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             throw new GameNotFoundException("Tournament not found");
         }
     }
+
+    public Long getScheduledCount() {
+//        return count by  scheduled status
+
+        String sql = "SELECT COUNT(*) FROM tournament g WHERE g.status = 'SCHEDULED'";
+        Query query = em.createNativeQuery(sql);
+        return ((Number) query.getSingleResult()).longValue();
+
+    }
+
+    public Long getActiveCount() {
+        String sql = "SELECT COUNT(*) FROM tournament g WHERE g.status = 'ACTIVE'";
+        Query query = em.createNativeQuery(sql);
+        return ((Number) query.getSingleResult()).longValue();
+    }
+
+    public Long getExpiredCount() {
+        String sql = "SELECT COUNT(*) FROM tournament g WHERE g.status = 'COMPLETED'";
+        Query query = em.createNativeQuery(sql);
+        return ((Number) query.getSingleResult()).longValue();
+    }
 }

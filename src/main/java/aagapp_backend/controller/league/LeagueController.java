@@ -127,10 +127,6 @@ public class LeagueController {
         try {
             Pageable pageable = PageRequest.of(page, size);
 
-            System.out.println("Status: " + status);
-            System.out.println("Vendor ID: " + vendorId);
-            System.out.println("Game Name: " + gamename);
-
             Page<League> leaguesPage = leagueService.getAllLeagues(pageable, status, vendorId,gamename);
 
             if (leaguesPage.isEmpty()) {
@@ -138,7 +134,11 @@ public class LeagueController {
 
             }
 
-            return responseService.generateSuccessResponse("Leagues fetched successfully", leaguesPage.getContent(), HttpStatus.OK);
+            Long scheduledCount = leagueService.getScheduledCount();
+            Long activeCount = leagueService.getActiveCount();
+            Long ExpiredCount = leagueService.getExpiredCount();
+            long totalCount = scheduledCount+activeCount+ExpiredCount;
+            return responseService.generateResponseForGame("Leagues fetched successfully", leaguesPage.getContent(),totalCount,scheduledCount,activeCount,ExpiredCount, HttpStatus.OK);
 
         } catch (NoSuchElementException e) {
             return responseService.generateErrorResponse("League not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
