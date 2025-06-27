@@ -175,16 +175,17 @@ public class VendorController {
     @Transactional
     @GetMapping("/get-all-vendors")
     public ResponseEntity<?> getAllServiceProviders(@RequestParam(defaultValue = "0") int page,
-                                                    @RequestParam(defaultValue = "10") int limit,
+                                                    @RequestParam(required = false) Integer limit,
+                                                    @RequestParam(required = false) Integer size,
                                                     @RequestParam(required = false) Long userId,
                                                     @RequestParam(value = "status", required = false) String status,
                                                     @RequestParam(value = "vendorId", required = false) Long vendorId,
                                                     @RequestParam(value = "email", required = false) String email,
                                                     @RequestParam(value = "firstName", required = false) String firstName) {
         try {
-            int startPosition = page * limit;
+            int finalLimit = (limit != null) ? limit : (size != null ? size : 10);
+            int startPosition = page * finalLimit;
 
-            // If vendorId is provided, fetch vendor details by vendorId
             if (vendorId != null) {
                 return this.getVendorDetailsById(vendorId, userId);
             }
@@ -198,7 +199,7 @@ public class VendorController {
 
             // Add condition for status filter
             if (status != null && !status.isEmpty()) {
-                boolean isActive = Boolean.parseBoolean(status); // "true" or "false" string to boolean
+                boolean isActive = Boolean.parseBoolean(status);
                 conditions.add("s.isActive = :status");
             }
 
@@ -207,21 +208,23 @@ public class VendorController {
                 conditions.add("LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :email, '%'))");
             }
 
-            // Add condition for first name filter
+            // Add condition for first name or full name input
             if (firstName != null && !firstName.trim().isEmpty()) {
-                String[] nameParts = firstName.split(" ");
-                String firstNamePart = nameParts[0].trim();
-                String lastNamePart = nameParts.length > 1 ? nameParts[1].trim() : "";
+                String[] nameParts = firstName.trim().split("\\s+");
 
-                // Case 1: If there's only one part in the input, treat it as matching both first and last names
+                String firstNamePart = nameParts.length >= 1 ? nameParts[0].trim() : "";
+                String lastNamePart = nameParts.length >= 2 ? nameParts[1].trim() : "";
+
                 if (nameParts.length == 1) {
                     conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
                             "OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')))");
-                }
-                // Case 2: If there are multiple parts, match first name and last name explicitly
-                else if (nameParts.length > 1) {
-                    conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')))");
-                    conditions.add("(LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%')))");
+                } else {
+                    if (!firstNamePart.isEmpty()) {
+                        conditions.add("LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))");
+                    }
+                    if (!lastNamePart.isEmpty()) {
+                        conditions.add("LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))");
+                    }
                 }
             }
 
@@ -239,41 +242,43 @@ public class VendorController {
             Query countQuery = entityManager.createQuery(countQueryString.toString());
             Query query = entityManager.createQuery(queryString.toString(), VendorEntity.class);
 
-            // Set parameters for status, email, first name, and last name
+            // Set parameters for filters
             if (status != null && !status.isEmpty()) {
-                boolean isActive = Boolean.parseBoolean(status); // Assuming status = "true"/"false"
+                boolean isActive = Boolean.parseBoolean(status);
                 countQuery.setParameter("status", isActive);
                 query.setParameter("status", isActive);
             }
+
             if (email != null && !email.isEmpty()) {
                 countQuery.setParameter("email", email);
                 query.setParameter("email", email);
             }
 
-            // Set parameters for firstName and lastName if they exist
             if (firstName != null && !firstName.trim().isEmpty()) {
-                String[] nameParts = firstName.split(" ");
-                String firstNamePart = nameParts[0].trim();
-                String lastNamePart = (nameParts.length > 1) ? nameParts[1].trim() : "";
+                String[] nameParts = firstName.trim().split("\\s+");
 
-                countQuery.setParameter("firstNamePart", firstNamePart);
-                query.setParameter("firstNamePart", firstNamePart);
+                String firstNamePart = nameParts.length >= 1 ? nameParts[0].trim() : "";
+                String lastNamePart = nameParts.length >= 2 ? nameParts[1].trim() : "";
+
+                if (!firstNamePart.isEmpty()) {
+                    query.setParameter("firstNamePart", firstNamePart);
+                    countQuery.setParameter("firstNamePart", firstNamePart);
+                }
                 if (!lastNamePart.isEmpty()) {
-                    countQuery.setParameter("lastNamePart", lastNamePart);
                     query.setParameter("lastNamePart", lastNamePart);
+                    countQuery.setParameter("lastNamePart", lastNamePart);
                 }
             }
 
             // Pagination
             query.setFirstResult(startPosition);
-            query.setMaxResults(limit);
+            query.setMaxResults(finalLimit);
 
             // Execute queries
             Long totalCount = (Long) countQuery.getSingleResult();
             List<VendorEntity> results = query.getResultList();
 
             List<Map<String, Object>> vendorDetailList = new ArrayList<>();
-
             for (VendorEntity vendor : results) {
                 Map<String, Object> vendorDetailsData = serviceProviderService.VendorDetails(vendor, userId).getBody();
                 if (vendorDetailsData != null && vendorDetailsData.containsKey("data")) {
@@ -281,7 +286,6 @@ public class VendorController {
                 }
             }
 
-            // Return result with count
             return ResponseService.generateSuccessResponseWithCount("List of vendors", vendorDetailList, totalCount, HttpStatus.OK);
 
         } catch (IllegalArgumentException e) {
@@ -291,6 +295,7 @@ public class VendorController {
             return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
 
 
 
