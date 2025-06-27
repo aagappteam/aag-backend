@@ -196,6 +196,10 @@ public class VendorEntity {
     @Column(name = "fcm_token")
     private String fcmToken;
 
+    @Column(name = "plan_name")
+    private String planName = "Standard";
+
+
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
