@@ -50,6 +50,9 @@ public class KycEntity {
 
     private String panImage;
 
+    @Enumerated(EnumType.STRING)
+    private KycStatus kycStatus;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     @Temporal(TemporalType.TIMESTAMP)
     @Column(updatable = false)

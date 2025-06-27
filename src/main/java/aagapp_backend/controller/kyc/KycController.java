@@ -10,16 +10,20 @@ import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.kycServices.KycService;
 import aagapp_backend.services.s3services.S3Service;
+import aagapp_backend.spec.KycSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -156,34 +160,45 @@ public ResponseEntity<?> getAllKycs(
         @RequestParam(required = false) String role,
         @RequestParam(required = false) String mobileNumber,
         @RequestParam(required = false) Long id,
+        @RequestParam(required = false) String aadharNo,
+        @RequestParam(required = false) String panNo,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date createdAfter,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date createdBefore,
+        @RequestParam(required = false) KycStatus kycStatus,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size
 ) {
     try {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-        Page<KycEntity> kycPage;
 
-        if (id != null && role != null && !role.isEmpty()) {
-            kycPage = kycRepository.findByUserOrVendorIdAndRole(id, role, pageable);
-        }
-         else if (role != null && !role.isEmpty() && (mobileNumber == null || mobileNumber.isEmpty())) {
-            kycPage = kycRepository.findByRole(role, pageable);
-        } else if ((role == null || role.isEmpty()) && mobileNumber != null && !mobileNumber.isEmpty()) {
-            kycPage = kycRepository.findByMobileNumber(mobileNumber, pageable);
-        } else if (role != null && !role.isEmpty() && mobileNumber != null && !mobileNumber.isEmpty()) {
-            kycPage = kycRepository.findByRoleAndMobileNumber(role, mobileNumber, pageable);
-        } else {
-            kycPage = kycRepository.findAll(pageable);
-        }
+        Specification<KycEntity> spec = Specification
+                .where(KycSpecification.hasRole(role))
+                .and(KycSpecification.hasMobileNumber(mobileNumber))
+                .and(KycSpecification.hasUserOrVendorId(id))
+                .and(KycSpecification.hasAadharNo(aadharNo))
+                .and(KycSpecification.hasPanNo(panNo))
+                .and(KycSpecification.createdAfter(createdAfter))
+                .and(KycSpecification.createdBefore(createdBefore))
+                .and(KycSpecification.hasStatus(kycStatus));;
+
+        Page<KycEntity> kycPage = kycRepository.findAll(spec, pageable);
 
         List<KycDTO> responseList = kycPage.getContent().stream()
-                .map(kyc -> new KycDTO(kyc, kycService.getKycStatus(kyc)))
+                .map(kyc -> new KycDTO(kyc, kyc.getKycStatus()))
                 .collect(Collectors.toList());
 
-        return ResponseService.generateSuccessResponseWithCount(
+        long totalCount = kycRepository.count(spec);
+        long pendingCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.PENDING)));
+        long rejectedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.REJECTED)));
+        long approvedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.VERIFIED)));
+
+        return ResponseService.generateSuccessResponseForWithdrwalRequest(
                 "KYC records retrieved successfully",
                 responseList,
-                kycPage.getTotalElements(),
+                totalCount,
+                approvedCount,
+                rejectedCount,
+                pendingCount,
                 HttpStatus.OK
         );
 
@@ -191,6 +206,7 @@ public ResponseEntity<?> getAllKycs(
         return ResponseService.generateErrorResponse("Failed to fetch KYC records: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+
 
 
     @PutMapping("/verify")
