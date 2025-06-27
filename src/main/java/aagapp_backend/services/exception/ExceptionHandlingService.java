@@ -62,6 +62,7 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     public String handleException(Exception e) {
         logger.error("Error occurred: " + e.getMessage());
 
+
 /*        StackTraceElement[] stackTrace = e.getStackTrace();
         if (stackTrace.length > 0) {
             StackTraceElement origin = stackTrace[0];
