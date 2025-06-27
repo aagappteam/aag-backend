@@ -48,66 +48,6 @@ public class TicketCustomer
     @Autowired
     private TicketService ticketService;
 
-    @GetMapping("/tickets-by-user/{role}/{userId}")
-    public ResponseEntity<?> getTicketsByFilters(
-            @PathVariable String role,
-            @PathVariable Long userId,
-            @RequestParam(required = false) TicketEnum status,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
-    ) {
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-
-            Page<Ticket> ticketsPage = ticketService.getTicketsByRoleAndIdWithFilters(
-                    role, userId, status, email, name, startDate, endDate, pageable
-            );
-
-            List<TicketResponseDto> dtoList = ticketsPage.getContent().stream().map(ticket -> {
-                TicketResponseDto dto = new TicketResponseDto();
-                dto.setId(ticket.getId());
-                dto.setSubject(ticket.getSubject());
-                dto.setDescription(ticket.getDescription());
-                dto.setStatus(ticket.getStatus());
-                dto.setRemark(ticket.getRemark());
-                dto.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
-                dto.setRole(ticket.getRole());
-                dto.setEmail(ticket.getEmail());
-                dto.setCreatedDate(ticket.getCreatedDate());
-                dto.setUpdatedDate(ticket.getUpdatedDate());
-
-                if ("Customer".equalsIgnoreCase(ticket.getRole())) {
-                    Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
-                    dto.setName(customerOpt.map(CustomCustomer::getName).orElse("Unknown Customer"));
-                } else if ("Vendor".equalsIgnoreCase(ticket.getRole())) {
-                    Optional<VendorEntity> vendorOpt = vendorRepository.findById(ticket.getCustomerOrVendorId());
-                    vendorOpt.ifPresent(vendor -> {
-                        String fullName = (vendor.getFirst_name() != null ? vendor.getFirst_name() : "") +
-                                (vendor.getLast_name() != null ? " " + vendor.getLast_name() : "");
-                        dto.setName(fullName.trim());
-                    });
-                }
-
-                return dto;
-            }).collect(Collectors.toList());
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", dtoList);
-            response.put("currentPage", ticketsPage.getNumber());
-            response.put("totalItems", ticketsPage.getTotalElements());
-            response.put("totalPages", ticketsPage.getTotalPages());
-
-            return responseService.generateSuccessResponse("Tickets retrieved successfully", response, HttpStatus.OK);
-
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
 /*    @GetMapping("/tickets-by-user/{userId}")
     public ResponseEntity<?> getTicketsByFilters(
