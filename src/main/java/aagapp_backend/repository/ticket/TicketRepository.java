@@ -38,4 +38,5 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
 
     long countByStatus(TicketEnum ticketEnum);
+
 }

@@ -155,6 +155,7 @@ public class KycController {
 public ResponseEntity<?> getAllKycs(
         @RequestParam(required = false) String role,
         @RequestParam(required = false) String mobileNumber,
+        @RequestParam(required = false) Long id,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size
 ) {
@@ -162,16 +163,19 @@ public ResponseEntity<?> getAllKycs(
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         Page<KycEntity> kycPage;
 
-
-        if ((role == null || role.isEmpty()) && (mobileNumber == null || mobileNumber.isEmpty())) {
-            kycPage = kycRepository.findAll(pageable);
-        } else if (role != null && !role.isEmpty() && (mobileNumber == null || mobileNumber.isEmpty())) {
+        if (id != null && role != null && !role.isEmpty()) {
+            kycPage = kycRepository.findByUserOrVendorIdAndRole(id, role, pageable);
+        }
+         else if (role != null && !role.isEmpty() && (mobileNumber == null || mobileNumber.isEmpty())) {
             kycPage = kycRepository.findByRole(role, pageable);
         } else if ((role == null || role.isEmpty()) && mobileNumber != null && !mobileNumber.isEmpty()) {
             kycPage = kycRepository.findByMobileNumber(mobileNumber, pageable);
-        } else {
+        } else if (role != null && !role.isEmpty() && mobileNumber != null && !mobileNumber.isEmpty()) {
             kycPage = kycRepository.findByRoleAndMobileNumber(role, mobileNumber, pageable);
+        } else {
+            kycPage = kycRepository.findAll(pageable);
         }
+
         List<KycDTO> responseList = kycPage.getContent().stream()
                 .map(kyc -> new KycDTO(kyc, kycService.getKycStatus(kyc)))
                 .collect(Collectors.toList());
@@ -187,6 +191,7 @@ public ResponseEntity<?> getAllKycs(
         return ResponseService.generateErrorResponse("Failed to fetch KYC records: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+
 
     @PutMapping("/verify")
     public ResponseEntity<?> updateKycVerificationStatus(

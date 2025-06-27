@@ -61,8 +61,6 @@ public class SabController {
         return sabPaisaPgService;
     }
 
-
-
     @GetMapping("/enq")
     public ResponseEntity<?> getTransEnq() {
         String statusEnq = sabService.getStatusEnq();

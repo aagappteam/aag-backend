@@ -33,7 +33,7 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
 
         throw new RuntimeException("HTTP Error: " + statusCode + ", Response Body: " + responseBody);
     }
-
+    
     @Override
     public String handleHttpClientErrorException(HttpClientErrorException e) {
         HttpStatus statusCode = (HttpStatus) e.getStatusCode();
@@ -62,6 +62,19 @@ public class ExceptionHandlingService implements ExceptionHandlingImplement {
     public String handleException(Exception e) {
         logger.error("Error occurred: " + e.getMessage());
 
+
+/*        StackTraceElement[] stackTrace = e.getStackTrace();
+        if (stackTrace.length > 0) {
+            StackTraceElement origin = stackTrace[0];
+            logger.error("Exception thrown from: {}.{}(): line {}",
+                    origin.getClassName(),
+                    origin.getMethodName(),
+                    origin.getLineNumber());
+//            emailService.sendErrorEmail("Error Occurred in Application", "Exception thrown from: {}.{}(): line {}"+
+//                    origin.getClassName() +
+//                    origin.getMethodName()+
+//                    origin.getLineNumber());
+        }*/
         if (e instanceof ApiException) {
             return handleApiException((ApiException) e);
         } else if (e instanceof HttpClientErrorException) {

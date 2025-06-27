@@ -211,8 +211,7 @@ public class JwtUtil {
 
             if(roleService.findRoleName(role).equals(Constant.roleUser)){
 
-
-                    existingCustomer = customCustomerService.readCustomerById(id);
+                existingCustomer = customCustomerService.readCustomerById(id);
                 if (existingCustomer == null) {
                     return false;
                 }

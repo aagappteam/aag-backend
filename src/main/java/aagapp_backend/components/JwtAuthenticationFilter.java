@@ -91,13 +91,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
 
         if (requestURI.startsWith("/ludo-websocket")) {
-            // Log the WebSocket request and skip JWT authentication
             logger.info("Bypassing JWT authentication for WebSocket handshake");
             chain.doFilter(request, response);
             return;
         }
         if (requestURI.startsWith("/ws") || requestURI.startsWith("/websocket")) {
-            logger.info("Bypassing JWT filter for WebSocket/SockJS request: " + requestURI);
             chain.doFilter(request, response);
             return;
         }
@@ -109,7 +107,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
 
-
             if (requestURI.startsWith("/swagger-ui") || requestURI.startsWith("/v3/api-docs")) {
                 chain.doFilter(request, response);
                 return;
@@ -120,8 +117,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 chain.doFilter(request, response);
                 return;
             }
-
-
 
             if (isApiKeyRequiredUri(request) && validateApiKey(request)) {
                 chain.doFilter(request, response);
@@ -219,59 +214,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
 
-/*    private boolean isUnsecuredUri(String requestURI) {
-
-        return "/".equals(requestURI)
-                || requestURI.startsWith("/account")
-                || requestURI.startsWith("/winning")
-
-                || requestURI.startsWith("/otp")
-//                || requestURI.startsWith("/vendor")
-                || requestURI.startsWith("/health")
-                || requestURI.startsWith("/test")
-                || requestURI.startsWith("/files/aagdocument/**")
-                || requestURI.startsWith("/files/**")
-                || requestURI.startsWith("/aagdocument/**")
-                || requestURI.startsWith("/swagger-ui.html")
-                || requestURI.startsWith("/swagger-resources")
-                || requestURI.startsWith("/v2/api-docs")
-                || requestURI.startsWith("/images")
-                || requestURI.startsWith("/webjars")
-                || requestURI.startsWith("/initate-payment") // Added leading slash
-                || requestURI.startsWith("/.well-known/assetlinks.json") // Added leading slash
-                || requestURI.startsWith("/response") // Added leading slash
-                || requestURI.startsWith("/resp") // Added leading slash
-                || requestURI.startsWith("/enq") // Added leading slash
-                || requestURI.startsWith("/MerchantAcknowledgement") // Added leading slash
-                || requestURI.startsWith("/Bank");
-
-    }*/
-
-    /*private boolean isUnsecuredUri(String requestURI) {
-        return requestURI.startsWith("/api/v1/account")
-                || requestURI.startsWith("/api/v1/winning")
-
-                || requestURI.startsWith("/api/v1/otp")
-                || requestURI.startsWith("/api/v1/health")
-                || requestURI.startsWith("/api/v1/test")
-                || requestURI.startsWith("/api/v1/files/aagdocument/**")
-                || requestURI.startsWith("/api/v1/files/**")
-                || requestURI.startsWith("/api/v1/aagdocument/**")
-                || requestURI.startsWith("/api/v1/swagger-ui.html")
-                || requestURI.startsWith("/api/v1/swagger-resources")
-                || requestURI.startsWith("/api/v1/v2/api-docs")
-                || requestURI.startsWith("/api/v1/images")
-                || requestURI.startsWith("/api/v1/webjars")
-                || requestURI.startsWith("/api/v1/initate-payment") // Added leading slash
-                || requestURI.startsWith("/api/v1/.well-known/assetlinks.json") // Added leading slash
-                || requestURI.startsWith("/api/v1/response") // Added leading slash
-                || requestURI.startsWith("/api/v1/resp") // Added leading slash
-                || requestURI.startsWith("/api/v1/enq") // Added leading slash
-                || requestURI.startsWith("/api/v1/MerchantAcknowledgement") // Added leading slash
-                || requestURI.startsWith("/api/v1/Bank"); // Added leading slash
-
-    }*/
-
 
     private boolean authenticateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         final String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);
@@ -283,10 +225,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String jwt = authorizationHeader.substring(BEARER_PREFIX_LENGTH);
         Long id = jwtUtil.extractId(jwt);
 
-        if (tokenBlacklist.isTokenBlacklisted(jwt)) {
+      /*  if (tokenBlacklist.isTokenBlacklisted(jwt)) {
             respondWithUnauthorized(response, "Token has been blacklisted");
             return true;
-        }
+        }*/
 
         if (id == null) {
             respondWithUnauthorized(response, "Invalid details in token");
@@ -318,8 +260,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (id != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleUser)) {
+//                return false;
                 customCustomer = customCustomerService.readCustomerById(id);
-                if (customCustomer != null && jwtUtil.validateToken(jwt, ipAddress, userAgent)) {
+
+                if (customCustomer != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             customCustomer.getId(), null, new ArrayList<>());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -331,8 +275,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return true;
                 }
             } else if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.rolevendor)) {
+//                return false;
                 serviceProvider = entityManager.find(VendorEntity.class, id);
-                if (serviceProvider != null && jwtUtil.validateToken(jwt, ipAddress, userAgent)) {
+                if (serviceProvider != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             serviceProvider.getService_provider_id(), null, new ArrayList<>());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -343,8 +288,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return true;
                 }
             } else if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleAdminServiceProvider)) {
-                cusomAdmin=entityManager.find(CustomAdmin.class,id);
-                if (cusomAdmin != null && jwtUtil.validateToken(jwt, ipAddress, userAgent)) {
+//                return false;
+                 cusomAdmin=entityManager.find(CustomAdmin.class,id);
+                if (cusomAdmin != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             cusomAdmin.getAdmin_id(), null, new ArrayList<>());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -401,7 +347,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean authenticateByRole(Long id, String jwt, String ipAddress, String userAgent, HttpServletResponse response,HttpServletRequest request) throws IOException {
         String roleName = roleService.findRoleName(jwtUtil.extractRoleId(jwt));
 
-        // Use if-else statements instead of switch-case for non-constant role names
         if (Constant.roleUser.equals(roleName)) {
             return authenticateCustomer(id, jwt, ipAddress, userAgent, response,request);
         } else if (Constant.rolevendor.equals(roleName)) {
