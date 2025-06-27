@@ -3,6 +3,7 @@ package aagapp_backend.services.gameservice;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.pricelogic.PriceConstant;
 import aagapp_backend.dto.*;
+import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
@@ -80,6 +81,9 @@ public class GameService {
     private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
+    private GameResultRecordRepository gameResultRecordRepository;
+
+    @Autowired
     private CustomCustomerService   customCustomerService;
     @Autowired
     private NotificationRepository notificationRepository;
@@ -145,7 +149,7 @@ public class GameService {
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(GameService.class);
 
 
-/*    @Scheduled(cron = "0 * * * * *")  // Every minute
+    @Scheduled(cron = "0 * * * * *")  // Every minute
     public void checkAndActivateScheduledGames() {
         int page = 0;
         int pageSize = 100;
@@ -163,7 +167,7 @@ public class GameService {
             }
             page++;
         }
-    }*/
+    }
 
 /// at 12 am cron should run daily
 @Scheduled(cron = "0 0 0 * * *")  // Every day at midnight
@@ -192,8 +196,7 @@ public void updateDailylimit() {
         String queryString = "SELECT v.id FROM VendorEntity v " +
                 "JOIN PaymentEntity p ON p.vendorEntity.id = v.id " +
                 "WHERE p.status = :activeStatus " +
-                "WHERE v.vendor_status = :isActiveStatus " +
-
+                "AND v.status = :isActiveStatus " +
                 "AND p.expiryAt IS NOT NULL " +
                 "AND p.expiryAt > :now " +
                 "AND p.id = (" +
@@ -207,7 +210,7 @@ public void updateDailylimit() {
 
         Query query = em.createQuery(queryString);
         query.setParameter("activeStatus", PaymentStatus.ACTIVE);
-        query.setParameter("isActiveStatus", VendorStatus.SUSPENDED);
+        query.setParameter("isActiveStatus", VendorStatus.ACTIVE);
 
         query.setParameter("now", now);
 
@@ -1345,6 +1348,76 @@ public void updateDailylimit() {
         String sql = "SELECT COUNT(*) FROM aag_ludo_game g WHERE g.status = 'EXPIRED'";
         Query query = em.createNativeQuery(sql);
         return ((Number) query.getSingleResult()).longValue();
+    }
+
+
+    public Page<GameResultRecordDTO> findGamesByUserId(Long userId, Pageable pageable, String gameName, Boolean winner) {
+        try {
+            StringBuilder sql = new StringBuilder("""
+            SELECT gr.* FROM game_result_record gr
+            JOIN aag_ludo_game g ON g.id = gr.game_id
+            WHERE gr.player_id = :userId
+        """);
+
+            StringBuilder countSql = new StringBuilder("""
+            SELECT COUNT(*) FROM game_result_record gr
+            JOIN aag_ludo_game g ON g.id = gr.game_id
+            WHERE gr.player_id = :userId
+        """);
+
+            if (gameName != null && !gameName.isEmpty()) {
+                sql.append(" AND LOWER(g.name) LIKE LOWER(:gameName)");
+                countSql.append(" AND LOWER(g.name) LIKE LOWER(:gameName)");
+            }
+
+            if (winner != null) {
+                sql.append(" AND gr.iswinner = :winner");
+                countSql.append(" AND gr.iswinner = :winner");
+            }
+
+            sql.append(" ORDER BY gr.updateddate DESC");
+
+            Query query = em.createNativeQuery(sql.toString(), GameResultRecord.class);
+            setParametersForGame(query, userId, gameName, winner);
+            query.setFirstResult((int) pageable.getOffset());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<GameResultRecord> records = query.getResultList();
+
+            Query countQuery = em.createNativeQuery(countSql.toString());
+            setParametersForGame(countQuery, userId, gameName, winner);
+
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            List<GameResultRecordDTO> dtoList = records.stream().map(game -> {
+                GameResultRecordDTO dto = new GameResultRecordDTO();
+                dto.setId(game.getId());
+                dto.setRoomId(game.getRoomId());
+                dto.setGameName(game.getGame().getName());
+                dto.setPlayerName(game.getPlayer().getCustomer().getName());
+                dto.setPlayerProfilePic(game.getPlayer().getPlayerProfilePic());
+                dto.setWinningAmount(game.getWinningammount());
+                dto.setScore(game.getScore());
+                dto.setIsWinner(Boolean.TRUE.equals(game.getIsWinner()) ? "true" : "false");
+                dto.setPlayedAt(game.getPlayedAt());
+                return dto;
+            }).toList();
+
+            return new PageImpl<>(dtoList, pageable, total);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching games by user: " + e.getMessage(), e);
+        }
+    }
+    private void setParametersForGame(Query query, Long userId, String gameName, Boolean winner) {
+        query.setParameter("userId", userId);
+
+        if (gameName != null && !gameName.isEmpty()) {
+            query.setParameter("gameName", "%" + gameName + "%");
+        }
+        if (winner != null) {
+            query.setParameter("winner", winner);
+        }
     }
 
 
