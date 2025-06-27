@@ -51,10 +51,26 @@ public class TicketController {
         }
     }
 
-    @GetMapping("/by-role/{role}/{id}")
+/*    @GetMapping("/by-role/{role}/{id}")
     public ResponseEntity<?> getTicketsByRoleAndId(@PathVariable String role, @PathVariable Long id, @RequestParam(required = false) TicketEnum status) {
         try {
             return ticketService.getTicketsByRoleAndId(role, id, status);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error while fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }*/
+    @GetMapping("/by-role/{role}/{id}")
+    public ResponseEntity<?> getTicketsByRoleAndId(
+            @PathVariable String role,
+            @PathVariable Long id,
+            @RequestParam(required = false) TicketEnum status,
+            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) String description,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
+    ) {
+        try {
+            return ticketService.getTicketsByRoleAndIdNew(role, id, status, subject, description, page, size);
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error while fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

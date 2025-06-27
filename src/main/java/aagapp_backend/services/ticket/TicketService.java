@@ -13,6 +13,7 @@ import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.vendor.VenderService;
 import io.micrometer.common.util.StringUtils;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import org.springframework.data.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,7 +23,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.Query;
 
+import java.time.LocalDate;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -121,6 +124,78 @@ public class TicketService {
         }
     }
 
+    public ResponseEntity<?> getTicketsByRoleAndIdNew(String role, Long id, TicketEnum status, String subject, String description,
+                                                      Integer page, Integer size) {
+        try {
+            int pageNumber = (page != null && page >= 0) ? page : 0;
+            int pageSize = (size != null && size > 0) ? size : 10;
+
+            StringBuilder sb = new StringBuilder("SELECT t FROM Ticket t WHERE LOWER(t.role) = :role AND t.customerOrVendorId = :id");
+            StringBuilder countSb = new StringBuilder("SELECT COUNT(t) FROM Ticket t WHERE LOWER(t.role) = :role AND t.customerOrVendorId = :id");
+
+            if (status != null) {
+                sb.append(" AND t.status = :status");
+                countSb.append(" AND t.status = :status");
+            }
+            if (subject != null && !subject.isEmpty()) {
+                sb.append(" AND LOWER(t.subject) LIKE :subject");
+                countSb.append(" AND LOWER(t.subject) LIKE :subject");
+            }
+            if (description != null && !description.isEmpty()) {
+                sb.append(" AND LOWER(t.description) LIKE :description");
+                countSb.append(" AND LOWER(t.description) LIKE :description");
+            }
+
+            sb.append(" ORDER BY t.id DESC"); // Sort by ID descending
+
+            // Data query
+            TypedQuery<Ticket> query = em.createQuery(sb.toString(), Ticket.class);
+            query.setParameter("role", role.toLowerCase());
+            query.setParameter("id", id);
+
+            // Count query
+            TypedQuery<Long> countQuery = em.createQuery(countSb.toString(), Long.class);
+            countQuery.setParameter("role", role.toLowerCase());
+            countQuery.setParameter("id", id);
+
+            // Apply parameters
+            if (status != null) {
+                query.setParameter("status", status);
+                countQuery.setParameter("status", status);
+            }
+            if (subject != null && !subject.isEmpty()) {
+                String sub = "%" + subject.toLowerCase() + "%";
+                query.setParameter("subject", sub);
+                countQuery.setParameter("subject", sub);
+            }
+            if (description != null && !description.isEmpty()) {
+                String desc = "%" + description.toLowerCase() + "%";
+                query.setParameter("description", desc);
+                countQuery.setParameter("description", desc);
+            }
+
+            // Pagination
+            query.setFirstResult(pageNumber * pageSize);
+            query.setMaxResults(pageSize);
+
+            List<Ticket> tickets = query.getResultList();
+            Long totalCount = countQuery.getSingleResult();
+
+           /* Map<String, Object> response = new HashMap<>();
+            response.put("data", tickets);
+            response.put("currentPage", pageNumber);
+            response.put("pageSize", pageSize);
+            response.put("totalItems", totalCount);
+            response.put("totalPages", (int) Math.ceil((double) totalCount / pageSize));*/
+
+            return responseService.generateSuccessResponseWithCount("Tickets fetched successfully", tickets,totalCount, HttpStatus.OK);
+
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 
     /**
      * Fetch tickets by UserId with optional status and role filters
@@ -188,4 +263,6 @@ public class TicketService {
             query.setParameter("role", role);
         }
     }
+
+
 }
