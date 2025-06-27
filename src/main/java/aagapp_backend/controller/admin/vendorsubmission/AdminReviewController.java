@@ -243,7 +243,6 @@ public class AdminReviewController {
             long closedCount = ticketRepository.countByStatus(TicketEnum.CLOSED);
             long totalCount = ticketRepository.count();
 
-            // Convert dates to java.util.Date range (start of day / end of day)
             Date start = (startDate != null) ? Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()) : null;
             Date end = (endDate != null) ? Date.from(endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()) : null;
 
