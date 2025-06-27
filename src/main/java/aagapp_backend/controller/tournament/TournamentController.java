@@ -106,16 +106,19 @@ public class TournamentController {
 
         try {
 
-
 //            Pageable pageable = PageRequest.of(page, size);
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
             Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId,gamename);
+            Long scheduledCount = tournamentService.getScheduledCount();
+            Long activeCount = tournamentService.getActiveCount();
+            Long ExpiredCount = tournamentService.getExpiredCount();
+
 
             List<Tournament> gameList = games.getContent();
-            long totalCount = games.getTotalElements();
+            long totalCount = scheduledCount+activeCount+ExpiredCount;
 
-            return responseService.generateSuccessResponseWithCount("Tournaments fetched successfully", gameList, totalCount, HttpStatus.OK);
+            return responseService.generateResponseForGame("Tournaments fetched successfully", gameList, totalCount, scheduledCount,activeCount,ExpiredCount,HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

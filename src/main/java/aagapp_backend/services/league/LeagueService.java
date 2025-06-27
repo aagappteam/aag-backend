@@ -2113,4 +2113,22 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         return league.get();
     }
 
+    public Long getScheduledCount() {
+        String sql = "SELECT COUNT(*) FROM aag_league g WHERE g.status = 'SCHEDULED'";
+        Query query = em.createNativeQuery(sql);
+        return ((Number) query.getSingleResult()).longValue();
+
+    }
+
+    public Long getActiveCount() {
+        String sql = "SELECT COUNT(*) FROM aag_league g WHERE g.status = 'ACTIVE'";
+        Query query = em.createNativeQuery(sql);
+        return ((Number) query.getSingleResult()).longValue();
+    }
+
+    public Long getExpiredCount() {
+        String sql = "SELECT COUNT(*) FROM aag_league g WHERE g.status = 'EXPIRED'";
+        Query query = em.createNativeQuery(sql);
+        return ((Number) query.getSingleResult()).longValue();
+    }
 }
