@@ -237,9 +237,6 @@ public class AdminReviewController {
             @RequestParam(defaultValue = "10") Integer size
     ) {
         try {
-
-
-
             int pageSize = (limit != null) ? limit : (size != null ? size : 10);
 
             long openCount = ticketRepository.countByStatus(TicketEnum.OPEN);
