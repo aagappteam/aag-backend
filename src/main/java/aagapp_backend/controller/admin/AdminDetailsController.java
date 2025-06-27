@@ -22,6 +22,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -152,27 +154,27 @@ public class AdminDetailsController {
         return new ResponseEntity<>(resultPage, HttpStatus.OK);
     }
 
-    //    get all notifications
     @GetMapping("/vendor-share")
-    public ResponseEntity<?> vendorShare(
+    public ResponseEntity<?> getNotificationShares(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Double amount,
-            @RequestParam(required = false) String vendorName
+            @RequestParam(required = false) String vendorName,
+            @RequestParam(required = false) String details,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdTo
     ) {
-        try {
-            Page<NotificationDTOAdmin> resultPage = dashboardAdmin.getAllNotifications(page, size, amount, vendorName);
-            return responseService.generateSuccessResponseWithCount(
-                    "Notifications retrieved successfully.",
-                    resultPage.getContent(),
-                    resultPage.getTotalElements(),
-                    HttpStatus.OK
-            );
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Some error getting: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-
+        Page<NotificationDTOAdmin> result = dashboardAdmin.getAllNotifications(
+                page, size, amount, vendorName, details, createdFrom, createdTo
+        );
+        return responseService.generateSuccessResponseWithCount(
+                "Notifications retrieved successfully.",
+                result.getContent(),
+                result.getTotalElements(),
+                HttpStatus.OK
+        );
     }
 
     @GetMapping("/all-app-transaction")
