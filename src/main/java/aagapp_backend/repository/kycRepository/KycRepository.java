@@ -4,12 +4,13 @@ import aagapp_backend.entity.kyc.KycEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface KycRepository extends JpaRepository<KycEntity, Long> {
+public interface KycRepository extends JpaRepository<KycEntity, Long> , JpaSpecificationExecutor<KycEntity> {
     Page<KycEntity> findByRole(String role, Pageable pageable);
 
 
