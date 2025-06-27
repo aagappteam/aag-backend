@@ -164,6 +164,7 @@ public ResponseEntity<?> getAllKycs(
         @RequestParam(required = false) String panNo,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date createdAfter,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date createdBefore,
+        @RequestParam(required = false) KycStatus kycStatus,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size
 ) {
@@ -177,18 +178,27 @@ public ResponseEntity<?> getAllKycs(
                 .and(KycSpecification.hasAadharNo(aadharNo))
                 .and(KycSpecification.hasPanNo(panNo))
                 .and(KycSpecification.createdAfter(createdAfter))
-                .and(KycSpecification.createdBefore(createdBefore));
+                .and(KycSpecification.createdBefore(createdBefore))
+                .and(KycSpecification.hasStatus(kycStatus));;
 
         Page<KycEntity> kycPage = kycRepository.findAll(spec, pageable);
 
         List<KycDTO> responseList = kycPage.getContent().stream()
-                .map(kyc -> new KycDTO(kyc, kycService.getKycStatus(kyc)))
+                .map(kyc -> new KycDTO(kyc, kyc.getKycStatus()))
                 .collect(Collectors.toList());
 
-        return ResponseService.generateSuccessResponseWithCount(
+        long totalCount = kycRepository.count(spec);
+        long pendingCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.PENDING)));
+        long rejectedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.REJECTED)));
+        long approvedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.VERIFIED)));
+
+        return ResponseService.generateSuccessResponseForWithdrwalRequest(
                 "KYC records retrieved successfully",
                 responseList,
-                kycPage.getTotalElements(),
+                totalCount,
+                approvedCount,
+                rejectedCount,
+                pendingCount,
                 HttpStatus.OK
         );
 

@@ -1,6 +1,7 @@
 package aagapp_backend.dto;
 
 import aagapp_backend.entity.kyc.KycEntity;
+import aagapp_backend.enums.KycStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
@@ -27,7 +28,7 @@ public class KycDTO {
     private Date createdAt;
 
 
-    public KycDTO(KycEntity entity, String kycStatus) {
+    public KycDTO(KycEntity entity, KycStatus kycStatus) {
         this.id = entity.getId();
         this.userOrVendorId = entity.getUserOrVendorId();
         this.role = entity.getRole();
@@ -37,7 +38,7 @@ public class KycDTO {
         this.panNo = entity.getPanNo();
         this.aadharImage = entity.getAadharImage();
         this.panImage = entity.getPanImage();
-        this.kycStatus = kycStatus;
+        this.kycStatus = kycStatus.name();
         this.createdAt = entity.getCreatedAt();
 
     }
