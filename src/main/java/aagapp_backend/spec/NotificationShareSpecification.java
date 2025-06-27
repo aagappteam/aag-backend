@@ -61,6 +61,7 @@ public class NotificationShareSpecification {
         };
     }
 
+
     public static Specification<NotificationShare> vendorNameContains(String name) {
         return (root, query, cb) -> {
             if (name == null || name.isBlank()) return null;
