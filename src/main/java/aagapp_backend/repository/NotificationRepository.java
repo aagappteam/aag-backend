@@ -1,14 +1,17 @@
 package aagapp_backend.repository;
 
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.NotificationShare;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 @Repository
-public interface NotificationRepository extends JpaRepository<Notification, Long> {
+public interface NotificationRepository extends JpaRepository<Notification, Long>, JpaSpecificationExecutor<Notification> {
     // Find notifications by vendor ID and filter by non-null amount
     Page<Notification> findByVendorIdAndAmountIsNotNullOrderByCreatedDateDesc(Long vendorId, Pageable pageable);
 
@@ -24,4 +27,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     // Original methods for regular fetching
     Page<Notification> findByVendorIdOrderByCreatedDateDesc(Long vendorId, Pageable pageable);
     Page<Notification> findByCustomerIdOrderByCreatedDateDesc(Long customerId, Pageable pageable);
+
+
 }

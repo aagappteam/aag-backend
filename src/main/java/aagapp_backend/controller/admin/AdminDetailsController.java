@@ -36,9 +36,11 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/admin")
@@ -158,27 +160,27 @@ public class AdminDetailsController {
         return new ResponseEntity<>(resultPage, HttpStatus.OK);
     }
 
-    //    get all notifications
     @GetMapping("/vendor-share")
-    public ResponseEntity<?> vendorShare(
+    public ResponseEntity<?> getNotificationShares(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Double amount,
-            @RequestParam(required = false) String vendorName
+            @RequestParam(required = false) String vendorName,
+            @RequestParam(required = false) String details,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdTo
     ) {
-        try {
-            Page<NotificationDTOAdmin> resultPage = dashboardAdmin.getAllNotifications(page, size, amount, vendorName);
-            return responseService.generateSuccessResponseWithCount(
-                    "Notifications retrieved successfully.",
-                    resultPage.getContent(),
-                    resultPage.getTotalElements(),
-                    HttpStatus.OK
-            );
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Some error getting: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-
+        Page<NotificationDTOAdmin> result = dashboardAdmin.getAllNotifications(
+                page, size, amount, vendorName, details, createdFrom, createdTo
+        );
+        return responseService.generateSuccessResponseWithCount(
+                "Notifications retrieved successfully.",
+                result.getContent(),
+                result.getTotalElements(),
+                HttpStatus.OK
+        );
     }
 
     @GetMapping("/all-app-transaction")
