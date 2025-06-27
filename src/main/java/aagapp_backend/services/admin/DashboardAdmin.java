@@ -8,18 +8,18 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.game.GameResultRecordRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueResultRecordRepository;
 import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
+import aagapp_backend.spec.NotificationSpecifications;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -43,6 +43,9 @@ public class DashboardAdmin {
     private GameResultRecordRepository gameResultRecordRepository;
     @Autowired
     private LeagueResultRecordRepository leagueResultRecordRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
 
     public DashboardResponseAdmin getDashboard() {
@@ -583,6 +586,34 @@ public class DashboardAdmin {
         }
     }
 
+
+    public Page<Notification> getFilteredNotifications(
+            String role,
+            Long vendorId,
+            Long customerId,
+            Double amount,
+            Double minAmount,
+            Double maxAmount,
+            ZonedDateTime startDate,
+            ZonedDateTime endDate,
+            String description,
+            String details,
+            int page,
+            int size
+    ) {
+        Specification<Notification> spec = Specification
+                .where(NotificationSpecifications.hasRole(role))
+                .and(NotificationSpecifications.hasVendorId(vendorId))
+                .and(NotificationSpecifications.hasCustomerId(customerId))
+                .and(NotificationSpecifications.hasAmount(amount))
+                .and(NotificationSpecifications.hasMinAmount(minAmount))
+                .and(NotificationSpecifications.hasMaxAmount(maxAmount))
+                .and(NotificationSpecifications.createdBetween(startDate, endDate))
+                .and(NotificationSpecifications.descriptionContains(description))
+                .and(NotificationSpecifications.detailsContains(details));
+
+        return notificationRepository.findAll(spec, PageRequest.of(page, size, Sort.by("createdDate").descending()));
+    }
 
 
     // Helper Methods

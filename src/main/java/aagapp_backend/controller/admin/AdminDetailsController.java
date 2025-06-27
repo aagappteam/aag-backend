@@ -6,9 +6,12 @@ import aagapp_backend.dto.*;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.admin.DashboardAdmin;
 import aagapp_backend.spec.InfluencerMonthlyEarningSpecification;
+import aagapp_backend.spec.NotificationSpecifications;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +39,9 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,6 +62,9 @@ public class AdminDetailsController {
 
     @Autowired
     private VendorRepository vendorRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     private ExceptionHandlingImplement exceptionHandling;
     private TwilioService twilioService;
@@ -181,7 +190,7 @@ public class AdminDetailsController {
 
     }
 
-    @GetMapping("/all-app-transaction")
+    /*@GetMapping("/all-app-transaction")
     public ResponseEntity<?> allAppTransactions(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -202,6 +211,108 @@ public class AdminDetailsController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Some error getting: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }*/
+
+
+    @GetMapping("/all-app-transaction")
+    public ResponseEntity<?> getNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Long vendorId,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) Double amount,
+            @RequestParam(required = false) Double minAmount,
+            @RequestParam(required = false) Double maxAmount,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime endDate,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String details
+    ) {
+        // Convert to ZonedDateTime using system default or UTC
+        ZoneId zoneId = ZoneId.systemDefault(); // or use ZoneId.of("UTC")
+        ZonedDateTime zonedStartDate = startDate != null ? startDate.atZone(zoneId) : null;
+        ZonedDateTime zonedEndDate = endDate != null ? endDate.atZone(zoneId) : null;
+
+        Page<Notification> result = dashboardAdmin.getFilteredNotifications(
+                role, vendorId, customerId, amount, minAmount, maxAmount,
+                zonedStartDate, zonedEndDate, description, details, page, size
+        );
+
+        return responseService.generateSuccessResponseWithCount(
+                "Notifications retrieved successfully.",
+                result.getContent(),
+                result.getTotalElements(),
+                HttpStatus.OK
+        );
+    }
+
+    @GetMapping("/all-app-transaction/download")
+    public void downloadNotificationsCsv(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Long vendorId,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) Double amount,
+            @RequestParam(required = false) Double minAmount,
+            @RequestParam(required = false) Double maxAmount,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime endDate,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String details,
+            HttpServletResponse response
+    ) throws IOException {
+        // Set timezone
+        ZoneId zoneId = ZoneId.systemDefault();
+        ZonedDateTime zonedStartDate = startDate != null ? startDate.atZone(zoneId) : null;
+        ZonedDateTime zonedEndDate = endDate != null ? endDate.atZone(zoneId) : null;
+
+        // Build specification
+        Specification<Notification> spec = Specification
+                .where(NotificationSpecifications.hasRole(role))
+                .and(NotificationSpecifications.hasVendorId(vendorId))
+                .and(NotificationSpecifications.hasCustomerId(customerId))
+                .and(NotificationSpecifications.hasAmount(amount))
+                .and(NotificationSpecifications.hasMinAmount(minAmount))
+                .and(NotificationSpecifications.hasMaxAmount(maxAmount))
+                .and(NotificationSpecifications.createdBetween(zonedStartDate, zonedEndDate))
+                .and(NotificationSpecifications.descriptionContains(description))
+                .and(NotificationSpecifications.detailsContains(details));
+
+        List<Notification> notifications = notificationRepository.findAll(spec, Sort.by("createdDate").descending());
+
+        // Set CSV headers
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=notifications.csv");
+
+        // Write data to response
+        PrintWriter writer = response.getWriter();
+        writer.println("ID,Vendor ID,Customer ID,Role,Amount,Description,Details,Created Date");
+
+        for (Notification n : notifications) {
+            writer.printf("%d,%s,%s,%s,%.2f,%s,%s,%s\n",
+                    n.getId(),
+                    n.getVendorId() != null ? n.getVendorId() : "",
+                    n.getCustomerId() != null ? n.getCustomerId() : "",
+                    n.getRole() != null ? n.getRole() : "",
+                    n.getAmount() != null ? n.getAmount() : 0.0,
+                    escapeCsv(n.getDescription()),
+                    escapeCsv(n.getDetails()),
+                    n.getCreatedDate() != null ? n.getCreatedDate().toLocalDateTime().toString() : ""
+            );
+        }
+
+        writer.flush();
+        writer.close();
+    }
+
+    // Optional helper to handle commas in text fields
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        value = value.replace("\"", "\"\"");
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value + "\"";
+        }
+        return value;
     }
 
 
