@@ -13,6 +13,7 @@ import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.vendor.VenderService;
 import io.micrometer.common.util.StringUtils;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import org.springframework.data.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.Query;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -121,6 +123,42 @@ public class TicketService {
         }
     }
 
+    public ResponseEntity<?> getTicketsByRoleAndIdNew(String role, Long id, TicketEnum status, String subject, String description) {
+        try {
+            StringBuilder sb = new StringBuilder("SELECT t FROM Ticket t WHERE LOWER(t.role) = :role AND t.customerOrVendorId = :id");
+
+            if (status != null) {
+                sb.append(" AND t.status = :status");
+            }
+            if (subject != null && !subject.isEmpty()) {
+                sb.append(" AND LOWER(t.subject) LIKE :subject");
+            }
+            if (description != null && !description.isEmpty()) {
+                sb.append(" AND LOWER(t.description) LIKE :description");
+            }
+
+            TypedQuery<Ticket> query = em.createQuery(sb.toString(), Ticket.class);
+            query.setParameter("role", role.toLowerCase());
+            query.setParameter("id", id);
+
+            if (status != null) {
+                query.setParameter("status", status);
+            }
+            if (subject != null && !subject.isEmpty()) {
+                query.setParameter("subject", "%" + subject.toLowerCase() + "%");
+            }
+            if (description != null && !description.isEmpty()) {
+                query.setParameter("description", "%" + description.toLowerCase() + "%");
+            }
+
+            List<Ticket> tickets = query.getResultList();
+
+            return responseService.generateSuccessResponse("Tickets fetched successfully", tickets, HttpStatus.OK);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     /**
      * Fetch tickets by UserId with optional status and role filters
@@ -188,4 +226,6 @@ public class TicketService {
             query.setParameter("role", role);
         }
     }
+
+
 }
