@@ -1,6 +1,7 @@
 package aagapp_backend.spec;
 
 import aagapp_backend.entity.kyc.KycEntity;
+import aagapp_backend.enums.KycStatus;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Date;
@@ -41,4 +42,10 @@ public class KycSpecification {
         return (root, query, builder) ->
                 (date == null) ? null : builder.lessThanOrEqualTo(root.get("createdAt"), date);
     }
+
+    public static Specification<KycEntity> hasStatus(KycStatus status) {
+        return (root, query, builder) ->
+                (status == null) ? null : builder.equal(root.get("kycStatus"), status);
+    }
+
 }

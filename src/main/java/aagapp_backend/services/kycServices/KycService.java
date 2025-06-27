@@ -101,6 +101,7 @@ public class KycService {
             kycEntity.setPanNo(panNo);
             kycEntity.setAadharImage(adharUrl);
             kycEntity.setPanImage(panUrl);
+            kycEntity.setKycStatus(KycStatus.PENDING);
             return kycRepository.save(kycEntity);
 
         } catch (Exception e) {
@@ -113,7 +114,7 @@ public class KycService {
     public KycEntity updateKycVerificationStatus(Long kycId, KycStatus isVerified) {
         KycEntity kyc = kycRepository.findById(kycId)
                 .orElseThrow(() -> new RuntimeException("KYC not found"));
-        kycRepository.save(kyc);
+
         String email = kyc.getMailId();
 
         // Get the role and update corresponding entity
@@ -152,6 +153,9 @@ public class KycService {
             throw new RuntimeException("KYC updated but failed to send email: " + e.getMessage(), e);
         }
 
+        kyc.setKycStatus(isVerified);
+        kycRepository.save(kyc);
+
         return kyc;
     }
 
@@ -167,6 +171,7 @@ public class KycService {
             KycEntity kyc = kycRepository.findById(kycId)
                     .orElseThrow(() -> new RuntimeException("KYC not found for ID: " + kycId));
 
+            kyc.setKycStatus(isVerified);
             String email = kyc.getMailId();
             Long userOrVendorId = kyc.getUserOrVendorId();
             String role = kyc.getRole();
