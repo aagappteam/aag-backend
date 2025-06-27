@@ -6,9 +6,12 @@ import aagapp_backend.dto.*;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.notification.NotificationShare;
+import aagapp_backend.repository.NotificationShareRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.admin.DashboardAdmin;
 import aagapp_backend.spec.InfluencerMonthlyEarningSpecification;
+import aagapp_backend.spec.NotificationShareSpecification;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,6 +44,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.netty.util.internal.StringUtil.escapeCsv;
+
 
 @RestController
 @RequestMapping("/admin")
@@ -58,6 +63,9 @@ public class AdminDetailsController {
 
     @Autowired
     private VendorRepository vendorRepository;
+
+    @Autowired
+    private NotificationShareRepository notificationShareRepository;
 
     private ExceptionHandlingImplement exceptionHandling;
     private TwilioService twilioService;
@@ -182,6 +190,77 @@ public class AdminDetailsController {
                 HttpStatus.OK
         );
     }
+
+    @GetMapping("/vendor-share/export")
+    public void exportNotificationSharesToCSV(
+            @RequestParam(required = false) Double amount,
+            @RequestParam(required = false) String vendorName,
+            @RequestParam(required = false) String details,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdTo,
+            HttpServletResponse response
+    ) throws IOException {
+
+        // Set response headers
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=vendor_shares.csv");
+
+        // Create specification
+        Specification<NotificationShare> spec = Specification
+                .where(NotificationShareSpecification.hasAmount(amount))
+                .and(NotificationShareSpecification.vendorNameContains(vendorName))
+                .and(NotificationShareSpecification.detailsContains(details))
+                .and(NotificationShareSpecification.createdBetween(createdFrom, createdTo));
+
+        // Fetch all matching records (no pagination)
+        List<NotificationShare> entities = notificationShareRepository.findAll(spec);
+
+        // Convert to DTO
+        List<NotificationDTOAdmin> dtos = entities.stream().map(ns -> {
+            VendorEntity v = ns.getVendor();
+            String name = v != null ? v.getFirst_name() + " " + v.getLast_name() : "N/A";
+            String email = v != null ? v.getPrimary_email() : "N/A";
+            String formattedDate = ns.getCreatedDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+            return new NotificationDTOAdmin(
+                    ns.getId(),
+                    ns.getVendorId(),
+                    "Vendor",
+                    null,
+                    ns.getDescription(),
+                    ns.getDetails(),
+                    formattedDate,
+                    ns.getAmount(),
+                    name,
+                    email
+            );
+        }).toList();
+
+        // Write CSV
+        PrintWriter writer = response.getWriter();
+        writer.println("ID,Vendor ID,Type,Description,Details,Created Date,Amount,Vendor Name,Vendor Email");
+
+        for (NotificationDTOAdmin dto : dtos) {
+            writer.printf(
+                    "%d,%s,%s,%s,%s,%s,%.2f,%s,%s%n",
+                    dto.getId(),
+                    dto.getVendorId(),
+                    dto.getRole(),
+                    escapeCsv(dto.getDescription()),
+                    escapeCsv(dto.getDetails()),
+                    dto.getCreatedDate(),
+                    dto.getAmount(),
+                    escapeCsv(dto.getVendorName()),
+                    escapeCsv(dto.getVendorEmail())
+            );
+        }
+
+        writer.flush();
+        writer.close();
+    }
+
 
     @GetMapping("/all-app-transaction")
     public ResponseEntity<?> allAppTransactions(
