@@ -4,11 +4,14 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.PermissionUpdateRequest;
 import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.enums.KycStatus;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.spec.CustomCustomerSpecification;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
@@ -16,6 +19,12 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -129,7 +138,11 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) String mobileNumber,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) String email      // new email param
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) KycStatus kycStatus,
+            @RequestParam(required = false) VendorStatus userStatus,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate
     ) {
         try {
             if (customerId != null) {
@@ -137,48 +150,20 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
                 return ResponseService.generateSuccessResponse("Customer details:", customCustomer, HttpStatus.OK);
             }
 
-            int startPosition = page * size;
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+            Specification<CustomCustomer> spec = CustomCustomerSpecification.filterCustomers(
+                    mobileNumber, name, email, kycStatus, userStatus, startDate, endDate
+            );
 
-            StringBuilder baseQuery = new StringBuilder("SELECT c FROM CustomCustomer c WHERE 1=1");
-            StringBuilder countQueryStr = new StringBuilder("SELECT COUNT(c) FROM CustomCustomer c WHERE 1=1");
+            Page<CustomCustomer> resultPage = customCustomerRepository.findAll(spec, pageable);
 
-            Map<String, Object> params = new HashMap<>();
+            Long totalCount = resultPage.getTotalElements();
+            List<CustomCustomer> customers = resultPage.getContent();
 
-            if (mobileNumber != null && !mobileNumber.isEmpty()) {
-                baseQuery.append(" AND c.mobileNumber = :mobileNumber");
-                countQueryStr.append(" AND c.mobileNumber = :mobileNumber");
-                params.put("mobileNumber", mobileNumber);
-            }
+            Long activeCount = this.getActiveCounts();
+            Long inactiveCount = this.getInactiveCounts();
 
-            if (name != null && !name.trim().isEmpty()) {
-                baseQuery.append(" AND LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))");
-                countQueryStr.append(" AND LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))");
-                params.put("name", name.trim());
-            }
-
-            if (email != null && !email.trim().isEmpty()) {
-                baseQuery.append(" AND LOWER(c.email) LIKE LOWER(CONCAT('%', :email, '%'))");
-                countQueryStr.append(" AND LOWER(c.email) LIKE LOWER(CONCAT('%', :email, '%'))");
-                params.put("email", email.trim());
-            }
-
-            baseQuery.append(" ORDER BY c.createdDate DESC");
-
-            TypedQuery<Long> countQuery = entityManager.createQuery(countQueryStr.toString(), Long.class);
-            TypedQuery<CustomCustomer> dataQuery = entityManager.createQuery(baseQuery.toString(), CustomCustomer.class)
-                    .setFirstResult(startPosition)
-                    .setMaxResults(size);
-
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
-                countQuery.setParameter(entry.getKey(), entry.getValue());
-                dataQuery.setParameter(entry.getKey(), entry.getValue());
-            }
-
-            Long totalCount = countQuery.getSingleResult();
-            List<CustomCustomer> results = dataQuery.getResultList();
-            Long activeCount = this.getActiveInactiveCounts();
-            Long inactiveCount = totalCount - activeCount;
-            return ResponseService.generateSuccessResponseWithCountAndStatus("List of customers:", results, totalCount,activeCount,inactiveCount, HttpStatus.OK);
+            return ResponseService.generateSuccessResponseWithCountAndStatus("List of customers:", customers, totalCount, activeCount, inactiveCount, HttpStatus.OK);
 
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -188,13 +173,20 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
         }
     }
 
-    public Long getActiveInactiveCounts() {
+
+    public Long getActiveCounts() {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
         Date activeSince = Date.from(now.minusMinutes(10).toInstant());
 
         Long active = customCustomerRepository.countActiveVendors(activeSince);
+        return active;
+    }
 
+    public Long getInactiveCounts() {
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        Date activeSince = Date.from(now.minusMinutes(10).toInstant());
 
+        Long active = customCustomerRepository.countInactiveVendors(activeSince);
         return active;
     }
 
