@@ -143,6 +143,36 @@ public class GameController {
     }
 
 
+    @GetMapping("/get-all-games-by-admin")
+    public ResponseEntity<?> getAllGames(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "gamename", required = false) String gamename,
+            @RequestParam(value = "vendorName", required = false) String vendorName,
+            @RequestParam(value = "startDate", required = false) ZonedDateTime startDateStr,
+            @RequestParam(value = "endDate", required = false) ZonedDateTime endDateStr,
+            @RequestParam(value = "vendorId", required = false) Long vendorId) {
+
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<GetGameResponseDTO> games = gameService.getAllGamesByAdmin(status, vendorId, gamename, vendorName, startDateStr, endDateStr, pageable);
+
+            Long scheduledCount = gameService.getScheduledCount();
+            Long activeCount = gameService.getActiveCount();
+            Long expiredCount = gameService.getExpiredCount();
+
+            List<GetGameResponseDTO> gameList = games.getContent();
+            long totalCount = games.getTotalElements();
+
+            return responseService.generateResponseForGame("Games fetched successfully", gameList, totalCount, scheduledCount, activeCount, expiredCount, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
     @GetMapping("/get-games-by-vendor/{vendorId}")
     public ResponseEntity<?> getGamesByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(value = "status", required = false) String status) {
         try {

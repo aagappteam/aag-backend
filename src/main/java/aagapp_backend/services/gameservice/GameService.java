@@ -32,6 +32,7 @@ import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.pricedistribute.MatchService;
 import aagapp_backend.services.vendor.VenderService;
+import aagapp_backend.spec.GameSpecification;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,6 +47,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -64,6 +66,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import org.springframework.http.*;
+
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -72,6 +76,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
+
+
+
 @Service
 public class GameService {
 
@@ -890,6 +897,42 @@ public class GameService {
             Long count = ((Number) countQuery.getSingleResult()).longValue();
 
             return new PageImpl<>(gameResponseDTOs, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving games", e);
+        }
+    }
+
+    public Page<GetGameResponseDTO> getAllGamesByAdmin(String status, Long vendorId, String gamename, String vendorName,
+                                                ZonedDateTime startDateStr, ZonedDateTime endDateStr, Pageable pageable) {
+        try {
+
+            Specification<Game> spec = GameSpecification.filterGames(status, gamename, vendorName, vendorId, startDateStr, endDateStr);
+            Page<Game> gamePage = gameRepository.findAll(spec, pageable);
+
+            List<GetGameResponseDTO> gameResponseDTOs = gamePage.stream()
+                    .map(game -> new GetGameResponseDTO(
+                            game.getId(),
+                            game.getName(),
+                            game.getFee(),
+                            game.getMove(),
+                            game.getStatus(),
+                            game.getShareableLink(),
+                            game.getAaggameid(),
+                            (game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
+                            game.getTheme() != null ? game.getTheme().getName() : null,
+                            game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                            game.getCreatedDate(),
+                            game.getScheduledAt(),
+                            game.getEndDate(),
+                            game.getMinPlayersPerTeam(),
+                            game.getMaxPlayersPerTeam(),
+                            calculateTotalPrizeNew(game),
+                            game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
+                            game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
+                    ))
+                    .collect(Collectors.toList());
+
+            return new PageImpl<>(gameResponseDTOs, pageable, gamePage.getTotalElements());
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving games", e);
         }
