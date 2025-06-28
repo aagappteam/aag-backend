@@ -2351,6 +2351,78 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         return prizeForThisRound.min(remainingPrize);
     }
 
+
+
+
+    public Page<TournamentResultRecordDTO> findTournamentResultsByUserId(Long userId, Pageable pageable, String tournamentName, Boolean winner) {
+        try {
+            StringBuilder sql = new StringBuilder("""
+            SELECT trr.* FROM tournament_result_record trr
+            JOIN tournament t ON t.id = trr.tournament_id
+            WHERE trr.player_id = :userId
+        """);
+
+            StringBuilder countSql = new StringBuilder("""
+            SELECT COUNT(*) FROM tournament_result_record trr
+            JOIN tournament t ON t.id = trr.tournament_id
+            WHERE trr.player_id = :userId
+        """);
+
+            if (tournamentName != null && !tournamentName.isEmpty()) {
+                sql.append(" AND LOWER(t.name) LIKE LOWER(:tournamentName)");
+                countSql.append(" AND LOWER(t.name) LIKE LOWER(:tournamentName)");
+            }
+
+            if (winner != null) {
+                sql.append(" AND trr.iswinner = :winner");
+                countSql.append(" AND trr.iswinner = :winner");
+            }
+
+            sql.append(" ORDER BY trr.updateddate DESC");
+
+            Query query = em.createNativeQuery(sql.toString(), TournamentResultRecord.class);
+            setParametersForTournament(query, userId, tournamentName, winner);
+            query.setFirstResult((int) pageable.getOffset());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<TournamentResultRecord> records = query.getResultList();
+
+            Query countQuery = em.createNativeQuery(countSql.toString());
+            setParametersForTournament(countQuery, userId, tournamentName, winner);
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            List<TournamentResultRecordDTO> dtoList = records.stream().map(record -> {
+                TournamentResultRecordDTO dto = new TournamentResultRecordDTO();
+                dto.setId(record.getId());
+                dto.setRoomId(record.getRoomId());
+                dto.setTournamentName(record.getTournament().getName());
+                dto.setPlayerName(record.getPlayer().getCustomer().getName());
+                dto.setPlayerProfilePic(record.getPlayer().getPlayerProfilePic());
+                dto.setScore(record.getScore());
+                dto.setAmount(record.getAmmount());
+                dto.setIsWinner(Boolean.TRUE.equals(record.getIsWinner()) ? "true" : "false");
+                dto.setRound(record.getRound());
+                dto.setPlayedAt(record.getPlayedAt());
+                return dto;
+            }).toList();
+
+            return new PageImpl<>(dtoList, pageable, total);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching tournament results by user: " + e.getMessage(), e);
+        }
+    }
+
+    private void setParametersForTournament(Query query, Long userId, String tournamentName, Boolean winner) {
+        query.setParameter("userId", userId);
+        if (tournamentName != null && !tournamentName.isEmpty()) {
+            query.setParameter("tournamentName", "%" + tournamentName + "%");
+        }
+        if (winner != null) {
+            query.setParameter("winner", winner);
+        }
+    }
+
     @Transactional
     public String manualStartNextRound(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
