@@ -57,7 +57,7 @@ public class ResponseService {
             Long inactiveCount,
             HttpStatus status
     ) {
-        Map<String, Object> response = new HashMap<>();
+        Map<String, Object> response = new LinkedHashMap<>();
         response.put("message", message);
         response.put("data", data);
         response.put("totalCount", totalCount);
