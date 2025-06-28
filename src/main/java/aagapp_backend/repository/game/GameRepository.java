@@ -7,6 +7,7 @@ import aagapp_backend.entity.game.Game;
 import aagapp_backend.enums.GameStatus;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,7 +21,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 @Repository
-public interface GameRepository extends JpaRepository<Game, Long> {
+public interface GameRepository extends JpaRepository<Game, Long>, JpaSpecificationExecutor<Game> {
     Page<Game> findAll(Pageable pageable);
     @Query("SELECT g FROM Game g WHERE g.vendorEntity = :vendorEntity AND g.scheduledAt BETWEEN :startTime AND :endTime")
     List<Game> findByVendorEntityAndScheduledAtBetween(
