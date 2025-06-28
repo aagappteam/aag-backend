@@ -6,6 +6,7 @@ import aagapp_backend.dto.*;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
 import aagapp_backend.repository.NotificationShareRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
@@ -29,10 +30,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -262,7 +265,7 @@ public class AdminDetailsController {
     }
 
 
-    @GetMapping("/all-app-transaction")
+    /*@GetMapping("/all-app-transaction")
     public ResponseEntity<?> allAppTransactions(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -283,8 +286,98 @@ public class AdminDetailsController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Some error getting: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }*/
+
+
+    @GetMapping("/all-app-transaction")
+    public ResponseEntity<?> getFilteredNotifications(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Long vendorId,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) Double amount,
+            @RequestParam(required = false) Double minAmount,
+            @RequestParam(required = false) Double maxAmount,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime endDate,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String details,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            Page<Notification> notifications = dashboardAdmin.getFilteredNotifications(
+                    role, vendorId, customerId, amount, minAmount, maxAmount,
+                    startDate, endDate, description, details, page, size
+            );
+            return responseService.generateSuccessResponseWithCount(
+                    "Notifications retrieved successfully.",
+                    notifications.getContent(),
+                    notifications.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Some error getting: " + e, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
+
+
+    @GetMapping("/all-app-transaction/download")
+    public void downloadNotificationsAsCsv(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Long vendorId,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) Double amount,
+            @RequestParam(required = false) Double minAmount,
+            @RequestParam(required = false) Double maxAmount,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime endDate,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String details,
+            HttpServletResponse response
+    ) {
+        try {
+            // Fetch all filtered notifications (no pagination)
+            List<Notification> notifications = dashboardAdmin.getFilteredNotifications(
+                    role, vendorId, customerId, amount, minAmount, maxAmount,
+                    startDate, endDate, description, details, 0, Integer.MAX_VALUE
+            ).getContent();
+
+            // Set response headers for file download
+            response.setContentType("text/csv");
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=notifications.csv");
+
+            // Write CSV header
+            PrintWriter writer = response.getWriter();
+            writer.println("ID,Role,VendorId,CustomerId,Amount,CreatedDate,Description,Details");
+
+            // Write CSV rows
+            for (Notification n : notifications) {
+                writer.printf("%d,%s,%d,%d,%.2f,%s,%s,%s%n",
+                        n.getId(),
+                        n.getRole(),
+                        n.getVendorId() != null ? n.getVendorId() : 0,
+                        n.getCustomerId() != null ? n.getCustomerId() : 0,
+                        n.getAmount() != null ? n.getAmount() : 0.0,
+                        n.getCreatedDate(),
+                        escapeCsv(n.getDescription()),
+                        escapeCsv(n.getDetails())
+                );
+            }
+
+            writer.flush();
+        } catch (Exception ex) {
+            exceptionHandling.handleException(ex);
+            throw new RuntimeException("Error while generating CSV: " + ex.getMessage());
+        }
+    }
 
     @Transactional
     @PatchMapping("/update")
