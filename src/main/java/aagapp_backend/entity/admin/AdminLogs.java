@@ -37,7 +37,7 @@ public class AdminLogs {
 
 
     @CreationTimestamp
-    @Column(name = "created_date", updatable = false)
+    @Column(name = "createdDate", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime createdDate;
 
@@ -45,7 +45,6 @@ public class AdminLogs {
     @Column(name = "updated_date")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private ZonedDateTime updatedDate;
-
 
 
     @PreUpdate
