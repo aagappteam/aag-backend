@@ -2,6 +2,7 @@ package aagapp_backend.controller.vendor;
 
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorSubmissionEntity;
+import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.exception.VendorSubmissionException;
@@ -14,9 +15,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -88,7 +92,7 @@ public class VendorSubmission {
         }
     }
 
-    @GetMapping("/status")
+/*    @GetMapping("/status")
     public ResponseEntity<?> getSubmissionsByStatus(
             @RequestParam(required = false, defaultValue = "all") String status,
             @RequestParam(required = false) String email,
@@ -140,8 +144,46 @@ public class VendorSubmission {
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
-    }
+    }*/
 
+    @GetMapping("/status")
+    public ResponseEntity<?> getFilteredSubmissions(
+            @RequestParam(required = false) ProfileStatus profileStatus,
+            @RequestParam(required = false) Boolean approved,
+            @RequestParam(required = false) String planname,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
+
+            Page<VendorSubmissionEntity> submissionsPage =
+                    submissionService.getFilteredSubmissionsNative(email,profileStatus, approved, planname, startDate, endDate, pageable);
+
+            if (submissionsPage.isEmpty()) {
+                return responseService.generateResponse(HttpStatus.OK, "No data found", null);
+            }
+            long totalSubmissions = submissionService.countAllSubmissions();
+            long approvedCount = submissionService.countByApproved(true);
+            long rejectedCount = submissionService.countByApproved(false);
+            long pendingCount = totalSubmissions - approvedCount - rejectedCount;
+
+            return ResponseService.generateSuccessResponseForWithdrwalRequest(
+                    "Filtered submissions",
+                    submissionsPage.getContent(),
+                    submissionsPage.getTotalElements(),
+                    approvedCount, rejectedCount, pendingCount,
+                    HttpStatus.OK
+            );
+
+        } catch (Exception e) {
+            exceptionHandlingImplement.handleException(e);
+            return ResponseService.generateErrorResponse("Error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 
     @PutMapping("/update/{serviceProviderId}")

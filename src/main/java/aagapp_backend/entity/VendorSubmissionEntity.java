@@ -12,6 +12,8 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Map;
 
 @Entity
@@ -60,7 +62,11 @@ public class VendorSubmissionEntity {
     private Map<String, String> socialMediaUrls;
 
     @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+
+
 
     @PrePersist
     @PreUpdate
@@ -70,8 +76,12 @@ public class VendorSubmissionEntity {
         }
     }
 
+
+
     public String getMobileNumber() {
         return vendorEntity != null ? vendorEntity.getMobileNumber() : null;
     }
+
+
 
 }

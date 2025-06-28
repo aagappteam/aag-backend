@@ -15,15 +15,14 @@ import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
 import jakarta.persistence.TypedQuery;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.Query;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -204,6 +203,114 @@ public class VendorSubmissionService {
 
     public long countByApproved(boolean b) {
         return submissionRepository.countByApproved(b);
+    }
+
+    @Transactional
+    public Page<VendorSubmissionEntity> getFilteredSubmissionsNative(
+            String email,
+            ProfileStatus profileStatus,
+            Boolean approved,
+            String planName,
+            LocalDate startDate,
+            LocalDate endDate,
+            Pageable pageable
+    ) {
+        try {
+            StringBuilder sql = new StringBuilder("SELECT * FROM vendor_submission_details v WHERE 1=1");
+
+            if (email != null && !email.isEmpty()) {
+                sql.append(" AND LOWER(v.email) LIKE LOWER(:email)");
+            }
+            if (profileStatus != null) {
+                sql.append(" AND v.profile_status = :profileStatus");
+            }
+            if (approved != null) {
+                sql.append(" AND v.approved = :approved");
+            }
+            if (planName != null && !planName.isEmpty()) {
+                sql.append(" AND LOWER(v.plan_name) = LOWER(:planName)");
+            }
+            if (startDate != null && endDate != null) {
+                sql.append(" AND v.created_at BETWEEN :startDate AND :endDate");
+            }
+
+            sql.append(" ORDER BY v.id DESC");
+
+            Query query = entityManager.createNativeQuery(sql.toString(), VendorSubmissionEntity.class);
+
+            if (email != null && !email.isEmpty()) {
+                query.setParameter("email", "%" + email.toLowerCase() + "%");
+            }
+            if (profileStatus != null) {
+                query.setParameter("profileStatus", profileStatus.ordinal()); // use ordinal
+            }
+            if (approved != null) {
+                query.setParameter("approved", approved);
+            }
+            if (planName != null && !planName.isEmpty()) {
+                query.setParameter("planName", planName.toLowerCase());
+            }
+            if (startDate != null && endDate != null) {
+                query.setParameter("startDate", startDate.atStartOfDay());
+                query.setParameter("endDate", endDate.plusDays(1).atStartOfDay()); // inclusive
+            }
+
+            query.setFirstResult((int) pageable.getOffset());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<VendorSubmissionEntity> submissions = query.getResultList();
+
+            // Count query
+            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM vendor_submission_details v WHERE 1=1");
+
+            if (email != null && !email.isEmpty()) {
+                countSql.append(" AND LOWER(v.email) LIKE LOWER(:email)");
+            }
+            if (profileStatus != null) {
+                countSql.append(" AND v.profile_status = :profileStatus");
+            }
+            if (approved != null) {
+                countSql.append(" AND v.approved = :approved");
+            }
+            if (planName != null && !planName.isEmpty()) {
+                countSql.append(" AND LOWER(v.plan_name) = LOWER(:planName)");
+            }
+            if (startDate != null && endDate != null) {
+                countSql.append(" AND v.created_at BETWEEN :startDate AND :endDate");
+            }
+
+            Query countQuery = entityManager.createNativeQuery(countSql.toString());
+
+            if (email != null && !email.isEmpty()) {
+                countQuery.setParameter("email", "%" + email.toLowerCase() + "%");
+            }
+            if (profileStatus != null) {
+                countQuery.setParameter("profileStatus", profileStatus.ordinal()); // use ordinal
+            }
+            if (approved != null) {
+                countQuery.setParameter("approved", approved);
+            }
+            if (planName != null && !planName.isEmpty()) {
+                countQuery.setParameter("planName", planName.toLowerCase());
+            }
+            if (startDate != null && endDate != null) {
+                countQuery.setParameter("startDate", startDate.atStartOfDay());
+                countQuery.setParameter("endDate", endDate.plusDays(1).atStartOfDay());
+            }
+
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            return new PageImpl<>(submissions, pageable, total);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving submissions", e);
+        }
+    }
+
+
+
+    public long countAllSubmissions() {
+        return submissionRepository.count();
     }
 }
 
