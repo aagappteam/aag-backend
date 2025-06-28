@@ -41,6 +41,8 @@ import java.util.Map;
 @Service
 public class AdminService
 {
+
+
     private EntityManager entityManager;
     private ExceptionHandlingImplement exceptionHandling;
     private VenderService serviceProviderService;
@@ -381,5 +383,7 @@ public class AdminService
             return ResponseService.generateErrorResponse("Error updating admin details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
 
 }

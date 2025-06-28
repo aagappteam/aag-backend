@@ -27,4 +27,6 @@ Page<VendorSubmissionEntity> findByEmail(String email, Pageable pageable);
 
 
     long countByApproved(boolean b);
+//    count all
+    long count();
 }
