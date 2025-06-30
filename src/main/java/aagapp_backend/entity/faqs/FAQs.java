@@ -19,6 +19,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FAQs {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -30,7 +31,7 @@ public class FAQs {
     @Column(length = 1000)
     private String question;
 
-    @Column(length = 2000)  // Adjust this size based on your requirements
+    @Column(length = 2000)
     private String answer;
 
     @Column(length = 8)

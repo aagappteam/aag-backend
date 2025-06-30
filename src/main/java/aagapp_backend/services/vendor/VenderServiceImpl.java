@@ -156,7 +156,6 @@ public class VenderServiceImpl implements VenderService {
     @Transactional
     public ResponseEntity<?> updateServiceProvider(Long userId, Map<String, Object> updates) {
         try {
-            // Trimming string values before proceeding
             updates = CommonData.trimStringValues(updates);
             List<String> errorMessages = new ArrayList<>();
 
@@ -187,11 +186,21 @@ public class VenderServiceImpl implements VenderService {
                 updates.remove("mobileNumber"); // Remove mobileNumber from the update map to prevent updating it
             }
 
+            if (updates.containsKey("password")) {
+                Object passwordValue = updates.get("password");
+                if (passwordValue != null && !passwordValue.toString().trim().isEmpty()) {
+                    String rawPassword = passwordValue.toString().trim();
+                    String encryptedPassword = passwordEncoder.encode(rawPassword);
+                    existingServiceProvider.setPassword(encryptedPassword);
+                }
+                updates.remove("password");
+            }
+
+
             for (Map.Entry<String, Object> entry : updates.entrySet()) {
                 String fieldName = entry.getKey();
                 Object newValue = entry.getValue();
 
-                // Skip fields that are not valid for update or cannot be empty
                 Field field = VendorEntity.class.getDeclaredField(fieldName);
                 field.setAccessible(true);
 

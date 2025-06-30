@@ -4,7 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.dto.PermissionUpdateRequest;
 import aagapp_backend.entity.CustomCustomer;
 
-import aagapp_backend.entity.VendorEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +28,9 @@ public class CustomCustomerService {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private EntityManager entityManager;
 
@@ -153,6 +156,18 @@ public class CustomCustomerService {
                 updates.remove("mobileNumber");
             }
 
+
+            if (updates.containsKey("password")) {
+                Object passwordValue = updates.get("password");
+                if (passwordValue != null && !passwordValue.toString().trim().isEmpty()) {
+                    String rawPassword = passwordValue.toString().trim();
+                    String encryptedPassword = passwordEncoder.encode(rawPassword);
+                    existingCustomer.setPassword(encryptedPassword);
+                }
+                updates.remove("password");
+            }
+
+
             String updatedName = null;
 
             for (Map.Entry<String, Object> entry : updates.entrySet()) {
@@ -170,7 +185,6 @@ public class CustomCustomerService {
                     }
                 }
 
-                // Mobile number should not be updated, but still handled
                 if ("mobileNumber".equals(fieldName)) {
                     if (!isValidMobileNumber((String) newValue)) {
                         return ResponseEntity.badRequest().body("Invalid mobile number format");

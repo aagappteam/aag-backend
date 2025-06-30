@@ -297,7 +297,6 @@ public class AdminService
     public ResponseEntity<?> authenticateByPhone(String mobileNumber, String countryCode, String password, HttpServletRequest request, HttpSession session) {
         CustomAdmin existingAdmin = findAdminByPhone(mobileNumber, countryCode);
 
-        System.out.println("found Admin" + existingAdmin);
         return validateAdmin(existingAdmin, password, request, session);
     }
 
@@ -320,7 +319,6 @@ public class AdminService
             return responseService.generateErrorResponse("No Records Found", HttpStatus.NOT_FOUND);
         }
         if (passwordEncoder.matches(password, customAdmin.getPassword())) {
-            System.out.println("inside the match");
             String ipAddress = request.getRemoteAddr();
             String userAgent = request.getHeader("User-Agent");
             String tokenKey = "authTokenAdmin_" + customAdmin.getMobileNumber();

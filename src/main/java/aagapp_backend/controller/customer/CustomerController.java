@@ -142,8 +142,7 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
             @RequestParam(required = false) KycStatus kycStatus,
             @RequestParam(required = false) VendorStatus userStatus,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate
-    ) {
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate) {
         try {
             if (customerId != null) {
                 CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, customerId);

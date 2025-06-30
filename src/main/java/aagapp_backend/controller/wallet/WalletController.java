@@ -74,7 +74,6 @@ public class WalletController {
 
             // Extract user ID from the token and validate it
             Long userId = jwtUtil.extractId(token);
-//            get Role from token
             Integer role = jwtUtil.extractRoleId(token);
 
             if (userId == null) {
