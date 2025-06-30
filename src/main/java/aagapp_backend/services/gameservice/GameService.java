@@ -1026,6 +1026,43 @@ public class GameService {
     }
 
     @Transactional
+    public Game updateGameByAdmin(Long gameId, GameRequest gameRequest) {
+        try {
+            Game game = gameRepository.findById(gameId)
+                    .orElseThrow(() -> new BusinessException("Game ID: " + gameId + " not found", HttpStatus.NOT_FOUND));
+
+            if (game.getStatus() == GameStatus.EXPIRED) {
+                throw new BusinessException("Game ID: " + game.getId() + " has already expired. No update allowed.", HttpStatus.BAD_REQUEST);
+            } else if (game.getStatus() == GameStatus.ACTIVE) {
+                throw new BusinessException("Game ID: " + game.getId() + " is already active. No update allowed.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Update game details (admin allowed regardless of schedule timing)
+            game.setFee(gameRequest.getFee());
+
+            if (gameRequest.getFee() > 10) {
+                game.setMove(Constant.TENMOVES);
+            } else {
+                game.setMove(Constant.SIXTEENMOVES);
+            }
+
+            ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+            game.setScheduledAt(scheduledInKolkata);
+            game.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+            game.setEndDate(scheduledInKolkata.plusHours(4));
+
+            return gameRepository.save(game);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new BusinessException("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @Transactional
     public void updateExpiredGameStatus(Long vendorId) {
         try {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));

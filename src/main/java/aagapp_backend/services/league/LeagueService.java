@@ -2184,6 +2184,50 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         return league.get();
     }
 
+
+    @Transactional
+    public League updateLeagueByAdmin(Long leagueId, GameRequest gameRequest) {
+        try {
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new BusinessException("League ID: " + leagueId + " not found", HttpStatus.NOT_FOUND));
+
+            if (league.getStatus() == LeagueStatus.EXPIRED) {
+                throw new BusinessException("League ID: " + league.getId() + " has already expired. No update allowed.", HttpStatus.BAD_REQUEST);
+            } else if (league.getStatus() == LeagueStatus.ACTIVE) {
+                throw new BusinessException("League ID: " + league.getId() + " is already active. No update allowed.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Apply updates from GameRequest
+            league.setFee(gameRequest.getFee());
+
+            if (gameRequest.getFee() > 10) {
+                league.setMove(Constant.TENMOVES);
+            } else {
+                league.setMove(Constant.SIXTEENMOVES);
+            }
+
+            league.setMinPlayersPerTeam(gameRequest.getMinPlayersPerTeam());
+            league.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
+
+            if (gameRequest.getScheduledAt() != null) {
+                ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+                league.setScheduledAt(scheduledInKolkata);
+                league.setEndDate(scheduledInKolkata.plusHours(4));
+            }
+
+            league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+            return leagueRepository.save(league);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new BusinessException("Error updating league details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
     public Long getScheduledCount() {
         String sql = "SELECT COUNT(*) FROM aag_league g WHERE g.status = 'SCHEDULED'";
         Query query = em.createNativeQuery(sql);
