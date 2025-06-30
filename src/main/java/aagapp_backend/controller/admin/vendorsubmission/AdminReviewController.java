@@ -1,11 +1,16 @@
 package aagapp_backend.controller.admin.vendorsubmission;
 
+import aagapp_backend.dto.GameRequest;
+import aagapp_backend.dto.TournamentUpdateRequest;
 import aagapp_backend.dto.ticketdto.TicketResponseDto;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.faqs.FAQs;
+import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.invoice.InvoiceAdmin;
+import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.ticket.Ticket;
+import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
@@ -18,6 +23,9 @@ import aagapp_backend.services.admin.InvoiceServiceAdmin;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.faqs.FAQService;
+import aagapp_backend.services.gameservice.GameService;
+import aagapp_backend.services.league.LeagueService;
+import aagapp_backend.services.tournamnetservice.TournamentService;
 import jakarta.validation.Valid;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +65,15 @@ public class AdminReviewController {
 
     @Autowired
     private CustomCustomerService customCustomerService;
+
+    @Autowired
+    private GameService gameService;
+
+    @Autowired
+    private LeagueService leagueService;
+
+    @Autowired
+    private TournamentService tournamentService;
 
     private AdminReviewService reviewService;
     private ExceptionHandlingImplement exceptionHandling;
@@ -524,6 +541,57 @@ public class AdminReviewController {
         customCustomerRepository.save(user);
         return ResponseService.generateSuccessResponse("User status updated","user is "+ newStatus, HttpStatus.OK);
     }
+
+
+
+    @PutMapping("/game/update/{gameId}")
+    public ResponseEntity<?> updateGameByAdmin(@PathVariable Long gameId, @RequestBody GameRequest gameRequest) {
+        try {
+
+            Game response = gameService.updateGameByAdmin(gameId, gameRequest);
+
+            return ResponseService.generateSuccessResponse("Game updated successfully", response, HttpStatus.OK);
+
+        } catch (BusinessException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalStateException e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error updating game details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/league/update/{leagueId}")
+    public ResponseEntity<?> updateLeagueByAdmin(@PathVariable Long leagueId, @RequestBody GameRequest gameRequest) {
+        try {
+            League updatedLeague = leagueService.updateLeagueByAdmin(leagueId, gameRequest);
+
+            return ResponseService.generateSuccessResponse("League updated successfully", updatedLeague, HttpStatus.OK);
+
+        } catch (BusinessException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error updating league details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/tournament/update/{tournamentId}")
+    public ResponseEntity<?> updateTournamentByAdmin(@PathVariable Long tournamentId, @RequestBody TournamentUpdateRequest request) {
+        try {
+            Tournament updatedTournament = tournamentService.updateTournamentByAdmin(tournamentId, request);
+            return ResponseService.generateSuccessResponse("Tournament updated successfully", updatedTournament, HttpStatus.OK);
+        } catch (BusinessException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error updating tournament: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 
 
 }

@@ -20,6 +20,7 @@ import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
+import aagapp_backend.repository.game.ThemeRepository;
 import aagapp_backend.repository.tournament.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.VendorWalletRepository;
@@ -70,6 +71,9 @@ public class TournamentService {
 
     @Autowired
     private WalletRepository walletRepository;
+
+    @Autowired
+    private ThemeRepository themeRepository;
 
 
         @Autowired
@@ -2484,6 +2488,50 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             throw new GameNotFoundException("Tournament not found");
         }
     }
+
+    @Transactional
+    public Tournament updateTournamentByAdmin(Long tournamentId, TournamentUpdateRequest request) {
+        try {
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new BusinessException("Tournament ID: " + tournamentId + " not found", HttpStatus.NOT_FOUND));
+
+            if (tournament.getStatus() == TournamentStatus.EXPIRED) {
+                throw new BusinessException("Tournament has already expired. Update not allowed.", HttpStatus.BAD_REQUEST);
+            } else if (tournament.getStatus() == TournamentStatus.ACTIVE) {
+                throw new BusinessException("Tournament is already active. Update not allowed.", HttpStatus.BAD_REQUEST);
+            }
+
+            tournament.setEntryFee(request.getEntryFee());
+            tournament.setMove(request.getMove());
+
+            tournament.setExistinggameId(request.getExistinggameId());
+            tournament.setParticipants(request.getParticipants());
+
+            if (request.getThemeId() != null) {
+                ThemeEntity theme = themeRepository.findById(request.getThemeId())
+                        .orElseThrow(() -> new BusinessException("Theme ID: " + request.getThemeId() + " not found", HttpStatus.BAD_REQUEST));
+                tournament.setTheme(theme);
+            }
+
+            if (request.getScheduledAt() != null) {
+                ZonedDateTime scheduledAtInKolkata = request.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+                tournament.setScheduledAt(scheduledAtInKolkata);
+                tournament.setEndDate(scheduledAtInKolkata.plusHours(4));
+            }
+
+            tournament.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+            return tournamentRepository.save(tournament);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new BusinessException("Error updating tournament: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 
     public Long getScheduledCount() {
 //        return count by  scheduled status
