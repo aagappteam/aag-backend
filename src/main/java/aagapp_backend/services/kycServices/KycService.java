@@ -9,24 +9,16 @@ import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.kycRepository.KycRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.EmailService;
-import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.s3services.S3Service;
-import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 @Service
 public class KycService {
@@ -96,7 +88,8 @@ public class KycService {
             kycEntity.setUserOrVendorId(userOrVendorId);
             kycEntity.setRole(role);
             kycEntity.setMobileNumber(mobileNumber);
-            kycEntity.setMailId(mailId);
+            kycEntity.setEmail(mailId);
+            kycEntity.setName(name);
             kycEntity.setAadharNo(adharNo);
             kycEntity.setPanNo(panNo);
             kycEntity.setAadharImage(adharUrl);
@@ -115,7 +108,7 @@ public class KycService {
         KycEntity kyc = kycRepository.findById(kycId)
                 .orElseThrow(() -> new RuntimeException("KYC not found"));
 
-        String email = kyc.getMailId();
+        String email = kyc.getEmail();
 
         // Get the role and update corresponding entity
         Long userOrVendorId = kyc.getUserOrVendorId();
@@ -172,7 +165,7 @@ public class KycService {
                     .orElseThrow(() -> new RuntimeException("KYC not found for ID: " + kycId));
 
             kyc.setKycStatus(isVerified);
-            String email = kyc.getMailId();
+            String email = kyc.getEmail();
             Long userOrVendorId = kyc.getUserOrVendorId();
             String role = kyc.getRole();
             String name;

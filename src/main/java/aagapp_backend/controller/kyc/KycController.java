@@ -162,6 +162,7 @@ public ResponseEntity<?> getAllKycs(
         @RequestParam(required = false) Long id,
         @RequestParam(required = false) String aadharNo,
         @RequestParam(required = false) String panNo,
+        @RequestParam(required = false) String name,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date createdAfter,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date createdBefore,
         @RequestParam(required = false) KycStatus kycStatus,
@@ -179,7 +180,8 @@ public ResponseEntity<?> getAllKycs(
                 .and(KycSpecification.hasPanNo(panNo))
                 .and(KycSpecification.createdAfter(createdAfter))
                 .and(KycSpecification.createdBefore(createdBefore))
-                .and(KycSpecification.hasStatus(kycStatus));;
+                .and(KycSpecification.hasStatus(kycStatus))
+                .and(KycSpecification.hasName(name));
 
         Page<KycEntity> kycPage = kycRepository.findAll(spec, pageable);
 
