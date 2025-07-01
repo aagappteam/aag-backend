@@ -1,4 +1,5 @@
 package aagapp_backend.controller.social;
+import aagapp_backend.dto.TopHostWeekDto;
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.dto.TopVendorWeekDto;
 import aagapp_backend.entity.CustomCustomer;
@@ -115,7 +116,7 @@ public class UserVendorFollowController {
         return ResponseEntity.ok(Map.of("isFollowing", isFollowing));
     }
 
-    @GetMapping("/top-vendors-this-week")
+    /*@GetMapping("/top-vendors-this-week")
     public ResponseEntity<?> getTopVendorsThisWeek() {
         try {
             List<TopVendorWeekDto> topVendors = followService.getTopVendorsThisWeek();
@@ -126,7 +127,23 @@ public class UserVendorFollowController {
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
+    }*/
+
+    @GetMapping("/top-vendors-this-week")
+    public ResponseEntity<?> getTopHostsThisWeek() {
+        try {
+            List<TopHostWeekDto> topHosts = followService.getTopHostsThisWeek();
+            return responseService.generateSuccessResponse("Top hosts this week", topHosts, HttpStatus.OK);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse(
+                    "Error fetching top hosts: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
     }
+
+
+
 
 
     @GetMapping("/following-vendors")

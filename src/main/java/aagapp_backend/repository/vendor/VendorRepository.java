@@ -1,5 +1,6 @@
 package aagapp_backend.repository.vendor;
 
+import aagapp_backend.dto.TopHostWeekDto;
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.LeagueStatus;
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -56,4 +58,38 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
 
     @Query("SELECT COUNT(v) FROM VendorEntity v WHERE v.lastActiveAt < :activeSince OR v.lastActiveAt IS NULL")
     Long countInactiveVendors(@Param("activeSince") Date activeSince);
+
+
+    @Query(value = """
+        SELECT new aagapp_backend.dto.TopHostWeekDto(
+            v.id,
+            CONCAT(v.first_name, ' ', v.last_name),
+            (COALESCE(g.gameCount, 0) + COALESCE(l.leagueCount, 0) + COALESCE(t.tournamentCount, 0)),
+            v.primary_email,
+            v.profilePic
+        )
+        FROM VendorEntity v
+        LEFT JOIN (
+            SELECT g.vendorEntity.id AS vendorId, COUNT(g) AS gameCount
+            FROM Game g
+            WHERE g.createdDate BETWEEN :startOfWeek AND :endOfWeek
+            GROUP BY g.vendorEntity.id
+        ) g ON v.id = g.vendorId
+        LEFT JOIN (
+            SELECT l.vendorEntity.id AS vendorId, COUNT(l) AS leagueCount
+            FROM League l
+            WHERE l.createdDate BETWEEN :startOfWeek AND :endOfWeek
+            GROUP BY l.vendorEntity.id
+        ) l ON v.id = l.vendorId
+        LEFT JOIN (
+            SELECT t.vendorEntity.id AS vendorId, COUNT(t) AS tournamentCount
+            FROM Tournament t
+            WHERE t.createdDate BETWEEN :startOfWeek AND :endOfWeek
+            GROUP BY t.vendorEntity.id
+        ) t ON v.id = t.vendorId
+        WHERE (COALESCE(g.gameCount, 0) + COALESCE(l.leagueCount, 0) + COALESCE(t.tournamentCount, 0)) > 0
+        ORDER BY (COALESCE(g.gameCount, 0) + COALESCE(l.leagueCount, 0) + COALESCE(t.tournamentCount, 0)) DESC
+        """)
+    List<TopHostWeekDto> findTopHostsThisWeek(@Param("startOfWeek") ZonedDateTime startOfWeek,
+                                              @Param("endOfWeek") ZonedDateTime endOfWeek);
 }
