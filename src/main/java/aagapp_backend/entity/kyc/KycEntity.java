@@ -1,7 +1,5 @@
 package aagapp_backend.entity.kyc;
 
-import aagapp_backend.entity.CustomCustomer;
-import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.KycStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
@@ -40,7 +38,9 @@ public class KycEntity {
 
     private String mobileNumber;
 
-    private String mailId;
+    private String email;
+
+    private String name;
 
     private String aadharNo;
 

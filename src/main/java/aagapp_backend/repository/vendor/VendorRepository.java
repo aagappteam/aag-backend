@@ -16,13 +16,14 @@ import java.util.Date;
 import java.util.List;
 
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
-//    List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
-List<VendorEntity> findByLeagueStatusAndStatus(LeagueStatus leagueStatus, VendorStatus status);
+    //    List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
+    List<VendorEntity> findByLeagueStatusAndStatus(LeagueStatus leagueStatus, VendorStatus status);
 
 
     List<VendorEntity> findTop3ByOrderByRefferalbalanceDesc();
 
     List<VendorEntity> findTop3ByOrderByTotalWalletBalanceDesc();
+
     List<VendorEntity> findTop3ByOrderByTotalParticipatedInGameTournamentDesc();
 
     // By Referral Count (new method to fetch vendors based on referral count)
@@ -48,7 +49,6 @@ List<VendorEntity> findByLeagueStatusAndStatus(LeagueStatus leagueStatus, Vendor
 
 
     @Query("SELECT v FROM VendorEntity v WHERE v.service_provider_id = :influencerId")
-
     VendorEntity findByServiceProviderId(@Param("influencerId") Long influencerId);
 
     @Query("SELECT COUNT(v) FROM VendorEntity v WHERE v.lastActiveAt >= :activeSince")

@@ -48,4 +48,9 @@ public class KycSpecification {
                 (status == null) ? null : builder.equal(root.get("kycStatus"), status);
     }
 
+    public static Specification<KycEntity> hasName(String name) {
+        return (root, query, builder) ->
+                (name == null || name.isEmpty()) ? null : builder.like(builder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+    }
+
 }
