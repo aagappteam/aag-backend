@@ -25,21 +25,17 @@ public interface InfluencerMonthlyEarningRepository extends JpaRepository<Influe
     """)
     Optional<InfluencerMonthlyEarning> findLatestByInfluencerId(@Param("influencerId") Long influencerId);
 
-    // Now paginated
-    Page<InfluencerMonthlyEarning> findByMonthYear(String monthYear, Pageable pageable);
-
-    // This one remains non-paginated because it returns one item
-    InfluencerMonthlyEarning findByInfluencerIdAndMonthYear(Long influencerId, String monthYear);
 
     Optional<InfluencerMonthlyEarning> findByPaymentId(Long paymentId);
 
-    // Now paginated
     @Query("SELECT e FROM InfluencerMonthlyEarning e WHERE e.influencerId = :influencerId "
             + "AND (:monthYear IS NULL OR e.monthYear = :monthYear)")
     Page<InfluencerMonthlyEarning> findByInfluencerId(
             @Param("influencerId") Long influencerId,
             @Param("monthYear") String monthYear,
             Pageable pageable);
+
+
 
     Optional<InfluencerMonthlyEarning> findByInfluencerIdAndPaymentId(Long influencerId, Long paymentId);
 

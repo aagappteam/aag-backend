@@ -1,6 +1,7 @@
 package aagapp_backend.controller.gamecomplete;
 
 import aagapp_backend.dto.*;
+import aagapp_backend.dto.game.GameLeaderboardResponseDTOADMIN;
 import aagapp_backend.repository.game.GameRoomRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
@@ -68,7 +69,7 @@ private GameRoomRepository gameRoomRepository;
             @RequestParam(defaultValue = "10") int size) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by("score").descending());
-            GameLeaderboardResponseDTO leaderboard = leaderboardService.getLeaderboard(gameId, pageable);
+            GameLeaderboardResponseDTOADMIN leaderboard = leaderboardService.getLeaderboard(gameId, pageable);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);

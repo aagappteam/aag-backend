@@ -90,7 +90,7 @@ public class OtpEndpoint {
     }
 
     @Autowired
-    public void setAdminService(AdminService adminService) {
+    public void setAdminService(@Lazy AdminService adminService) {
         this.adminService = adminService;
     }
 

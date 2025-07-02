@@ -14,6 +14,7 @@ import aagapp_backend.services.admin.DashboardAdmin;
 import aagapp_backend.spec.InfluencerMonthlyEarningSpecification;
 import aagapp_backend.spec.NotificationShareSpecification;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
@@ -52,7 +53,6 @@ import static io.netty.util.internal.StringUtil.escapeCsv;
 
 @RestController
 @RequestMapping("/admin")
-
 public class AdminDetailsController {
 
     @Autowired
@@ -84,7 +84,7 @@ public class AdminDetailsController {
     private AdminService adminService;
 
     @Autowired
-    public void setAdminService(AdminService adminService) {
+    public void setAdminService(@Lazy AdminService adminService) {
         this.adminService = adminService;
     }
 
@@ -177,6 +177,7 @@ public class AdminDetailsController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Double amount,
             @RequestParam(required = false) String vendorName,
+            @RequestParam(required = true) Long vendorid,
             @RequestParam(required = false) String details,
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) Long vendorId,
@@ -508,7 +509,8 @@ public class AdminDetailsController {
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String monthYear
 
-    ) {
+
+            ) {
         int pageSize = (limit != null) ? limit : (size != null ? size : 10);
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
