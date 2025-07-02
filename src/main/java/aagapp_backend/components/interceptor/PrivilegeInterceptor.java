@@ -97,7 +97,8 @@ public class PrivilegeInterceptor implements HandlerInterceptor {
         Long roleId = Long.valueOf(jwtUtil.extractRoleId(token));
 
         //  Skip privilege check for Vendor (4) and User (5)
-        if (roleId == 4 || roleId == 5) {
+
+        if (roleId == 4 || roleId == 5 || roleId == 1 || roleId == 2 ) {
             return true;
         }
 
