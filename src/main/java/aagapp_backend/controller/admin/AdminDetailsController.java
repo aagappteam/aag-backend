@@ -178,13 +178,15 @@ public class AdminDetailsController {
             @RequestParam(required = false) Double amount,
             @RequestParam(required = false) String vendorName,
             @RequestParam(required = false) String details,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) Long vendorId,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdTo
     ) {
         Page<NotificationDTOAdmin> result = dashboardAdmin.getAllNotifications(
-                page, size, amount, vendorName, details, createdFrom, createdTo
+                page, size, amount, vendorName, details, createdFrom, createdTo, customerId, vendorId
         );
         return responseService.generateSuccessResponseWithCount(
                 "Notifications retrieved successfully.",
@@ -199,6 +201,7 @@ public class AdminDetailsController {
             @RequestParam(required = false) Double amount,
             @RequestParam(required = false) String vendorName,
             @RequestParam(required = false) String details,
+            @RequestParam(required = false) Long vendorId,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
             @RequestParam(required = false)
@@ -215,6 +218,7 @@ public class AdminDetailsController {
                 .where(NotificationShareSpecification.hasAmount(amount))
                 .and(NotificationShareSpecification.vendorNameContains(vendorName))
                 .and(NotificationShareSpecification.detailsContains(details))
+                .and(NotificationShareSpecification.vendorId(vendorId))
                 .and(NotificationShareSpecification.createdBetween(createdFrom, createdTo));
 
         // Fetch all matching records (no pagination)
@@ -231,7 +235,6 @@ public class AdminDetailsController {
                     ns.getId(),
                     ns.getVendorId(),
                     "Vendor",
-                    null,
                     ns.getDescription(),
                     ns.getDetails(),
                     formattedDate,

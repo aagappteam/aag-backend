@@ -42,6 +42,11 @@ public class NotificationShareSpecification {
                 amount != null ? cb.equal(root.get("amount"), amount) : null;
     }
 
+    public static Specification<NotificationShare> vendorId(Long vendorId) {
+        return (root, query, cb) ->
+                vendorId != null ? cb.equal(root.get("vendorId"), vendorId) : null;
+    }
+
     public static Specification<NotificationShare> detailsContains(String term) {
         return (root, query, cb) -> {
             if (term == null || term.isBlank()) return null;
