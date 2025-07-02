@@ -17,7 +17,6 @@ public class NotificationDTOAdmin {
     private Long id;
     private Long vendorId;
     private String role;
-    private Long customerId;
     private String description;
     private String details;
     private String createdDate;
@@ -26,13 +25,12 @@ public class NotificationDTOAdmin {
     private String vendorName;
     private String vendorEmail;
 
-    public NotificationDTOAdmin(Long id, Long vendorId, String role, Long customerId,
+    public NotificationDTOAdmin(Long id, Long vendorId, String role,
                                 String description, String details, String createdDate,
                                 Double amount, String vendorName, String vendorEmail) {
         this.id = id;
         this.vendorId = vendorId;
         this.role = role;
-        this.customerId = customerId;
         this.description = description;
         this.details = details;
         this.createdDate = createdDate;

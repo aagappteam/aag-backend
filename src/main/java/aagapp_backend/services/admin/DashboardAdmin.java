@@ -303,12 +303,13 @@ public class DashboardAdmin {
     public Page<NotificationDTOAdmin> getAllNotifications(
             int page, int size,
             Double amount, String vendorName, String detailsTerm,
-            ZonedDateTime createdFrom, ZonedDateTime createdTo
+            ZonedDateTime createdFrom, ZonedDateTime createdTo, Long customerId, Long vendorId
     ) {
         Specification<NotificationShare> spec = Specification
                 .where(NotificationShareSpecification.hasAmount(amount))
                 .and(NotificationShareSpecification.vendorNameContains(vendorName))
                 .and(NotificationShareSpecification.detailsContains(detailsTerm))
+                .and(NotificationShareSpecification.vendorId(vendorId))
                 .and(NotificationShareSpecification.createdBetween(createdFrom, createdTo));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
@@ -326,7 +327,6 @@ public class DashboardAdmin {
                     ns.getId(),
                     ns.getVendorId(),
                     "Vendor",
-                    null,
                     ns.getDescription(),
                     ns.getDetails(),
                     formatted,
@@ -617,7 +617,6 @@ public class DashboardAdmin {
                         id,
                         vendorId,
                         fetchedRole,
-                        customerId,
                         description,
                         detailsStr,
                         formattedDate,
