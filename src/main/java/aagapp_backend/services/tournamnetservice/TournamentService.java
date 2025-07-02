@@ -20,6 +20,7 @@ import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
+import aagapp_backend.repository.game.ThemeRepository;
 import aagapp_backend.repository.tournament.*;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.VendorWalletRepository;
@@ -70,6 +71,9 @@ public class TournamentService {
 
     @Autowired
     private WalletRepository walletRepository;
+
+    @Autowired
+    private ThemeRepository themeRepository;
 
 
         @Autowired
@@ -2351,6 +2355,78 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         return prizeForThisRound.min(remainingPrize);
     }
 
+
+
+
+    public Page<TournamentResultRecordDTO> findTournamentResultsByUserId(Long userId, Pageable pageable, String tournamentName, Boolean winner) {
+        try {
+            StringBuilder sql = new StringBuilder("""
+            SELECT trr.* FROM tournament_result_record trr
+            JOIN tournament t ON t.id = trr.tournament_id
+            WHERE trr.player_id = :userId
+        """);
+
+            StringBuilder countSql = new StringBuilder("""
+            SELECT COUNT(*) FROM tournament_result_record trr
+            JOIN tournament t ON t.id = trr.tournament_id
+            WHERE trr.player_id = :userId
+        """);
+
+            if (tournamentName != null && !tournamentName.isEmpty()) {
+                sql.append(" AND LOWER(t.name) LIKE LOWER(:tournamentName)");
+                countSql.append(" AND LOWER(t.name) LIKE LOWER(:tournamentName)");
+            }
+
+            if (winner != null) {
+                sql.append(" AND trr.iswinner = :winner");
+                countSql.append(" AND trr.iswinner = :winner");
+            }
+
+            sql.append(" ORDER BY trr.updateddate DESC");
+
+            Query query = em.createNativeQuery(sql.toString(), TournamentResultRecord.class);
+            setParametersForTournament(query, userId, tournamentName, winner);
+            query.setFirstResult((int) pageable.getOffset());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<TournamentResultRecord> records = query.getResultList();
+
+            Query countQuery = em.createNativeQuery(countSql.toString());
+            setParametersForTournament(countQuery, userId, tournamentName, winner);
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            List<TournamentResultRecordDTO> dtoList = records.stream().map(record -> {
+                TournamentResultRecordDTO dto = new TournamentResultRecordDTO();
+                dto.setId(record.getId());
+                dto.setRoomId(record.getRoomId());
+                dto.setTournamentName(record.getTournament().getName());
+                dto.setPlayerName(record.getPlayer().getCustomer().getName());
+                dto.setPlayerProfilePic(record.getPlayer().getPlayerProfilePic());
+                dto.setScore(record.getScore());
+                dto.setAmount(record.getAmmount());
+                dto.setIsWinner(Boolean.TRUE.equals(record.getIsWinner()) ? "true" : "false");
+                dto.setRound(record.getRound());
+                dto.setPlayedAt(record.getPlayedAt());
+                return dto;
+            }).toList();
+
+            return new PageImpl<>(dtoList, pageable, total);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching tournament results by user: " + e.getMessage(), e);
+        }
+    }
+
+    private void setParametersForTournament(Query query, Long userId, String tournamentName, Boolean winner) {
+        query.setParameter("userId", userId);
+        if (tournamentName != null && !tournamentName.isEmpty()) {
+            query.setParameter("tournamentName", "%" + tournamentName + "%");
+        }
+        if (winner != null) {
+            query.setParameter("winner", winner);
+        }
+    }
+
     @Transactional
     public String manualStartNextRound(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
@@ -2412,6 +2488,50 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             throw new GameNotFoundException("Tournament not found");
         }
     }
+
+    @Transactional
+    public Tournament updateTournamentByAdmin(Long tournamentId, TournamentUpdateRequest request) {
+        try {
+            Tournament tournament = tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new BusinessException("Tournament ID: " + tournamentId + " not found", HttpStatus.NOT_FOUND));
+
+            if (tournament.getStatus() == TournamentStatus.EXPIRED) {
+                throw new BusinessException("Tournament has already expired. Update not allowed.", HttpStatus.BAD_REQUEST);
+            } else if (tournament.getStatus() == TournamentStatus.ACTIVE) {
+                throw new BusinessException("Tournament is already active. Update not allowed.", HttpStatus.BAD_REQUEST);
+            }
+
+            tournament.setEntryFee(request.getEntryFee());
+            tournament.setMove(request.getMove());
+
+            tournament.setExistinggameId(request.getExistinggameId());
+            tournament.setParticipants(request.getParticipants());
+
+            if (request.getThemeId() != null) {
+                ThemeEntity theme = themeRepository.findById(request.getThemeId())
+                        .orElseThrow(() -> new BusinessException("Theme ID: " + request.getThemeId() + " not found", HttpStatus.BAD_REQUEST));
+                tournament.setTheme(theme);
+            }
+
+            if (request.getScheduledAt() != null) {
+                ZonedDateTime scheduledAtInKolkata = request.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+                tournament.setScheduledAt(scheduledAtInKolkata);
+                tournament.setEndDate(scheduledAtInKolkata.plusHours(4));
+            }
+
+            tournament.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+            return tournamentRepository.save(tournament);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new BusinessException("Error updating tournament: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 
     public Long getScheduledCount() {
 //        return count by  scheduled status

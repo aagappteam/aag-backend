@@ -7,6 +7,7 @@ import aagapp_backend.entity.VendorBankDetails;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
+import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.services.gameservice.GameService;
@@ -310,7 +311,8 @@ public class VendorController {
             @RequestParam(value = "planName", required = false) String planName,
             @RequestParam(value = "isPaid", required = false) Boolean isPaid,
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(value = "vendorStatus", required = false) VendorStatus vendorStatus
     ) {
         try {
             int finalLimit = (limit != null) ? limit : (size != null ? size : 10);
@@ -325,9 +327,8 @@ public class VendorController {
 
             List<String> conditions = new ArrayList<>();
 
-            // Status filter
+            // Status filter (isActive)
             if (status != null && !status.isEmpty()) {
-                boolean isActive = Boolean.parseBoolean(status);
                 conditions.add("s.isActive = :status");
             }
 
@@ -336,7 +337,7 @@ public class VendorController {
                 conditions.add("LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :email, '%'))");
             }
 
-            // Name filter (first + last)
+            // First & Last Name filter
             if (firstName != null && !firstName.trim().isEmpty()) {
                 String[] nameParts = firstName.trim().split("\\s+");
                 String firstNamePart = nameParts.length >= 1 ? nameParts[0].trim() : "";
@@ -355,19 +356,22 @@ public class VendorController {
                 }
             }
 
-            //  Plan Name filter
+            // Plan Name
             if (planName != null && !planName.isEmpty()) {
                 conditions.add("LOWER(s.planName) LIKE LOWER(CONCAT('%', :planName, '%'))");
             }
+
+            // Vendor ID filter
             if (vendorid != null) {
                 conditions.add("s.service_provider_id = :vendorid");
             }
 
-            //  Payment status filter
+            // isPaid filter
             if (isPaid != null) {
                 conditions.add("s.isPaid = :isPaid");
             }
-            //  Date filter (createdAt column)
+
+            // Date filter (createdDate)
             if (startDate != null && endDate != null) {
                 conditions.add("s.createdDate BETWEEN :startDate AND :endDate");
             } else if (startDate != null) {
@@ -376,6 +380,12 @@ public class VendorController {
                 conditions.add("s.createdDate <= :endDate");
             }
 
+            // Vendor Status (enum filter)
+            if (vendorStatus != null) {
+                conditions.add("s.status = :vendorStatus");
+            }
+
+            // Append WHERE clause
             if (!conditions.isEmpty()) {
                 String whereClause = String.join(" AND ", conditions);
                 queryString.append(" WHERE ").append(whereClause);
@@ -440,7 +450,12 @@ public class VendorController {
                 query.setParameter("endDate", end);
             }
 
+            if (vendorStatus != null) {
+                countQuery.setParameter("vendorStatus", vendorStatus);
+                query.setParameter("vendorStatus", vendorStatus);
+            }
 
+            // Pagination
             query.setFirstResult(startPosition);
             query.setMaxResults(finalLimit);
 
@@ -454,12 +469,12 @@ public class VendorController {
                     vendorDetailList.add((Map<String, Object>) vendorDetailsData.get("data"));
                 }
             }
+
             Long activeCount = this.getActiveInactiveCounts();
             Long inactiveCount = totalCount - activeCount;
 
-
-
-          return ResponseService.generateSuccessResponseWithCountAndStatus("List of vendors", vendorDetailList, totalCount,activeCount,inactiveCount, HttpStatus.OK);
+            return ResponseService.generateSuccessResponseWithCountAndStatus(
+                    "List of vendors", vendorDetailList, totalCount, activeCount, inactiveCount, HttpStatus.OK);
 
         } catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -468,6 +483,7 @@ public class VendorController {
             return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
 
     public Long getActiveInactiveCounts() {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
@@ -478,6 +494,8 @@ public class VendorController {
 
         return active;
     }
+
+
 
 
 

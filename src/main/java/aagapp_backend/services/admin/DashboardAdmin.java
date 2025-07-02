@@ -8,21 +8,24 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
+import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.NotificationShareRepository;
 import aagapp_backend.repository.game.GameResultRecordRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueResultRecordRepository;
 import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
+import aagapp_backend.spec.NotificationShareSpecification;
+import aagapp_backend.spec.NotificationSpecifications;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -43,6 +46,12 @@ public class DashboardAdmin {
     private GameResultRecordRepository gameResultRecordRepository;
     @Autowired
     private LeagueResultRecordRepository leagueResultRecordRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private NotificationShareRepository notificationShareRepository;
 
 
     public DashboardResponseAdmin getDashboard() {
@@ -165,7 +174,7 @@ public class DashboardAdmin {
             throw new RuntimeException("Error fetching notifications: " + e.getMessage(), e);
         }
     }*/
-    @Transactional
+    /*@Transactional
     public Page<NotificationDTOAdmin> getAllNotifications(int page, int size, Double amount, String vendorName) {
         try {
             // Main query with JOIN to vendor_table to fetch names/emails in one go
@@ -247,10 +256,10 @@ public class DashboardAdmin {
                 String details = row[3] != null ? (String) row[3] : null;
 
 
- /*               if (row[4] != null) {
+ *//*               if (row[4] != null) {
                     ZonedDateTime createdDateTime = ((java.sql.Timestamp) row[4]).toInstant().atZone(ZoneId.of("Asia/Kolkata"));
                     createdDate = createdDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                }*/
+                }*//*
 
                 ZonedDateTime createdDate = ((Instant) row[4]).atZone(ZoneId.of("Asia/Kolkata"));
                 String formattedDate = createdDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
@@ -288,6 +297,51 @@ public class DashboardAdmin {
             throw new RuntimeException("Error fetching notifications: " + e.getMessage(), e);
         }
     }
+*/
+
+
+    public Page<NotificationDTOAdmin> getAllNotifications(
+            int page, int size,
+            Double amount, String vendorName, String detailsTerm,
+            ZonedDateTime createdFrom, ZonedDateTime createdTo, Long customerId, Long vendorId
+    ) {
+        Specification<NotificationShare> spec = Specification
+                .where(NotificationShareSpecification.hasAmount(amount))
+                .and(NotificationShareSpecification.vendorNameContains(vendorName))
+                .and(NotificationShareSpecification.detailsContains(detailsTerm))
+                .and(NotificationShareSpecification.vendorId(vendorId))
+                .and(NotificationShareSpecification.createdBetween(createdFrom, createdTo));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Page<NotificationShare> pageResult = notificationShareRepository.findAll(spec, pageable);
+
+        List<NotificationDTOAdmin> dtos = pageResult.stream().map(ns -> {
+            VendorEntity v = ns.getVendor();
+            String name = v != null ? v.getFirst_name() + " " + v.getLast_name() : "N/A";
+            String email = v != null ? v.getPrimary_email() : "N/A";
+
+            String formatted = ns.getCreatedDate()
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+            return new NotificationDTOAdmin(
+                    ns.getId(),
+                    ns.getVendorId(),
+                    "Vendor",
+                    ns.getDescription(),
+                    ns.getDetails(),
+                    formatted,
+                    ns.getAmount(),
+                    name,
+                    email
+            );
+        }).toList();
+
+        return new PageImpl<>(dtos, pageable, pageResult.getTotalElements());
+    }
+
+
+
+
 /*    @Transactional
     public Page<NotificationDTOAdmin> getAllVendorNotificationsold(int page, int size,
                                                                 String name,
@@ -563,7 +617,6 @@ public class DashboardAdmin {
                         id,
                         vendorId,
                         fetchedRole,
-                        customerId,
                         description,
                         detailsStr,
                         formattedDate,
@@ -583,6 +636,34 @@ public class DashboardAdmin {
         }
     }
 
+
+    public Page<Notification> getFilteredNotifications(
+            String role,
+            Long vendorId,
+            Long customerId,
+            Double amount,
+            Double minAmount,
+            Double maxAmount,
+            ZonedDateTime startDate,
+            ZonedDateTime endDate,
+            String description,
+            String details,
+            int page,
+            int size
+    ) {
+        Specification<Notification> spec = Specification
+                .where(NotificationSpecifications.hasRole(role))
+                .and(NotificationSpecifications.hasVendorId(vendorId))
+                .and(NotificationSpecifications.hasCustomerId(customerId))
+                .and(NotificationSpecifications.hasAmount(amount))
+                .and(NotificationSpecifications.hasMinAmount(minAmount))
+                .and(NotificationSpecifications.hasMaxAmount(maxAmount))
+                .and(NotificationSpecifications.createdBetween(startDate, endDate))
+                .and(NotificationSpecifications.descriptionContains(description))
+                .and(NotificationSpecifications.detailsContains(details));
+
+        return notificationRepository.findAll(spec, PageRequest.of(page, size, Sort.by("createdDate").descending()));
+    }
 
 
     // Helper Methods

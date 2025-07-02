@@ -56,8 +56,10 @@ public class CustomCustomer {
     @Nullable
     private String email;
 
+
     @Nullable
     private String password;
+
 
     @Nullable
     @Column(name = "profile_picture")

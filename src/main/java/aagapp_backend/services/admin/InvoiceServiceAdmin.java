@@ -338,7 +338,7 @@ public class InvoiceServiceAdmin {
 
         try {
             // Fonts and colors
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, new Color(0, 102, 204));
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, Color.decode("#662C90"));
             Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
             Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
             Font tableHeaderFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, Color.WHITE);
@@ -418,7 +418,7 @@ public class InvoiceServiceAdmin {
 
             for (String h : headers) {
                 PdfPCell cell = new PdfPCell(new Phrase(h, tableHeaderFont));
-                cell.setBackgroundColor(new Color(0, 102, 204));
+                cell.setBackgroundColor(Color.decode("#662C90"));
                 cell.setHorizontalAlignment(Element.ALIGN_CENTER);
                 cell.setPadding(1);
                 table.addCell(cell);

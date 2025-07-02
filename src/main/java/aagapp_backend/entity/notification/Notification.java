@@ -50,11 +50,6 @@ public class Notification {
 
     private String details;  // Additional details like game name, tournament name
 
-    @Nullable
-    @Column(name = "updated_date")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime  updatedDate;
-
     @Column(name = "created_date", updatable = false)
     private ZonedDateTime createdDate;
 

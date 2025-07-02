@@ -1,6 +1,7 @@
 package aagapp_backend.services.social;
 
 import aagapp_backend.dto.GetGameResponseDTO;
+import aagapp_backend.dto.TopHostWeekDto;
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.dto.TopVendorWeekDto;
 import aagapp_backend.entity.CustomCustomer;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -368,7 +370,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         // Implementation to send notification using Firebase or other service
     }
 
-    public List<TopVendorWeekDto> getTopVendorsThisWeek() {
+    /*public List<TopVendorWeekDto> getTopVendorsThisWeek() {
         try {
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
@@ -377,7 +379,20 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         } catch (Exception e) {
             throw new RuntimeException("Error occurred while fetching top vendors this week: " + e.getMessage(), e);
         }
+    }*/
+
+
+    public List<TopHostWeekDto> getTopHostsThisWeek() {
+        try {
+            ZonedDateTime now = ZonedDateTime.now();
+            ZonedDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).toLocalDate().atStartOfDay(now.getZone());
+            ZonedDateTime endOfWeek = startOfWeek.plusDays(7).minusSeconds(1);
+            return vendorRepo.findTopHostsThisWeek(startOfWeek, endOfWeek);
+        } catch (Exception e) {
+            throw new RuntimeException("Error occurred while fetching top hosts this week: " + e.getMessage(), e);
+        }
     }
+
 
     //following vendors
     public Map<String, Object> getFollowingVendors(Long userId, int page, int size, String firstName) {

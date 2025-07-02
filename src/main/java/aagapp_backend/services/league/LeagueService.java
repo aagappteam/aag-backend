@@ -2009,6 +2009,76 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     }
 
 
+    @Transactional
+    public Page<LeagueResultRecordDTO> findLeagueResultsByUserId(Long userId, Pageable pageable, String leagueName, Boolean winner) {
+        try {
+            StringBuilder sql = new StringBuilder("""
+                        SELECT lrr.* FROM league_result_record lrr
+                        JOIN aag_league l ON l.id = lrr.league_id
+                        WHERE lrr.player_id = :userId
+                    """);
+
+            StringBuilder countSql = new StringBuilder("""
+                        SELECT COUNT(*) FROM league_result_record lrr
+                        JOIN aag_league l ON l.id = lrr.league_id
+                        WHERE lrr.player_id = :userId
+                    """);
+
+
+            if (leagueName != null && !leagueName.isEmpty()) {
+                sql.append(" AND LOWER(l.name) LIKE LOWER(:leagueName)");
+                countSql.append(" AND LOWER(l.name) LIKE LOWER(:leagueName)");
+            }
+
+            if (winner != null) {
+                sql.append(" AND lrr.iswinner = :winner");
+                countSql.append(" AND lrr.iswinner = :winner");
+            }
+
+            sql.append(" ORDER BY lrr.updateddate DESC");
+
+            Query query = em.createNativeQuery(sql.toString(), LeagueResultRecord.class);
+            setParametersForLeague(query, userId, leagueName, winner);
+            query.setFirstResult((int) pageable.getOffset());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<LeagueResultRecord> records = query.getResultList();
+
+            Query countQuery = em.createNativeQuery(countSql.toString());
+            setParametersForLeague(countQuery, userId, leagueName, winner);
+
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            List<LeagueResultRecordDTO> dtoList = records.stream().map(record -> {
+                LeagueResultRecordDTO dto = new LeagueResultRecordDTO();
+                dto.setId(record.getId());
+                dto.setRoomId(record.getRoomId());
+                dto.setLeagueName(record.getLeague().getName());
+                dto.setPlayerName(record.getPlayer().getCustomer().getName());
+                dto.setPlayerProfilePic(record.getPlayer().getPlayerProfilePic());
+                dto.setTotalScore(record.getTotalScore());
+                dto.setIsWinner(Boolean.TRUE.equals(record.getIsWinner()) ? "true" : "false");
+                dto.setTeamName(record.getLeagueTeam().getTeamName());
+                dto.setPlayedAt(record.getPlayedAt());
+                return dto;
+            }).toList();
+
+            return new PageImpl<>(dtoList, pageable, total);
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching league results by user: " + e.getMessage(), e);
+        }
+    }
+
+    private void setParametersForLeague(Query query, Long userId, String leagueName, Boolean winner) {
+        query.setParameter("userId", userId);
+        if (leagueName != null && !leagueName.isEmpty()) {
+            query.setParameter("leagueName", "%" + leagueName + "%");
+        }
+        if (winner != null) {
+            query.setParameter("winner", winner);
+        }
+    }
+
 
     @Transactional
     public void distributePrizePoolSilently(Long leagueId) {
@@ -2113,6 +2183,50 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
         return league.get();
     }
+
+
+    @Transactional
+    public League updateLeagueByAdmin(Long leagueId, GameRequest gameRequest) {
+        try {
+            League league = leagueRepository.findById(leagueId)
+                    .orElseThrow(() -> new BusinessException("League ID: " + leagueId + " not found", HttpStatus.NOT_FOUND));
+
+            if (league.getStatus() == LeagueStatus.EXPIRED) {
+                throw new BusinessException("League ID: " + league.getId() + " has already expired. No update allowed.", HttpStatus.BAD_REQUEST);
+            } else if (league.getStatus() == LeagueStatus.ACTIVE) {
+                throw new BusinessException("League ID: " + league.getId() + " is already active. No update allowed.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Apply updates from GameRequest
+            league.setFee(gameRequest.getFee());
+
+            if (gameRequest.getFee() > 10) {
+                league.setMove(Constant.TENMOVES);
+            } else {
+                league.setMove(Constant.SIXTEENMOVES);
+            }
+
+            league.setMinPlayersPerTeam(gameRequest.getMinPlayersPerTeam());
+            league.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
+
+            if (gameRequest.getScheduledAt() != null) {
+                ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+                league.setScheduledAt(scheduledInKolkata);
+                league.setEndDate(scheduledInKolkata.plusHours(4));
+            }
+
+            league.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+            return leagueRepository.save(league);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new BusinessException("Error updating league details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     public Long getScheduledCount() {
         String sql = "SELECT COUNT(*) FROM aag_league g WHERE g.status = 'SCHEDULED'";
