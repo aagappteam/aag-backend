@@ -8,6 +8,7 @@ import aagapp_backend.services.RoleService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -180,7 +181,7 @@ public class JwtUtil {
         }
     }
 
-    @Transactional
+/*    @Transactional
     public Boolean validateToken(String token, String ipAddress, String userAgent) {
 
         try {
@@ -230,9 +231,64 @@ public class JwtUtil {
                 }
             }
             return true;
-/*            String storedIpAddress = claims.get("ipAddress", String.class);
+*//*            String storedIpAddress = claims.get("ipAddress", String.class);
 
-            return ipAddress.trim().equals(storedIpAddress != null ? storedIpAddress.trim() : "");*/
+            return ipAddress.trim().equals(storedIpAddress != null ? storedIpAddress.trim() : "");*//*
+        } catch (ExpiredJwtException e) {
+            logoutUser(token);
+            return false;
+        } catch (MalformedJwtException | IllegalArgumentException e) {
+            exceptionHandling.handleException(e);
+            return false;
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return false;
+        }
+    }*/
+
+    @Transactional
+    public Boolean validateToken(String token, String ipAddress, String userAgent) {
+        try {
+            if (token == null || token.isEmpty()) {
+                throw new IllegalArgumentException("Token is required");
+            }
+
+            if (isTokenExpired(token, userAgent)) {
+                throw new IllegalArgumentException("Token is expired");
+            }
+
+            Long id = extractId(token);
+            int role = extractRoleId(token);
+            String roleName = roleService.findRoleName(role);
+
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            String tokenId = claims.getId();
+
+            if (tokenBlacklist.isTokenBlacklisted(tokenId)) {
+                return false;
+            }
+
+            //  Role-based User Validation
+            return switch (roleName) {
+                case Constant.ROLE_CUSTOMER -> {
+                    CustomCustomer customer = customCustomerService.readCustomerById(id);
+                    yield customer != null;
+                }
+                case Constant.ROLE_VENDOR -> {
+                    VendorEntity vendor = entityManager.find(VendorEntity.class, id);
+                    yield vendor != null;
+                }
+                default -> {
+                    CustomAdmin admin = entityManager.find(CustomAdmin.class, id);
+                    yield admin != null;
+                }
+            };
+
         } catch (ExpiredJwtException e) {
             logoutUser(token);
             return false;
@@ -244,6 +300,8 @@ public class JwtUtil {
             return false;
         }
     }
+
+
 
     @Transactional
     private boolean isTokenExpired(String token, String userAgent) {
@@ -343,4 +401,25 @@ public class JwtUtil {
         }
     }
 
+    public Claims extractAllClaims(String token) {
+        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
+    }
+
+    public String resolveToken(HttpServletRequest request) {
+        String bearer = request.getHeader("Authorization");
+        return bearer != null && bearer.startsWith("Bearer ") ? bearer.substring(7) : null;
+    }
+
+    public Long extractAdminId(String token) {
+        return extractAllClaims(token).get("id", Integer.class).longValue();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            extractAllClaims(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

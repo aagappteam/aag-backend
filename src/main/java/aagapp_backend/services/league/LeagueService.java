@@ -1851,6 +1851,8 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                             return new PlayerLeagueScoreDTO(
                                     player.getPlayerName(),
+                                    player.getCustomer().getMobileNumber()!=null ? player.getCustomer().getMobileNumber() : "N/A",
+                                    player.getCustomer().getState()!=null ? player.getCustomer().getState() : "N/A",
                                     player.getPlayerProfilePic(),
                                     isCurrentUser,
                                     totalScore,

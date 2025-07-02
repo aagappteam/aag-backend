@@ -1,6 +1,8 @@
 package aagapp_backend.services;
 
 import aagapp_backend.entity.*;
+import aagapp_backend.entity.admin.Privilege;
+import aagapp_backend.entity.admin.PrivilegeMapping;
 import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.game.PriceEntity;
 import aagapp_backend.entity.payment.PlanEntity;
@@ -24,7 +26,9 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;  // Import for LocalDateTime
 import java.util.ArrayList;
 import java.util.Date;          // Import for Date
+import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class CommandLineService implements CommandLineRunner {
@@ -395,7 +399,84 @@ public class CommandLineService implements CommandLineRunner {
 //        query.executeUpdate();
 
 
+
+
+        // ✅ Insert Privileges if empty
+        if (entityManager.createQuery("SELECT COUNT(p) FROM Privilege p", Long.class).getSingleResult() == 0) {
+
+            //  Finance Menu
+            entityManager.merge(new Privilege(1L, "ACCESS_FINANCE_MENU", "MENU", null, "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(2L, "VIEW_WITHDRAW", "SUBMENU", "ACCESS_FINANCE_MENU", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(3L, "DOWNLOAD_WITHDRAW", "SUBMENU", "ACCESS_FINANCE_MENU", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(4L, "VIEW_TRANSACTIONS", "SUBMENU", "ACCESS_FINANCE_MENU", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(5L, "DOWNLOAD_TRANSACTIONS", "SUBMENU", "ACCESS_FINANCE_MENU", "ADMIN", currentTimestamp));
+
+            //  Support Menu
+            entityManager.merge(new Privilege(6L, "ACCESS_SUPPORT_MENU", "MENU", null, "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(7L, "VIEW_TICKETS", "SUBMENU", "ACCESS_SUPPORT_MENU", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(8L, "RESOLVE_TICKETS", "SUBMENU", "ACCESS_SUPPORT_MENU", "ADMIN", currentTimestamp));
+
+            //  User Management
+            entityManager.merge(new Privilege(9L, "ACCESS_USER_MANAGEMENT", "MENU", null, "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(10L, "VIEW_USER", "SUBMENU", "ACCESS_USER_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(11L, "EDIT_USER", "SUBMENU", "ACCESS_USER_MANAGEMENT", "ADMIN", currentTimestamp));
+
+            //  Vendor Management
+            entityManager.merge(new Privilege(12L, "ACCESS_VENDOR_MANAGEMENT", "MENU", null, "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(13L, "VIEW_VENDOR", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(14L, "EDIT_VENDOR", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+        }
+
+        //  Insert API Privilege Mapping if empty
+        if (entityManager.createQuery("SELECT COUNT(p) FROM PrivilegeMapping p", Long.class).getSingleResult() == 0) {
+            entityManager.merge(new PrivilegeMapping(null, "/withdraw/view", "GET", "VIEW_WITHDRAW"));
+            entityManager.merge(new PrivilegeMapping(null, "/withdraw/download", "GET", "DOWNLOAD_WITHDRAW"));
+            entityManager.merge(new PrivilegeMapping(null, "/transactions/view", "GET", "VIEW_TRANSACTIONS"));
+            entityManager.merge(new PrivilegeMapping(null, "/transactions/download", "GET", "DOWNLOAD_TRANSACTIONS"));
+            entityManager.merge(new PrivilegeMapping(null, "/tickets/view", "GET", "VIEW_TICKETS"));
+            entityManager.merge(new PrivilegeMapping(null, "/tickets/resolve", "POST", "RESOLVE_TICKETS"));
+            entityManager.merge(new PrivilegeMapping(null, "/user/view", "GET", "VIEW_USER"));
+            entityManager.merge(new PrivilegeMapping(null, "/user/edit", "PUT", "EDIT_USER"));
+            entityManager.merge(new PrivilegeMapping(null, "/vendor/view", "GET", "VIEW_VENDOR"));
+            entityManager.merge(new PrivilegeMapping(null, "/vendor/edit", "PUT", "EDIT_VENDOR"));
+        }
+
+        //  Role to Privilege mapping
+        if (entityManager.createQuery("SELECT COUNT(rp) FROM Role r JOIN r.privileges rp", Long.class).getSingleResult() == 0) {
+            Role admin = entityManager.find(Role.class, 1L);
+            Role support = entityManager.find(Role.class, 2L);
+            Role finance = entityManager.find(Role.class, 3L);
+            Role vendor = entityManager.find(Role.class, 4L);
+
+            List<Privilege> allPrivileges = entityManager.createQuery("FROM Privilege", Privilege.class).getResultList();
+
+            // Admin → All
+            admin.setPrivileges(new HashSet<>(allPrivileges));
+
+            //  Finance
+            finance.setPrivileges(allPrivileges.stream()
+                    .filter(p -> List.of(1L, 2L, 3L, 4L, 5L).contains(p.getId()))
+                    .collect(Collectors.toSet()));
+
+            //  Support
+            support.setPrivileges(allPrivileges.stream()
+                    .filter(p -> List.of(6L, 7L, 8L).contains(p.getId()))
+                    .collect(Collectors.toSet()));
+
+            //  Vendor
+            vendor.setPrivileges(allPrivileges.stream()
+                    .filter(p -> List.of(12L, 13L, 14L).contains(p.getId()))
+                    .collect(Collectors.toSet()));
+
+            entityManager.merge(admin);
+            entityManager.merge(finance);
+            entityManager.merge(support);
+            entityManager.merge(vendor);
+        }
     }
+
+
+
 
 }
 

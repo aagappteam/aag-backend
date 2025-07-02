@@ -11,6 +11,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PlayerLeagueScoreDTO {
     private String name;
+    private String mobileNumber;
+    private String state;
     private String playerProfilePic;
     private boolean isCurrentUser;
     private Integer score;

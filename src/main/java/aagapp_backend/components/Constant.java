@@ -11,6 +11,8 @@ public class Constant {
     public static final double AAG_WIN_PERCENT = 0.33;
     public static final double VENDOR_WIN_PERCENT = 0.05;
 
+
+
     public static final Double LEAGUE_PASSES_FEE = 7.0;
     public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(1000.00);
     public static final int MULTIPLIER = 4;
@@ -47,6 +49,17 @@ public class Constant {
     public static int ADMIN_VENDOR_PROVIDER_ROLE = 3;
     public static int VENDOR_ROLE = 4;
     public static int CUSTOMER_ROLE=5;
+    public static int FINANCE_ROLE = 6;
+
+
+
+    public static final String  ROLE_SUPPORT = "SUPPORT";
+    public static final String  ROLE_ADMIN = "ADMIN";
+    public static final String  ROLE_ADMIN_VENDOR_PROVIDER = "ADMIN_VENDOR_PROVIDER";
+    public static final String  ROLE_VENDOR = "VENDOR";
+    public static final String ROLE_CUSTOMER="CUSTOMER";
+    public static final String ROLE_FINANCE = "FINANCE";
+
 
     public static final String SP_USERNAME_QUERY = "SELECT s FROM VendorEntity s WHERE s.user_name LIKE :username";
     public static final String SP_EMAIL_QUERY = "SELECT s FROM VendorEntity s WHERE s.primary_email LIKE :email";
