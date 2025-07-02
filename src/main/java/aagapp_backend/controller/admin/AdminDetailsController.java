@@ -505,12 +505,14 @@ public class AdminDetailsController {
             @RequestParam Long vendorId,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(required = false) Integer limit,
-            @RequestParam(defaultValue = "10") Integer size
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String monthYear
+
     ) {
         int pageSize = (limit != null) ? limit : (size != null ? size : 10);
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
-        Page<InfluencerMonthlyEarning> earningsPage = earningRepo.findByInfluencerId(vendorId, pageable);
+        Page<InfluencerMonthlyEarning> earningsPage = earningRepo.findByInfluencerId(vendorId,monthYear, pageable);
 
         List<Map<String, Object>> responseList = earningsPage
                 .stream()
