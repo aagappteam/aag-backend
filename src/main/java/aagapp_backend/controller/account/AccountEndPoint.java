@@ -429,10 +429,10 @@ public class AccountEndPoint {
            String mobileNumber = (String) loginDetails.get("mobileNumber");
            String countryCode = (String) loginDetails.getOrDefault("countryCode", Constant.COUNTRY_CODE);
            String password = (String) loginDetails.get("password");
-           Integer role = (Integer) loginDetails.get("role");
+//           Integer role = (Integer) loginDetails.get("role");
 
            // 🔍 Validate input
-           if (mobileNumber == null || password == null || role == null) {
+           if (mobileNumber == null || password == null ) {
                return responseService.generateErrorResponse("Mobile, password, and role are required", HttpStatus.BAD_REQUEST);
            }
 
@@ -444,17 +444,17 @@ public class AccountEndPoint {
            }
 
            // 🔍 Check role validity
-           String roleName = roleService.findRoleName(role);
+          /* String roleName = roleService.findRoleName(role);
            if (roleName == null) {
                return responseService.generateErrorResponse("Invalid role", HttpStatus.BAD_REQUEST);
-           }
+           }*/
 
-           if (customAdmin.getRole() != role) {
+          /* if (customAdmin.getRole() != role) {
                return responseService.generateErrorResponse(
                        "Admin does not have " + roleName + " role",
                        HttpStatus.BAD_REQUEST
                );
-           }
+           }*/
 
 
            //  Password Check
