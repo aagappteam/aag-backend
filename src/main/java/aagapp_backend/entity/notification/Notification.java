@@ -40,6 +40,7 @@ public class Notification {
     @Column(name = "customerId")
     private Long customerId;
 
+    private String name;
 
 /*    @Enumerated(EnumType.STRING)
     private NotificationType type;*/

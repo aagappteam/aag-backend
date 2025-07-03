@@ -2,11 +2,14 @@ package aagapp_backend.controller.admin.privlidge;
 
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.components.cache.PrivilegeMappingCache;
+import aagapp_backend.entity.Role;
 import aagapp_backend.entity.SuccessResponse;
 import aagapp_backend.entity.admin.Privilege;
 import aagapp_backend.repository.admin.PrivilegeRepository;
+import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.RoleService;
+import aagapp_backend.services.admin.PrivilegeService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.referal.ReferralService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,15 +23,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/admin/privileges")
 public class PrivilegeController {
+
+    @Autowired
+    private PrivilegeService privilegeService;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandlingImplement;
@@ -131,16 +138,27 @@ public class PrivilegeController {
         Map<String, Object> response = new HashMap<>();
 //        response.put("privileges", privileges);
         response.put("menuStructure", menuWithSubmenus);
+        response.put("status", "OK");
+        response.put("message", "Privileges fetched successfully");
+        response.put("status_code", 200);
         response.put("currentPage", privilegePage.getNumber());
         response.put("totalItems", privilegePage.getTotalElements());
         response.put("totalPages", privilegePage.getTotalPages());
         response.put("size", privilegePage.getSize());
-        response.put("sort", sortDir);
+
 
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/menus")
+    public ResponseEntity<?> getAllMenusAndSubmenus() {
+        List<Map<String, Object>> menus = privilegeService.getAllMenusAndSubmenus();
+        return responseService.generateSuccessResponse("Privilege fetched successfully", menus, HttpStatus.OK);
+
+    }
+
+
+/*    @GetMapping("/menus")
     public ResponseEntity<?> getAllMenusAndSubmenus() {
         List<Privilege> privileges = privilegeRepo.findAll();
 
@@ -167,7 +185,7 @@ public class PrivilegeController {
                 "message", "Privilege fetched successfully",
                 "data", Map.of("menus", menus)
         ));
-    }
+    }*/
 
     @GetMapping("/menu-tree")
     public ResponseEntity<?> getMenuTree() {
@@ -223,5 +241,40 @@ public class PrivilegeController {
         privilegeRepo.deleteById(id);
         return "Deleted";
     }
+
+    @PostMapping("/assign-privileges")
+    public ResponseEntity<?> assignPrivilegesToRole(@RequestBody Map<String, Object> request) {
+        try {
+            Long roleId = Long.valueOf(request.get("roleId").toString());
+            List<Integer> newPrivilegeIds = (List<Integer>) request.get("privilegeIds");
+
+            Role role = roleRepository.findById(roleId)
+                    .orElseThrow(() -> new RuntimeException("Role not found"));
+
+            // Fetch current privileges
+            Set<Privilege> currentPrivileges = role.getPrivileges();
+
+            // Fetch new privileges to add
+            Set<Privilege> newPrivileges = newPrivilegeIds.stream()
+                    .map(id -> privilegeRepo.findById(Long.valueOf(id))
+                            .orElseThrow(() -> new RuntimeException("Privilege not found: " + id)))
+                    .collect(Collectors.toSet());
+
+            // Merge
+            currentPrivileges.addAll(newPrivileges);
+
+            role.setPrivileges(currentPrivileges);
+            role.setUpdatedAt(LocalDateTime.now());
+
+            roleRepository.save(role);
+
+            return responseService.generateSuccessResponse("Privileges updated successfully", role, HttpStatus.OK);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+
 }
 
