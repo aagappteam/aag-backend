@@ -14,6 +14,7 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -69,11 +70,9 @@ public class RoleController {
         role.setCreatedBy(adminName!=null?adminName:"ADMIN");
 
         roleRepo.save(role);
+        return responseService.generateSuccessResponse("Role created successfully", role, HttpStatus.OK);
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Role created successfully",
-                "roleId", role.getRoleId()
-        ));
+
     }
 
 
@@ -115,20 +114,58 @@ public class RoleController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<Role> rolesPage;
-
         if (roleId != null) {
             Optional<Role> roleOptional = roleRepo.findById(roleId);
-            if (roleOptional.isPresent()) {
-                rolesPage = new PageImpl<>(List.of(roleOptional.get()), pageable, 1);
-            } else {
-                rolesPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
-            }
-        }  else {
+            rolesPage = roleOptional
+                    .map(role -> new PageImpl<>(List.of(role), pageable, 1))
+                    .orElseGet(() -> new PageImpl<>(Collections.emptyList(), pageable, 0));
+        } else {
             rolesPage = roleRepo.findAll(pageable);
         }
 
+        List<Map<String, Object>> rolesList = rolesPage.getContent().stream().map(role -> {
+            Map<String, Object> roleMap = new HashMap<>();
+            roleMap.put("roleId", role.getRoleId());
+            roleMap.put("roleName", role.getRoleName());
+            roleMap.put("createdAt", role.getCreatedAt());
+            roleMap.put("updatedAt", role.getUpdatedAt());
+            roleMap.put("createdBy", role.getCreatedBy());
+
+            List<Privilege> privileges = role.getPrivileges().stream().toList();
+            roleMap.put("privileges", privileges);
+
+            // 🔍 Submenus grouped by parentMenu
+            Map<String, List<Map<String, Object>>> groupedSubmenus = privileges.stream()
+                    .filter(p -> "SUBMENU".equalsIgnoreCase(p.getType()))
+                    .collect(Collectors.groupingBy(
+                            Privilege::getParentMenu,
+                            Collectors.mapping(p -> Map.of(
+                                    "submenuId", p.getId(),
+                                    "submenuName", p.getName()
+                            ), Collectors.toList())
+                    ));
+
+            // 🔍 All parent menu names
+            Set<String> parentMenuNames = groupedSubmenus.keySet();
+
+            // ✅ Fetch actual MENU privileges by name
+            List<Privilege> menuPrivileges = privilegeRepo.findAllByNameIn(parentMenuNames);
+
+            // 🧩 Combine menu + submenus
+            List<Map<String, Object>> menusList = menuPrivileges.stream()
+                    .map(menu -> Map.of(
+                            "menuId", menu.getId(),
+                            "menuName", menu.getName(),
+                            "submenus", groupedSubmenus.getOrDefault(menu.getName(), List.of())
+                    ))
+                    .collect(Collectors.toList());
+
+            roleMap.put("menus", menusList);
+            return roleMap;
+        }).toList();
+
         Map<String, Object> response = new HashMap<>();
-        response.put("roles", rolesPage.getContent());
+        response.put("roles", rolesList);
         response.put("currentPage", rolesPage.getNumber());
         response.put("totalItems", rolesPage.getTotalElements());
         response.put("totalPages", rolesPage.getTotalPages());
@@ -137,6 +174,7 @@ public class RoleController {
 
         return ResponseEntity.ok(response);
     }
+
 
     @PostMapping("/add-user")
     public ResponseEntity<?> createUserWithRole(@RequestBody Map<String, Object> request, HttpServletRequest req) {
@@ -154,8 +192,9 @@ public class RoleController {
             // Check if mobile exists
             Optional<CustomAdmin> existingUser = adminRepo.findByMobileNumber(mobile);
             if (existingUser.isPresent()) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Mobile number already exists"));
+                return responseService.generateErrorResponse("Mobile number already exists", HttpStatus.BAD_REQUEST);
             }
+
 
             //  Fetch Role
             Role role = roleRepo.findById(roleId)
@@ -177,12 +216,9 @@ public class RoleController {
             user.setCreated_at(new Date());
 
             adminRepo.save(user);
+            return responseService.generateSuccessResponse("User created successfully",user, HttpStatus.OK);
 
-            return ResponseEntity.ok(Map.of(
-                    "message", "User created successfully",
-                    "userId", user.getAdmin_id(),
-                    "roleId", role.getRoleId()
-            ));
+
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
                     "error", e.getMessage()
@@ -259,5 +295,7 @@ public class RoleController {
             ));
         }
     }*/
+
+
 
 }
