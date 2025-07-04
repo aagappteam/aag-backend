@@ -177,7 +177,6 @@ public class AdminDetailsController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Double amount,
             @RequestParam(required = false) String vendorName,
-            @RequestParam(required = true) Long vendorid,
             @RequestParam(required = false) String details,
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) Long vendorId,

@@ -112,7 +112,7 @@ public class CommonService {
         }
 
         BigDecimal gameAmount = BigDecimal.valueOf(amount);
-        BigDecimal fivePercent = gameAmount.multiply(BigDecimal.valueOf(0.05)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal fivePercent = gameAmount.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT)).setScale(2, RoundingMode.HALF_UP);
         BigDecimal ninetyFivePercent = gameAmount.subtract(fivePercent);
 
         BigDecimal unplayedBD = BigDecimal.valueOf(wallet.getUnplayedBalance());
@@ -135,7 +135,7 @@ public class CommonService {
             System.out.println("No or insufficient bonus, using 100% from wallet.");
         }
 
-        // ✅ Deduct from unplayed + winning
+        //  Deduct from unplayed + winning
         BigDecimal totalWallet = unplayedBD.add(winning);
         if (totalWallet.compareTo(cashRequired) < 0) {
             throw new BusinessException("Insufficient wallet balance", HttpStatus.BAD_REQUEST);
