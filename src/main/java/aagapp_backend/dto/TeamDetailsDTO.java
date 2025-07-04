@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -15,6 +16,7 @@ import java.util.List;
 public class TeamDetailsDTO {
 
     private String teamName;
+    private Double entryfee;
     private String profilePic;
     private Integer totalScore;
     private List<PlayerLeagueScoreDTO> players;

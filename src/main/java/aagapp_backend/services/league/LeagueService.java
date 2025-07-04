@@ -1869,6 +1869,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                 teamDetails.add(new TeamDetailsDTO(
                         team.getTeamName(),
+                        league.getFee(),
                         team.getProfilePic(),
                         team.getTotalScore(),
                         paginatedPlayers
