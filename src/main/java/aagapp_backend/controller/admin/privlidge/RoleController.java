@@ -296,6 +296,56 @@ public class RoleController {
         }
     }*/
 
+//    edit user and add privlidge
+
+    @GetMapping("/menus-with-selected")
+    public ResponseEntity<?> getMenusWithSelectedPrivileges(@RequestParam Long roleId) {
+        try {
+            //  Step 1: Fetch all privileges (menus & submenus)
+            List<Privilege> allPrivileges = privilegeRepo.findAll();
+
+            //  Step 2: Fetch role and its assigned privileges
+            Role role = roleRepo.findById(roleId)
+                    .orElseThrow(() -> new RuntimeException("Role not found"));
+            Set<Long> selectedPrivilegeIds = role.getPrivileges().stream()
+                    .map(Privilege::getId)
+                    .collect(Collectors.toSet());
+
+            //  Step 3: Group submenus under parent menu
+            Map<String, List<Map<String, Object>>> submenuMap = allPrivileges.stream()
+                    .filter(p -> "SUBMENU".equalsIgnoreCase(p.getType()))
+                    .collect(Collectors.groupingBy(
+                            Privilege::getParentMenu,
+                            Collectors.mapping(sub -> Map.of(
+                                    "submenuId", sub.getId(),
+                                    "submenuName", sub.getName(),
+                                    "selected", selectedPrivilegeIds.contains(sub.getId())
+                            ), Collectors.toList())
+                    ));
+
+            //  Step 4: Build final menu list
+            List<Map<String, Object>> menus = allPrivileges.stream()
+                    .filter(p -> "MENU".equalsIgnoreCase(p.getType()))
+                    .map(menu -> Map.of(
+                            "menuId", menu.getId(),
+                            "menuName", menu.getName(),
+                            "selected", selectedPrivilegeIds.contains(menu.getId()),
+                            "submenus", submenuMap.getOrDefault(menu.getName(), List.of())
+                    ))
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "OK",
+                    "status_code", 200,
+                    "message", "Menu privileges loaded successfully",
+                    "data", menus
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "ERROR", "message", e.getMessage()));
+        }
+    }
+
 
 
 }
