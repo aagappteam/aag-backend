@@ -8,6 +8,7 @@ import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.services.*;
+import aagapp_backend.services.admin.AdminLogService;
 import aagapp_backend.services.download.InfluencerEarningsService;
 import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
@@ -17,6 +18,9 @@ import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -27,6 +31,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/test")
 public class TestController {
+
+    @Autowired
+    private AdminLogService adminLogService;
 
     private EmailService emailService;
     private CommonService commonService;
@@ -210,4 +217,30 @@ public class TestController {
 
         return responseService.generateSuccessResponse("Monthly plan created/updated successfully", null, HttpStatus.OK);
     }
+
+
+    @PostMapping("/log-action")
+    public ResponseEntity<?> logAdminTestAction(@RequestParam Long targetId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String performedBy = authentication.getName();
+
+        String actorRole = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(auth -> auth.startsWith("ROLE_"))
+                .findFirst()
+                .orElse("ROLE_UNKNOWN");
+
+        if (actorRole.startsWith("ROLE_")) {
+            actorRole = actorRole.substring(5); // e.g., "ADMIN"
+        }
+
+        String targetType = "TEST_ENTITY";
+        String activity = "Performed test admin action for entity ID " + targetId;
+
+        adminLogService.logAction(activity, actorRole, performedBy, targetId, targetType);
+
+        return ResponseEntity.ok("Admin log created successfully.");
+    }
+
+
 }

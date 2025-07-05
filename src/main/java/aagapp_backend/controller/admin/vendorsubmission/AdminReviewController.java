@@ -511,7 +511,11 @@ public class AdminReviewController {
             // Provide bonus and get updated user
             CustomCustomer updatedUser = customCustomerService.provideBonus(user, bonusAmount);
 
-            // Prepare response data (could return full user, or just bonus info)
+            if(updatedUser==null){
+                return ResponseService.generateErrorResponse("User not found", HttpStatus.NOT_FOUND);
+            }
+
+
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("userId", updatedUser.getId());
             responseData.put("name", updatedUser.getName());

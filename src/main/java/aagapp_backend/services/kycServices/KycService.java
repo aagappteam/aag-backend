@@ -9,10 +9,12 @@ import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.kycRepository.KycRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.EmailService;
+import aagapp_backend.services.admin.AdminLogService;
 import aagapp_backend.services.s3services.S3Service;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +29,10 @@ public class KycService {
 
     @Autowired
     private S3Service s3Service;
+
+    @Autowired
+    private AdminLogService adminLogsService;
+
 
     @Autowired
     private VendorRepository vendorRepository;
@@ -148,6 +154,15 @@ public class KycService {
 
         kyc.setKycStatus(isVerified);
         kycRepository.save(kyc);
+
+//        String performedBy = getLoggedInAdminUsername();
+        String performedBy = SecurityContextHolder.getContext().getAuthentication().getName();
+        String targetType = role; // "USER" or "VENDOR" from KYC record
+
+        String activity = "KYC status updated to " + isVerified + " for " + targetType + " ID " + userOrVendorId;
+
+        adminLogsService.logAction(activity, targetType, performedBy, userOrVendorId, "KYC Verification");
+
 
         return kyc;
     }
