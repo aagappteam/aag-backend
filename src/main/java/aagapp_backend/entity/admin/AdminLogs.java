@@ -35,6 +35,15 @@ public class AdminLogs {
     @Column(length = 10)
     private String role;
 
+    @Column(name = "performed_by", length = 255)
+    private String performedBy;
+
+    @Column(name = "target_id")
+    private Long targetId;
+
+    @Column(name = "target_type", length = 100)
+    private String targetType;
+
 
     @CreationTimestamp
     @Column(name = "createdDate", updatable = false)

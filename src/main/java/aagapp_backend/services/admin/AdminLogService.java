@@ -1,0 +1,131 @@
+package aagapp_backend.services.admin;
+
+import aagapp_backend.entity.admin.AdminLogs;
+import aagapp_backend.repository.admin.AdminLogsInterface;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import java.time.ZonedDateTime;
+import java.util.List;
+
+@Service
+public class AdminLogService {
+
+    @Autowired
+    private EntityManager entityManager;
+    @Autowired
+    private AdminLogsInterface adminLogsRepository;
+    public void logAction(String activity,
+                          String role,
+                          String performedBy,
+                          Long targetId,
+                          String targetType) {
+        AdminLogs log = new AdminLogs();
+        log.setActivity(activity);
+        log.setRole(role);
+        log.setPerformedBy(performedBy);
+        log.setTargetId(targetId);
+        log.setTargetType(targetType);
+        log.setCreatedDate(ZonedDateTime.now());
+        adminLogsRepository.save(log);
+    }
+
+    @Transactional
+    public Page<AdminLogs> getAllLogs(Pageable pageable, String roleName, String performedBy, String targetType, String search) {
+        try {
+            StringBuilder sql = new StringBuilder("SELECT * FROM admin_logs l WHERE 1=1");
+
+            if (roleName != null && !roleName.isEmpty()) {
+                sql.append(" AND l.role = :roleName");
+            }
+
+            if (performedBy != null && !performedBy.isEmpty()) {
+                sql.append(" AND l.performed_by = :performedBy");
+            }
+
+            if (targetType != null && !targetType.isEmpty()) {
+                sql.append(" AND l.target_type = :targetType");
+            }
+
+            if (search != null && !search.isEmpty()) {
+                sql.append(" AND (l.activity ILIKE :search OR l.performed_by ILIKE :search OR l.target_type ILIKE :search)");
+            }
+
+            sql.append(" ORDER BY l.created_date DESC");
+
+            Query query = entityManager.createNativeQuery(sql.toString(), AdminLogs.class);
+
+            if (roleName != null && !roleName.isEmpty()) {
+                query.setParameter("roleName", roleName);
+            }
+
+            if (performedBy != null && !performedBy.isEmpty()) {
+                query.setParameter("performedBy", performedBy);
+            }
+
+            if (targetType != null && !targetType.isEmpty()) {
+                query.setParameter("targetType", targetType);
+            }
+
+            if (search != null && !search.isEmpty()) {
+                query.setParameter("search", "%" + search + "%");
+            }
+
+            query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<AdminLogs> logs = query.getResultList();
+
+            // Count Query
+            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM admin_logs l WHERE 1=1");
+
+            if (roleName != null && !roleName.isEmpty()) {
+                countSql.append(" AND l.role = :roleName");
+            }
+
+            if (performedBy != null && !performedBy.isEmpty()) {
+                countSql.append(" AND l.performed_by = :performedBy");
+            }
+
+            if (targetType != null && !targetType.isEmpty()) {
+                countSql.append(" AND l.target_type = :targetType");
+            }
+
+            if (search != null && !search.isEmpty()) {
+                countSql.append(" AND (l.activity ILIKE :search OR l.performed_by ILIKE :search OR l.target_type ILIKE :search)");
+            }
+
+            Query countQuery = entityManager.createNativeQuery(countSql.toString());
+
+            if (roleName != null && !roleName.isEmpty()) {
+                countQuery.setParameter("roleName", roleName);
+            }
+
+            if (performedBy != null && !performedBy.isEmpty()) {
+                countQuery.setParameter("performedBy", performedBy);
+            }
+
+            if (targetType != null && !targetType.isEmpty()) {
+                countQuery.setParameter("targetType", targetType);
+            }
+
+            if (search != null && !search.isEmpty()) {
+                countQuery.setParameter("search", "%" + search + "%");
+            }
+
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            return new PageImpl<>(logs, pageable, total);
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving admin logs", e);
+        }
+    }
+
+
+}
