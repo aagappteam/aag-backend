@@ -3,6 +3,7 @@ package aagapp_backend.controller.account;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
+import aagapp_backend.dto.ReferralValidationRequest;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -10,6 +11,7 @@ import aagapp_backend.services.*;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.referal.ReferralValidationService;
 import aagapp_backend.services.vendor.VenderService;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +33,9 @@ import java.util.Map;
         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
 )
 public class AccountEndPoint {
+
+    @Autowired
+    private ReferralValidationService referralValidationService;
 
     private ExceptionHandlingImplement exceptionHandling;
     private TwilioService twilioService;
@@ -462,7 +467,7 @@ public class AccountEndPoint {
                return responseService.generateErrorResponse("Invalid password", HttpStatus.BAD_REQUEST);
            }
 
-           // 🔥 Generate Token & Login Response
+           //  Generate Token & Login Response
            return adminService.loginWithPasswordForAdmin(loginDetails, request, session);
 
        } catch (IllegalArgumentException e) {
@@ -472,6 +477,14 @@ public class AccountEndPoint {
            return responseService.generateErrorResponse("Some error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
        }
    }
+
+//   refferal code verification of vendor and user
+    @PostMapping("/refferalcode-validate")
+    public ResponseEntity<?> validateReferralCode(@RequestBody ReferralValidationRequest request) {
+        return referralValidationService.validateReferralCode(request.getReferralCode(), request.getRoleId());
+    }
+
+
 
 
 }
