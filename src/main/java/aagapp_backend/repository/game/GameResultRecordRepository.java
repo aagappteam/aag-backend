@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Repository
@@ -33,4 +34,10 @@ public interface GameResultRecordRepository extends JpaRepository<GameResultReco
             @Param("gameName") String gameName,
             @Param("winner") Boolean winner,
             Pageable pageable
-    );}
+    );
+
+    Long countByPlayer_PlayerId(Long playerId);
+
+    @Query("SELECT COALESCE(SUM(grr.winningammount), 0) FROM GameResultRecord grr WHERE grr.player.id = :playerId AND grr.isWinner = true")
+    BigDecimal getTotalWinningAmountByPlayer(Long playerId);
+}
