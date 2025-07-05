@@ -2,7 +2,6 @@ package aagapp_backend.services.referal;
 
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
-import aagapp_backend.services.ReferralValidationResponse;
 import aagapp_backend.services.ResponseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
