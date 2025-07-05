@@ -16,6 +16,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     //    List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
@@ -92,4 +93,6 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
         """)
     List<TopHostWeekDto> findTopHostsThisWeek(@Param("startOfWeek") ZonedDateTime startOfWeek,
                                               @Param("endOfWeek") ZonedDateTime endOfWeek);
+
+    Optional<Object> findByReferralCode(String referralCode);
 }
