@@ -4,6 +4,10 @@ import aagapp_backend.dto.GetGameResponseDTO;
 import aagapp_backend.dto.LeagueResultRecordDTO;
 import aagapp_backend.dto.TournamentResultRecordDTO;
 import aagapp_backend.dto.game.GameResultRecordDTO;
+import aagapp_backend.dto.game.PlayerSummaryCompactDTO;
+import aagapp_backend.repository.game.GameResultRecordRepository;
+import aagapp_backend.repository.league.LeagueResultRecordRepository;
+import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.gameservice.GameService;
@@ -17,6 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("customer/games")
@@ -35,6 +41,12 @@ public class CustomerGame {
     @Autowired
     private TournamentService tournamentService;
 
+    @Autowired
+    private  GameResultRecordRepository gameRepo;
+    @Autowired
+    private  LeagueResultRecordRepository leagueRepo;
+    @Autowired
+    private TournamentResultRecordRepository tournamentRepo;
 
     @GetMapping("/get-games-by-user/{userId}")
     public ResponseEntity<?> getGamesByUserId(
@@ -147,6 +159,42 @@ public class CustomerGame {
             );
         }
     }
+
+
+
+    @GetMapping("/summery/{playerId}")
+    public ResponseEntity<?> getPlayerSummaryCompact(@PathVariable Long playerId) {
+        try {
+            Long totalGames = gameRepo.countByPlayer_PlayerId(playerId);
+            Long totalLeagues = leagueRepo.countByPlayer_PlayerId(playerId);
+            Long totalTournaments = tournamentRepo.countByPlayer_PlayerId(playerId);
+
+            Long totalMatchesPlayed = totalGames + totalLeagues + totalTournaments;
+
+            BigDecimal gameWinning = gameRepo.getTotalWinningAmountByPlayer(playerId);
+            BigDecimal tournamentWinning = tournamentRepo.getTotalWinningAmountByPlayer(playerId);
+            BigDecimal leagueWinning = leagueService.getTotalWinningsOfPlayer(playerId);
+            BigDecimal totalWinningAmount = gameWinning.add(tournamentWinning).add(leagueWinning);
+
+            PlayerSummaryCompactDTO response = new PlayerSummaryCompactDTO(
+                    totalMatchesPlayed,
+                    totalWinningAmount
+            );
+//
+            return responseService.generateSuccessResponse(
+                    "Player summary fetched successfully",
+                    response,
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(
+                    "Error fetching player summary: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
 
 
 

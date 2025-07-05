@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,6 +42,12 @@ public interface LeagueResultRecordRepository extends JpaRepository<LeagueResult
     @Query("SELECT r FROM LeagueResultRecord r WHERE r.league.id = :leagueId AND r.leagueTeam.id = :teamId")
     List<LeagueResultRecord> findByLeagueIdAndLeagueTeamId(@Param("leagueId") Long leagueId, @Param("teamId") Long teamId);
 
+
+    Long countByPlayer_PlayerId(Long playerId);
+
+
+    @Query("SELECT DISTINCT r.league.id FROM LeagueResultRecord r WHERE r.player.playerId = :playerId")
+    List<Long> findDistinctLeagueIdsByPlayerId(@Param("playerId") Long playerId);
 
 
 }

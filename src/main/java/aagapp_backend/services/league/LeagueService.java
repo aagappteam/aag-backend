@@ -2231,6 +2231,28 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     }
 
 
+    public BigDecimal getTotalWinningsOfPlayer(Long playerId) {
+        try {
+            // Step 1: Get distinct league IDs where this player has participated
+            List<Long> leagueIds = leagueResultRecordRepository.findDistinctLeagueIdsByPlayerId(playerId);
+
+            BigDecimal totalWinnings = BigDecimal.ZERO;
+
+            for (Long leagueId : leagueIds) {
+                BigDecimal prize = getPlayerWinningPrize(leagueId, playerId);
+                totalWinnings = totalWinnings.add(prize);
+            }
+
+            return totalWinnings;
+
+        } catch (Exception e) {
+            exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+
+
     public Long getScheduledCount() {
         String sql = "SELECT COUNT(*) FROM aag_league g WHERE g.status = 'SCHEDULED'";
         Query query = em.createNativeQuery(sql);
