@@ -225,7 +225,7 @@ public class WalletService {
             notification.setCustomerId(customer.getId());
             notification.setDescription("Withdrawal request submitted");
             notification.setAmount(withdrawBalanceBD.doubleValue());
-            notification.setDetails("Your request of ₹" + customerWithdrawalRequestDto.getAmount() +" for "+  customerWithdrawalRequestDto.getWithdrawalType() + " has been submitted.");
+            notification.setDetails("Your request of Rs." + customerWithdrawalRequestDto.getAmount() +" for "+  customerWithdrawalRequestDto.getWithdrawalType() + " has been submitted.");
             notificationRepository.save(notification);
 
             // Save the updated wallet
