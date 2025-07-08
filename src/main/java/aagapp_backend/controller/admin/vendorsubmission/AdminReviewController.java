@@ -9,13 +9,21 @@ import aagapp_backend.entity.faqs.FAQs;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.league.League;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.entity.withdrawrequest.CustomerWithdrawalRequest;
 import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.enums.VendorStatus;
+import aagapp_backend.enums.WithdrawalStatus;
+import aagapp_backend.enums.WithdrawalType;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.repository.wallet.WalletRepository;
+import aagapp_backend.repository.withdrawrequest.CustomerWithdrawalRequestRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminReviewService;
@@ -26,20 +34,27 @@ import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.tournamnetservice.TournamentService;
+import aagapp_backend.spec.WithdrawalRequestSpecification;
 import jakarta.validation.Valid;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -74,6 +89,15 @@ public class AdminReviewController {
 
     @Autowired
     private TournamentService tournamentService;
+
+    @Autowired
+    private CustomerWithdrawalRequestRepository customerWithdrawalRequestRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private WalletRepository walletRepository;
 
     private AdminReviewService reviewService;
     private ExceptionHandlingImplement exceptionHandling;
@@ -597,5 +621,166 @@ public class AdminReviewController {
 
 
 
+    @PutMapping("/process-withdrawal/{id}")
+    public ResponseEntity<?> updateWithdrawalStatus(@PathVariable Long id,
+                                                    @RequestParam WithdrawalStatus status,
+                                                    @RequestParam(required = false) String comment) {
+        try {
+            CustomerWithdrawalRequest request = customerWithdrawalRequestRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Withdrawal request not found"));
+
+            if (request.getStatus() != WithdrawalStatus.PENDING) {
+                return ResponseService.generateErrorResponse("Request already processed", HttpStatus.BAD_REQUEST);
+            }
+
+            request.setStatus(status);
+            request.setAdminComment(comment);
+
+            if (status == WithdrawalStatus.PAID) {
+
+                // Notify customer: Request PAID
+                Notification notification = new Notification();
+                notification.setCustomerId(request.getCustomer().getId());
+                notification.setRole("Customer");
+                notification.setDescription("Withdrawal Request Paid");
+                notification.setDetails("Your withdrawal of Rs." + request.getFinalPayoutAmount() + " has been paid successfully.");
+                notification.setAmount(request.getFinalPayoutAmount().doubleValue());
+                notificationRepository.save(notification);
+            }
+
+            if (status == WithdrawalStatus.REJECTED) {
+                Wallet wallet = walletRepository.findByCustomCustomer_Id(request.getCustomer().getId());
+                if (wallet != null) {
+                    wallet.setWinningAmount(wallet.getWinningAmount().add(request.getAmount()));
+                    walletRepository.save(wallet);
+                }
+
+                // Notify customer: Request REJECTED
+                Notification notification = new Notification();
+                notification.setCustomerId(request.getCustomer().getId());
+                notification.setRole("Customer");
+                notification.setDescription("Withdrawal Request Rejected");
+                notification.setDetails("Your withdrawal of Rs." + request.getFinalPayoutAmount() + " has been rejected.");
+                notification.setAmount(request.getFinalPayoutAmount().doubleValue());
+                notificationRepository.save(notification);
+            }
+
+            customerWithdrawalRequestRepository.save(request);
+            return ResponseService.generateSuccessResponse("Status updated and customer notified successfully","" ,HttpStatus.OK);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating withdrawal status: " + e.getMessage());
+        }
+    }
+
+
+    @GetMapping("/view-withdrawal-requests")
+    public ResponseEntity<?> filterWithdrawalRequests(
+
+
+            @RequestParam(required = false) WithdrawalStatus status,
+            @RequestParam(required = false) WithdrawalType withdrawalType,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String customerName,
+            @RequestParam(required = false) String customerEmail,
+            @RequestParam(required = false) String customerMobileNumber,
+            @RequestParam(required = false) String customerState,
+            Pageable pageable) {
+
+        Specification<CustomerWithdrawalRequest> spec = Specification
+                .where(WithdrawalRequestSpecification.hasStatus(status))
+                .and(WithdrawalRequestSpecification.hasWithdrawalType(withdrawalType))
+                .and(WithdrawalRequestSpecification.hasCustomerId(customerId))
+                .and(WithdrawalRequestSpecification.requestDateBetween(startDate, endDate))
+                .and(WithdrawalRequestSpecification.customerNameContains(customerName))
+                .and(WithdrawalRequestSpecification.customerEmailContains(customerEmail))
+                .and(WithdrawalRequestSpecification.customerMobileNumberContains(customerMobileNumber))
+                .and(WithdrawalRequestSpecification.customerStateEquals(customerState));
+
+        Page<CustomerWithdrawalRequest> resultPage = customerWithdrawalRequestRepository.findAll(spec, pageable);
+
+        return ResponseService.generateSuccessResponseWithCount("Withdrawal requests fetched successfully", resultPage.getContent(), resultPage.getTotalElements(), HttpStatus.OK);
+    }
+
+
+    @GetMapping("/download-withdrawal-requests")
+    public ResponseEntity<?> exportWithdrawalsToCsv(
+            @RequestParam(required = false) WithdrawalStatus status,
+            @RequestParam(required = false) WithdrawalType withdrawalType,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+
+            @RequestParam(required = false) String customerName,
+            @RequestParam(required = false) String customerEmail,
+            @RequestParam(required = false) String customerMobileNumber,
+            @RequestParam(required = false) String customerState
+    ) {
+        try {
+            Specification<CustomerWithdrawalRequest> spec = Specification
+                    .where(WithdrawalRequestSpecification.hasStatus(status))
+                    .and(WithdrawalRequestSpecification.hasWithdrawalType(withdrawalType))
+                    .and(WithdrawalRequestSpecification.hasCustomerId(customerId))
+                    .and(WithdrawalRequestSpecification.requestDateBetween(startDate, endDate))
+                    .and(WithdrawalRequestSpecification.customerNameContains(customerName))
+                    .and(WithdrawalRequestSpecification.customerEmailContains(customerEmail))
+                    .and(WithdrawalRequestSpecification.customerMobileNumberContains(customerMobileNumber))
+                    .and(WithdrawalRequestSpecification.customerStateEquals(customerState));
+
+            List<CustomerWithdrawalRequest> results = customerWithdrawalRequestRepository.findAll(spec);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            PrintWriter writer = new PrintWriter(out);
+
+            // CSV Header
+            writer.println("ID,CustomerID,Name,Email,Mobile,State,UPI ID,Amount,Status,Type,Fee,Final Payout,Requested At,Updated At");
+
+            // CSV Rows
+            for (CustomerWithdrawalRequest req : results) {
+                CustomCustomer customer = req.getCustomer();
+
+                writer.printf("%d,%d,%s,%s,%s,%s,%s,%.2f,%s,%s,%.2f,%.2f,%s,%s%n",
+                        req.getId(),
+                        customer.getId(),
+                        safe(customer.getName()),
+                        safe(customer.getEmail()),
+                        safe(customer.getMobileNumber()),
+                        safe(customer.getState()),
+                        safe(req.getUpiId()),
+                        req.getAmount(),
+                        req.getStatus(),
+                        req.getWithdrawalType(),
+                        req.getProcessingFee(),
+                        req.getFinalPayoutAmount(),
+                        req.getRequestDate(),
+                        req.getUpdatedAt()
+                );
+            }
+
+            writer.flush();
+
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(out.toByteArray());
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Disposition", "attachment; filename=withdrawals.csv");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentType(MediaType.parseMediaType("text/csv"))
+                    .body(new InputStreamResource(inputStream));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error generating CSV: " + e.getMessage());
+        }
+    }
+    private String safe(String val) {
+        return val == null ? "" : val.replace(",", " "); // avoid breaking CSV
+    }
 
 }
+
+
+
+

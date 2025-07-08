@@ -1,11 +1,21 @@
 package aagapp_backend.services.wallet;
 
+import aagapp_backend.components.Constant;
+import aagapp_backend.dto.CustomerWithdrawalRequestDto;
 import aagapp_backend.dto.WalletBalanceDTO;
 import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.entity.withdrawrequest.CustomerWithdrawalRequest;
+import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
+import aagapp_backend.enums.WithdrawalStatus;
+import aagapp_backend.enums.WithdrawalType;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
+import aagapp_backend.repository.withdrawrequest.CustomerWithdrawalRequestRepository;
 import aagapp_backend.services.CustomCustomerService;
+import aagapp_backend.services.NotificationService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
@@ -27,6 +37,12 @@ public class WalletService {
 
     @Autowired
     private CustomCustomerRepository customCustomerRepository;
+
+    @Autowired
+    private CustomerWithdrawalRequestRepository customerWithdrawalRequestRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     public WalletService(WalletRepository walletRepository,
@@ -107,7 +123,7 @@ public class WalletService {
         }
     }
 
-    @Transactional
+    /*@Transactional
     public Wallet deductAmountFromWallet(Long customerId, Float deducedAmount) {
         try {
             // Retrieve the customer by ID
@@ -156,26 +172,26 @@ public class WalletService {
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             throw new RuntimeException("Error occurred while deducting balance from wallet", e);
         }
-    }
+    }*/
 
 
 
     @Transactional
-    public Wallet withdrawalAmountFromWallet(Long customerId, Float withdrawBalance) {
+    public Wallet withdrawalAmountFromWallet(CustomerWithdrawalRequestDto customerWithdrawalRequestDto) {
         try {
-            CustomCustomer customer = customCustomerService.getCustomerById(customerId);
+            CustomCustomer customer = customCustomerService.getCustomerById(customerWithdrawalRequestDto.getCustomerId());
             if (customer == null) {
-                throw new BusinessException("Customer not found for the given ID: " + customerId, HttpStatus.BAD_REQUEST);
+                throw new BusinessException("Customer not found for the given ID: " + customerWithdrawalRequestDto.getCustomerId(), HttpStatus.BAD_REQUEST);
             }
 
             // Retrieve the wallet associated with the customer
-            Wallet wallet = walletRepository.findByCustomCustomer(customer);
+            Wallet wallet = walletRepository.findByCustomCustomer_Id(customerWithdrawalRequestDto.getCustomerId());
             if (wallet == null) {
                 throw new BusinessException("No wallet found for the customer", HttpStatus.BAD_REQUEST);
             }
 
 
-            BigDecimal withdrawBalanceBD = new BigDecimal(withdrawBalance);
+            BigDecimal withdrawBalanceBD = new BigDecimal(customerWithdrawalRequestDto.getAmount());
 
             if (withdrawBalanceBD.compareTo(wallet.getWinningAmount()) > 0) {
                 throw new BusinessException("Insufficient balance in the wallet" , HttpStatus.BAD_REQUEST);
@@ -183,6 +199,34 @@ public class WalletService {
 
             // Withdraw the balance from the wallet
             wallet.setWinningAmount(wallet.getWinningAmount().subtract(withdrawBalanceBD));
+
+            // 🧮 Calculate fee & final payout
+            BigDecimal fee = BigDecimal.ZERO;
+            if (customerWithdrawalRequestDto.getWithdrawalType() == WithdrawalType.INSTANT) {
+                fee = withdrawBalanceBD.multiply(BigDecimal.valueOf(0.05)); // 5% fee
+            }
+
+            BigDecimal finalPayout = withdrawBalanceBD.subtract(fee);
+
+            // 📝 Save withdrawal request
+            CustomerWithdrawalRequest request = new CustomerWithdrawalRequest();
+            request.setCustomer(customer);
+            request.setAmount(withdrawBalanceBD);
+            request.setUpiId(customerWithdrawalRequestDto.getUpiId());
+            request.setWithdrawalType(customerWithdrawalRequestDto.getWithdrawalType());
+            request.setProcessingFee(fee);
+            request.setFinalPayoutAmount(finalPayout);
+            request.setStatus(WithdrawalStatus.PENDING);
+            customerWithdrawalRequestRepository.save(request);
+
+            // 🔔 Notification
+            Notification notification = new Notification();
+            notification.setRole("Customer");
+            notification.setCustomerId(customer.getId());
+            notification.setDescription("Withdrawal request submitted");
+            notification.setAmount(withdrawBalanceBD.doubleValue());
+            notification.setDetails("Your request of Rs." + customerWithdrawalRequestDto.getAmount() +" for "+  customerWithdrawalRequestDto.getWithdrawalType() + " has been submitted.");
+            notificationRepository.save(notification);
 
             // Save the updated wallet
             walletRepository.save(wallet);
