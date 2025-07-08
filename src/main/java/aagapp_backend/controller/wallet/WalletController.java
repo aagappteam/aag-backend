@@ -31,6 +31,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Map;
 
 
@@ -267,8 +270,6 @@ public class WalletController {
             String token = authorization.substring(7);
             Long customerId = customerWithdrawalRequestDto.getCustomerId();
 
-            Integer role = jwtUtil.extractRoleId(token);
-
             CustomCustomer customer1 = customCustomerService.getCustomerById(customerId);
 
             if (customer1.getStatus() != VendorStatus.ACTIVE) {
@@ -284,6 +285,16 @@ public class WalletController {
             // Check if the user has permission to perform the action
             if (!userId.equals(customerId)) {
                 return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
+            }
+
+            LocalDateTime startOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+            LocalDateTime endOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+
+            int todayCount = customerWithdrawalRequestRepository
+                    .countByCustomerIdAndRequestDateBetween(customerId, startOfDay, endOfDay);
+
+            if (todayCount >= 3) {
+                throw new BusinessException("You can only submit 3 withdrawal requests per day.", HttpStatus.BAD_REQUEST);
             }
 
             // Validate amount
