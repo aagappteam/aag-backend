@@ -177,6 +177,7 @@ public class AdminDetailsController {
             @RequestParam(required = false) String vendorName,
             @RequestParam(required = false) String details,
             @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Long vendorId,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
@@ -184,7 +185,7 @@ public class AdminDetailsController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdTo
     ) {
         Page<NotificationDTOAdmin> result = dashboardAdmin.getAllNotifications(
-                page, size, amount, vendorName, details, createdFrom, createdTo, customerId, vendorId
+                page, size, amount, vendorName, details, createdFrom, createdTo, customerId, vendorId, search
         );
         return responseService.generateSuccessResponseWithCount(
                 "Notifications retrieved successfully.",
@@ -200,6 +201,7 @@ public class AdminDetailsController {
             @RequestParam(required = false) String vendorName,
             @RequestParam(required = false) String details,
             @RequestParam(required = false) Long vendorId,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
             @RequestParam(required = false)
@@ -217,6 +219,7 @@ public class AdminDetailsController {
                 .and(NotificationShareSpecification.vendorNameContains(vendorName))
                 .and(NotificationShareSpecification.detailsContains(details))
                 .and(NotificationShareSpecification.vendorId(vendorId))
+                .and(NotificationShareSpecification.vendorCommonSearch(search))
                 .and(NotificationShareSpecification.createdBetween(createdFrom, createdTo));
 
         // Fetch all matching records (no pagination)
@@ -417,6 +420,7 @@ public class AdminDetailsController {
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection
     ) {
@@ -427,7 +431,7 @@ public class AdminDetailsController {
 
         Specification<InfluencerMonthlyEarning> spec = InfluencerMonthlyEarningSpecification.filter(
                 influencerId, monthYear, startDate, endDate, minEarning, maxEarning,
-                minRecharge, maxRecharge, multiplier
+                minRecharge, maxRecharge, multiplier, search
         );
 
         Page<InfluencerMonthlyEarning> pageResult = earningRepo.findAll(spec, pageable);
@@ -453,6 +457,7 @@ public class AdminDetailsController {
             @RequestParam(required = false) BigDecimal maxEarning,
             @RequestParam(required = false) BigDecimal minRecharge,
             @RequestParam(required = false) BigDecimal maxRecharge,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Integer multiplier,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection,
@@ -465,7 +470,7 @@ public class AdminDetailsController {
         // Use the spec you already have
         Specification<InfluencerMonthlyEarning> spec = InfluencerMonthlyEarningSpecification.filter(
                 influencerId, monthYear, startDate, endDate,
-                minEarning, maxEarning, minRecharge, maxRecharge, multiplier
+                minEarning, maxEarning, minRecharge, maxRecharge, multiplier, search
         );
 
         List<InfluencerMonthlyEarning> earnings = earningRepo.findAll(spec, sort);

@@ -3,6 +3,7 @@ package aagapp_backend.services.admin;
 import aagapp_backend.dto.DashboardResponseAdmin;
 import aagapp_backend.dto.NotificationDTO;
 import aagapp_backend.dto.NotificationDTOAdmin;
+import aagapp_backend.dto.NotificationResponseTansectionDTO;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -10,10 +11,12 @@ import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.NotificationShareRepository;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.GameResultRecordRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueResultRecordRepository;
 import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.spec.NotificationShareSpecification;
 import aagapp_backend.spec.NotificationSpecifications;
 import jakarta.persistence.EntityManager;
@@ -30,7 +33,10 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static io.netty.util.AsciiString.containsIgnoreCase;
 
 @Service
 public class DashboardAdmin {
@@ -52,6 +58,12 @@ public class DashboardAdmin {
 
     @Autowired
     private NotificationShareRepository notificationShareRepository;
+
+    @Autowired
+    private CustomCustomerRepository customerRepository;
+
+    @Autowired
+    private VendorRepository vendorRepository;
 
 
     public DashboardResponseAdmin getDashboard() {
@@ -303,13 +315,15 @@ public class DashboardAdmin {
     public Page<NotificationDTOAdmin> getAllNotifications(
             int page, int size,
             Double amount, String vendorName, String detailsTerm,
-            ZonedDateTime createdFrom, ZonedDateTime createdTo, Long customerId, Long vendorId
+            ZonedDateTime createdFrom, ZonedDateTime createdTo, Long customerId, Long vendorId, String search
     ) {
         Specification<NotificationShare> spec = Specification
                 .where(NotificationShareSpecification.hasAmount(amount))
                 .and(NotificationShareSpecification.vendorNameContains(vendorName))
                 .and(NotificationShareSpecification.detailsContains(detailsTerm))
                 .and(NotificationShareSpecification.vendorId(vendorId))
+                .and(NotificationShareSpecification.vendorCommonSearch(search))
+                .and(NotificationShareSpecification.createdAfter(createdFrom))
                 .and(NotificationShareSpecification.createdBetween(createdFrom, createdTo));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
@@ -663,30 +677,122 @@ public class DashboardAdmin {
                 .and(NotificationSpecifications.descriptionContains(description))
                 .and(NotificationSpecifications.detailsContains(details));
 
-        return notificationRepository.findAll(spec, PageRequest.of(page, size, Sort.by("createdDate").descending()));
+        Page<Notification> dbFiltered = notificationRepository.findAll(
+                spec, PageRequest.of(page, size, Sort.by("createdDate").descending()));
+
+        // In-memory filtering based on search keyword
+        if (search != null && !search.isBlank()) {
+            List<Notification> filtered = filterByUserOrVendorInfo(dbFiltered.getContent(), search, role);
+            return new PageImpl<>(filtered, PageRequest.of(page, size), filtered.size());
+        }
+
+        return dbFiltered;
     }
 
 
-    // Helper Methods
-    private Map<Long, VendorEntity> fetchVendorsByIds(Set<Long> vendorIds) {
-        if (vendorIds.isEmpty()) return Collections.emptyMap();
-        List<VendorEntity> vendors = entityManager.createQuery(
-                        "SELECT v FROM VendorEntity v WHERE v.id IN :ids", VendorEntity.class)
-                .setParameter("ids", vendorIds)
-                .getResultList();
-        return vendors.stream().collect(Collectors.toMap(VendorEntity::getService_provider_id, v -> v));
+    private List<Notification> filterByUserOrVendorInfo(List<Notification> notifications, String keyword, String role) {
+        String loweredKeyword = keyword.toLowerCase();
+
+        if ("CUSTOMER".equalsIgnoreCase(role)) {
+            Set<Long> customerIds = notifications.stream()
+                    .map(Notification::getCustomerId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            Map<Long, CustomCustomer> customerMap = customerRepository.findAllById(customerIds).stream()
+                    .collect(Collectors.toMap(CustomCustomer::getId, Function.identity()));
+
+            return notifications.stream()
+                    .filter(n -> {
+                        CustomCustomer c = customerMap.get(n.getCustomerId());
+                        return c != null && (
+                                containsIgnoreCase(c.getName(), loweredKeyword)
+                                        || containsIgnoreCase(c.getEmail(), loweredKeyword)
+                                        || containsIgnoreCase(c.getMobileNumber(), loweredKeyword)
+                        );
+                    }).collect(Collectors.toList());
+
+        } else if ("VENDOR".equalsIgnoreCase(role)) {
+            Set<Long> vendorIds = notifications.stream()
+                    .map(Notification::getVendorId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            Map<Long, VendorEntity> vendorMap = vendorRepository.findAllById(vendorIds).stream()
+                    .collect(Collectors.toMap(VendorEntity::getService_provider_id, Function.identity()));
+
+            return notifications.stream()
+                    .filter(n -> {
+                        VendorEntity v = vendorMap.get(n.getVendorId());
+                        return v != null && (
+                                containsIgnoreCase(v.getFirst_name(), loweredKeyword)
+                                        || containsIgnoreCase(v.getLast_name(), loweredKeyword)
+                                        || containsIgnoreCase(v.getPrimary_email(), loweredKeyword)
+                                        || containsIgnoreCase(v.getMobileNumber(), loweredKeyword)
+                        );
+                    }).collect(Collectors.toList());
+        }
+
+        return notifications;
     }
 
-    private Map<Long, CustomCustomer> fetchCustomersByIds(Set<Long> customerIds) {
-        if (customerIds.isEmpty()) return Collections.emptyMap();
-        List<CustomCustomer> customers = entityManager.createQuery(
-                        "SELECT c FROM CustomCustomer c WHERE c.customerId IN :ids", CustomCustomer.class)
-                .setParameter("ids", customerIds)
-                .getResultList();
-        return customers.stream().collect(Collectors.toMap(CustomCustomer::getId, c -> c));
-    }
 
 
+    /*private List<NotificationResponseTansectionDTO> mapToDTOs(List<Notification> notifications, String role) {
+        List<NotificationResponseTansectionDTO> dtoList = new ArrayList<>();
+
+        if ("CUSTOMER".equalsIgnoreCase(role)) {
+            Set<Long> customerIds = notifications.stream().map(Notification::getCustomerId).filter(Objects::nonNull).collect(Collectors.toSet());
+            Map<Long, CustomCustomer> customerMap = customerRepository.findAllById(customerIds).stream()
+                    .collect(Collectors.toMap(CustomCustomer::getId, Function.identity()));
+
+            for (Notification n : notifications) {
+                CustomCustomer c = customerMap.get(n.getCustomerId());
+                NotificationResponseTansectionDTO dto = new NotificationResponseTansectionDTO(
+                        n.getId(),
+                        n.getVendorId(),
+                        n.getCustomerId(),
+                        n.getRole(),
+                        n.getName(),
+                        n.getDescription(),
+                        n.getAmount(),
+                        n.getDetails(),
+                        n.getCreatedDate(),
+                        c != null ? c.getName() : null,
+                        c != null ? c.getEmail() : null,
+                        c != null ? c.getMobileNumber() : null
+                );
+                dtoList.add(dto);
+            }
+        } else if ("VENDOR".equalsIgnoreCase(role)) {
+            Set<Long> vendorIds = notifications.stream().map(Notification::getVendorId).filter(Objects::nonNull).collect(Collectors.toSet());
+            Map<Long, VendorEntity> vendorMap = vendorRepository.findAllById(vendorIds).stream()
+                    .collect(Collectors.toMap(VendorEntity::getService_provider_id, Function.identity()));
+
+            for (Notification n : notifications) {
+                VendorEntity v = vendorMap.get(n.getVendorId());
+                String vendorFullName = (v != null ? (v.getFirst_name() + " " + v.getLast_name()) : null);
+
+                NotificationResponseTansectionDTO dto = new NotificationResponseTansectionDTO(
+                        n.getId(),
+                        n.getVendorId(),
+                        n.getCustomerId(),
+                        n.getRole(),
+                        n.getName(),
+                        n.getDescription(),
+                        n.getAmount(),
+                        n.getDetails(),
+                        n.getCreatedDate(),
+                        vendorFullName,
+                        v != null ? v.getPrimary_email() : null,
+                        v != null ? v.getMobileNumber() : null
+                );
+                dtoList.add(dto);
+            }
+        }
+
+        return dtoList;
+    }*/
 
 
 

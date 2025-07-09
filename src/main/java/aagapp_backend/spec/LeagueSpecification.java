@@ -22,7 +22,8 @@ public class LeagueSpecification {
             String vendorFirstName,
             String vendorLastName,
             String vendorMobileNumber,
-            String vendorPrimaryEmail
+            String vendorPrimaryEmail,
+            String search
     ) {
         return (Root<League> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
             Predicate predicate = cb.conjunction();
@@ -85,6 +86,14 @@ public class LeagueSpecification {
                 predicate = cb.and(predicate, cb.like(cb.lower(root.get("opponentVendorName")), "%" + opponentVendorName.toLowerCase() + "%"));
             }
 
+            if(search != null && !search.trim().isEmpty()) {
+                String keyword = "%" + search.trim().toLowerCase() + "%";
+                predicate = cb.and(predicate, cb.or(cb.like(cb.lower(root.get("name")), keyword),
+                        cb.like(cb.lower(root.get("vendorEntity").get("first_name")), keyword),
+                        cb.like(cb.lower(root.get("vendorEntity").get("last_name")), keyword),
+                        cb.like(cb.lower(root.get("vendorEntity").get("primary_email")), keyword),
+                        cb.like(cb.lower(root.get("vendorEntity").get("mobileNumber")), keyword)));
+            }
             return predicate;
         };
     }

@@ -149,7 +149,6 @@ public class LeagueController {
     }
 
 
-
     @GetMapping("/get-leagues-with-filters")
     public ResponseEntity<?> filterLeaguesForAdmin(
             @RequestParam(required = false) String name,
@@ -160,12 +159,13 @@ public class LeagueController {
             @RequestParam(required = false) Integer move,
             @RequestParam(required = false) LeagueStatus status,
             @RequestParam(required = false) Long vendorId,
-            @RequestParam(required = false) String vendorFirstName,
+            @RequestParam(required = false) String vendorName,
             @RequestParam(required = false) String vendorLastName,
             @RequestParam(required = false) String vendorMobileNumber,
             @RequestParam(required = false) String vendorPrimaryEmail,
             @RequestParam(required = false) Long opponentVendorId,
             @RequestParam(required = false) String opponentVendorName,
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
@@ -176,7 +176,7 @@ public class LeagueController {
             Page<League> leagues = leagueService.getLeaguesWithFilters(
                     name, gameName, challengingVendorId, challengingVendorName, fee, move,
                     status, vendorId, opponentVendorId, opponentVendorName,
-                    vendorFirstName, vendorLastName, vendorMobileNumber, vendorPrimaryEmail,
+                    vendorName, vendorLastName, vendorMobileNumber, vendorPrimaryEmail, search,
                     pageable
             );
 
