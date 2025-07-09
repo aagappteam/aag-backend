@@ -310,6 +310,7 @@ public class VendorController {
             @RequestParam(value = "firstName", required = false) String firstName,
             @RequestParam(value = "planName", required = false) String planName,
             @RequestParam(value = "isPaid", required = false) Boolean isPaid,
+            @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(value = "vendorStatus", required = false) VendorStatus vendorStatus
@@ -385,6 +386,16 @@ public class VendorController {
                 conditions.add("s.status = :vendorStatus");
             }
 
+            // 🔍 Common search filter
+            if (search != null && !search.trim().isEmpty()) {
+                conditions.add("(" +
+                        "LOWER(s.first_name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.last_name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.mobileNumber) LIKE LOWER(CONCAT('%', :search, '%'))" +
+                        ")");
+            }
+
             // Append WHERE clause
             if (!conditions.isEmpty()) {
                 String whereClause = String.join(" AND ", conditions);
@@ -453,6 +464,12 @@ public class VendorController {
             if (vendorStatus != null) {
                 countQuery.setParameter("vendorStatus", vendorStatus);
                 query.setParameter("vendorStatus", vendorStatus);
+            }
+
+            // Set parameter for common search filter
+            if (search != null && !search.trim().isEmpty()) {
+                countQuery.setParameter("search", search.trim());
+                query.setParameter("search", search.trim());
             }
 
             // Pagination
