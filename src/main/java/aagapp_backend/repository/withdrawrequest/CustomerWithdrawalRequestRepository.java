@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CustomerWithdrawalRequestRepository extends JpaRepository<CustomerWithdrawalRequest, Long>, JpaSpecificationExecutor<CustomerWithdrawalRequest> {
@@ -22,6 +23,11 @@ public interface CustomerWithdrawalRequestRepository extends JpaRepository<Custo
                                                                @Param("withdrawalType") WithdrawalType withdrawalType,
                                                                @Param("status") WithdrawalStatus status,
                                                                Pageable pageable);
+
+    @Query("SELECT COUNT(w) FROM CustomerWithdrawalRequest w WHERE w.customer.id = :customerId AND w.requestDate BETWEEN :start AND :end")
+    int countByCustomerIdAndRequestDateBetween(@Param("customerId") Long customerId,
+                                               @Param("start") LocalDateTime start,
+                                               @Param("end") LocalDateTime end);
 
 
 

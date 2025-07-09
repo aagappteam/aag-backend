@@ -148,6 +148,56 @@ public class LeagueController {
         }
     }
 
+
+
+    @GetMapping("/get-leagues-with-filters")
+    public ResponseEntity<?> filterLeaguesForAdmin(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String gameName,
+            @RequestParam(required = false) Long challengingVendorId,
+            @RequestParam(required = false) String challengingVendorName,
+            @RequestParam(required = false) Double fee,
+            @RequestParam(required = false) Integer move,
+            @RequestParam(required = false) LeagueStatus status,
+            @RequestParam(required = false) Long vendorId,
+            @RequestParam(required = false) String vendorFirstName,
+            @RequestParam(required = false) String vendorLastName,
+            @RequestParam(required = false) String vendorMobileNumber,
+            @RequestParam(required = false) String vendorPrimaryEmail,
+            @RequestParam(required = false) Long opponentVendorId,
+            @RequestParam(required = false) String opponentVendorName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+
+            Page<League> leagues = leagueService.getLeaguesWithFilters(
+                    name, gameName, challengingVendorId, challengingVendorName, fee, move,
+                    status, vendorId, opponentVendorId, opponentVendorName,
+                    vendorFirstName, vendorLastName, vendorMobileNumber, vendorPrimaryEmail,
+                    pageable
+            );
+
+            Long scheduledCount = leagueService.getScheduledCount();
+            Long activeCount = leagueService.getActiveCount();
+            Long ExpiredCount = leagueService.getExpiredCount();
+
+            return responseService.generateResponseForGame(
+                    "Filtered leagues fetched successfully",
+                    leagues.getContent(),
+                    leagues.getTotalElements(),
+                    scheduledCount, activeCount, ExpiredCount,
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+
     @GetMapping("/get-all-active-leagues/{vendorId}")
     public ResponseEntity<?> getAllActiveLeaguesByVendor(
             @RequestParam(defaultValue = "0") int page,

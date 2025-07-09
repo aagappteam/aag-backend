@@ -150,13 +150,15 @@ public class GameController {
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "gamename", required = false) String gamename,
             @RequestParam(value = "vendorName", required = false) String vendorName,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "mobileNumber", required = false) String mobileNumber,
             @RequestParam(value = "startDate", required = false) ZonedDateTime startDateStr,
             @RequestParam(value = "endDate", required = false) ZonedDateTime endDateStr,
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<GetGameResponseDTO> games = gameService.getAllGamesByAdmin(status, vendorId, gamename, vendorName, startDateStr, endDateStr, pageable);
+            Page<GetGameResponseDTO> games = gameService.getAllGamesByAdmin(status, vendorId, gamename, vendorName, email, mobileNumber, startDateStr, endDateStr, pageable);
 
             Long scheduledCount = gameService.getScheduledCount();
             Long activeCount = gameService.getActiveCount();

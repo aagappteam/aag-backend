@@ -36,6 +36,7 @@ import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.pricedistribute.MatchService;
+import aagapp_backend.spec.LeagueSpecification;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -48,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -729,6 +731,32 @@ public class LeagueService {
         }
     }
 
+
+    public Page<League> getLeaguesWithFilters(
+            String name,
+            String gameName,
+            Long challengingVendorId,
+            String challengingVendorName,
+            Double fee,
+            Integer move,
+            LeagueStatus status,
+            Long vendorId,
+            Long opponentVendorId,
+            String opponentVendorName,
+            String vendorFirstName,
+            String vendorLastName,
+            String vendorMobileNumber,
+            String vendorPrimaryEmail,
+            Pageable pageable
+    ) {
+        Specification<League> spec = LeagueSpecification.withFilters(
+                name, gameName, challengingVendorId, challengingVendorName, fee, move,
+                status, vendorId, opponentVendorId, opponentVendorName,
+                vendorFirstName, vendorLastName, vendorMobileNumber, vendorPrimaryEmail
+        );
+
+        return leagueRepository.findAll(spec, pageable);
+    }
 
 
     public Page<League> getAllActiveLeaguesByVendor(Pageable pageable, Long vendorId) {
