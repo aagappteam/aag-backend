@@ -188,5 +188,27 @@ public class EmailService {
             e.printStackTrace();
         }
     }
+//    send expiry mail
+    public void sendSubscriptionExpiredMail(String to, String name, LocalDateTime date, String plan, Double amount) throws IOException {
+        // Load HTML template
+        String template = loadTemplate("email-templates/SubscriptionPlanExpired.html");
 
+        String formattedDate = date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+
+
+
+        String messageBody = template
+                .replace("{Name}", name)
+                .replace("{Date}", formattedDate)
+                .replace("{Plan}", plan)
+                .replace("{Amount}", amount.toString());
+
+
+        try {
+            // Send email
+            sendEmail(to, Constant.PLAN_EXPIREDEMAIL_SUBJECT, messageBody,true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
+        }
+    }
 }

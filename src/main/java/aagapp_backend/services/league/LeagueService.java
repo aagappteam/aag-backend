@@ -262,6 +262,7 @@ public class LeagueService {
                 notification.setRole("Vendor");
 
                 notification.setVendorId(opponentVendor.getService_provider_id());
+                notification.setName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
 
                 notification.setDescription("League challenge");
                 notification.setDetails(vendor.getFirst_name() + " has challenged for a League");
@@ -2140,6 +2141,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 walletRepo.save(wallet);
                 Notification notification = new Notification();
                 notification.setCustomerId(player.getPlayerId());
+                notification.setName(player.getCustomer().getName());
                 notification.setDescription("Wallet balance credited");
                 notification.setAmount(prize.doubleValue());
                 notification.setDetails("Rs. " + prize.doubleValue() + " won in " + league.getName());
@@ -2165,6 +2167,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     Notification notification = new Notification();
                     notification.setCustomerId(player.getPlayerId());
                     notification.setDescription("Wallet balance credited");
+                    notification.setName(player.getCustomer().getName());
                     notification.setAmount(equalShare.doubleValue());
                     notification.setDetails("Rs. " + equalShare.doubleValue() + " won in " + league.getName());
                     notification.setRole("Customer");

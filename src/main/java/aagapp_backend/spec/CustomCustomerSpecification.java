@@ -19,14 +19,20 @@ public class CustomCustomerSpecification {
             KycStatus kycStatus,
             VendorStatus vendorStatus,
             Date startDate,
-            Date endDate
+            Date endDate,
+            String search
     ) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+//            if (mobileNumber != null && !mobileNumber.isEmpty()) {
+//                predicates.add(cb.equal(root.get("mobileNumber"), mobileNumber));
+//            }
+
             if (mobileNumber != null && !mobileNumber.isEmpty()) {
-                predicates.add(cb.equal(root.get("mobileNumber"), mobileNumber));
+                predicates.add(cb.like(cb.lower(root.get("mobileNumber")), "%" + mobileNumber.toLowerCase() + "%"));
             }
+
 
             if (name != null && !name.trim().isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
@@ -46,6 +52,15 @@ public class CustomCustomerSpecification {
 
             if (startDate != null && endDate != null) {
                 predicates.add(cb.between(root.get("createdDate"), startDate, endDate));
+            }
+
+            if (search != null && !search.trim().isEmpty()) {
+                predicates.add(cb.or(
+                        cb.equal(root.get("id"), search),
+                        cb.like(cb.lower(root.get("name")), "%" + search.toLowerCase() + "%"),
+                        cb.like(cb.lower(root.get("email")), "%" + search.toLowerCase() + "%"),
+                        cb.like(cb.lower(root.get("mobileNumber")), "%" + search.toLowerCase() + "%")
+                ));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
