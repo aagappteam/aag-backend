@@ -608,10 +608,10 @@ public class TournamentService {
     public Page<Tournament> getFilteredTournaments(
             Integer page, Integer size, Sort sort,
             Long id, Long vendorId, String name, BigDecimal totalPrizePool, TournamentStatus status,
-            String vendorName, String vendorEmail, String vendorMobile
+            String vendorName, String vendorEmail, String vendorMobile, String search
     ) {
         Pageable pageable = PageRequest.of(page, size, sort);
-        Specification<Tournament> spec = TournamentSpecification.withFilters(id, vendorId, name, totalPrizePool, status, vendorName, vendorEmail, vendorMobile);
+        Specification<Tournament> spec = TournamentSpecification.withFilters(id, vendorId, name, totalPrizePool, status, vendorName, vendorEmail, vendorMobile, search);
         return tournamentRepository.findAll(spec, pageable);
     }
 

@@ -70,5 +70,17 @@ public class WithdrawalRequestSpecification {
             return cb.equal(cb.lower(customerJoin.get("state")), state.toLowerCase());
         };
     }
+    //common search filter name, email, mobile
+    public static Specification<CustomerWithdrawalRequest> commonSearch(String search) {
+        return (root, query, cb) -> {
+            if (search == null || search.isEmpty()) return null;
+            Join<CustomerWithdrawalRequest, CustomCustomer> customerJoin = root.join("customer");
+            return cb.or(
+                    cb.like(cb.lower(customerJoin.get("name")), "%" + search.toLowerCase() + "%"),
+                    cb.like(cb.lower(customerJoin.get("email")), "%" + search.toLowerCase() + "%"),
+                    cb.like(customerJoin.get("mobileNumber"), "%" + search + "%")
+            );
+        };
+    }
 }
 

@@ -208,6 +208,7 @@ public class VendorSubmissionService {
     @Transactional
     public Page<VendorSubmissionEntity> getFilteredSubmissionsNative(
             String email,
+            String search,
             ProfileStatus profileStatus,
             Boolean approved,
             String planName,
@@ -216,20 +217,35 @@ public class VendorSubmissionService {
             Pageable pageable
     ) {
         try {
-            StringBuilder sql = new StringBuilder("SELECT * FROM vendor_submission_details v WHERE 1=1");
+            StringBuilder sql = new StringBuilder(
+                    "SELECT v.* FROM vendor_submission_details v " +
+                            "LEFT JOIN vendor_table ve ON v.service_provider_id = ve.service_provider_id " +
+                            "WHERE 1=1"
+            );
 
             if (email != null && !email.isEmpty()) {
                 sql.append(" AND LOWER(v.email) LIKE LOWER(:email)");
             }
+
+            if (search != null && !search.isEmpty()) {
+                sql.append(" AND (")
+                        .append("LOWER(CONCAT(v.firstname, ' ', v.lastname)) LIKE LOWER(:search) ")
+                        .append("OR LOWER(v.email) LIKE LOWER(:search) ")
+                        .append("OR LOWER(ve.mobilenumber) LIKE LOWER(:search))");
+            }
+
             if (profileStatus != null) {
                 sql.append(" AND v.profile_status = :profileStatus");
             }
+
             if (approved != null) {
                 sql.append(" AND v.approved = :approved");
             }
+
             if (planName != null && !planName.isEmpty()) {
                 sql.append(" AND LOWER(v.plan_name) = LOWER(:planName)");
             }
+
             if (startDate != null && endDate != null) {
                 sql.append(" AND v.created_at BETWEEN :startDate AND :endDate");
             }
@@ -241,18 +257,26 @@ public class VendorSubmissionService {
             if (email != null && !email.isEmpty()) {
                 query.setParameter("email", "%" + email.toLowerCase() + "%");
             }
-            if (profileStatus != null) {
-                query.setParameter("profileStatus", profileStatus.ordinal()); // use ordinal
+
+            if (search != null && !search.isEmpty()) {
+                query.setParameter("search", "%" + search.toLowerCase() + "%");
             }
+
+            if (profileStatus != null) {
+                query.setParameter("profileStatus", profileStatus.ordinal());
+            }
+
             if (approved != null) {
                 query.setParameter("approved", approved);
             }
+
             if (planName != null && !planName.isEmpty()) {
                 query.setParameter("planName", planName.toLowerCase());
             }
+
             if (startDate != null && endDate != null) {
                 query.setParameter("startDate", startDate.atStartOfDay());
-                query.setParameter("endDate", endDate.plusDays(1).atStartOfDay()); // inclusive
+                query.setParameter("endDate", endDate.plusDays(1).atStartOfDay());
             }
 
             query.setFirstResult((int) pageable.getOffset());
@@ -260,21 +284,36 @@ public class VendorSubmissionService {
 
             List<VendorSubmissionEntity> submissions = query.getResultList();
 
-            // Count query
-            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM vendor_submission_details v WHERE 1=1");
+            // Count Query
+            StringBuilder countSql = new StringBuilder(
+                    "SELECT COUNT(*) FROM vendor_submission_details v " +
+                            "LEFT JOIN vendor_table ve ON v.service_provider_id = ve.service_provider_id " +
+                            "WHERE 1=1"
+            );
 
             if (email != null && !email.isEmpty()) {
                 countSql.append(" AND LOWER(v.email) LIKE LOWER(:email)");
             }
+
+            if (search != null && !search.isEmpty()) {
+                countSql.append(" AND (")
+                        .append("LOWER(CONCAT(v.firstname, ' ', v.lastname)) LIKE LOWER(:search) ")
+                        .append("OR LOWER(v.email) LIKE LOWER(:search) ")
+                        .append("OR LOWER(ve.mobilenumber) LIKE LOWER(:search))");
+            }
+
             if (profileStatus != null) {
                 countSql.append(" AND v.profile_status = :profileStatus");
             }
+
             if (approved != null) {
                 countSql.append(" AND v.approved = :approved");
             }
+
             if (planName != null && !planName.isEmpty()) {
                 countSql.append(" AND LOWER(v.plan_name) = LOWER(:planName)");
             }
+
             if (startDate != null && endDate != null) {
                 countSql.append(" AND v.created_at BETWEEN :startDate AND :endDate");
             }
@@ -284,15 +323,23 @@ public class VendorSubmissionService {
             if (email != null && !email.isEmpty()) {
                 countQuery.setParameter("email", "%" + email.toLowerCase() + "%");
             }
-            if (profileStatus != null) {
-                countQuery.setParameter("profileStatus", profileStatus.ordinal()); // use ordinal
+
+            if (search != null && !search.isEmpty()) {
+                countQuery.setParameter("search", "%" + search.toLowerCase() + "%");
             }
+
+            if (profileStatus != null) {
+                countQuery.setParameter("profileStatus", profileStatus.ordinal());
+            }
+
             if (approved != null) {
                 countQuery.setParameter("approved", approved);
             }
+
             if (planName != null && !planName.isEmpty()) {
                 countQuery.setParameter("planName", planName.toLowerCase());
             }
+
             if (startDate != null && endDate != null) {
                 countQuery.setParameter("startDate", startDate.atStartOfDay());
                 countQuery.setParameter("endDate", endDate.plusDays(1).atStartOfDay());
@@ -303,9 +350,11 @@ public class VendorSubmissionService {
             return new PageImpl<>(submissions, pageable, total);
 
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("Error retrieving submissions", e);
         }
     }
+
 
 
 

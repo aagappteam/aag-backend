@@ -18,7 +18,8 @@ public class TournamentSpecification {
             TournamentStatus status,
             String vendorName,
             String vendorEmail,
-            String vendorMobile
+            String vendorMobile,
+            String search
     ) {
         return (Root<Tournament> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
             Predicate predicate = cb.conjunction();
@@ -60,6 +61,17 @@ public class TournamentSpecification {
             if (vendorMobile != null && !vendorMobile.isBlank()) {
                 Join<Object, Object> vendorJoin = root.join("vendorEntity", JoinType.LEFT);
                 predicate = cb.and(predicate, cb.like(vendorJoin.get("mobileNumber"), "%" + vendorMobile + "%"));
+            }
+
+            if (search != null && !search.trim().isEmpty()) {
+                String keyword = "%" + search.trim().toLowerCase() + "%";
+                predicate = cb.and(predicate, cb.or(
+                        cb.like(cb.lower(root.get("name")), keyword),
+                        cb.like(cb.lower(root.get("vendorEntity").get("first_name")), keyword),
+                        cb.like(cb.lower(root.get("vendorEntity").get("last_name")), keyword),
+                        cb.like(cb.lower(root.get("vendorEntity").get("primary_email")), keyword),
+                        cb.like(cb.lower(root.get("vendorEntity").get("mobileNumber")), keyword)
+                ));
             }
 
             return predicate;

@@ -152,6 +152,7 @@ public class VendorSubmission {
             @RequestParam(required = false) Boolean approved,
             @RequestParam(required = false) String planname,
             @RequestParam(required = false) String email,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "0") int page,
@@ -161,7 +162,7 @@ public class VendorSubmission {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id")));
 
             Page<VendorSubmissionEntity> submissionsPage =
-                    submissionService.getFilteredSubmissionsNative(email,profileStatus, approved, planname, startDate, endDate, pageable);
+                    submissionService.getFilteredSubmissionsNative(email,search, profileStatus, approved, planname, startDate, endDate, pageable);
 
             if (submissionsPage.isEmpty()) {
                 return responseService.generateResponse(HttpStatus.OK, "No data found", null);

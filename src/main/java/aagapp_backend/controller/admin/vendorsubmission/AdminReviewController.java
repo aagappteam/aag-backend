@@ -693,6 +693,7 @@ public class AdminReviewController {
             @RequestParam(required = false) String customerEmail,
             @RequestParam(required = false) String customerMobileNumber,
             @RequestParam(required = false) String customerState,
+            @RequestParam(required = false) String search,
             Pageable pageable) {
 
         Specification<CustomerWithdrawalRequest> spec = Specification
@@ -703,6 +704,7 @@ public class AdminReviewController {
                 .and(WithdrawalRequestSpecification.customerNameContains(customerName))
                 .and(WithdrawalRequestSpecification.customerEmailContains(customerEmail))
                 .and(WithdrawalRequestSpecification.customerMobileNumberContains(customerMobileNumber))
+                .and(WithdrawalRequestSpecification.commonSearch(search))
                 .and(WithdrawalRequestSpecification.customerStateEquals(customerState));
 
         Long totalCount = customerWithdrawalRequestRepository.count(spec);
@@ -733,7 +735,8 @@ public class AdminReviewController {
             @RequestParam(required = false) String customerName,
             @RequestParam(required = false) String customerEmail,
             @RequestParam(required = false) String customerMobileNumber,
-            @RequestParam(required = false) String customerState
+            @RequestParam(required = false) String customerState,
+            @RequestParam(required = false) String search
     ) {
         try {
             Specification<CustomerWithdrawalRequest> spec = Specification
@@ -744,6 +747,7 @@ public class AdminReviewController {
                     .and(WithdrawalRequestSpecification.customerNameContains(customerName))
                     .and(WithdrawalRequestSpecification.customerEmailContains(customerEmail))
                     .and(WithdrawalRequestSpecification.customerMobileNumberContains(customerMobileNumber))
+                    .and(WithdrawalRequestSpecification.commonSearch(search))
                     .and(WithdrawalRequestSpecification.customerStateEquals(customerState));
 
             List<CustomerWithdrawalRequest> results = customerWithdrawalRequestRepository.findAll(spec);

@@ -157,11 +157,12 @@ public class TournamentController {
             @RequestParam(value = "status", required = false) TournamentStatus status,
             @RequestParam(value = "vendorName", required = false) String vendorName,
             @RequestParam(value = "vendorEmail", required = false) String vendorEmail,
-            @RequestParam(value = "vendorMobile", required = false) String vendorMobile
+            @RequestParam(value = "vendorMobile", required = false) String vendorMobile,
+            @RequestParam(value = "search", required = false) String search
     ) {
         try {
             Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
-            Page<Tournament> tournamentPage = tournamentService.getFilteredTournaments(page, size, sort, id, vendorId, name, totalPrizePool, status, vendorName, vendorEmail, vendorMobile);
+            Page<Tournament> tournamentPage = tournamentService.getFilteredTournaments(page, size, sort, id, vendorId, name, totalPrizePool, status, vendorName, vendorEmail, vendorMobile,search);
 
 
             Long scheduledCount = tournamentService.getScheduledCount();
@@ -171,9 +172,7 @@ public class TournamentController {
             return responseService.generateResponseForGame("Tournaments fetched successfully", tournamentPage.getContent(), tournamentPage.getTotalElements(), scheduledCount, activeCount, ExpiredCount, HttpStatus.OK);
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                    "message", "Error occurred: " + e.getMessage()
-            ));
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
     }
