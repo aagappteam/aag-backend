@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TournamentRepository extends JpaRepository<Tournament, Long>, JpaSpecificationExecutor<Tournament> {
@@ -83,4 +84,18 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
             Pageable pageable
     );
 
+    @Query("SELECT t.theme.id FROM Tournament t " +
+            "WHERE t.vendorId = :vendorId " +
+            "AND t.existinggameId = :gameId " +
+            "AND t.theme.id = :themeId " +
+            "AND t.status = :status " +
+            "AND t.createdDate BETWEEN :startOfDay AND :endOfDay")
+    Optional<Long> findThemeIdIfPublishedToday(
+            @Param("vendorId") Long vendorId,
+            @Param("gameId") Long gameId,
+            @Param("themeId") Long themeId,
+            @Param("status") TournamentStatus status,
+            @Param("startOfDay") ZonedDateTime startOfDay,
+            @Param("endOfDay") ZonedDateTime endOfDay
+    );
 }

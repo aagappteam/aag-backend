@@ -17,6 +17,7 @@ public class Constant {
     public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(1000.00);
     public static final int MULTIPLIER = 4;
     public static final int LEAGUE_PASS_COUNT = 3;
+    public static final String MOBILE_6306470701 =   "6306470701";
     public static String ludobaseurl = "https://gamebackend.aagapp.com/game-api/ludo";
     public static String snakebaseUrl = "https://gamebackend.aagapp.com/game-api/snake";
 /*    public static String ludobaseurl = "http://3.110.44.61:8082";

@@ -2,6 +2,7 @@ package aagapp_backend.controller.tournament;
 
 import aagapp_backend.dto.*;
 import aagapp_backend.dto.tournament.MatchResultRequest;
+import aagapp_backend.dto.tournament.TournamentGetallDTO;
 import aagapp_backend.dto.tournament.TournamentJoinRequest;
 import aagapp_backend.dto.tournament.TournamentRoomDetailsDTO;
 import aagapp_backend.entity.league.LeagueRoom;
@@ -113,17 +114,32 @@ public class TournamentController {
             Long scheduledCount = tournamentService.getScheduledCount();
             Long activeCount = tournamentService.getActiveCount();
             Long ExpiredCount = tournamentService.getExpiredCount();
-
-
-            List<Tournament> gameList = games.getContent();
             long totalCount = games.getTotalElements();
 
-            return responseService.generateResponseForGame("Tournaments fetched successfully", gameList, totalCount, scheduledCount,activeCount,ExpiredCount,HttpStatus.OK);
+
+//            List<Tournament> gameList = games.getContent();
+            List<TournamentGetallDTO> gameList = games.getContent().stream()
+                    .map(this::mapToDTO)  // use your mapping logic
+                    .collect(Collectors.toList());
+
+            return responseService.generateResponseForGame(
+                    "Tournaments fetched successfully",
+                    gameList,
+                    totalCount,
+                    scheduledCount,
+                    activeCount,
+                    ExpiredCount,
+                    HttpStatus.OK
+            );
+
+
+//            return responseService.generateResponseForGame("Tournaments fetched successfully", gameList, totalCount, scheduledCount,activeCount,ExpiredCount,HttpStatus.OK);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
 
 
@@ -152,13 +168,51 @@ public class TournamentController {
             Long activeCount = tournamentService.getActiveCount();
             Long ExpiredCount = tournamentService.getExpiredCount();
 
-            return responseService.generateResponseForGame("Tournaments fetched successfully", tournamentPage.getContent(), tournamentPage.getTotalElements(), scheduledCount,activeCount,ExpiredCount,HttpStatus.OK);
+            return responseService.generateResponseForGame("Tournaments fetched successfully", tournamentPage.getContent(), tournamentPage.getTotalElements(), scheduledCount, activeCount, ExpiredCount, HttpStatus.OK);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "message", "Error occurred: " + e.getMessage()
             ));
         }
+
+    }
+
+    public TournamentGetallDTO mapToDTO(Tournament tournament) {
+        TournamentGetallDTO dto = new TournamentGetallDTO();
+
+        dto.setId(tournament.getId());
+        dto.setVendorId(tournament.getVendorId());
+
+        // Set vendorProfilePic from vendorEntity (can be null-safe)
+        if (tournament.getVendorEntity() != null) {
+            dto.setVendorProfilePic(tournament.getVendorEntity().getProfilePic());
+        } else {
+            dto.setVendorProfilePic(""); // or default image URL
+        }
+
+        dto.setName(tournament.getName());
+        dto.setTotalPrizePool(tournament.getTotalPrizePool());
+        dto.setRound(tournament.getRound());
+        dto.setTotalrounds(tournament.getTotalrounds());
+        dto.setRoomprize(tournament.getRoomprize());
+        dto.setTheme(tournament.getTheme());
+        dto.setExistinggameId(tournament.getExistinggameId());
+        dto.setGameUrl(tournament.getGameUrl());
+        dto.setParticipants(tournament.getParticipants());
+        dto.setCurrentJoinedPlayers(tournament.getCurrentJoinedPlayers());
+        dto.setEntryFee(tournament.getEntryFee());
+        dto.setMove(tournament.getMove());
+        dto.setStatus(tournament.getStatus());
+        dto.setShareableLink(tournament.getShareableLink());
+        dto.setCreatedDate(tournament.getCreatedDate());
+        dto.setScheduledAt(tournament.getScheduledAt());
+        dto.setUpdatedDate(tournament.getUpdatedDate());
+        dto.setEndDate(tournament.getEndDate());
+        dto.setStatusUpdatedAt(tournament.getStatusUpdatedAt());
+
+        return dto;
+
     }
 
 
