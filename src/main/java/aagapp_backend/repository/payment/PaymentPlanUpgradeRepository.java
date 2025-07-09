@@ -7,11 +7,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface PaymentPlanUpgradeRepository extends JpaRepository<PlanUpgradeRequest, Long> ,
         JpaSpecificationExecutor<PlanUpgradeRequest> {
     boolean existsByVendorIdAndStatus(Long vendorId, RequestStatus requestStatus);
 
     long countByStatus(RequestStatus requestStatus);
+
+    Optional<PlanUpgradeRequest> findTopByVendorIdAndStatusOrderByApprovedDateDesc(Long vendorId, RequestStatus requestStatus);
 }
 

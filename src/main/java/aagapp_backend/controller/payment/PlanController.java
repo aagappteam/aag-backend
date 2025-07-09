@@ -18,10 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/plans")
@@ -110,7 +107,10 @@ public class PlanController {
             @RequestParam(required = false) Long vendorId) {
 
         try {
+            Map<String, Object> activePlanMap = null;
+
             List<PlanEntity> planEntities;
+            PlanUpgradeRequest activePlanUpgradeRequest = null;
 
             // Fetch plans based on variant (Monthly/Yearly) or all
             if (planVariant != null && !planVariant.isEmpty()) {
@@ -132,7 +132,6 @@ public class PlanController {
                             .stream()
                             .filter(payment -> {
                                 String status = String.valueOf(payment.getStatus());
-                                System.out.println("Checking Payment ID: " + payment.getId() + ", Status: " + status);
                                 return status != null && "ACTIVE".equalsIgnoreCase(status);
                             })
                             .findFirst();
@@ -143,13 +142,45 @@ public class PlanController {
                         currentPlan = planService.getPlanById(planId); //
                         // Retrieve plan details using planId
                     }
+
+
+                    Optional<PlanUpgradeRequest> approvedUpgrade = paymentPlanUpgradeRepository
+                            .findTopByVendorIdAndStatusOrderByApprovedDateDesc(vendorId, RequestStatus.APPROVED);
+
+
+                    if (approvedUpgrade.isPresent()) {
+                        PlanUpgradeRequest approvedRequest = approvedUpgrade.get();
+
+                        activePlanMap = new HashMap<>();
+                        activePlanMap.put("requestedPlanId", approvedRequest.getRequestedPlanId());
+                        activePlanMap.put("requestedPlanName", approvedRequest.getRequestedPlanName());
+
+                    } else if (vendor.getPayments() != null && !vendor.getPayments().isEmpty()) {
+                        // Fallback to latest payment if no approved request exists
+                        Optional<PaymentEntity> latestPayment = vendor.getPayments().stream()
+                                .sorted(Comparator.comparing(PaymentEntity::getCreatedAt).reversed())
+                                .findFirst();
+
+                        if (latestPayment.isPresent()) {
+                            PaymentEntity payment = latestPayment.get();
+                            PlanEntity fallbackPlan = planService.getPlanById(payment.getPlanId());
+
+                            activePlanMap = new HashMap<>();
+                            activePlanMap.put("requestedPlanId", payment.getPlanId());
+                            activePlanMap.put("requestedPlanName", fallbackPlan != null ? fallbackPlan.getPlanName() : null);
+                        }
+                    }
                 }
+
+
+
             }
 
             // Create response with all plans and current vendor plan
             Map<String, Object> response = new HashMap<>();
             response.put("allPlans", planEntities);
             response.put("currentPlan", currentPlan);
+            response.put("activePlanUpgradeRequest", activePlanMap);
 
             return ResponseService.generateSuccessResponse("All Plans fetched successfully!", response, HttpStatus.OK);
 

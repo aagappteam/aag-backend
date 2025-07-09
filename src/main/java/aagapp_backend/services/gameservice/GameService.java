@@ -1501,5 +1501,46 @@ public class GameService {
     }
 
 
+/*    @Scheduled(cron = "0 0 * * * *") // Run every hour
+    @Transactional
+    public void autoPublishNextGameForVendors() {
+        List<VendorEntity> vendors = vendorRepository.findByRole("ADMIN_VENDOR");
+
+        for (VendorEntity vendor : vendors) {
+            Long vendorId = vendor.getId();
+
+            // Fetch all available games
+            List<AagAvailableGames> availableGames = aagGameRepository.findAll();
+
+            for (AagAvailableGames gameMeta : availableGames) {
+                Long gameId = gameMeta.getId();
+
+                // Fetch all published theme IDs by this vendor for this game
+                List<Long> publishedThemeIds = gameRepository.findThemeIdsByVendorAndGame(vendorId, gameId);
+
+                // Find next unassigned theme
+                ThemeEntity nextTheme = themeRepository.findFirstByIdNotInOrderByIdAsc(publishedThemeIds);
+
+                if (nextTheme != null) {
+                    GameRequest request = new GameRequest();
+                    request.setFee(25.0); // Set default or logic-based fee
+                    request.setThemeId(nextTheme.getId());
+                    request.setMaxPlayersPerTeam(2);
+
+                    // Schedule 4 hours later from now
+                    ZonedDateTime scheduleTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusHours(4);
+                    request.setScheduledAt(scheduleTime);
+
+                    try {
+                        publishLudoGame(request, vendorId, gameId);
+                    } catch (Exception e) {
+                        System.out.println("Error publishing game for vendor: " + vendorId + " - " + e.getMessage());
+                    }
+                }
+            }
+        }
+    }*/
+
+
 
 }
