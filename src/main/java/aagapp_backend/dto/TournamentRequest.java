@@ -3,12 +3,15 @@ package aagapp_backend.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.ZonedDateTime;
 
 @Getter
 @Setter
+@NoArgsConstructor
+
 public class TournamentRequest {
     private String name;
     private Double totalPrizePool;

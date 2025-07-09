@@ -10,4 +10,12 @@ import java.util.List;
 public interface ThemeRepository extends JpaRepository<ThemeEntity, Long> {
     @Query("SELECT t FROM ThemeEntity t WHERE t.id IN :themeIds")
     List<ThemeEntity> findAllById(@Param("themeIds") List<Long> themeIds);
+
+    ThemeEntity findFirstByIdNotInOrderByIdAsc(List<Long> publishedThemeIds);
+
+    ThemeEntity findFirstByOrderByIdAsc();
+
+    ThemeEntity findFirstByIdGreaterThanOrderByIdAsc(Long lastThemeId);
+
+    List<ThemeEntity> findAllByOrderByIdAsc();
 }

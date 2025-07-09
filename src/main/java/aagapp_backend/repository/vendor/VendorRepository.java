@@ -95,4 +95,6 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
                                               @Param("endOfWeek") ZonedDateTime endOfWeek);
 
     Optional<Object> findByReferralCode(String referralCode);
+
+    Optional<VendorEntity> findByMobileNumber(String mobileNumber);
 }

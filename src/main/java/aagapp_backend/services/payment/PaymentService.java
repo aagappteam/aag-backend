@@ -8,10 +8,7 @@ import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
-import aagapp_backend.enums.LeagueStatus;
-import aagapp_backend.enums.PaymentStatus;
-import aagapp_backend.enums.VendorLevelPlan;
-import aagapp_backend.enums.VendorStatus;
+import aagapp_backend.enums.*;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
@@ -129,7 +126,6 @@ public class PaymentService {
         List<PaymentEntity> expiredPayments = paymentRepository.findAllByExpiryAtBeforeAndStatus(
                 LocalDateTime.now(), PaymentStatus.ACTIVE
         );
-        System.out.println("Expiring subscription ID: ");
         for (PaymentEntity payment : expiredPayments) {
             try {
 
@@ -142,7 +138,33 @@ public class PaymentService {
                 if (vendor != null && vendor.getPrimary_email() != null) {
 
                     PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
-                    emailService.sendSubscriptionExpiredMail(vendor.getPrimary_email(), vendor.getFirst_name(), LocalDateTime.now(),planEntity.getPlanName(), payment.getAmount());
+                    if (!Constant.MOBILE_6306470701.equals(vendor.getMobileNumber())) {
+                        emailService.sendSubscriptionExpiredMail(
+                                vendor.getPrimary_email(),
+                                vendor.getFirst_name(),
+                                LocalDateTime.now(),
+                                planEntity.getPlanName(),
+                                payment.getAmount()
+                        );
+                    }
+
+                }
+
+
+                //  Create new subscription if this is the specific vendor
+                if (vendor != null && Constant.MOBILE_6306470701.equals(vendor.getMobileNumber())) {
+                    PaymentEntity newPayment = new PaymentEntity();
+                    newPayment.setVendorEntity(vendor);
+                    newPayment.setAmount(50000.0);
+                    newPayment.setPlanDuration("Monthly");
+                    newPayment.setPaymentType(PaymentType.CREDIT);
+                    newPayment.setStatus(PaymentStatus.ACTIVE);
+                    newPayment.setPlanId(5L); // Plan ID 5
+                    newPayment.setCreatedAt(LocalDateTime.now());
+                    newPayment.setExpiryAt(LocalDateTime.now().plusMonths(1));
+                    newPayment.setIsTest(true);
+
+                    paymentRepository.save(newPayment);
                 }
 
             } catch (Exception e) {

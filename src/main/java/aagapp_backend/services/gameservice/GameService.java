@@ -4,9 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.pricelogic.PriceConstant;
 import aagapp_backend.dto.*;
 import aagapp_backend.dto.game.GameResultRecordDTO;
-import aagapp_backend.entity.CustomCustomer;
-import aagapp_backend.entity.ThemeEntity;
-import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.*;
 import aagapp_backend.entity.game.*;
 
 import aagapp_backend.entity.league.League;
@@ -18,6 +16,8 @@ import aagapp_backend.enums.*;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.aagavailblegames.AagAvailbleGamesRepository;
+import aagapp_backend.repository.admin.CustomAdminRepository;
+import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.repository.game.*;
 
 import aagapp_backend.repository.league.LeagueRepository;
@@ -84,8 +84,17 @@ public class GameService {
 
     @Autowired
     private CommonService commonservice;
+
+    @Autowired
+    private ThemeRepository themeRepository;
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private CustomAdminRepository customAdminRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private GameResultRecordRepository gameResultRecordRepository;
@@ -1499,47 +1508,147 @@ public class GameService {
             query.setParameter("winner", winner);
         }
     }
-
-
-/*    @Scheduled(cron = "0 0 * * * *") // Run every hour
+    @Scheduled(cron = "0 0 0/4 * * *")
+    //    @Scheduled(cron = "*/2 * * * * *") // Runs every 2 seconds
     @Transactional
-    public void autoPublishNextGameForVendors() {
-        List<VendorEntity> vendors = vendorRepository.findByRole("ADMIN_VENDOR");
-
-        for (VendorEntity vendor : vendors) {
-            Long vendorId = vendor.getId();
-
-            // Fetch all available games
-            List<AagAvailableGames> availableGames = aagGameRepository.findAll();
-
-            for (AagAvailableGames gameMeta : availableGames) {
-                Long gameId = gameMeta.getId();
-
-                // Fetch all published theme IDs by this vendor for this game
-                List<Long> publishedThemeIds = gameRepository.findThemeIdsByVendorAndGame(vendorId, gameId);
-
-                // Find next unassigned theme
-                ThemeEntity nextTheme = themeRepository.findFirstByIdNotInOrderByIdAsc(publishedThemeIds);
-
-                if (nextTheme != null) {
-                    GameRequest request = new GameRequest();
-                    request.setFee(25.0); // Set default or logic-based fee
-                    request.setThemeId(nextTheme.getId());
-                    request.setMaxPlayersPerTeam(2);
-
-                    // Schedule 4 hours later from now
-                    ZonedDateTime scheduleTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusHours(4);
-                    request.setScheduledAt(scheduleTime);
-
-                    try {
-                        publishLudoGame(request, vendorId, gameId);
-                    } catch (Exception e) {
-                        System.out.println("Error publishing game for vendor: " + vendorId + " - " + e.getMessage());
-                    }
-                }
-            }
+    public void autoPublishForVendorMobile_6306470701() {
+        Optional<VendorEntity> vendorOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_6306470701);
+        if (vendorOpt.isEmpty()) {
+            System.out.println("❌ Vendor with mobile 6306470701 not found.");
+            return;
         }
-    }*/
+
+        VendorEntity vendor = vendorOpt.get();
+        Long vendorId = vendor.getService_provider_id();
+        System.out.println("✅ Vendor found: " + vendorId);
+
+        List<AagAvailableGames> availableGames = aagGameRepository.findAll();
+
+        for (AagAvailableGames gameMeta : availableGames) {
+            Long gameId = gameMeta.getId();
+            String gameName = gameMeta.getGameName();
+
+
+
+            List<Long> themeIdsForGame = gameMeta.getThemes().stream()
+                    .map(ThemeEntity::getId)
+                    .sorted()
+                    .toList();
+
+            if (themeIdsForGame.isEmpty()) {
+                System.out.println("⚠ No themes found for game: " + gameName);
+                continue;
+            }
+
+
+            // Get all previously published themes for this game & vendor
+            List<Long> publishedThemeIds = gameRepository.findThemeIdsByVendorAndGameAndStatuses(
+                    vendorId, gameId, List.of(GameStatus.ACTIVE)
+            );
+
+            for (Long themeId : themeIdsForGame) {
+                System.out.println("publishedThemeIds " + publishedThemeIds + themeId);
+
+                if (publishedThemeIds.contains(themeId)) {
+                    continue;
+                }
+
+                ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+                ZonedDateTime startOfDay = now.toLocalDate().atStartOfDay(now.getZone());
+                ZonedDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
+
+                Optional<Long> alreadyPublished = gameRepository.findThemeIdIfPublishedToday(
+                        vendorId, gameId, themeId, GameStatus.ACTIVE, startOfDay, endOfDay
+                );
+                if (alreadyPublished.isPresent()) {
+                    System.out.println("⏩ Theme " + themeId + " already published today for game " + gameId);
+                    continue;
+                }
+
+                // Prepare request
+                GameRequest request = new GameRequest();
+                request.setFee(25.0);
+                request.setThemeId(themeId);
+                request.setMinPlayersPerTeam(2);
+                request.setMaxPlayersPerTeam(2);
+
+                try {
+                   publishInstantGame(request, vendorId, gameId);
+                    System.out.println("✅ Published game " + gameId + " (" + gameName + ") with theme " + themeId + " for vendor " + vendorId);
+                    return;
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to publish game ID " + gameId + ": " + e.getMessage());
+                }
+
+                break;
+            }
+
+            System.out.println("🔁 No unpublished themes left for game ID: " + gameId + " (" + gameName + ")");
+        }
+    }
+
+    @Transactional
+    public Game publishInstantGame(GameRequest gameRequest, Long vendorId, Long existingGameId) {
+
+
+        VendorEntity vendor = em.find(VendorEntity.class, vendorId);
+        if (vendor == null || vendor.getStatus() != VendorStatus.ACTIVE) {
+            throw new BusinessException("Vendor is invalid or inactive", HttpStatus.BAD_REQUEST);
+        }
+
+        // 2. Validate Game Metadata
+        AagAvailableGames gameMeta = aagGameRepository.findById(existingGameId)
+                .orElseThrow(() -> new BusinessException("Game not found with ID: " + existingGameId, HttpStatus.NOT_FOUND));
+
+        if (!isGameAvailableById(existingGameId)) {
+            throw new BusinessException("Game is not available for publishing", HttpStatus.BAD_REQUEST);
+        }
+
+        // 3. Validate Theme
+        ThemeEntity theme = em.find(ThemeEntity.class, gameRequest.getThemeId());
+        if (theme == null) {
+            throw new BusinessException("Theme not found with ID: " + gameRequest.getThemeId(), HttpStatus.BAD_REQUEST);
+        }
+
+
+        Game game = new Game();
+        game.setVendorEntity(vendor);
+        game.setTheme(theme);
+        game.setName(gameMeta.getGameName());
+        game.setImageUrl(commonservice.resolveGameImageUrl(gameMeta, gameRequest.getThemeId()));
+        game.setAaggameid(existingGameId);
+        game.setFee(gameRequest.getFee());
+        game.setMove(gameRequest.getFee() > 10 ? Constant.TENMOVES : Constant.SIXTEENMOVES);
+        game.setMinPlayersPerTeam(gameRequest.getMinPlayersPerTeam());
+        game.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
+
+        // 5. Set as ACTIVE instantly
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        game.setStatus(GameStatus.ACTIVE);
+        game.setScheduledAt(now);
+        game.setEndDate(now.plusHours(4));
+        game.setCreatedDate(now);
+        game.setUpdatedDate(now);
+
+        // 6. Save Game
+        Game savedGame = gameRepository.save(game);
+
+/*        // 7. Create Initial Room
+        GameRoom room = createNewEmptyRoom(savedGame);
+        gameRoomRepository.save(room);*/
+
+        // 8. Generate Shareable Link
+        String shareLink = generateShareableLink(savedGame.getId(), vendorId);
+        savedGame.setShareableLink(shareLink);
+
+        // 9. Update vendor stats
+        vendor.setTotal_game_published((vendor.getTotal_game_published() == null ? 0 : vendor.getTotal_game_published()) + 1);
+        vendor.setPublishedLimit((vendor.getPublishedLimit() == null ? 0 : vendor.getPublishedLimit()) + 1);
+
+        return gameRepository.save(savedGame);
+    }
+
+
 
 
 
