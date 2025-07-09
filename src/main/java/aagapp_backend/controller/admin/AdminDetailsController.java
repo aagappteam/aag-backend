@@ -230,6 +230,7 @@ public class AdminDetailsController {
             VendorEntity v = ns.getVendor();
             String name = v != null ? v.getFirst_name() + " " + v.getLast_name() : "N/A";
             String email = v != null ? v.getPrimary_email() : "N/A";
+            String mobileNumber = v != null ? v.getMobileNumber() : "N/A";
             String formattedDate = ns.getCreatedDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
             return new NotificationDTOAdmin(
@@ -241,7 +242,8 @@ public class AdminDetailsController {
                     formattedDate,
                     ns.getAmount(),
                     name,
-                    email
+                    email,
+                    mobileNumber
             );
         }).toList();
 
@@ -481,13 +483,13 @@ public class AdminDetailsController {
 
         // Writer setup
         PrintWriter writer = response.getWriter();
-        writer.println("ID,Influencer ID,Month,Recharge Amount,Multiplier,Earned Amount,Max Return,Vendor Name,Mobile");
+        writer.println("ID,Influencer ID,Month,Recharge Amount,Multiplier,Earned Amount,Max Return,Vendor Name,Mobile,Email");
 
         for (InfluencerMonthlyEarning e : earnings) {
             VendorEntity vendor = vendorRepository.findByServiceProviderId(e.getInfluencerId());
 
             writer.printf(
-                    "%d,%d,%s,%s,%d,%s,%s,%s,%s%n",
+                    "%d,%d,%s,%s,%d,%s,%s,%s,%s,%s%n",
                     e.getId(),
                     e.getInfluencerId(),
                     e.getMonthYear(),
@@ -496,7 +498,8 @@ public class AdminDetailsController {
                     e.getEarnedAmount(),
                     e.getMaxReturnAmount(),
                     vendor != null ? vendor.getName() : "",
-                    vendor != null ? vendor.getMobileNumber() : ""
+                    vendor != null ? vendor.getMobileNumber() : "",
+                    vendor != null ? vendor.getPrimary_email() : ""
             );
         }
 

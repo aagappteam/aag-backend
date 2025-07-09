@@ -346,7 +346,8 @@ public class DashboardAdmin {
                     formatted,
                     ns.getAmount(),
                     name,
-                    email
+                    email,
+                    v.getMobileNumber()
             );
         }).toList();
 
@@ -611,12 +612,14 @@ public class DashboardAdmin {
 
                 String displayName = "N/A";
                 String displayEmail = "N/A";
+                String displayMobile = "N/A";
 
                 if (role == null || role.trim().isEmpty()) {
                     // Vendor columns at index 8,9,10
                     String vendorFirstName = row[8] != null ? (String) row[8] : null;
                     String vendorLastName = row[9] != null ? (String) row[9] : null;
                     String vendorEmail = row[10] != null ? (String) row[10] : null;
+                    String mobile = row[11] != null ? (String) row[11] : null;
                     displayName = ((vendorFirstName != null ? vendorFirstName : "") + " " + (vendorLastName != null ? vendorLastName : "")).trim();
                     displayEmail = vendorEmail != null ? vendorEmail : "N/A";
                 } else {
@@ -625,6 +628,7 @@ public class DashboardAdmin {
                     String customerEmail = row[9] != null ? (String) row[9] : null;
                     displayName = customerName != null ? customerName : "N/A";
                     displayEmail = customerEmail != null ? customerEmail : "N/A";
+                    String mobile = row[10] != null ? (String) row[10] : null;
                 }
 
                 NotificationDTOAdmin dto = new NotificationDTOAdmin(
@@ -636,7 +640,8 @@ public class DashboardAdmin {
                         formattedDate,
                         amountValue,
                         displayName,
-                        displayEmail
+                        displayEmail,
+                        displayMobile
                 );
                 resultDtoList.add(dto);
             }
