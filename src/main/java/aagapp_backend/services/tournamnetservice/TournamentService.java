@@ -770,6 +770,8 @@ public class TournamentService {
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
             notification.setCustomerId(winner.getCustomer().getId());
+            notification.setName(winner.getCustomer().getName()!=null?winner.getCustomer().getName():"N/A");
+
             notificationRepository.save(notification);
 
             String fcmToken = tournament.getVendorEntity().getFcmToken();
@@ -1995,6 +1997,8 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
+            notification.setName(winner.getPlayer().getCustomer().getName()!=null?winner.getPlayer().getCustomer().getName():"N/A");
+
             notificationRepository.save(notification);
 
             Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
@@ -2465,6 +2469,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 notification.setDescription("Round Prize");
                 notification.setRole("Customer");
                 notification.setCustomerId(readyPlayers.get(0).getPlayer().getPlayerId());
+                notification.setName(readyPlayers.get(0).getPlayer().getCustomer().getName()!=null?readyPlayers.get(0).getPlayer().getCustomer().getName():"N/A");
                 notificationRepository.save(notification);
                 return "🏁 Only one player remains. Tournament finished.";
             }

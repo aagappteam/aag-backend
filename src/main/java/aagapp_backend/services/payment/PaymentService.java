@@ -22,6 +22,7 @@ import aagapp_backend.services.EmailService;
 import aagapp_backend.services.NotificationService;
 
 import aagapp_backend.services.exception.BusinessException;
+import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
@@ -38,6 +39,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,8 +59,13 @@ import java.util.regex.Pattern;
 @Service
 public class PaymentService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
+    @Autowired
+    private EmailService emailService;
 
+    @Autowired
+    private ExceptionHandlingImplement exceptionHandlingImplement;
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
     private PaymentRepository paymentRepository;
     private CommonService commonService;
     private InfluencerMonthlyEarningRepository earningRepository;
@@ -69,8 +76,6 @@ public class PaymentService {
     private NotificationRepository notificationRepository;
     private JavaMailSender mailSender;
 
-    @Autowired
-    private EmailService emailService;
 
     @Autowired
     public void setPaymentRepository(PaymentRepository paymentRepository) {
@@ -117,6 +122,40 @@ public class PaymentService {
     public void setMailSender(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
+
+//    @Scheduled(cron = "0 0 * * * *") // Runs every hour
+ @Scheduled(cron = "*/1 * * * * *") // For testing: every second
+    public void expireOldSubscriptions() {
+        List<PaymentEntity> expiredPayments = paymentRepository.findAllByExpiryAtBeforeAndStatus(
+                LocalDateTime.now(), PaymentStatus.ACTIVE
+        );
+        System.out.println("Expiring subscription ID: ");
+        for (PaymentEntity payment : expiredPayments) {
+            try {
+
+                System.out.println("Expiring subscription ID: " + payment.getId() + " at " + LocalDateTime.now());
+                payment.setStatus(PaymentStatus.EXPIRED);
+                payment.setExpiredAt(LocalDateTime.now());
+                paymentRepository.save(payment);
+
+                VendorEntity vendor = payment.getVendorEntity();
+                if (vendor != null && vendor.getPrimary_email() != null) {
+
+                    PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
+                    emailService.sendSubscriptionExpiredMail(vendor.getPrimary_email(), vendor.getFirst_name(), LocalDateTime.now(),planEntity.getPlanName(), payment.getAmount());
+                }
+
+            } catch (Exception e) {
+                exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                System.err.println("Failed to expire subscription ID: " + payment.getId() +
+                        " | Error: " + e.getMessage());
+            }
+        }
+
+        System.out.println("Subscription expiry task completed at " + LocalDateTime.now());
+    }
+
+
 
 
     public List<PaymentEntity> findActivePlansByVendorId(Long vendorId) {
@@ -244,6 +283,7 @@ public class PaymentService {
 */
         notification.setDescription("Plan purchased"); // Example NotificationType for a successful
         notification.setAmount(paymentRequest.getAmount());
+        notification.setName(existingVendor.getFirst_name() != null ? existingVendor.getFirst_name() : "N/A" +existingVendor.getFirst_name()!=null ? existingVendor.getLast_name() : "N/A");
         notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
 
         notificationRepository.save(notification);
@@ -565,9 +605,8 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
 
     List<PaymentEntity> activePlanOptional = getActivePlanByVendorId(vendorId);
 
-    System.out.println("Active Plan Optional: " + activePlanOptional);
     if (activePlanOptional.isEmpty()) {
-        return Optional.of(new PaymentDashboardDTO(
+        return Optional.of(new PaymentDashboardDTO("NO",
                 "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
         ));
     }
@@ -575,7 +614,6 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
     PaymentEntity paymentEntity = activePlanOptional.get(0);
     Long paymentId = paymentEntity.getId(); // NOT planId, use actual PaymentEntity ID
 
-    System.out.println("Payment ID: " + paymentId);
     Optional<PlanEntity> planEntityOptional = planRepository.findById(paymentEntity.getPlanId());
     String dailyLimitString = publishedLimit + "/" + dailyLimit;
 
@@ -614,6 +652,7 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
             int totalBoxes = 10;
 
             return new PaymentDashboardDTO(
+                    "YES",
                     planEntity.getPlanName(),
                     planEntity.getPlanVariant(),
                     dailyPercentage != null ? dailyPercentage + "x" : "0x",
@@ -626,7 +665,7 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
                     totalBoxes
             );
         }).orElseGet(() -> new PaymentDashboardDTO(
-                "NA", "NA", "0x", publishedLimit + "/" + 0, paymentId, 0D, "0x", 0, 0, 10
+                "NO","NA", "NA", "0x", publishedLimit + "/" + 0, paymentId, 0D, "0x", 0, 0, 10
         )));
 }
 

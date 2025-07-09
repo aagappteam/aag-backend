@@ -95,4 +95,9 @@ public class PaymentEntity {
     @Column(name = "transaction_date")
     private LocalDateTime transactionDate;
 
+
+    @Column(name = "expired_at", updatable = true)
+    private LocalDateTime expiredAt;
+
+
 }
