@@ -3,7 +3,10 @@ package aagapp_backend.controller.payment;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
+import aagapp_backend.entity.payment.PlanUpgradeRequest;
+import aagapp_backend.enums.RequestStatus;
 import aagapp_backend.enums.VendorLevelPlan;
+import aagapp_backend.repository.payment.PaymentPlanUpgradeRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PlanService;
@@ -14,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +29,9 @@ public class PlanController {
 
     @Autowired
     EntityManager entityManager;
+
+    @Autowired
+    private PaymentPlanUpgradeRepository paymentPlanUpgradeRepository;
 
     @Autowired
     private PlanService planService;
@@ -114,13 +121,6 @@ public class PlanController {
 
             // Fetch current plan of the vendor if vendorId is provided
             PlanEntity currentPlan = null;
-            /*if (vendorId != null) {
-                VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
-                if (vendor != null) {
-                    PaymentEntity payment = vendor.getPayments()
-                    currentPlan = vendor.getVendorLevelPlan(); // Assuming this fetches the vendor's current plan
-                }
-            }*/
 
             if (vendorId != null) {
                 VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
@@ -171,6 +171,60 @@ public class PlanController {
         }
 
     }
+
+//    send payment  request to admin
+    @PostMapping("/request-plan-upgrade")
+    public ResponseEntity<?> requestPlanUpgrade(@RequestBody Map<String, Object> payload) {
+
+        try {
+
+            if (!payload.containsKey("vendorId") || payload.get("vendorId") == null) {
+                return ResponseService.generateErrorResponse("vendorId is required", HttpStatus.BAD_REQUEST);
+
+            }
+            if (!payload.containsKey("requestedPlanId") || payload.get("requestedPlanId") == null) {
+                return ResponseService.generateErrorResponse("requestedPlanId is required", HttpStatus.BAD_REQUEST);
+
+            }
+
+            Long vendorId = Long.parseLong(payload.get("vendorId").toString());
+            Long requestedPlanId = Long.parseLong(payload.get("requestedPlanId").toString());
+            VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
+            if (vendor == null) {
+                return ResponseService.generateErrorResponse("Vendor not found", HttpStatus.NOT_FOUND);
+            }
+
+            boolean hasPending = paymentPlanUpgradeRepository.existsByVendorIdAndStatus(vendorId, RequestStatus.PENDING);
+            if (hasPending) {
+                return ResponseService.generateErrorResponse("An upgrade request is already pending.", HttpStatus.CONFLICT);
+
+            }
+
+            PlanEntity requestedPlan = planService.getPlanById(requestedPlanId);
+            if (requestedPlan == null) {
+                return ResponseService.generateErrorResponse("Requested plan not found", HttpStatus.NOT_FOUND);
+            }
+
+            PlanUpgradeRequest request = new PlanUpgradeRequest();
+            request.setVendorId(vendorId);
+            request.setRequestedPlanId(requestedPlanId);
+            request.setName(vendor.getFirst_name()!=null?vendor.getFirst_name():"N/A" + " " + (vendor.getLast_name()!=null?vendor.getLast_name():"N/A"));
+            request.setEmail(vendor.getPrimary_email());
+            request.setRequestedPlanName(requestedPlan.getPlanName());
+            request.setStatus(RequestStatus.PENDING);
+            request.setRequestDate(LocalDateTime.now());
+
+            paymentPlanUpgradeRepository.save(request);
+
+            return ResponseService.generateSuccessResponse("Plan upgrade request submitted successfully!", request, HttpStatus.OK);
+
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error while submitting upgrade request: " + e.getMessage());
+        }
+    }
+
 
 
 }
