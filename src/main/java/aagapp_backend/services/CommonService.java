@@ -158,6 +158,7 @@ public class CommonService {
         notification.setCustomerId(customer.getId());
         notification.setDescription("Wallet balance deducted");
         notification.setAmount(gameAmount.doubleValue());
+        notification.setName(customer.getName());
         notification.setDetails(description);
         notification.setRole("Customer");
 

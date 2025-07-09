@@ -8,6 +8,8 @@ import lombok.Setter;
 @Setter
 public class PaymentDashboardDTO {
 
+
+    private String purchased;
     private String planName;
     private String planVariant;
     private String returnPercentage;
@@ -20,8 +22,9 @@ public class PaymentDashboardDTO {
     private Integer filledBoxes;
     private Integer totalBoxes;
 
-    public PaymentDashboardDTO(String planName, String planVariant, String returnPercentage, String dailyLimit, Long id, Double price,
+    public PaymentDashboardDTO(String purchased ,String planName, String planVariant, String returnPercentage, String dailyLimit, Long id, Double price,
                                String returnX, Integer progressPercent, Integer filledBoxes, Integer totalBoxes) {
+        this.purchased = purchased;
         this.planName = planName;
         this.planVariant = planVariant;
         this.returnPercentage = returnPercentage;

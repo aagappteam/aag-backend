@@ -142,7 +142,8 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
             @RequestParam(required = false) KycStatus kycStatus,
             @RequestParam(required = false) VendorStatus userStatus,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate) {
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate,
+            @RequestParam(required = false) String search ) {
         try {
             if (customerId != null) {
                 CustomCustomer customCustomer = entityManager.find(CustomCustomer.class, customerId);
@@ -151,7 +152,7 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
 
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
             Specification<CustomCustomer> spec = CustomCustomerSpecification.filterCustomers(
-                    mobileNumber, name, email, kycStatus, userStatus, startDate, endDate
+                    mobileNumber, name, email, kycStatus, userStatus, startDate, endDate, search
             );
 
             Page<CustomCustomer> resultPage = customCustomerRepository.findAll(spec, pageable);

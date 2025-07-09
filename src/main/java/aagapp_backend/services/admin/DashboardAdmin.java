@@ -649,7 +649,8 @@ public class DashboardAdmin {
             String description,
             String details,
             int page,
-            int size
+            int size,
+            String search
     ) {
         Specification<Notification> spec = Specification
                 .where(NotificationSpecifications.hasRole(role))
