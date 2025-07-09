@@ -32,16 +32,15 @@ import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.gameservice.GameService;
+import aagapp_backend.spec.TournamentSpecification;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.*;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -603,6 +602,18 @@ public class TournamentService {
         }
     }
 
+
+
+
+    public Page<Tournament> getFilteredTournaments(
+            Integer page, Integer size, Sort sort,
+            Long id, Long vendorId, String name, BigDecimal totalPrizePool, TournamentStatus status,
+            String vendorName, String vendorEmail, String vendorMobile
+    ) {
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Specification<Tournament> spec = TournamentSpecification.withFilters(id, vendorId, name, totalPrizePool, status, vendorName, vendorEmail, vendorMobile);
+        return tournamentRepository.findAll(spec, pageable);
+    }
 
 
 /*    @Transactional

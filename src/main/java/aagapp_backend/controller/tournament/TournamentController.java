@@ -124,7 +124,45 @@ public class TournamentController {
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-//    get tuournment by id
+
+
+
+
+    @GetMapping("/get-tournaments-by-admin")
+    public ResponseEntity<?> getFilteredTournaments(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdDate") String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = "desc") String sortDir,
+            @RequestParam(value = "id", required = false) Long id,
+            @RequestParam(value = "vendorId", required = false) Long vendorId,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "totalPrizePool", required = false) BigDecimal totalPrizePool,
+            @RequestParam(value = "status", required = false) TournamentStatus status,
+            @RequestParam(value = "vendorName", required = false) String vendorName,
+            @RequestParam(value = "vendorEmail", required = false) String vendorEmail,
+            @RequestParam(value = "vendorMobile", required = false) String vendorMobile
+    ) {
+        try {
+            Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+            Page<Tournament> tournamentPage = tournamentService.getFilteredTournaments(page, size, sort, id, vendorId, name, totalPrizePool, status, vendorName, vendorEmail, vendorMobile);
+
+
+            Long scheduledCount = tournamentService.getScheduledCount();
+            Long activeCount = tournamentService.getActiveCount();
+            Long ExpiredCount = tournamentService.getExpiredCount();
+
+            return responseService.generateResponseForGame("Tournaments fetched successfully", tournamentPage.getContent(), tournamentPage.getTotalElements(), scheduledCount,activeCount,ExpiredCount,HttpStatus.OK);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "message", "Error occurred: " + e.getMessage()
+            ));
+        }
+    }
+
+
+    //    get tuournment by id
     @GetMapping("/get-tournament-by-id/{id}")
     public ResponseEntity<?> getTournamentById(@PathVariable Long id) {
         try {

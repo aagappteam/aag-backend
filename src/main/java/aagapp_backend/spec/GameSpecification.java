@@ -11,7 +11,7 @@ import java.util.List;
 
 public class GameSpecification {
 
-    public static Specification<Game> filterGames(String status, String gamename, String vendorName, Long vendorId,
+    public static Specification<Game> filterGames(String status, String gamename, String vendorName, Long vendorId, String vendorEmail, String vendorMobile,
                                                   ZonedDateTime startDate, ZonedDateTime endDate) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -30,6 +30,14 @@ public class GameSpecification {
 
             if (vendorName != null && !vendorName.isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("vendorEntity").get("first_name")), "%" + vendorName.toLowerCase() + "%"));
+            }
+
+            if (vendorEmail != null) {
+                predicates.add(cb.like(cb.lower(root.get("vendorEntity").get("primary_email")), "%" + vendorEmail.toLowerCase() + "%"));
+            }
+
+            if (vendorMobile != null) {
+                predicates.add(cb.like(cb.lower(root.get("vendorEntity").get("mobileNumber")), "%" + vendorMobile.toLowerCase() + "%"));
             }
 
             if (startDate != null && endDate != null) {

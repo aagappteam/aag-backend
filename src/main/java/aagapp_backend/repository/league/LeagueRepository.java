@@ -8,6 +8,7 @@ import aagapp_backend.enums.LeagueStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,7 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface LeagueRepository extends JpaRepository<League, Long> {
+public interface LeagueRepository extends JpaRepository<League, Long>, JpaSpecificationExecutor<League> {
 
 
 //    @Query("SELECT v FROM VendorEntity v WHERE v.service_provider_id = :vendorId")

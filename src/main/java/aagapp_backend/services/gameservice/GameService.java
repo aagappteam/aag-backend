@@ -902,11 +902,11 @@ public class GameService {
         }
     }
 
-    public Page<GetGameResponseDTO> getAllGamesByAdmin(String status, Long vendorId, String gamename, String vendorName,
+    public Page<GetGameResponseDTO> getAllGamesByAdmin(String status, Long vendorId, String email, String mobileNumber, String gamename, String vendorName,
                                                 ZonedDateTime startDateStr, ZonedDateTime endDateStr, Pageable pageable) {
         try {
 
-            Specification<Game> spec = GameSpecification.filterGames(status, gamename, vendorName, vendorId, startDateStr, endDateStr);
+            Specification<Game> spec = GameSpecification.filterGames(status, gamename, vendorName, vendorId,email, mobileNumber, startDateStr, endDateStr);
             Page<Game> gamePage = gameRepository.findAll(spec, pageable);
 
             List<GetGameResponseDTO> gameResponseDTOs = gamePage.stream()
