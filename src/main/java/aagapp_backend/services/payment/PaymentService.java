@@ -283,7 +283,7 @@ public class PaymentService {
 */
         notification.setDescription("Plan purchased"); // Example NotificationType for a successful
         notification.setAmount(paymentRequest.getAmount());
-        notification.setName(existingVendor.getFirst_name()+ " " +existingVendor.getFirst_name());
+        notification.setName(existingVendor.getFirst_name() != null ? existingVendor.getFirst_name() : "N/A" +existingVendor.getFirst_name()!=null ? existingVendor.getLast_name() : "N/A");
         notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
 
         notificationRepository.save(notification);
