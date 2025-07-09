@@ -2,6 +2,7 @@ package aagapp_backend.controller.admin.vendorsubmission;
 
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.dto.TournamentUpdateRequest;
+import aagapp_backend.dto.WithdrawalRequestResponseDTO;
 import aagapp_backend.dto.ticketdto.TicketResponseDto;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -704,9 +705,20 @@ public class AdminReviewController {
                 .and(WithdrawalRequestSpecification.customerMobileNumberContains(customerMobileNumber))
                 .and(WithdrawalRequestSpecification.customerStateEquals(customerState));
 
+        Long totalCount = customerWithdrawalRequestRepository.count(spec);
+        Long pendingCount = customerWithdrawalRequestRepository.countByStatus(WithdrawalStatus.PENDING);
+        Long rejectedCount = customerWithdrawalRequestRepository.countByStatus(WithdrawalStatus.REJECTED);
+        Long paidCount = customerWithdrawalRequestRepository.countByStatus(WithdrawalStatus.PAID);
+
         Page<CustomerWithdrawalRequest> resultPage = customerWithdrawalRequestRepository.findAll(spec, pageable);
 
-        return ResponseService.generateSuccessResponseWithCount("Withdrawal requests fetched successfully", resultPage.getContent(), resultPage.getTotalElements(), HttpStatus.OK);
+        List<WithdrawalRequestResponseDTO> dtoList = resultPage
+                .stream()
+                .map(WithdrawalRequestResponseDTO::new)
+                .toList();
+
+        return ResponseService.generateSuccessResponseForWithdrwalRequest("Withdrawal requests fetched successfully", dtoList, totalCount ,paidCount,rejectedCount,pendingCount, HttpStatus.OK);
+
     }
 
 

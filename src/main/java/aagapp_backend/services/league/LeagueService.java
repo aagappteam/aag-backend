@@ -747,12 +747,13 @@ public class LeagueService {
             String vendorLastName,
             String vendorMobileNumber,
             String vendorPrimaryEmail,
+            String search,
             Pageable pageable
     ) {
         Specification<League> spec = LeagueSpecification.withFilters(
                 name, gameName, challengingVendorId, challengingVendorName, fee, move,
                 status, vendorId, opponentVendorId, opponentVendorName,
-                vendorFirstName, vendorLastName, vendorMobileNumber, vendorPrimaryEmail
+                vendorFirstName, vendorLastName, vendorMobileNumber, vendorPrimaryEmail, search
         );
 
         return leagueRepository.findAll(spec, pageable);

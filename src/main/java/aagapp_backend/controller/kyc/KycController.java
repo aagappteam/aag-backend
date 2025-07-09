@@ -163,6 +163,8 @@ public ResponseEntity<?> getAllKycs(
         @RequestParam(required = false) String aadharNo,
         @RequestParam(required = false) String panNo,
         @RequestParam(required = false) String name,
+        @RequestParam(required = false) String email,
+        @RequestParam(required = false) String search,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date createdAfter,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date createdBefore,
         @RequestParam(required = false) KycStatus kycStatus,
@@ -181,7 +183,9 @@ public ResponseEntity<?> getAllKycs(
                 .and(KycSpecification.createdAfter(createdAfter))
                 .and(KycSpecification.createdBefore(createdBefore))
                 .and(KycSpecification.hasStatus(kycStatus))
-                .and(KycSpecification.hasName(name));
+                .and(KycSpecification.hasName(name))
+                .and(KycSpecification.hasEmail(email))
+                .and(KycSpecification.hasSearch(search));
 
         Page<KycEntity> kycPage = kycRepository.findAll(spec, pageable);
 
@@ -190,9 +194,9 @@ public ResponseEntity<?> getAllKycs(
                 .collect(Collectors.toList());
 
         long totalCount = kycRepository.count(spec);
-        long pendingCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.PENDING)));
-        long rejectedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.REJECTED)));
-        long approvedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.VERIFIED)));
+        long pendingCount = kycRepository.countByKycStatus(KycStatus.PENDING);
+        long rejectedCount = kycRepository.countByKycStatus(KycStatus.REJECTED);
+        long approvedCount = kycRepository.countByKycStatus(KycStatus.VERIFIED);
 
         return ResponseService.generateSuccessResponseForWithdrwalRequest(
                 "KYC records retrieved successfully",

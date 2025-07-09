@@ -30,5 +30,7 @@ public interface CustomerWithdrawalRequestRepository extends JpaRepository<Custo
                                                @Param("end") LocalDateTime end);
 
 
+    Long countByStatus(WithdrawalStatus withdrawalStatus);
+
 
 }

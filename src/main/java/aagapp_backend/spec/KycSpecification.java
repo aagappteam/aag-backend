@@ -2,6 +2,7 @@ package aagapp_backend.spec;
 
 import aagapp_backend.entity.kyc.KycEntity;
 import aagapp_backend.enums.KycStatus;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Date;
@@ -52,5 +53,25 @@ public class KycSpecification {
         return (root, query, builder) ->
                 (name == null || name.isEmpty()) ? null : builder.like(builder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
     }
+
+    public static Specification<KycEntity> hasEmail(String email) {
+        return (root, query, builder) ->
+                (email == null || email.isEmpty()) ? null : builder.equal(root.get("email"), email);
+    }
+
+    public static Specification<KycEntity> hasSearch(String search) {
+        return (root, query, cb) -> {
+            if (search == null || search.trim().isEmpty()) return null;
+
+            String keyword = "%" + search.trim().toLowerCase() + "%";
+
+            Predicate nameMatch = cb.like(cb.lower(root.get("name")), keyword);
+            Predicate emailMatch = cb.like(cb.lower(root.get("email")), keyword);
+            Predicate mobileMatch = cb.like(cb.lower(root.get("mobileNumber")), keyword);
+
+            return cb.or(nameMatch, emailMatch, mobileMatch);
+        };
+    }
+
 
 }

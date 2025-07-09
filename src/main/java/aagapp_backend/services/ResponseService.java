@@ -172,4 +172,17 @@ public class ResponseService {
 
 
 
+//    public static ResponseEntity<?> generateSuccessResponseForWithdrwalRequest(String message, List<?> data, Long count, Long approvedCount,Long rejectedCount,Long pendingCount, HttpStatus status) {
+//        Map<String, Object> response = new LinkedHashMap<>();
+//        response.put("message", message);
+//        response.put("data", data);
+//        response.put("totalCount", count);
+//        response.put("approvedCount", approvedCount);
+//        response.put("rejectedCount", rejectedCount);
+//        response.put("pendingCount", pendingCount);
+//        response.put("status", status);
+//        response.put("status_code", status.value());
+//        return new ResponseEntity<>(response, status);
+//    }
+
 }
