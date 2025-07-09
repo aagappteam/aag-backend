@@ -3,7 +3,10 @@ package aagapp_backend.controller.payment;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
+import aagapp_backend.entity.payment.PlanUpgradeRequest;
+import aagapp_backend.enums.RequestStatus;
 import aagapp_backend.enums.VendorLevelPlan;
+import aagapp_backend.repository.payment.PaymentPlanUpgradeRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PlanService;
@@ -14,10 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @RestController
 @RequestMapping("/plans")
@@ -25,6 +26,9 @@ public class PlanController {
 
     @Autowired
     EntityManager entityManager;
+
+    @Autowired
+    private PaymentPlanUpgradeRepository paymentPlanUpgradeRepository;
 
     @Autowired
     private PlanService planService;
@@ -103,7 +107,10 @@ public class PlanController {
             @RequestParam(required = false) Long vendorId) {
 
         try {
+            Map<String, Object> activePlanMap = null;
+
             List<PlanEntity> planEntities;
+            PlanUpgradeRequest activePlanUpgradeRequest = null;
 
             // Fetch plans based on variant (Monthly/Yearly) or all
             if (planVariant != null && !planVariant.isEmpty()) {
@@ -114,13 +121,6 @@ public class PlanController {
 
             // Fetch current plan of the vendor if vendorId is provided
             PlanEntity currentPlan = null;
-            /*if (vendorId != null) {
-                VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
-                if (vendor != null) {
-                    PaymentEntity payment = vendor.getPayments()
-                    currentPlan = vendor.getVendorLevelPlan(); // Assuming this fetches the vendor's current plan
-                }
-            }*/
 
             if (vendorId != null) {
                 VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
@@ -132,7 +132,6 @@ public class PlanController {
                             .stream()
                             .filter(payment -> {
                                 String status = String.valueOf(payment.getStatus());
-                                System.out.println("Checking Payment ID: " + payment.getId() + ", Status: " + status);
                                 return status != null && "ACTIVE".equalsIgnoreCase(status);
                             })
                             .findFirst();
@@ -143,13 +142,45 @@ public class PlanController {
                         currentPlan = planService.getPlanById(planId); //
                         // Retrieve plan details using planId
                     }
+
+
+                    Optional<PlanUpgradeRequest> approvedUpgrade = paymentPlanUpgradeRepository
+                            .findTopByVendorIdAndStatusOrderByApprovedDateDesc(vendorId, RequestStatus.APPROVED);
+
+
+                    if (approvedUpgrade.isPresent()) {
+                        PlanUpgradeRequest approvedRequest = approvedUpgrade.get();
+
+                        activePlanMap = new HashMap<>();
+                        activePlanMap.put("requestedPlanId", approvedRequest.getRequestedPlanId());
+                        activePlanMap.put("requestedPlanName", approvedRequest.getRequestedPlanName());
+
+                    } else if (vendor.getPayments() != null && !vendor.getPayments().isEmpty()) {
+                        // Fallback to latest payment if no approved request exists
+                        Optional<PaymentEntity> latestPayment = vendor.getPayments().stream()
+                                .sorted(Comparator.comparing(PaymentEntity::getCreatedAt).reversed())
+                                .findFirst();
+
+                        if (latestPayment.isPresent()) {
+                            PaymentEntity payment = latestPayment.get();
+                            PlanEntity fallbackPlan = planService.getPlanById(payment.getPlanId());
+
+                            activePlanMap = new HashMap<>();
+                            activePlanMap.put("requestedPlanId", payment.getPlanId());
+                            activePlanMap.put("requestedPlanName", fallbackPlan != null ? fallbackPlan.getPlanName() : null);
+                        }
+                    }
                 }
+
+
+
             }
 
             // Create response with all plans and current vendor plan
             Map<String, Object> response = new HashMap<>();
             response.put("allPlans", planEntities);
             response.put("currentPlan", currentPlan);
+            response.put("activePlanUpgradeRequest", activePlanMap);
 
             return ResponseService.generateSuccessResponse("All Plans fetched successfully!", response, HttpStatus.OK);
 
@@ -171,6 +202,60 @@ public class PlanController {
         }
 
     }
+
+//    send payment  request to admin
+    @PostMapping("/request-plan-upgrade")
+    public ResponseEntity<?> requestPlanUpgrade(@RequestBody Map<String, Object> payload) {
+
+        try {
+
+            if (!payload.containsKey("vendorId") || payload.get("vendorId") == null) {
+                return ResponseService.generateErrorResponse("vendorId is required", HttpStatus.BAD_REQUEST);
+
+            }
+            if (!payload.containsKey("requestedPlanId") || payload.get("requestedPlanId") == null) {
+                return ResponseService.generateErrorResponse("requestedPlanId is required", HttpStatus.BAD_REQUEST);
+
+            }
+
+            Long vendorId = Long.parseLong(payload.get("vendorId").toString());
+            Long requestedPlanId = Long.parseLong(payload.get("requestedPlanId").toString());
+            VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
+            if (vendor == null) {
+                return ResponseService.generateErrorResponse("Vendor not found", HttpStatus.NOT_FOUND);
+            }
+
+            boolean hasPending = paymentPlanUpgradeRepository.existsByVendorIdAndStatus(vendorId, RequestStatus.PENDING);
+            if (hasPending) {
+                return ResponseService.generateErrorResponse("An upgrade request is already pending.", HttpStatus.CONFLICT);
+
+            }
+
+            PlanEntity requestedPlan = planService.getPlanById(requestedPlanId);
+            if (requestedPlan == null) {
+                return ResponseService.generateErrorResponse("Requested plan not found", HttpStatus.NOT_FOUND);
+            }
+
+            PlanUpgradeRequest request = new PlanUpgradeRequest();
+            request.setVendorId(vendorId);
+            request.setRequestedPlanId(requestedPlanId);
+            request.setName(vendor.getFirst_name()!=null?vendor.getFirst_name():"N/A" + " " + (vendor.getLast_name()!=null?vendor.getLast_name():"N/A"));
+            request.setEmail(vendor.getPrimary_email());
+            request.setRequestedPlanName(requestedPlan.getPlanName());
+            request.setStatus(RequestStatus.PENDING);
+            request.setRequestDate(LocalDateTime.now());
+
+            paymentPlanUpgradeRepository.save(request);
+
+            return ResponseService.generateSuccessResponse("Plan upgrade request submitted successfully!", request, HttpStatus.OK);
+
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error while submitting upgrade request: " + e.getMessage());
+        }
+    }
+
 
 
 }

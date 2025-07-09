@@ -10,16 +10,16 @@ import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.payment.PaymentEntity;
+import aagapp_backend.entity.payment.PlanUpgradeRequest;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.entity.withdrawrequest.CustomerWithdrawalRequest;
-import aagapp_backend.enums.TicketEnum;
-import aagapp_backend.enums.VendorStatus;
-import aagapp_backend.enums.WithdrawalStatus;
-import aagapp_backend.enums.WithdrawalType;
+import aagapp_backend.enums.*;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
+import aagapp_backend.repository.payment.PaymentPlanUpgradeRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
@@ -35,6 +35,7 @@ import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import aagapp_backend.spec.WithdrawalRequestSpecification;
+import jakarta.persistence.criteria.Expression;
 import jakarta.validation.Valid;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,6 +99,9 @@ public class AdminReviewController {
 
     @Autowired
     private WalletRepository walletRepository;
+
+    @Autowired
+    private PaymentPlanUpgradeRepository paymentPlanUpgradeRepository;
 
     private AdminReviewService reviewService;
     private ExceptionHandlingImplement exceptionHandling;
@@ -777,6 +781,147 @@ public class AdminReviewController {
     }
     private String safe(String val) {
         return val == null ? "" : val.replace(",", " "); // avoid breaking CSV
+    }
+    @GetMapping("/get-all-plan-upgrade-requests")
+    public ResponseEntity<?> getAllPlanUpgradeRequests(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long vendorId,
+            @RequestParam(required = false) String requestedPlanName,
+
+            @RequestParam(required = false) Long requestedPlanId,
+            @RequestParam(required = false) RequestStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate requestDate
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "requestDate"));
+
+            Specification<PlanUpgradeRequest> spec = Specification.where(null);
+
+            if (search != null && !search.isBlank()) {
+                String keyword = "%" + search.toLowerCase() + "%";
+                spec = spec.and((root, query, cb) -> {
+                    Expression<String> vendorIdStr = cb.concat("", root.get("vendorId").as(String.class));
+                    return cb.or(
+                            cb.like(cb.lower(root.get("name")), keyword),
+                            cb.like(cb.lower(root.get("email")), keyword),
+                            cb.like(cb.lower(vendorIdStr), keyword)
+                    );
+                });
+            }
+
+
+            if (vendorId != null) {
+                spec = spec.and((root, query, cb) -> cb.equal(root.get("vendorId"), vendorId));
+            }
+
+            if (requestedPlanId != null) {
+                spec = spec.and((root, query, cb) -> cb.equal(root.get("requestedPlanId"), requestedPlanId));
+            }
+
+            if (status != null) {
+                spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+            }
+            if (requestedPlanName != null && !requestedPlanName.isBlank()) {
+                spec = spec.and((root, query, cb) ->
+                        cb.like(cb.lower(root.get("requestedPlanName")), "%" + requestedPlanName.toLowerCase() + "%")
+                );
+            }
+
+
+            if (requestDate != null) {
+                spec = spec.and((root, query, cb) ->
+                        cb.between(root.get("requestDate"),
+                                requestDate.atStartOfDay(),
+                                requestDate.plusDays(1).atStartOfDay()));
+            }
+
+            Page<PlanUpgradeRequest> pagedResult = paymentPlanUpgradeRepository.findAll(spec, pageable);
+
+            // Count totals (for ALL, not just paginated)
+            long totalCount = pagedResult.getTotalElements(); // this is your current filtered list
+            long totalApproved = paymentPlanUpgradeRepository.countByStatus(RequestStatus.APPROVED);
+            long totalRejected = paymentPlanUpgradeRepository.countByStatus(RequestStatus.REJECTED);
+            long totalPending = paymentPlanUpgradeRepository.countByStatus(RequestStatus.PENDING);
+
+            List<Map<String, Object>> resultList = pagedResult.getContent().stream().map(r -> {
+                Map<String, Object> map = new LinkedHashMap<>();
+                map.put("id", r.getId());
+                map.put("vendorId", r.getVendorId());
+                map.put("name", r.getName());
+                map.put("email", r.getEmail());
+                map.put("requestedPlanId", r.getRequestedPlanId());
+                map.put("requestedPlanName", r.getRequestedPlanName());
+                map.put("status", r.getStatus());
+                map.put("requestDate", r.getRequestDate());
+                map.put("approvedDate", r.getApprovedDate());
+                map.put("adminRemarks", r.getAdminRemarks());
+                return map;
+            }).collect(Collectors.toList());
+
+            return responseService.generateSuccessResponseForVendorUpgrade(
+                    "Upgrade requests fetched",
+                    resultList,
+                    totalCount,
+                    totalApproved,
+                    totalRejected,
+                    totalPending,
+                    HttpStatus.OK
+            );
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Failed to fetch upgrade requests", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+
+    @PostMapping("/approve-upgrade")
+    public ResponseEntity<?> handleUpgradeRequest(@RequestBody Map<String, Object> payload) {
+
+        try {
+
+            if (!payload.containsKey("requestId") || payload.get("requestId") == null) {
+                return responseService.generateErrorResponse("Request ID is required", HttpStatus.BAD_REQUEST);
+            }
+            if (!payload.containsKey("approve") || payload.get("approve") == null) {
+                return responseService.generateErrorResponse("Approve flag is required", HttpStatus.BAD_REQUEST);
+            }
+
+            Long requestId = Long.valueOf(payload.get("requestId").toString());
+            boolean approve = Boolean.parseBoolean(payload.get("approve").toString());
+            String remarks = payload.containsKey("remarks") && payload.get("remarks") != null
+                    ? payload.get("remarks").toString()
+                    : null;
+            PlanUpgradeRequest request = paymentPlanUpgradeRepository.findById(requestId)
+                    .orElseThrow(() -> new RuntimeException("Upgrade request not found"));
+
+            if (approve) {
+                request.setStatus(RequestStatus.APPROVED);
+                request.setApprovedDate(LocalDateTime.now());
+                request.setAdminRemarks(remarks);
+
+            } else {
+                request.setStatus(RequestStatus.REJECTED);
+                request.setApprovedDate(LocalDateTime.now());
+                request.setAdminRemarks(remarks);
+            }
+
+            paymentPlanUpgradeRepository.save(request);
+            return responseService.generateSuccessResponse("Request handled successfully", null ,HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    e
+            );
+            return responseService.generateErrorResponse("Failed to process upgrade: ", HttpStatus.OK);
+
+
+        }
     }
 
 }
