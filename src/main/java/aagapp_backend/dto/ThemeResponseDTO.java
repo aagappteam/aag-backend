@@ -9,11 +9,9 @@ import lombok.Setter;
 public class ThemeResponseDTO {
     private Long themeId;
     private String themeImage;
-    private String gametheme;
 
     public ThemeResponseDTO(ThemeEntity theme) {
         this.themeId = theme.getId();
         this.themeImage = theme.getImageUrl();
-        this.gametheme = theme.getName();
     }
 }
