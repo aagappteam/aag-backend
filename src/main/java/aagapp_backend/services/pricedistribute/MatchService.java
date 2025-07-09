@@ -449,7 +449,7 @@ public class MatchService {
             notification.setDetails("You won Rs. " + finalWinnerAmount + " in Game " + game.getName());
             notification.setDescription("Game Winning Prize");
             notification.setRole("Customer");
-            notification.setName(winnerPlayer.getCustomer().getName());
+            notification.setName(winnerPlayer.getCustomer().getName()!=null?winnerPlayer.getCustomer().getName():"N/A");
 
 
             notification.setCustomerId(winnerPlayer.getCustomer().getId());
