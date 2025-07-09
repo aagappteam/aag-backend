@@ -213,5 +213,13 @@ public class AagGameService {
 
         gameRepository.delete(game);
     }
+
+    public String getGameIconByThemeId(Long themeId) {
+        ThemeEntity theme = themeRepository.findById(themeId).orElse(null);
+        if (theme != null) {
+            return theme.getImageUrl();
+        }
+        return null;
+    }
 }
 

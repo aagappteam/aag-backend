@@ -123,8 +123,8 @@ public class PaymentService {
         this.mailSender = mailSender;
     }
 
-//    @Scheduled(cron = "0 0 * * * *") // Runs every hour
- @Scheduled(cron = "*/1 * * * * *") // For testing: every second
+ @Scheduled(cron = "0 0 * * * *") // Runs every hour
+// @Scheduled(cron = "*/1 * * * * *") // For testing: every second
     public void expireOldSubscriptions() {
         List<PaymentEntity> expiredPayments = paymentRepository.findAllByExpiryAtBeforeAndStatus(
                 LocalDateTime.now(), PaymentStatus.ACTIVE
