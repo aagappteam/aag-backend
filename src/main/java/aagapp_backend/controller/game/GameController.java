@@ -424,6 +424,54 @@ public class GameController {
             // Handle event filtering based on events type
             switch (events.toLowerCase()) {
                 case "game":
+                    Page<GetGameResponseDTO> games = gameleaguetournamentservice.getAllGames(status, vendorId, pageable, startDate, endDate, scheduleddate);
+                    return responseService.generateSuccessResponseWithCount(
+                            "Scheduled games fetched successfully",
+                            games.getContent(),
+                            games.getTotalElements(),
+                            HttpStatus.OK
+                    );
+
+                case "league":
+                    Page<LeagueResponseDTO> leagues = gameleaguetournamentservice.getAllLeagues(status, vendorId, pageable, startDate, endDate, scheduleddate);
+                    return responseService.generateSuccessResponseWithCount(
+                            "Scheduled leagues fetched successfully",
+                            leagues.getContent(),
+                            leagues.getTotalElements(),
+                            HttpStatus.OK
+                    );
+
+                case "tournament":
+                    Page<TournamentResponseDTO> tournaments = gameleaguetournamentservice.getAllTournaments(status, vendorId, pageable, startDate, endDate, scheduleddate);
+                    return responseService.generateSuccessResponseWithCount(
+                            "Scheduled tournaments fetched successfully",
+                            tournaments.getContent(),
+                            tournaments.getTotalElements(),
+                            HttpStatus.OK
+                    );
+
+                case "league_tournament":
+                    Page<LeagueResponseDTO> allLeagues = gameleaguetournamentservice.getAllLeagues(status, vendorId, pageable, startDate, endDate, scheduleddate);
+                    Page<TournamentResponseDTO> allTournaments = gameleaguetournamentservice.getAllTournaments(status, vendorId, pageable, startDate, endDate, scheduleddate);
+
+                    Map<String, Object> leagueAndTournament = new HashMap<>();
+                    leagueAndTournament.put("leagues", allLeagues.getContent());
+                    leagueAndTournament.put("totalLeagues", allLeagues.getTotalElements());
+                    leagueAndTournament.put("tournaments", allTournaments.getContent());
+                    leagueAndTournament.put("totalTournaments", allTournaments.getTotalElements());
+
+                    return responseService.generateSuccessResponse(
+                            "Scheduled leagues and tournaments fetched successfully",
+                            leagueAndTournament,
+                            HttpStatus.OK
+                    );
+
+                default:
+                    return responseService.generateErrorResponse("Invalid 'events' value. Allowed values are: game, league, tournament, league_tournament.", HttpStatus.BAD_REQUEST);
+            }
+
+/*            switch (events.toLowerCase()) {
+                case "game":
                     // Filter for 'game' only
                     Page<GetGameResponseDTO> games = gameleaguetournamentservice.getAllGames(status, vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("games", games.getContent());
@@ -454,9 +502,9 @@ public class GameController {
 
                 default:
                     return responseService.generateErrorResponse("Invalid 'events' value. Allowed values are: game, league, tournament, league_tournament.", HttpStatus.BAD_REQUEST);
-            }
+            }*/
 
-            return responseService.generateSuccessResponse("Scheduled events fetched successfully", response, HttpStatus.OK);
+//            return responseService.generateSuccessResponse("Scheduled events fetched successfully", response, HttpStatus.OK);
         }catch (BusinessException e){
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
