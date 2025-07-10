@@ -756,13 +756,13 @@ public class AdminReviewController {
             PrintWriter writer = new PrintWriter(out);
 
             // CSV Header
-            writer.println("ID,CustomerID,Name,Email,Mobile,State,UPI ID,Amount,Status,Type,Fee,Final Payout,Requested At,Updated At");
+            writer.println("ID,CustomerID,Name,Email,Mobile,State,UPI ID,Account Number,Bank Name,Account Holder Name,ifscCode,Amount,Status,Type,Fee,Final Payout,Requested At,Updated At");
 
             // CSV Rows
             for (CustomerWithdrawalRequest req : results) {
                 CustomCustomer customer = req.getCustomer();
 
-                writer.printf("%d,%d,%s,%s,%s,%s,%s,%.2f,%s,%s,%.2f,%.2f,%s,%s%n",
+                writer.printf("%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%.2f,%s,%s,%.2f,%.2f,%s,%s%n",
                         req.getId(),
                         customer.getId(),
                         safe(customer.getName()),
@@ -770,6 +770,10 @@ public class AdminReviewController {
                         safe(customer.getMobileNumber()),
                         safe(customer.getState()),
                         safe(req.getUpiId()),
+                        safe(req.getAccountNumber()),
+                        safe(req.getBankName()),
+                        safe(req.getAccountHolderName()),
+                        safe(req.getIfscCode()),
                         req.getAmount(),
                         req.getStatus(),
                         req.getWithdrawalType(),
