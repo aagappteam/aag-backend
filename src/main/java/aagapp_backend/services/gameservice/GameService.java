@@ -1569,7 +1569,17 @@ public class GameService {
 
                 // Prepare request
                 GameRequest request = new GameRequest();
-                request.setFee(25.0);
+
+//                request.setFee(25.0);
+                int randomFee = getRandomFee();
+                request.setFee((double) randomFee);
+
+                // Set moves based on fee
+                if (randomFee > 10) {
+                    request.setMove(Constant.TENMOVES);
+                } else {
+                    request.setMove(Constant.SIXTEENMOVES);
+                }
                 request.setThemeId(themeId);
                 request.setMinPlayersPerTeam(2);
                 request.setMaxPlayersPerTeam(2);
@@ -1587,6 +1597,10 @@ public class GameService {
 
             System.out.println("🔁 No unpublished themes left for game ID: " + gameId + " (" + gameName + ")");
         }
+    }
+    private int getRandomFee() {
+        List<Integer> fees = List.of(10, 25, 50);
+        return fees.get(new Random().nextInt(fees.size()));
     }
 
     @Transactional
