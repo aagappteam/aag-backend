@@ -12,10 +12,19 @@ import java.util.Map;
 @AllArgsConstructor
 public class VendorAnalyticsResponse {
     private Long vendorId;
+
     private Long totalFollowers;
-    private int followersThisWeek;
-    private Long totalGamesPublished;
-    private int gamesPublishedThisWeek;
-    private Map<String, Double> gamePublishingTimeDistribution;
+    private Long followersInRange;
+
+    private Long totalGames;
+    private Long gamesInRange;
+
+    private Long totalLeagues;
+    private Long leaguesInRange;
+
+    private Long totalTournaments;
+    private Long tournamentsInRange;
+
+    private Map<String, Double> publishingTimeDistribution;
 }
 

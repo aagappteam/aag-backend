@@ -67,8 +67,11 @@ List<TopVendorDto> findTopVendorsWithFollowerCount();*/
     //feed
 
 
-    @Query("SELECT COUNT(uvf) FROM UserVendorFollow uvf WHERE uvf.vendor.service_provider_id = :vendorId AND uvf.followedAt >= :startOfWeek")
-    int countFollowersThisWeek(@Param("vendorId") Long vendorId, @Param("startOfWeek") LocalDateTime startOfWeek);
+    @Query("SELECT COUNT(uvf) FROM UserVendorFollow uvf WHERE uvf.vendor.service_provider_id = :vendorId AND uvf.followedAt BETWEEN :startDate AND :endDate")
+    int countFollowersBetweenDates(@Param("vendorId") Long vendorId,
+                                   @Param("startDate") LocalDateTime startDate,
+                                   @Param("endDate") LocalDateTime endDate);
+
 
 }
 
