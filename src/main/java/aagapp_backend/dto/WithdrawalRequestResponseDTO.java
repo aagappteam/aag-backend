@@ -27,6 +27,14 @@ public class WithdrawalRequestResponseDTO {
     private BigDecimal finalPayoutAmount;
     private LocalDateTime updatedAt;
 
+    private String accountNumber;
+
+    private String accountHolderName;
+
+    private String bankName;
+
+    private String ifscCode;
+
     private Long customerId;
     private String customerName;
     private String customerEmail;
@@ -43,6 +51,10 @@ public class WithdrawalRequestResponseDTO {
         this.processingFee = entity.getProcessingFee();
         this.finalPayoutAmount = entity.getFinalPayoutAmount();
         this.updatedAt = entity.getUpdatedAt();
+        this.accountNumber = entity.getAccountNumber();
+        this.accountHolderName = entity.getAccountHolderName();
+        this.bankName = entity.getBankName();
+        this.ifscCode = entity.getIfscCode();
 
         if (entity.getCustomer() != null) {
             this.customerId = entity.getCustomer().getId();

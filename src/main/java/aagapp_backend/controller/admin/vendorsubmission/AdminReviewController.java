@@ -3,7 +3,6 @@ package aagapp_backend.controller.admin.vendorsubmission;
 import aagapp_backend.dto.GameRequest;
 import aagapp_backend.dto.TournamentUpdateRequest;
 import aagapp_backend.dto.WithdrawalRequestResponseDTO;
-import aagapp_backend.dto.ticketdto.TicketResponseDto;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.faqs.FAQs;
@@ -11,7 +10,6 @@ import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
-import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanUpgradeRequest;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.entity.tournament.Tournament;
@@ -34,11 +32,11 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.league.LeagueService;
+import aagapp_backend.services.ticket.TicketService;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import aagapp_backend.spec.WithdrawalRequestSpecification;
 import jakarta.persistence.criteria.Expression;
 import jakarta.validation.Valid;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
@@ -62,13 +60,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.util.Optional;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping("/adminreview")
@@ -103,6 +97,9 @@ public class AdminReviewController {
 
     @Autowired
     private PaymentPlanUpgradeRepository paymentPlanUpgradeRepository;
+
+    @Autowired
+    private TicketService ticketService;
 
     private AdminReviewService reviewService;
     private ExceptionHandlingImplement exceptionHandling;
@@ -231,7 +228,7 @@ public class AdminReviewController {
             }
 
             // Update the status to 'Closed'
-            ticket.setStatus(TicketEnum.CLOSED);
+            ticket.setStatus(TicketEnum.RESOLVED);
             ticket.setUpdatedDate(new java.util.Date());
 
             // Save the closed ticket back to the database
@@ -270,7 +267,7 @@ public class AdminReviewController {
         }
     }*/
 
-    @GetMapping("/tickets")
+    /*@GetMapping("/tickets")
     public ResponseEntity<?> getTicketsByFilters(
             @RequestParam(required = false) TicketEnum status,
             @RequestParam(required = false) String role,
@@ -379,7 +376,65 @@ public class AdminReviewController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while retrieving tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }*/
+
+
+
+    @GetMapping("/tickets")
+    public ResponseEntity<?> getFilteredTickets(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String mobile,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) TicketEnum status,
+            @RequestParam(required = false) String remark,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) TicketPriority priority,
+            @RequestParam(required = false) AssignedTeam assignedTeam,
+            @RequestParam(required = false)
+            @DateTimeFormat(pattern = "yyyy-MM-dd") Date createdDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(pattern = "yyyy-MM-dd") Date updatedDate
+    ) {
+        try {
+            return ticketService.getFilteredTickets(page, size, name, email, mobile, search, subject, description, status, remark, role, priority, assignedTeam, createdDate, updatedDate);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
+
+
+
+    // Assign ticket
+    @PostMapping("/assign/{ticketId}")
+    public ResponseEntity<?> assignTicket(
+            @PathVariable Long ticketId,
+            @RequestBody Map<String, Object> payload
+    ) {
+        try {
+            String team = (String) payload.get("assignedTeam");
+            String priority = (String) payload.get("priority");
+
+            return ticketService.assignTicket(ticketId, team, priority);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error assigning ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Mark ticket as resolved
+    @PostMapping("/resolve/{ticketId}")
+    public ResponseEntity<?> resolveTicket(@PathVariable Long ticketId) {
+        try {
+            return ticketService.markTicketAsResolved(ticketId);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error resolving ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
 
 
@@ -756,13 +811,13 @@ public class AdminReviewController {
             PrintWriter writer = new PrintWriter(out);
 
             // CSV Header
-            writer.println("ID,CustomerID,Name,Email,Mobile,State,UPI ID,Amount,Status,Type,Fee,Final Payout,Requested At,Updated At");
+            writer.println("ID,CustomerID,Name,Email,Mobile,State,UPI ID,Account Number,Bank Name,Account Holder Name,ifscCode,Amount,Status,Type,Fee,Final Payout,Requested At,Updated At");
 
             // CSV Rows
             for (CustomerWithdrawalRequest req : results) {
                 CustomCustomer customer = req.getCustomer();
 
-                writer.printf("%d,%d,%s,%s,%s,%s,%s,%.2f,%s,%s,%.2f,%.2f,%s,%s%n",
+                writer.printf("%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%.2f,%s,%s,%.2f,%.2f,%s,%s%n",
                         req.getId(),
                         customer.getId(),
                         safe(customer.getName()),
@@ -770,6 +825,10 @@ public class AdminReviewController {
                         safe(customer.getMobileNumber()),
                         safe(customer.getState()),
                         safe(req.getUpiId()),
+                        safe(req.getAccountNumber()),
+                        safe(req.getBankName()),
+                        safe(req.getAccountHolderName()),
+                        safe(req.getIfscCode()),
                         req.getAmount(),
                         req.getStatus(),
                         req.getWithdrawalType(),

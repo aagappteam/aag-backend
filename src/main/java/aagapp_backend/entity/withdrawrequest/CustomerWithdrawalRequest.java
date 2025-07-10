@@ -32,8 +32,20 @@ public class CustomerWithdrawalRequest {
     @Column(name = "amount", nullable = false)
     private BigDecimal amount;
 
-    @Column(name = "upi_id", nullable = false)
+    @Column(name = "upi_id")
     private String upiId;
+
+    @Column(name = "account_number")
+    private String accountNumber;
+
+    @Column(name = "account_holder_name")
+    private String accountHolderName;
+
+    @Column(name = "bank_name")
+    private String bankName;
+
+    @Column(name = "ifsc_code")
+    private String ifscCode;
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)

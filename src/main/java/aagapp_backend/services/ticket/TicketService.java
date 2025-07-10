@@ -4,17 +4,23 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 
 import aagapp_backend.dto.TicketDTO;
+import aagapp_backend.dto.TicketResponseDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.ticket.PredefinedQA;
 import aagapp_backend.entity.ticket.Ticket;
+import aagapp_backend.enums.AssignedTeam;
 import aagapp_backend.enums.TicketEnum;
+import aagapp_backend.enums.TicketPriority;
 import aagapp_backend.enums.TicketUserType;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.ticket.PredefinedQARepository;
 import aagapp_backend.repository.ticket.TicketRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.vendor.VenderService;
+import aagapp_backend.spec.TicketSpecification;
 import io.micrometer.common.util.StringUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -22,17 +28,14 @@ import org.springframework.data.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.Query;
 
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,6 +61,12 @@ public class TicketService {
     @Autowired
     private PredefinedQARepository qaRepository;
 
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
+
+    @Autowired
+    private VendorRepository vendorRepository;
+
     public ResponseEntity<?> createTicket(Map<String, Object> ticketDetails, String token) {
         try {
             // Extract User ID and Role from JWT Token
@@ -74,7 +83,6 @@ public class TicketService {
                     return responseService.generateErrorResponse("Vendor not found", HttpStatus.NOT_FOUND);
                 }
                 userorvendorrole = "Vendor";
-                EmailId = vendor.getPrimary_email();
 
             } else if (role == Constant.CUSTOMER_ROLE) {
                 CustomCustomer customer = customCustomerService.getCustomerById(userId);
@@ -82,7 +90,6 @@ public class TicketService {
                     return responseService.generateErrorResponse("Customer not found", HttpStatus.NOT_FOUND);
                 }
                 userorvendorrole = "Customer";
-                EmailId = customer.getEmail();
             } else {
                 return responseService.generateErrorResponse("Unauthorized role", HttpStatus.UNAUTHORIZED);
             }
@@ -104,10 +111,9 @@ public class TicketService {
             Ticket ticket = new Ticket();
             ticket.setSubject(subject);
             ticket.setDescription(description);
-            ticket.setStatus(TicketEnum.OPEN);
+            ticket.setStatus(TicketEnum.PENDING);
             ticket.setCustomerOrVendorId(userId);
             ticket.setRole(userorvendorrole);
-            ticket.setEmail(EmailId);
             ticket.setCreatedDate(new Date());
             ticket.setUpdatedDate(new Date());
 
@@ -329,6 +335,136 @@ public class TicketService {
 
 
 
+    public ResponseEntity<?> getFilteredTickets(
+            int page, int size,
+            String name, String email, String mobile, String search,
+            String subject, String description, TicketEnum status,
+            String remark, String role, TicketPriority priority,
+            AssignedTeam assignedTeam,
+            Date createdDate, Date updatedDate
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+
+            // Apply only Ticket-specific filters here
+            Specification<Ticket> spec = TicketSpecification.getTicketFilters(subject, description, status, remark, role, priority, assignedTeam, createdDate, updatedDate);
+
+            Page<Ticket> ticketPage = ticketRepository.findAll(spec, pageable);
+
+            List<TicketResponseDTO> responseList = ticketPage.getContent().stream()
+                    .map(ticket -> {
+                        String nameVal = null;
+                        String emailVal = null;
+                        String mobileVal = null;
+
+                        if ("CUSTOMER".equalsIgnoreCase(ticket.getRole())) {
+                            Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
+                            if (customerOpt.isPresent()) {
+                                CustomCustomer customer = customerOpt.get();
+                                if (!matchesUserFilters(customer.getName(), customer.getEmail(), customer.getMobileNumber(), name, email, mobile, search)) {
+                                    return null;
+                                }
+                                nameVal = customer.getName();
+                                emailVal = customer.getEmail();
+                                mobileVal = customer.getMobileNumber();
+                            }
+                        } else if ("VENDOR".equalsIgnoreCase(ticket.getRole())) {
+                            Optional<VendorEntity> vendorOpt = vendorRepository.findById(ticket.getCustomerOrVendorId());
+                            if (vendorOpt.isPresent()) {
+                                VendorEntity vendor = vendorOpt.get();
+                                if (!matchesUserFilters(vendor.getName(), vendor.getPrimary_email(), vendor.getMobileNumber(), name, email, mobile, search)) {
+                                    return null;
+                                }
+                                nameVal = vendor.getName();
+                                emailVal = vendor.getPrimary_email();
+                                mobileVal = vendor.getMobileNumber();
+                            }
+                        }
+
+                        return TicketResponseDTO.builder()
+                                .ticketId(ticket.getId())
+                                .subject(ticket.getSubject())
+                                .remark(ticket.getRemark())
+                                .customerOrVendorId(ticket.getCustomerOrVendorId())
+                                .description(ticket.getDescription())
+                                .status(ticket.getStatus() != null ? ticket.getStatus().toString() : null)
+                                .priority(ticket.getPriority() != null ? ticket.getPriority().toString() : null)
+                                .role(ticket.getRole())
+                                .assignedTeam(String.valueOf(ticket.getAssignedTeam()))
+                                .createdDate(ticket.getCreatedDate())
+                                .updatedDate(ticket.getUpdatedDate())
+                                .name(nameVal)
+                                .email(emailVal)
+                                .mobile(mobileVal)
+                                .build();
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            return responseService.generateSuccessResponseWithCount("responseList", responseList,responseList.stream().count() ,HttpStatus.OK);
+
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error filtering tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    private boolean matchesUserFilters(String uName, String uEmail, String uMobile,
+                                       String name, String email, String mobile, String search) {
+        if (name != null && (uName == null || !uName.toLowerCase().contains(name.toLowerCase()))) return false;
+        if (email != null && (uEmail == null || !uEmail.toLowerCase().contains(email.toLowerCase()))) return false;
+        if (mobile != null && (uMobile == null || !uMobile.contains(mobile))) return false;
+
+        if (search != null) {
+            String s = search.toLowerCase();
+            return (uName != null && uName.toLowerCase().contains(s)) ||
+                    (uEmail != null && uEmail.toLowerCase().contains(s)) ||
+                    (uMobile != null && uMobile.contains(s));
+        }
+
+        return true;
+    }
+
+
+
+
+    public ResponseEntity<?> assignTicket(Long ticketId, String team, String priorityStr) {
+        Optional<Ticket> optional = ticketRepository.findById(ticketId);
+        if (optional.isEmpty()) {
+            return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+        }
+
+        Ticket ticket = optional.get();
+        ticket.setAssignedTeam(AssignedTeam.valueOf(team));
+
+        try {
+            TicketPriority priority = TicketPriority.valueOf(priorityStr.toUpperCase());
+            ticket.setPriority(priority);
+        } catch (IllegalArgumentException e) {
+            return responseService.generateErrorResponse("Invalid priority level", HttpStatus.BAD_REQUEST);
+        }
+
+        ticket.setStatus(TicketEnum.PROCESSING);
+        ticket.setUpdatedDate(new Date());
+
+        ticketRepository.save(ticket);
+        return responseService.generateSuccessResponse("Ticket assigned successfully", ticket, HttpStatus.OK);
+    }
+
+
+    public ResponseEntity<?> markTicketAsResolved(Long ticketId) {
+        Optional<Ticket> optional = ticketRepository.findById(ticketId);
+        if (optional.isEmpty()) {
+            return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+        }
+
+        Ticket ticket = optional.get();
+        ticket.setStatus(TicketEnum.RESOLVED);
+        ticket.setUpdatedDate(new Date());
+
+        ticketRepository.save(ticket);
+        return responseService.generateSuccessResponse("Ticket marked as resolved", ticket, HttpStatus.OK);
+    }
 
 
 }

@@ -179,6 +179,18 @@ public class WalletService {
     @Transactional
     public Wallet withdrawalAmountFromWallet(CustomerWithdrawalRequestDto customerWithdrawalRequestDto) {
         try {
+
+            // Validate UPI or Bank details
+            boolean isUpiProvided = customerWithdrawalRequestDto.getUpiId() != null && !customerWithdrawalRequestDto.getUpiId().trim().isEmpty();
+            boolean isBankDetailsProvided = customerWithdrawalRequestDto.getAccountNumber() != null && !customerWithdrawalRequestDto.getAccountNumber().trim().isEmpty()
+                    && customerWithdrawalRequestDto.getIfscCode() != null && !customerWithdrawalRequestDto.getIfscCode().trim().isEmpty()
+                    && customerWithdrawalRequestDto.getAccountHolderName() != null && !customerWithdrawalRequestDto.getAccountHolderName().trim().isEmpty()
+                    && customerWithdrawalRequestDto.getBankName() != null && !customerWithdrawalRequestDto.getBankName().trim().isEmpty();
+
+            if (!isUpiProvided && !isBankDetailsProvided) {
+                throw new BusinessException("Either UPI ID or complete bank details must be provided", HttpStatus.BAD_REQUEST);
+            }
+
             CustomCustomer customer = customCustomerService.getCustomerById(customerWithdrawalRequestDto.getCustomerId());
             if (customer == null) {
                 throw new BusinessException("Customer not found for the given ID: " + customerWithdrawalRequestDto.getCustomerId(), HttpStatus.BAD_REQUEST);
@@ -213,6 +225,10 @@ public class WalletService {
             request.setCustomer(customer);
             request.setAmount(withdrawBalanceBD);
             request.setUpiId(customerWithdrawalRequestDto.getUpiId());
+            request.setAccountNumber(customerWithdrawalRequestDto.getAccountNumber());
+            request.setAccountHolderName(customerWithdrawalRequestDto.getAccountHolderName());
+            request.setBankName(customerWithdrawalRequestDto.getBankName());
+            request.setIfscCode(customerWithdrawalRequestDto.getIfscCode());
             request.setWithdrawalType(customerWithdrawalRequestDto.getWithdrawalType());
             request.setProcessingFee(fee);
             request.setFinalPayoutAmount(finalPayout);

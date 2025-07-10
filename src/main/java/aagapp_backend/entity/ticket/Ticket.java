@@ -2,7 +2,9 @@ package aagapp_backend.entity.ticket;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.AssignedTeam;
 import aagapp_backend.enums.TicketEnum;
+import aagapp_backend.enums.TicketPriority;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -46,8 +48,13 @@ public class Ticket {
 
     private String role;
 
-    private String email;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority")
+    private TicketPriority priority=TicketPriority.NOT_SET;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "assigned_team")
+    private AssignedTeam assignedTeam=AssignedTeam.NOT_ASSIGNED;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
