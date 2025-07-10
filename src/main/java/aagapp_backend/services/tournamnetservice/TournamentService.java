@@ -2572,7 +2572,9 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
 
     @Transactional
-    @Scheduled(cron = "0 0 0/4 * * *")
+//   @Scheduled(cron = "0 0 0/4 * * *")
+    @Scheduled(cron = "0 0 0/2 * * *")
+
     public void autoPublishTournamentForVendor_6306470701() {
         Optional<VendorEntity> vendorOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_6306470701);
         if (vendorOpt.isEmpty()) {

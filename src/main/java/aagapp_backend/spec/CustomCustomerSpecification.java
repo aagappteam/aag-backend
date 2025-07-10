@@ -25,9 +25,7 @@ public class CustomCustomerSpecification {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-//            if (mobileNumber != null && !mobileNumber.isEmpty()) {
-//                predicates.add(cb.equal(root.get("mobileNumber"), mobileNumber));
-//            }
+
 
             if (mobileNumber != null && !mobileNumber.isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("mobileNumber")), "%" + mobileNumber.toLowerCase() + "%"));
@@ -56,7 +54,7 @@ public class CustomCustomerSpecification {
 
             if (search != null && !search.trim().isEmpty()) {
                 predicates.add(cb.or(
-                        cb.equal(root.get("id"), search),
+
                         cb.like(cb.lower(root.get("name")), "%" + search.toLowerCase() + "%"),
                         cb.like(cb.lower(root.get("email")), "%" + search.toLowerCase() + "%"),
                         cb.like(cb.lower(root.get("mobileNumber")), "%" + search.toLowerCase() + "%")

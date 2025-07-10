@@ -1508,8 +1508,10 @@ public class GameService {
             query.setParameter("winner", winner);
         }
     }
-    @Scheduled(cron = "0 0 0/4 * * *")
+//    @Scheduled(cron = "0 0 0/1 * * *")
     //    @Scheduled(cron = "*/2 * * * * *") // Runs every 2 seconds
+    @Scheduled(cron = "0 0 0/4 * * *")
+//    2 hours
     @Transactional
     public void autoPublishForVendorMobile_6306470701() {
         Optional<VendorEntity> vendorOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_6306470701);

@@ -138,7 +138,7 @@ public class PaymentService {
                 if (vendor != null && vendor.getPrimary_email() != null) {
 
                     PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
-                    if (!Constant.MOBILE_6306470701.equals(vendor.getMobileNumber())) {
+                    if (!Constant.TEST_MOBILE_NUMBERS.contains(vendor.getMobileNumber())) {
                         emailService.sendSubscriptionExpiredMail(
                                 vendor.getPrimary_email(),
                                 vendor.getFirst_name(),
@@ -152,7 +152,7 @@ public class PaymentService {
 
 
                 //  Create new subscription if this is the specific vendor
-                if (vendor != null && Constant.MOBILE_6306470701.equals(vendor.getMobileNumber())) {
+                if (vendor != null && Constant.TEST_MOBILE_NUMBERS.contains(vendor.getMobileNumber())) {
                     PaymentEntity newPayment = new PaymentEntity();
                     newPayment.setVendorEntity(vendor);
                     newPayment.setAmount(50000.0);
