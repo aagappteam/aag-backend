@@ -90,45 +90,31 @@ public class NotificationService {
 
     // Retrieve notifications for a specific vendor
 
-    public List<Notification> getNotifications(Long id, String role, int page, int size, String transaction, String activity) {
-        try {
-            Pageable pageable = PageRequest.of(page, size); // Create a Pageable object using the page and size
-            Page<Notification> notificationsPage;
+    public Page<Notification> getNotifications(Long id, String role, int page, int size, String transaction, String activity) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Notification> notificationsPage;
 
-            if ("vendor".equalsIgnoreCase(role)) {
-                if (transaction != null && transaction.equalsIgnoreCase("transaction")) {
-                    // Filter by non-null amount
-                    notificationsPage = notificationRepository.findByVendorIdAndAmountIsNotNullOrderByCreatedDateDesc(id, pageable);
-                } else if (activity != null && !activity.isEmpty()) {
-                    notificationsPage = notificationRepository.findByVendorIdAndAmountIsNullOrderByCreatedDateDesc(id, pageable);
-                } else {
-
-                    notificationsPage = notificationRepository.findByVendorIdOrderByCreatedDateDesc(id, pageable);
-                }
-            } else if ("customer".equalsIgnoreCase(role)) {
-                if (transaction != null && transaction.equalsIgnoreCase("transaction")) {
-                    // Filter by non-null amount
-                    notificationsPage = notificationRepository.findByCustomerIdAndAmountIsNotNullOrderByCreatedDateDesc(id, pageable);
-                } else if (activity != null && !activity.isEmpty()) {
-                    // Filter by activity (description or details)
-                    notificationsPage = notificationRepository.findByCustomerIdAndAmountIsNullOrderByCreatedDateDesc(id, pageable);
-                } else {
-                    // Regular fetch without additional filters
-                    notificationsPage = notificationRepository.findByCustomerIdOrderByCreatedDateDesc(id, pageable);
-                }
+        if ("vendor".equalsIgnoreCase(role)) {
+            if ("transaction".equalsIgnoreCase(transaction)) {
+                notificationsPage = notificationRepository.findByVendorIdAndAmountIsNotNullOrderByCreatedDateDesc(id, pageable);
+            } else if (activity != null && !activity.isEmpty()) {
+                notificationsPage = notificationRepository.findByVendorIdAndAmountIsNullOrderByCreatedDateDesc(id, pageable);
             } else {
-                throw new IllegalArgumentException("Invalid role specified");
+                notificationsPage = notificationRepository.findByVendorIdOrderByCreatedDateDesc(id, pageable);
             }
-
-            return notificationsPage.getContent(); // Return the content (list) from the page
-
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Failed to retrieve notifications", e);
-
+        } else if ("customer".equalsIgnoreCase(role)) {
+            if ("transaction".equalsIgnoreCase(transaction)) {
+                notificationsPage = notificationRepository.findByCustomerIdAndAmountIsNotNullOrderByCreatedDateDesc(id, pageable);
+            } else if (activity != null && !activity.isEmpty()) {
+                notificationsPage = notificationRepository.findByCustomerIdAndAmountIsNullOrderByCreatedDateDesc(id, pageable);
+            } else {
+                notificationsPage = notificationRepository.findByCustomerIdOrderByCreatedDateDesc(id, pageable);
+            }
+        } else {
+            throw new IllegalArgumentException("Invalid role specified");
         }
+
+        return notificationsPage;
     }
 
 
