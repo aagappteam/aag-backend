@@ -419,73 +419,33 @@ public class GameController {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
             Map<String, Object> response = new HashMap<>();
+            long totalCount = 0;
 
-            // Handle event filtering based on events type
             switch (events.toLowerCase()) {
-                case "game":
-                    Page<GetGameResponseDTO> games = gameleaguetournamentservice.getAllGames(status, vendorId, pageable, startDate, endDate, scheduleddate);
-                    return responseService.generateSuccessResponseWithCount(
-                            "Scheduled games fetched successfully",
-                            games.getContent(),
-                            games.getTotalElements(),
-                            HttpStatus.OK
-                    );
-
-                case "league":
-                    Page<LeagueResponseDTO> leagues = gameleaguetournamentservice.getAllLeagues(status, vendorId, pageable, startDate, endDate, scheduleddate);
-                    return responseService.generateSuccessResponseWithCount(
-                            "Scheduled leagues fetched successfully",
-                            leagues.getContent(),
-                            leagues.getTotalElements(),
-                            HttpStatus.OK
-                    );
-
-                case "tournament":
-                    Page<TournamentResponseDTO> tournaments = gameleaguetournamentservice.getAllTournaments(status, vendorId, pageable, startDate, endDate, scheduleddate);
-                    return responseService.generateSuccessResponseWithCount(
-                            "Scheduled tournaments fetched successfully",
-                            tournaments.getContent(),
-                            tournaments.getTotalElements(),
-                            HttpStatus.OK
-                    );
-
-                case "league_tournament":
-                    Page<LeagueResponseDTO> allLeagues = gameleaguetournamentservice.getAllLeagues(status, vendorId, pageable, startDate, endDate, scheduleddate);
-                    Page<TournamentResponseDTO> allTournaments = gameleaguetournamentservice.getAllTournaments(status, vendorId, pageable, startDate, endDate, scheduleddate);
-
-                    Map<String, Object> leagueAndTournament = new HashMap<>();
-                    leagueAndTournament.put("leagues", allLeagues.getContent());
-                    leagueAndTournament.put("totalLeagues", allLeagues.getTotalElements());
-                    leagueAndTournament.put("tournaments", allTournaments.getContent());
-                    leagueAndTournament.put("totalTournaments", allTournaments.getTotalElements());
-
-                    return responseService.generateSuccessResponse(
-                            "Scheduled leagues and tournaments fetched successfully",
-                            leagueAndTournament,
-                            HttpStatus.OK
-                    );
-
-                default:
-                    return responseService.generateErrorResponse("Invalid 'events' value. Allowed values are: game, league, tournament, league_tournament.", HttpStatus.BAD_REQUEST);
-            }
-
-/*            switch (events.toLowerCase()) {
                 case "game":
                     // Filter for 'game' only
                     Page<GetGameResponseDTO> games = gameleaguetournamentservice.getAllGames(status, vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("games", games.getContent());
+                    totalCount = games.getTotalElements();
+                    response.put("totalCount", totalCount);
+
                     break;
 
                 case "league":
                     // Filter for 'league' only
                     Page<LeagueResponseDTO> leagues = gameleaguetournamentservice.getAllLeagues(status,vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("leagues", leagues.getContent());
+                    totalCount = leagues.getTotalElements();
+                    response.put("totalCount", totalCount);
+
                     break;
 
                 case "tournament":
                     // Filter for 'tournament' only
                     Page<TournamentResponseDTO> tournaments = gameleaguetournamentservice.getAllTournaments(status,vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("tournaments", tournaments.getContent());
+                    response.put("totalCount", tournaments.getTotalElements());
+
                     break;
 
                 case "league_tournament":
@@ -497,13 +457,16 @@ public class GameController {
                     leagueAndTournament.put("leagues", allLeagues.getContent());
                     leagueAndTournament.put("tournaments", allTournaments.getContent());
                     response.put("league_tournament", leagueAndTournament);
+                    totalCount = allLeagues.getTotalElements() + allTournaments.getTotalElements();
+                    response.put("totalCount", totalCount);
+
                     break;
 
                 default:
                     return responseService.generateErrorResponse("Invalid 'events' value. Allowed values are: game, league, tournament, league_tournament.", HttpStatus.BAD_REQUEST);
-            }*/
+            }
 
-//            return responseService.generateSuccessResponse("Scheduled events fetched successfully", response, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithOuterCount("Scheduled events fetched successfully", response, totalCount, HttpStatus.OK);
         }catch (BusinessException e){
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {

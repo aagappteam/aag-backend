@@ -30,6 +30,17 @@ public class ResponseService {
         return new ResponseEntity<>(successResponse, status);
     }
 
+    public static ResponseEntity<?> generateSuccessResponseWithOuterCount(String message, Object data, Long count, HttpStatus status) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", message);
+        response.put("data", data);
+        response.put("totalCount", count); // Moved to outer level
+        response.put("status", status);
+        response.put("status_code", status.value());
+        return new ResponseEntity<>(response, status);
+    }
+
+
 
     public static ResponseEntity<ErrorResponse> generateErrorResponse(String message,HttpStatus status)
     {
