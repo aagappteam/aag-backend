@@ -3,10 +3,14 @@ package aagapp_backend.services.ticket;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 
+import aagapp_backend.dto.TicketDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.ticket.PredefinedQA;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.enums.TicketEnum;
+import aagapp_backend.enums.TicketUserType;
+import aagapp_backend.repository.ticket.PredefinedQARepository;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
@@ -23,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.Query;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.HashMap;
@@ -49,6 +54,9 @@ public class TicketService {
 
     @Autowired
     private EntityManager em;
+
+    @Autowired
+    private PredefinedQARepository qaRepository;
 
     public ResponseEntity<?> createTicket(Map<String, Object> ticketDetails, String token) {
         try {
@@ -106,7 +114,23 @@ public class TicketService {
             // Save the ticket to the database
             ticket = ticketRepository.save(ticket);
 
-            return responseService.generateSuccessResponse("Ticket raised successfully", ticket, HttpStatus.CREATED);
+            // Map entity to DTO
+            TicketDTO ticketDTO = new TicketDTO();
+            ticketDTO.setId(ticket.getId());
+            ticketDTO.setSubject(ticket.getSubject());
+            ticketDTO.setDescription(ticket.getDescription());
+            ticketDTO.setStatus(ticket.getStatus().name());
+            ticketDTO.setRemark(ticket.getRemark());
+            ticketDTO.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
+            ticketDTO.setRole(ticket.getRole());
+
+            // Format the date to "yyyy-MM-dd HH:mm:ss"
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            ticketDTO.setCreatedDate(sdf.format(ticket.getCreatedDate()));
+            ticketDTO.setUpdatedDate(sdf.format(ticket.getUpdatedDate()));
+
+            // Return response with DTO
+            return responseService.generateSuccessResponse("Ticket raised successfully", ticketDTO, HttpStatus.CREATED);
 
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error raising ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -181,18 +205,33 @@ public class TicketService {
             List<Ticket> tickets = query.getResultList();
             Long totalCount = countQuery.getSingleResult();
 
-           /* Map<String, Object> response = new HashMap<>();
-            response.put("data", tickets);
-            response.put("currentPage", pageNumber);
-            response.put("pageSize", pageSize);
-            response.put("totalItems", totalCount);
-            response.put("totalPages", (int) Math.ceil((double) totalCount / pageSize));*/
+            List<TicketDTO> ticketDTOs = tickets.stream()
+                    .map(this::mapToDTO)
+                    .collect(Collectors.toList());
 
-            return responseService.generateSuccessResponseWithCount("Tickets fetched successfully", tickets,totalCount, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithCount("Tickets fetched successfully", ticketDTOs, totalCount, HttpStatus.OK);
+
 
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private TicketDTO mapToDTO(Ticket ticket) {
+        TicketDTO dto = new TicketDTO();
+        dto.setId(ticket.getId());
+        dto.setSubject(ticket.getSubject());
+        dto.setDescription(ticket.getDescription());
+        dto.setStatus(ticket.getStatus().name());
+        dto.setRemark(ticket.getRemark());
+        dto.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
+        dto.setRole(ticket.getRole());
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        dto.setCreatedDate(sdf.format(ticket.getCreatedDate()));
+        dto.setUpdatedDate(sdf.format(ticket.getUpdatedDate()));
+
+        return dto;
     }
 
 
@@ -263,6 +302,33 @@ public class TicketService {
             query.setParameter("role", role);
         }
     }
+
+    public Page<PredefinedQA> getPredefinedQAByRole(String role, int page, int size, String keyword) {
+        try {
+            TicketUserType userType;
+
+            if ("customer".equalsIgnoreCase(role)) {
+                userType = TicketUserType.CUSTOMER;
+            } else if ("vendor".equalsIgnoreCase(role)) {
+                userType = TicketUserType.VENDOR;
+            } else {
+                throw new IllegalArgumentException("Invalid role. Must be 'customer' or 'vendor'");
+            }
+
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                return qaRepository.findByUserTypeAndKeyword(userType, keyword, pageable);
+            } else {
+                return qaRepository.findByUserType(userType, pageable);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching predefined questions: " + e.getMessage(), e);
+        }
+    }
+
+
+
 
 
 }

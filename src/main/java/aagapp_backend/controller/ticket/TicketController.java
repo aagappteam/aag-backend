@@ -4,6 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.ticket.PredefinedQA;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.repository.ticket.TicketRepository;
@@ -13,6 +14,7 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.ticket.TicketService;
 import aagapp_backend.services.vendor.VenderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -73,6 +75,28 @@ public class TicketController {
             return ticketService.getTicketsByRoleAndIdNew(role, id, status, subject, description, page, size);
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error while fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+    @GetMapping("/predefined-qa/by-role/{role}")
+    public ResponseEntity<?> getPredefinedQAByRole(
+            @PathVariable String role,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword
+    ) {
+        try {
+            Page<PredefinedQA> resultPage = ticketService.getPredefinedQAByRole(role, page, size, keyword);
+            return responseService.generateSuccessResponseWithCount(
+                    "Fetched predefined questions",
+                    resultPage.getContent(),
+                    resultPage.getTotalElements(),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error while fetching predefined questions: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
