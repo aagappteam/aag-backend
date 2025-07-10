@@ -75,4 +75,20 @@ public interface LeagueRepository extends JpaRepository<League, Long>, JpaSpecif
             @Param("status") LeagueStatus status
     );
 
+    @Query("""
+    SELECT l.theme.id FROM League l
+    WHERE l.vendorEntity.service_provider_id = :vendorId
+      AND l.aagGameId = :gameId
+      AND l.theme.id = :themeId
+      AND l.status = :status
+      AND l.createdDate BETWEEN :startOfDay AND :endOfDay
+""")
+    Optional<Long> findThemeIdIfPublishedToday(
+            @Param("vendorId") Long vendorId,
+            @Param("gameId") Long gameId,
+            @Param("themeId") Long themeId,
+            @Param("status") LeagueStatus status,
+            @Param("startOfDay") ZonedDateTime startOfDay,
+            @Param("endOfDay") ZonedDateTime endOfDay
+    );
 }

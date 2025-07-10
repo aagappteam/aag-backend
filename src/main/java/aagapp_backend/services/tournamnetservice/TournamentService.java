@@ -337,6 +337,7 @@ public class TournamentService {
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             if (tournamentRequest.getScheduledAt() != null) {
+
                 ZonedDateTime scheduledInKolkata = tournamentRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
                 if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
                     throw new BusinessException("The game must be scheduled at least 4 hours in advance." , HttpStatus.BAD_REQUEST);
@@ -346,8 +347,8 @@ public class TournamentService {
 
             } else {
                 tournament.setStatus(TournamentStatus.SCHEDULED);
-//               tournament.setScheduledAt(nowInKolkata.plusHours(1));
-              tournament.setScheduledAt(nowInKolkata.plusMinutes(4));
+            tournament.setScheduledAt(nowInKolkata.plusHours(1));
+//              tournament.setScheduledAt(nowInKolkata.plusMinutes(4));
 
             }
 
@@ -2572,7 +2573,9 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
 
     @Transactional
-    @Scheduled(cron = "0 0 0/4 * * *")
+//   @Scheduled(cron = "0 0 0/4 * * *")
+    @Scheduled(cron = "0 0 0/2 * * *")
+
     public void autoPublishTournamentForVendor_6306470701() {
         Optional<VendorEntity> vendorOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_6306470701);
         if (vendorOpt.isEmpty()) {

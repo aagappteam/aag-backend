@@ -1,6 +1,7 @@
 package aagapp_backend.components;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 
 public class Constant {
@@ -18,6 +19,9 @@ public class Constant {
     public static final int MULTIPLIER = 4;
     public static final int LEAGUE_PASS_COUNT = 3;
     public static final String MOBILE_6306470701 =   "6306470701";
+    public static final String MOBILE_9628577197 = "9628577197";
+    public static final List<String> TEST_MOBILE_NUMBERS = List.of(MOBILE_6306470701, MOBILE_9628577197);
+
     public static String ludobaseurl = "https://gamebackend.aagapp.com/game-api/ludo";
     public static String snakebaseUrl = "https://gamebackend.aagapp.com/game-api/snake";
 /*    public static String ludobaseurl = "http://3.110.44.61:8082";
@@ -32,6 +36,8 @@ public class Constant {
     public static final BigDecimal USER_PERCENTAGE = new BigDecimal("0.62");
     public static final Double MAX_FEE = 100.0;
     public static final long LEAGUE_SESSION_TIME = 1;
+    public static final long LEAGUE_SESSION_TIME_2 = 2;
+
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
