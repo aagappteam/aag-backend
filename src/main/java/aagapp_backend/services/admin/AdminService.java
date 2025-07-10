@@ -338,8 +338,19 @@ public class AdminService
                         .map(Privilege::getParentMenu)
                         .collect(Collectors.toSet());
 
-                // Fetch the actual MENU privilege objects for those parent names
-                List<Privilege> menuPrivileges = privilegeRepo.findAllByNameIn(parentMenuNames);
+                Set<String> assignedMenuNames = rolePrivileges.stream()
+                        .filter(p -> "MENU".equalsIgnoreCase(p.getType()))
+                        .map(Privilege::getName)
+                        .collect(Collectors.toSet());
+
+        // Merge both sets (parent menus + directly assigned menus)
+                        Set<String> allMenuNames = new HashSet<>();
+                        allMenuNames.addAll(parentMenuNames);
+                        allMenuNames.addAll(assignedMenuNames);
+
+        // Fetch all related MENU privilege objects
+                        List<Privilege> menuPrivileges = privilegeRepo.findAllByNameIn(allMenuNames);
+
 
                 List<Map<String, Object>> menusList = new ArrayList<>();
 

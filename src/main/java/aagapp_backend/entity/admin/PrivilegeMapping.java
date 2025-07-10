@@ -21,5 +21,9 @@ public class PrivilegeMapping {
     private String apiPath;
     private String method;
     private String privilegeName;
+
+/*    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "privilege_id")
+    private Privilege privilege;  // Instead of storing name manually*/
 }
 
