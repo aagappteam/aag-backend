@@ -98,4 +98,21 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
             @Param("startOfDay") ZonedDateTime startOfDay,
             @Param("endOfDay") ZonedDateTime endOfDay
     );
+
+    @Query(value = "SELECT COUNT(*) FROM tournament WHERE vendorentity_service_provider_id = :vendorId", nativeQuery = true)
+    Long countByVendorId(@Param("vendorId") Long vendorId);
+
+
+    @Query("SELECT COUNT(t) FROM Tournament t WHERE t.vendorEntity.service_provider_id = :vendorId AND t.createdDate BETWEEN :start AND :end")
+    Long countTournamentsBetweenDates(@Param("vendorId") Long vendorId,
+                                      @Param("start") ZonedDateTime start,
+                                      @Param("end") ZonedDateTime end);
+
+    @Query("SELECT t FROM Tournament t WHERE t.vendorEntity.service_provider_id = :vendorId AND t.createdDate BETWEEN :start AND :end")
+    List<Tournament> findTournamentsBetweenDates(@Param("vendorId") Long vendorId,
+                                                 @Param("start") ZonedDateTime start,
+                                                 @Param("end") ZonedDateTime end);
+
+    @Query("SELECT g FROM Tournament g WHERE g.vendorEntity.id = :vendorId")
+    List<Tournament> findByVendorId(@Param("vendorId") Long vendorId);
 }

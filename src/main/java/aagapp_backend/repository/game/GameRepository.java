@@ -110,5 +110,22 @@ public interface GameRepository extends JpaRepository<Game, Long>, JpaSpecificat
     List<Game> findByVendorEntityAndScheduledAtWithin24Hours(VendorEntity vendorEntity, ZonedDateTime startTime, ZonedDateTime endTime);*/
 
 
+    @Query(value = "SELECT COUNT(*) FROM aag_ludo_game WHERE vendor_id = :vendorId", nativeQuery = true)
+    Long countByVendorId(Long vendorId);
+
+    @Query("SELECT COUNT(g) FROM Game g WHERE g.vendorEntity.service_provider_id = :vendorId AND g.createdDate BETWEEN :start AND :end")
+    Long countGamesBetweenDates(@Param("vendorId") Long vendorId,
+                                @Param("start") ZonedDateTime start,
+                                @Param("end") ZonedDateTime end);
+
+    @Query("SELECT g FROM Game g WHERE g.vendorEntity.service_provider_id = :vendorId AND g.createdDate BETWEEN :start AND :end")
+    List<Game> findGamesBetweenDates(@Param("vendorId") Long vendorId,
+                                     @Param("start") ZonedDateTime start,
+                                     @Param("end") ZonedDateTime end);
+
+    @Query("SELECT g FROM Game g WHERE g.vendorEntity.id = :vendorId")
+    List<Game> findByVendorId(@Param("vendorId") Long vendorId);
+
+
 }
 

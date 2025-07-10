@@ -24,7 +24,9 @@ public interface LeagueRepository extends JpaRepository<League, Long>, JpaSpecif
 
 //    Page<League> findByStatus(String status, Pageable pageable);
 //
-//    Page<League> findByVendorId(Long vendorId, Pageable pageable);
+
+    @Query(value = "SELECT COUNT(*) FROM aag_league WHERE vendor_id = :vendorId", nativeQuery = true)
+    Long countByVendorId(Long vendorId);
 //    Page<League> findByStatusAndVendorId(String status, Long vendorId, Pageable pageable);
 //    Page<League> findLeaguesByVendorIdAndStatus(Long vendorId, LeagueStatus status, Pageable pageable);
 //
@@ -91,4 +93,19 @@ public interface LeagueRepository extends JpaRepository<League, Long>, JpaSpecif
             @Param("startOfDay") ZonedDateTime startOfDay,
             @Param("endOfDay") ZonedDateTime endOfDay
     );
+
+//    Long countByVendorEntity_Service_provider_id(Long vendorId);
+
+    @Query("SELECT COUNT(l) FROM League l WHERE l.vendorEntity.service_provider_id = :vendorId AND l.createdDate BETWEEN :start AND :end")
+    Long countLeaguesBetweenDates(@Param("vendorId") Long vendorId,
+                                  @Param("start") ZonedDateTime start,
+                                  @Param("end") ZonedDateTime end);
+
+    @Query("SELECT l FROM League l WHERE l.vendorEntity.service_provider_id = :vendorId AND l.createdDate BETWEEN :start AND :end")
+    List<League> findLeaguesBetweenDates(@Param("vendorId") Long vendorId,
+                                         @Param("start") ZonedDateTime start,
+                                         @Param("end") ZonedDateTime end);
+
+    @Query("SELECT g FROM League g WHERE g.vendorEntity.id = :vendorId")
+    List<League> findByVendorId(@Param("vendorId") Long vendorId);
 }
