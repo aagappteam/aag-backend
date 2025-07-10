@@ -427,7 +427,6 @@ public class GameController {
                     Page<GetGameResponseDTO> games = gameleaguetournamentservice.getAllGames(status, vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("games", games.getContent());
                     totalCount = games.getTotalElements();
-                    response.put("totalCount", totalCount);
 
                     break;
 
@@ -436,7 +435,6 @@ public class GameController {
                     Page<LeagueResponseDTO> leagues = gameleaguetournamentservice.getAllLeagues(status,vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("leagues", leagues.getContent());
                     totalCount = leagues.getTotalElements();
-                    response.put("totalCount", totalCount);
 
                     break;
 
@@ -444,7 +442,6 @@ public class GameController {
                     // Filter for 'tournament' only
                     Page<TournamentResponseDTO> tournaments = gameleaguetournamentservice.getAllTournaments(status,vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("tournaments", tournaments.getContent());
-                    response.put("totalCount", tournaments.getTotalElements());
 
                     break;
 
@@ -458,7 +455,6 @@ public class GameController {
                     leagueAndTournament.put("tournaments", allTournaments.getContent());
                     response.put("league_tournament", leagueAndTournament);
                     totalCount = allLeagues.getTotalElements() + allTournaments.getTotalElements();
-                    response.put("totalCount", totalCount);
 
                     break;
 

@@ -2,7 +2,9 @@ package aagapp_backend.entity.ticket;
 
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.enums.AssignedTeam;
 import aagapp_backend.enums.TicketEnum;
+import aagapp_backend.enums.TicketPriority;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -16,10 +18,7 @@ import java.util.Date;
 
 @Entity
 @Table(name = "tickets", indexes = {
-        @Index(name = "idx_ticket_id", columnList = "ticketId"),
-
-//        @Index(name = "idx_customer_id_ticket", columnList = "customerId"),
-       @Index(name = "idx_vendor_id_ticket_customerOrVendorId", columnList = "customerOrVendorId"),
+        @Index(name = "idx_ticket_id", columnList = "id"),
         @Index(name = "idx_role_ticket", columnList = "role"),
         @Index(name = "idx_status_ticket", columnList = "status"),
         @Index(name = "idx_created_date_ticket", columnList = "created_date")
@@ -46,8 +45,13 @@ public class Ticket {
 
     private String role;
 
-    private String email;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority")
+    private TicketPriority priority=TicketPriority.NOT_SET;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "assigned_team")
+    private AssignedTeam assignedTeam=AssignedTeam.NOT_ASSIGNED;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
