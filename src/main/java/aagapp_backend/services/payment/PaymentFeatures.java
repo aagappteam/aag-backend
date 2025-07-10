@@ -59,15 +59,18 @@ public class PaymentFeatures {
             }
 
             PaymentEntity activePlan = activePlanOptional.get(0);
-            if (vendorOpt.isPresent()) {
+            if (vendorId == 35L || vendorId == 39L) {
                 return ResponseService.generateSuccessResponse(
-                        "You can publish the game.",
+                        "You can publish the game (bypass limit).",
                         activePlan,
                         HttpStatus.OK
                 );
             }
 
             int dailyUsage = gameService.countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
+
+            System.out.println("Daily Usage: " + dailyUsage);
+            System.out.println("Daily Limit: " + activePlan.getDailyLimit());
 
             if (dailyUsage >= activePlan.getDailyLimit()) {
                 return ResponseService.generateErrorResponse(

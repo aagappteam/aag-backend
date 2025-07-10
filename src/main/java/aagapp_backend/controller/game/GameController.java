@@ -248,7 +248,6 @@ public class GameController {
         try {
 
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
-
             if (paymentEntity.getStatusCode() != HttpStatus.OK) {
                 return paymentEntity;
             }
