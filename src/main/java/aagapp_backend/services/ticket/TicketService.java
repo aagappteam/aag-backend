@@ -401,7 +401,13 @@ public class TicketService {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
-            return responseService.generateSuccessResponseWithCount("responseList", responseList,responseList.stream().count() ,HttpStatus.OK);
+            Specification<Ticket> baseSpec = TicketSpecification.getTicketFilters(subject, description, null, remark, role, priority, assignedTeam, createdDate, updatedDate);
+
+            long pendingCount = ticketRepository.count(baseSpec.and((root, query, cb) -> cb.equal(root.get("status"), TicketEnum.PENDING)));
+            long processingCount = ticketRepository.count(baseSpec.and((root, query, cb) -> cb.equal(root.get("status"), TicketEnum.PROCESSING)));
+            long resolvedCount = ticketRepository.count(baseSpec.and((root, query, cb) -> cb.equal(root.get("status"), TicketEnum.RESOLVED)));
+
+            return responseService.generateSuccessResponseForTicket("responseList", responseList,responseList.stream().count(),pendingCount,processingCount,resolvedCount ,HttpStatus.OK);
 
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error filtering tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -428,43 +434,125 @@ public class TicketService {
 
 
 
-    public ResponseEntity<?> assignTicket(Long ticketId, String team, String priorityStr) {
+    public ResponseEntity<?> assignTicket(Long ticketId, String teamStr, String priorityStr) {
         Optional<Ticket> optional = ticketRepository.findById(ticketId);
         if (optional.isEmpty()) {
             return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
         }
 
         Ticket ticket = optional.get();
-        ticket.setAssignedTeam(AssignedTeam.valueOf(team));
 
+        // Parse and validate AssignedTeam
+        AssignedTeam team;
         try {
-            TicketPriority priority = TicketPriority.valueOf(priorityStr.toUpperCase());
-            ticket.setPriority(priority);
+            team = AssignedTeam.valueOf(teamStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return responseService.generateErrorResponse("Invalid assigned team", HttpStatus.BAD_REQUEST);
+        }
+
+        // Parse and validate TicketPriority
+        TicketPriority priority;
+        try {
+            priority = TicketPriority.valueOf(priorityStr.toUpperCase());
         } catch (IllegalArgumentException e) {
             return responseService.generateErrorResponse("Invalid priority level", HttpStatus.BAD_REQUEST);
         }
 
+        // Apply updates
+        ticket.setAssignedTeam(team);
+        ticket.setPriority(priority);
         ticket.setStatus(TicketEnum.PROCESSING);
         ticket.setUpdatedDate(new Date());
 
         ticketRepository.save(ticket);
+
         return responseService.generateSuccessResponse("Ticket assigned successfully", ticket, HttpStatus.OK);
     }
 
 
-    public ResponseEntity<?> markTicketAsResolved(Long ticketId) {
-        Optional<Ticket> optional = ticketRepository.findById(ticketId);
-        if (optional.isEmpty()) {
-            return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+
+    public ResponseEntity<?> markTicketAsResolved(Long ticketId, String remark) {
+        Optional<Ticket> optionalTicket = ticketRepository.findById(ticketId);
+        if (optionalTicket.isEmpty()) {
+            return responseService.generateErrorResponse("Ticket not found with ID: " + ticketId, HttpStatus.NOT_FOUND);
         }
 
-        Ticket ticket = optional.get();
+        Ticket ticket = optionalTicket.get();
+
+        if (TicketEnum.RESOLVED.equals(ticket.getStatus())) {
+            return responseService.generateSuccessResponse("Ticket is already marked as resolved", ticket, HttpStatus.OK);
+        }
+
+        // Update status and add remark
         ticket.setStatus(TicketEnum.RESOLVED);
+        ticket.setRemark(remark);
         ticket.setUpdatedDate(new Date());
 
         ticketRepository.save(ticket);
-        return responseService.generateSuccessResponse("Ticket marked as resolved", ticket, HttpStatus.OK);
+
+        return responseService.generateSuccessResponse("Ticket marked as resolved with remark", ticket, HttpStatus.OK);
     }
+
+
+    public ResponseEntity<?> getTicketsByAssignedTeam(AssignedTeam assignedTeam, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+
+        // Filter tickets by assignedTeam
+        Specification<Ticket> spec = (root, query, cb) -> cb.equal(root.get("assignedTeam"), assignedTeam);
+
+        Page<Ticket> ticketPage = ticketRepository.findAll(spec, pageable);
+
+        List<TicketResponseDTO> responseList = ticketPage.getContent().stream()
+                .map(ticket -> {
+                    String nameVal = null;
+                    String emailVal = null;
+                    String mobileVal = null;
+
+                    if ("CUSTOMER".equalsIgnoreCase(ticket.getRole())) {
+                        Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
+                        if (customerOpt.isPresent()) {
+                            CustomCustomer customer = customerOpt.get();
+                            nameVal = customer.getName();
+                            emailVal = customer.getEmail();
+                            mobileVal = customer.getMobileNumber();
+                        }
+                    } else if ("VENDOR".equalsIgnoreCase(ticket.getRole())) {
+                        Optional<VendorEntity> vendorOpt = vendorRepository.findById(ticket.getCustomerOrVendorId());
+                        if (vendorOpt.isPresent()) {
+                            VendorEntity vendor = vendorOpt.get();
+                            nameVal = vendor.getName();
+                            emailVal = vendor.getPrimary_email();
+                            mobileVal = vendor.getMobileNumber();
+                        }
+                    }
+
+                    return TicketResponseDTO.builder()
+                            .ticketId(ticket.getId())
+                            .subject(ticket.getSubject())
+                            .remark(ticket.getRemark())
+                            .customerOrVendorId(ticket.getCustomerOrVendorId())
+                            .description(ticket.getDescription())
+                            .status(ticket.getStatus() != null ? ticket.getStatus().toString() : null)
+                            .priority(ticket.getPriority() != null ? ticket.getPriority().toString() : null)
+                            .role(ticket.getRole())
+                            .assignedTeam(String.valueOf(ticket.getAssignedTeam()))
+                            .createdDate(ticket.getCreatedDate())
+                            .updatedDate(ticket.getUpdatedDate())
+                            .name(nameVal)
+                            .email(emailVal)
+                            .mobile(mobileVal)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return responseService.generateSuccessResponseWithCount(
+                "tickets",
+                responseList,
+                ticketPage.getTotalElements(),
+                HttpStatus.OK
+        );
+    }
+
 
 
 }

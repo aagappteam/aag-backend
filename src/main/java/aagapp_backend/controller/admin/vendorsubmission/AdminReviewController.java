@@ -409,15 +409,15 @@ public class AdminReviewController {
 
 
 
-    // Assign ticket
     @PostMapping("/assign/{ticketId}")
     public ResponseEntity<?> assignTicket(
             @PathVariable Long ticketId,
-            @RequestBody Map<String, Object> payload
+            @RequestBody Map<String, String> payload
     ) {
         try {
-            String team = (String) payload.get("assignedTeam");
-            String priority = (String) payload.get("priority");
+            String team = payload.get("assignedTeam");
+            String priority = payload.get("priority");
+
 
             return ticketService.assignTicket(ticketId, team, priority);
         } catch (Exception e) {
@@ -425,16 +425,41 @@ public class AdminReviewController {
         }
     }
 
+
     // Mark ticket as resolved
-    @PostMapping("/resolve/{ticketId}")
-    public ResponseEntity<?> resolveTicket(@PathVariable Long ticketId) {
+    @PutMapping("/resolve/{ticketId}")
+    public ResponseEntity<?> resolveTicket(
+            @PathVariable Long ticketId,
+            @RequestBody Map<String, String> payload
+    ) {
         try {
-            return ticketService.markTicketAsResolved(ticketId);
+            String remark = payload.get("remark");
+
+            if (remark == null || remark.isBlank()) {
+                return responseService.generateErrorResponse("Remark is required to resolve a ticket", HttpStatus.BAD_REQUEST);
+            }
+
+            return ticketService.markTicketAsResolved(ticketId, remark);
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error resolving ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+
+
+
+    @GetMapping("/by-assigned-team")
+    public ResponseEntity<?> getTicketsByAssignedTeam(
+            @RequestParam AssignedTeam assignedTeam,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            return ticketService.getTicketsByAssignedTeam(assignedTeam, page, size);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error fetching tickets by assigned team: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 
 

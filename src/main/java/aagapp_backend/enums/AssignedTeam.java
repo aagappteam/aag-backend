@@ -2,6 +2,7 @@ package aagapp_backend.enums;
 
 public enum AssignedTeam {
     NOT_ASSIGNED,
+    ADMIN,
     BACKED_TEAM,
     FRONTEND_TEAM,
     FLUTTER_TEAM,
