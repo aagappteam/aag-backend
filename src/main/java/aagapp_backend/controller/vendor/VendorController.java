@@ -965,26 +965,33 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             }
 
             // Now, map the data for the leaderboard and fetch vendor details
-            for (Map.Entry<Long, BigDecimal> entry : vendorEarningsMap.entrySet()) {
-                Long influencerId = entry.getKey();
-                BigDecimal totalWalletBalance = entry.getValue();
+            leaderboard = vendorEarningsMap.entrySet().stream()
+                    .map(entry -> {
+                        Long influencerId = entry.getKey();
+                        BigDecimal totalWalletBalance = entry.getValue();
 
-                // Fetch vendor details using influencerId
-                VendorEntity vendor = entityManager.find(VendorEntity.class, influencerId); // get vendor details
-                if (vendor == null) continue; // Skip if vendor not found
+                        // Fetch vendor details using influencerId
+                        VendorEntity vendor = entityManager.find(VendorEntity.class, influencerId); // get vendor details
+                        if (vendor == null) return null; // Skip if vendor not found
 
-                Map<String, Object> vendorData = new HashMap<>();
-                vendorData.put("service_provider_id", vendor.getService_provider_id());
-                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
-                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
-                        .map(firstName -> firstName + " " + vendor.getLast_name())
-                        .orElse(null));
-                vendorData.put("total_wallet_balance", totalWalletBalance);
+                        Map<String, Object> vendorData = new HashMap<>();
+                        vendorData.put("service_provider_id", vendor.getService_provider_id());
+                        vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                        vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                                .map(firstName -> firstName + " " + vendor.getLast_name())
+                                .orElse(null));
+                        vendorData.put("total_wallet_balance", totalWalletBalance);
 
-                leaderboard.add(vendorData);
-            }
-
-        }else {
+                        return vendorData;
+                    })
+                    .filter(Objects::nonNull) // Filter out any null values (in case of missing vendor)
+                    .sorted((v1, v2) -> {
+                        BigDecimal balance1 = (BigDecimal) v1.get("total_wallet_balance");
+                        BigDecimal balance2 = (BigDecimal) v2.get("total_wallet_balance");
+                        return balance2.compareTo(balance1);  // Sorting in descending order
+                    })
+                    .collect(Collectors.toList());
+        } else {
             leaderboard = allVendors.stream().map(vendor -> {
                 Map<String, Object> vendorData = new HashMap<>();
                 vendorData.put("service_provider_id", vendor.getService_provider_id());
