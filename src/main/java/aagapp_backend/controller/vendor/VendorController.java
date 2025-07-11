@@ -953,9 +953,25 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         List<Map<String, Object>> leaderboard = new ArrayList<>();
 
         if ("totalwallet".equalsIgnoreCase(filterType)) {
+            // Create a map to aggregate earnings by influencerId
+            Map<Long, BigDecimal> vendorEarningsMap = new HashMap<>();
+
             for (InfluencerMonthlyEarning earning : filteredVendors) {
-                VendorEntity vendor = entityManager.find(VendorEntity.class, earning.getInfluencerId()); // get vendor details
-                if (vendor == null) continue;
+                Long influencerId = earning.getInfluencerId();
+                BigDecimal totalEarning = earning.getEarnedAmount();
+
+                // Sum up the earnings for the same influencerId
+                vendorEarningsMap.put(influencerId, vendorEarningsMap.getOrDefault(influencerId, BigDecimal.ZERO).add(totalEarning));
+            }
+
+            // Now, map the data for the leaderboard and fetch vendor details
+            for (Map.Entry<Long, BigDecimal> entry : vendorEarningsMap.entrySet()) {
+                Long influencerId = entry.getKey();
+                BigDecimal totalWalletBalance = entry.getValue();
+
+                // Fetch vendor details using influencerId
+                VendorEntity vendor = entityManager.find(VendorEntity.class, influencerId); // get vendor details
+                if (vendor == null) continue; // Skip if vendor not found
 
                 Map<String, Object> vendorData = new HashMap<>();
                 vendorData.put("service_provider_id", vendor.getService_provider_id());
@@ -963,11 +979,12 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
                 vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
                         .map(firstName -> firstName + " " + vendor.getLast_name())
                         .orElse(null));
-                vendorData.put("total_wallet_balance", earning.getEarnedAmount());
+                vendorData.put("total_wallet_balance", totalWalletBalance);
 
                 leaderboard.add(vendorData);
             }
-        } else {
+
+        }else {
             leaderboard = allVendors.stream().map(vendor -> {
                 Map<String, Object> vendorData = new HashMap<>();
                 vendorData.put("service_provider_id", vendor.getService_provider_id());
