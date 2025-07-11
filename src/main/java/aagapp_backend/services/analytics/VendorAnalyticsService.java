@@ -32,12 +32,18 @@ public class VendorAnalyticsService {
 
     public VendorAnalyticsResponse getVendorAnalytics(Long vendorId, LocalDate startDate, LocalDate endDate) {
         ZoneId zone = ZoneId.systemDefault();
-        ZonedDateTime startDateTime = (startDate != null)
-                ? startDate.atStartOfDay(zone)
-                : ZonedDateTime.ofInstant(Instant.EPOCH, zone);
-        ZonedDateTime endDateTime = (endDate != null)
-                ? endDate.atTime(23,59,59).atZone(zone)
-                : ZonedDateTime.now(zone);
+
+        if (startDate == null || endDate == null) {
+            LocalDate today = LocalDate.now(zone);
+            DayOfWeek currentDay = today.getDayOfWeek();
+            int diffToMonday = currentDay.getValue() - DayOfWeek.MONDAY.getValue();
+            startDate = today.minusDays(diffToMonday);
+            endDate = today; // Today
+        }
+
+        ZonedDateTime startDateTime = startDate.atStartOfDay(zone);
+        ZonedDateTime endDateTime = endDate.atTime(23, 59, 59).atZone(zone);
+
 
         long totalFollowers = followRepo.countFollowersByVendorId(vendorId);
         long followersInRange = (startDate != null && endDate != null)
@@ -94,6 +100,14 @@ public class VendorAnalyticsService {
     }
 
     private Map<String, Double> calculateTimeDistribution(List<ZonedDateTime> timestamps, ZoneId zone) {
+        // Initialize with default values
+        Map<String, Double> dist = new HashMap<>();
+        dist.put("morning", 0.0);
+        dist.put("afternoon", 0.0);
+        dist.put("evening", 0.0);
+        dist.put("night", 0.0);
+
+        // Group by time bucket
         Map<String, Long> buckets = timestamps.stream()
                 .map(ts -> ts.withZoneSameInstant(zone).getHour())
                 .map(hour -> {
@@ -105,15 +119,14 @@ public class VendorAnalyticsService {
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
         int total = timestamps.size();
-        Map<String, Double> dist = new HashMap<>();
         if (total > 0) {
-            buckets.forEach((k, v) -> dist.put(k, v * 100.0 / total));
-        } else {
-            dist.put("morning", 0.0);
-            dist.put("afternoon", 0.0);
-            dist.put("evening", 0.0);
-            dist.put("night", 0.0);
+            buckets.forEach((k, v) -> {
+                double percentage = v * 100.0 / total;
+                double rounded = Math.round(percentage * 100.0) / 100.0; // Round to 2 decimal places
+                dist.put(k, rounded);
+            });
         }
+
         return dist;
     }
 
