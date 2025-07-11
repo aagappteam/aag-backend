@@ -49,10 +49,8 @@ public class KycService {
 
     @Transactional
     public KycEntity submitKycRequest(Long userOrVendorId, String role, String adharNo, String panNo,
-                                      MultipartFile adharImage, MultipartFile panImage){
-
+                                      MultipartFile adharImage, MultipartFile panImage) {
         try {
-            // Fetch mobile number based on role
             String mobileNumber;
             String mailId;
             String name;
@@ -61,35 +59,39 @@ public class KycService {
                 VendorEntity vendor = vendorRepository.findById(userOrVendorId)
                         .orElseThrow(() -> new RuntimeException("Vendor not found"));
                 mobileNumber = vendor.getMobileNumber();
-                mailId=vendor.getPrimary_email();
+                mailId = vendor.getPrimary_email();
+                name = vendor.getName();
                 vendor.setKycStatus(KycStatus.PENDING);
-                name=vendor.getName();
             } else if (role.equalsIgnoreCase("user") || role.equalsIgnoreCase("customer")) {
                 CustomCustomer user = customCustomerRepository.findById(userOrVendorId)
                         .orElseThrow(() -> new RuntimeException("User not found"));
                 mobileNumber = user.getMobileNumber();
-                mailId= user.getEmail();
+                mailId = user.getEmail();
+                name = user.getName();
                 user.setKycStatus(KycStatus.PENDING);
-                name=user.getName();
             } else {
                 throw new RuntimeException("Invalid role");
             }
 
-            // Upload Aadhaar image
-            String adharExtension = adharImage.getOriginalFilename().substring(adharImage.getOriginalFilename().lastIndexOf("."));
-            String adharKey = "kyc/adhar/" + System.currentTimeMillis() + adharExtension;
-            s3Service.uploadPhoto(adharKey, adharImage);
-            String adharUrl = s3Service.getFileUrl(adharKey);
+            String adharUrl = null;
+            if (adharImage != null && !adharImage.isEmpty()) {
+                String adharExtension = adharImage.getOriginalFilename()
+                        .substring(adharImage.getOriginalFilename().lastIndexOf("."));
+                String adharKey = "kyc/adhar/" + System.currentTimeMillis() + adharExtension;
+                s3Service.uploadPhoto(adharKey, adharImage);
+                adharUrl = s3Service.getFileUrl(adharKey);
+            }
 
             // Upload PAN image
-            String panExtension = panImage.getOriginalFilename().substring(panImage.getOriginalFilename().lastIndexOf("."));
+            String panExtension = panImage.getOriginalFilename()
+                    .substring(panImage.getOriginalFilename().lastIndexOf("."));
             String panKey = "kyc/pan/" + System.currentTimeMillis() + panExtension;
             s3Service.uploadPhoto(panKey, panImage);
             String panUrl = s3Service.getFileUrl(panKey);
 
-            emailService.sendKycUploadEmail(mailId,name);
+            emailService.sendKycUploadEmail(mailId, name);
 
-            // Save KYC entry
+            // Save KYC
             KycEntity kycEntity = new KycEntity();
             kycEntity.setUserOrVendorId(userOrVendorId);
             kycEntity.setRole(role);
@@ -98,7 +100,7 @@ public class KycService {
             kycEntity.setName(name);
             kycEntity.setAadharNo(adharNo);
             kycEntity.setPanNo(panNo);
-            kycEntity.setAadharImage(adharUrl);
+            kycEntity.setAadharImage(adharUrl); // can be null for user
             kycEntity.setPanImage(panUrl);
             kycEntity.setKycStatus(KycStatus.PENDING);
             return kycRepository.save(kycEntity);
@@ -106,8 +108,8 @@ public class KycService {
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
-
     }
+
 
     @Transactional
     public KycEntity updateKycVerificationStatus(Long kycId, KycStatus isVerified) {

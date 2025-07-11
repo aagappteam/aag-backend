@@ -51,53 +51,57 @@ public class KycController {
     public ResponseEntity<?> uploadKyc(
             @RequestParam("userOrVendorId") Long userOrVendorId,
             @RequestParam("role") String role,
-            @RequestParam("adharNo") String adharNo,
+            @RequestParam(value = "adharNo", required = false) String adharNo,
             @RequestParam("panNo") String panNo,
-            @RequestParam("adharImage") MultipartFile adharImage,
+            @RequestParam(value = "adharImage", required = false) MultipartFile adharImage,
             @RequestParam("panImage") MultipartFile panImage
     ) {
         try {
-
-
             // Check if KYC already exists for the given user/vendor
             if (kycRepository.existsByUserOrVendorIdAndRole(userOrVendorId, role)) {
                 return ResponseService.generateErrorResponse("KYC already submitted. You cannot submit again.", HttpStatus.CONFLICT);
             }
+
             panNo = panNo.toUpperCase();
+
             // Check for null or empty fields
-            if (userOrVendorId == null || role == null || role.isBlank() ||
-                    adharNo == null || adharNo.isBlank() ||
-                    panNo == null || panNo.isBlank()) {
+            if (userOrVendorId == null || role == null || role.isBlank() || panNo == null || panNo.isBlank()) {
                 return ResponseService.generateErrorResponse("Missing required fields", HttpStatus.BAD_REQUEST);
             }
 
-            // Aadhaar should be 12 digits
-            if (!adharNo.matches("\\d{12}")) {
-                return ResponseService.generateErrorResponse("Invalid Aadhaar number. Must be 12 digits.", HttpStatus.BAD_REQUEST);
+            // Aadhaar validation only for vendor
+            if (role.equalsIgnoreCase("vendor")) {
+                if (adharNo == null || adharNo.isBlank()) {
+                    return ResponseService.generateErrorResponse("Aadhaar number is required for vendors", HttpStatus.BAD_REQUEST);
+                }
+
+                if (!adharNo.matches("\\d{12}")) {
+                    return ResponseService.generateErrorResponse("Invalid Aadhaar number. Must be 12 digits.", HttpStatus.BAD_REQUEST);
+                }
+
+                if (adharImage == null || adharImage.isEmpty()) {
+                    return ResponseService.generateErrorResponse("Aadhaar image is required for vendors", HttpStatus.BAD_REQUEST);
+                }
+
+                if (adharImage.getSize() > 5 * 1024 * 1024) {
+                    return ResponseService.generateErrorResponse("Aadhaar image must be under 5MB", HttpStatus.BAD_REQUEST);
+                }
             }
 
-            // PAN format: 5 letters + 4 digits + 1 letter (standard format)
+            // PAN validation
             if (!panNo.matches("[A-Z]{5}[0-9]{4}[A-Z]{1}")) {
                 return ResponseService.generateErrorResponse("Invalid PAN number format.", HttpStatus.BAD_REQUEST);
-            }
-
-            // Validate files
-            if (adharImage == null || adharImage.isEmpty()) {
-                return ResponseService.generateErrorResponse("Aadhaar image is required", HttpStatus.BAD_REQUEST);
             }
 
             if (panImage == null || panImage.isEmpty()) {
                 return ResponseService.generateErrorResponse("PAN image is required", HttpStatus.BAD_REQUEST);
             }
 
-
-            // Validate file size (e.g. max 5MB)
-            long maxFileSize = 5 * 1024 * 1024; // 5MB
-            if (adharImage.getSize() > maxFileSize || panImage.getSize() > maxFileSize) {
-                return ResponseService.generateErrorResponse("Each file must be under 5MB", HttpStatus.BAD_REQUEST);
+            if (panImage.getSize() > 5 * 1024 * 1024) {
+                return ResponseService.generateErrorResponse("PAN image must be under 5MB", HttpStatus.BAD_REQUEST);
             }
 
-
+            // Check if user/vendor exists
             boolean exists = false;
             if (role.equalsIgnoreCase("vendor")) {
                 exists = vendorRepository.existsById(userOrVendorId);
@@ -111,15 +115,23 @@ public class KycController {
                 return ResponseService.generateErrorResponse("User/Vendor not found for given ID and role", HttpStatus.NOT_FOUND);
             }
 
-            KycEntity kycEntity = kycService.submitKycRequest(userOrVendorId, role, adharNo, panNo, adharImage, panImage);
+            // Call service with nullable Aadhaar info for users
+            KycEntity kycEntity = kycService.submitKycRequest(
+                    userOrVendorId, role,
+                    adharNo != null ? adharNo : "",
+                    panNo,
+                    adharImage,
+                    panImage
+            );
 
-            return ResponseService.generateSuccessResponse("KYC Request applied successfully Kindly wait until Verify from AagTeam", kycEntity, HttpStatus.OK);
+            return ResponseService.generateSuccessResponse("KYC Request applied successfully. Kindly wait for verification.", kycEntity, HttpStatus.OK);
         } catch (Exception e) {
             return ResponseService.generateErrorResponse("KYC Request Failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-/*    @GetMapping("/all")
+
+    /*    @GetMapping("/all")
     public ResponseEntity<?> getAllKycs(
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String mobileNumber,
