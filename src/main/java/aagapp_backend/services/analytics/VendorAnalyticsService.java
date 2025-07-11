@@ -31,7 +31,7 @@ public class VendorAnalyticsService {
     private TournamentRepository tournamentRepo;
 
     public VendorAnalyticsResponse getVendorAnalytics(Long vendorId, LocalDate startDate, LocalDate endDate) {
-        ZoneId zone = ZoneId.systemDefault();
+        ZoneId zone = ZoneId.of("Asia/Kolkata");
 
         if (startDate == null || endDate == null) {
             LocalDate today = LocalDate.now(zone);
