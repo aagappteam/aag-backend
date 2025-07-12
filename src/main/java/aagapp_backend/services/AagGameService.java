@@ -217,7 +217,7 @@ public class AagGameService {
     public String getGameIconByThemeId(Long themeId) {
         ThemeEntity theme = themeRepository.findById(themeId).orElse(null);
         if (theme != null) {
-            return theme.getImageUrl();
+            return theme.getGameimageUrl();
         }
         return null;
     }

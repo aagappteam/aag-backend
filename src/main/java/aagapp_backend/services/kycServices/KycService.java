@@ -312,9 +312,15 @@ public class KycService {
 
             try {
                 if (isVerified == KycStatus.VERIFIED && email != null) {
-                    emailService.sendKycVerifiedEmail(email, name);
+                    if(email!=null){
+                        emailService.sendKycVerifiedEmail(email, name);
+
+                    }
                 } else if (isVerified == KycStatus.REJECTED && email != null) {
-                    emailService.sendKycRejectedEmail(email, name);
+                    if(email!=null){
+                        emailService.sendKycRejectedEmail(email, name);
+
+                    }
                 }
             } catch (IOException e) {
                 // Logging the email failure but not stopping the bulk process

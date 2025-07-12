@@ -14,6 +14,7 @@ import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.payment.PlanRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.CommonService;
 import aagapp_backend.services.EmailService;
 import aagapp_backend.services.NotificationService;
@@ -58,6 +59,9 @@ public class PaymentService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private VendorRepository vendorRepository;
 
     @Autowired
     private ExceptionHandlingImplement exceptionHandlingImplement;
@@ -121,7 +125,6 @@ public class PaymentService {
     }
 
  @Scheduled(cron = "0 0 * * * *") // Runs every hour
-// @Scheduled(cron = "*/1 * * * * *") // For testing: every second
     public void expireOldSubscriptions() {
         List<PaymentEntity> expiredPayments = paymentRepository.findAllByExpiryAtBeforeAndStatus(
                 LocalDateTime.now(), PaymentStatus.ACTIVE
@@ -146,6 +149,9 @@ public class PaymentService {
                                 planEntity.getPlanName(),
                                 payment.getAmount()
                         );
+                        vendor.setIsPaid(false);
+                        vendorRepository.save(vendor);
+
                     }
 
                 }
@@ -153,6 +159,7 @@ public class PaymentService {
 
                 //  Create new subscription if this is the specific vendor
                 if (vendor != null && Constant.TEST_MOBILE_NUMBERS.contains(vendor.getMobileNumber())) {
+
                     PaymentEntity newPayment = new PaymentEntity();
                     newPayment.setVendorEntity(vendor);
                     newPayment.setAmount(50000.0);
@@ -165,6 +172,13 @@ public class PaymentService {
                     newPayment.setIsTest(true);
 
                     paymentRepository.save(newPayment);
+                    PlanEntity planEntity = entityManager.find(PlanEntity.class, newPayment.getPlanId());
+
+                    vendor.setPlanName(planEntity.getPlanName());
+                    vendor.setIsPaid(true);
+//                    only for testing
+                    vendor.setDailyLimit(20);
+                    vendorRepository.save(vendor);
                 }
 
             } catch (Exception e) {
@@ -233,11 +247,8 @@ public class PaymentService {
             VendorLevelPlan level = existingVendor.getVendorLevelPlan();
             Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
             Integer themeLimit = extractThemeLimit(planEntity.getFeatures());
-            existingVendor.setThemeCount(2);
-
-            /*
             existingVendor.setThemeCount(themeLimit);
-*/
+
 
             existingVendor.setDailyLimit(dailyGameLimit);
             existingVendor.setVendorLevelPlan(initialLevel);
@@ -291,7 +302,9 @@ public class PaymentService {
         }
 
 
-        // Save and return the newly created payment
+
+
+            // Save and return the newly created payment
         existingVendor.setIsPaid(true);
         entityManager.persist(existingVendor);
 
@@ -312,7 +325,21 @@ public class PaymentService {
         paymentRepository.save(paymentRequest);
         //send mail
         try {
-            emailService.sendPlanPurchasedEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
+            if (isFirstPayment(existingVendor)) {
+                if(existingVendor.getPrimary_email()!=null){
+                    emailService.sendPlanPurchasedEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
+
+                }
+            }else{
+                if(existingVendor.getPrimary_email()!=null){
+                    emailService.sendPlanRenewEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
+
+                }
+            }
+            /*if(existingVendor.getPrimary_email()!=null){
+                emailService.sendPlanPurchasedEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
+
+            }*/
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -410,8 +437,7 @@ public class PaymentService {
 
             if (matcher.find()) {
                 String number = matcher.group(1); // Extract the number
-                System.out.println("Feature found: " + feature);
-                System.out.println("Extracted number: " + number);
+
                 return Integer.parseInt(number);  // Return the extracted number
             }
         }
