@@ -306,16 +306,15 @@ public class GameService {
         ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
         if (gameRequest.getScheduledAt() != null) {
             ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-            if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
-                throw new BusinessException("The game must be scheduled at least 4 hours in advance." , HttpStatus.BAD_REQUEST);
+            if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(1))) {
+                throw new BusinessException("The game must be scheduled at least 1 hours in advance." , HttpStatus.BAD_REQUEST);
             }
             game.setStatus(GameStatus.SCHEDULED);
             game.setScheduledAt(scheduledInKolkata);
             game.setEndDate(scheduledInKolkata.plusHours(4));
         } else {
-            game.setStatus(GameStatus.SCHEDULED);
-
-            game.setScheduledAt(nowInKolkata.plusMinutes(15));
+            game.setStatus(GameStatus.ACTIVE);
+            game.setScheduledAt(nowInKolkata);
             game.setEndDate(nowInKolkata.plusHours(4));
 
         }

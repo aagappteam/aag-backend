@@ -452,14 +452,14 @@ public class LeagueService {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusMinutes(15);
             if (leagueRequest.getScheduledAt() != null) {
                 ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
-                    throw new BusinessException("The game must be scheduled at least 4 hours in advance.", HttpStatus.BAD_REQUEST);
+                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(1))) {
+                    throw new BusinessException("The game must be scheduled at least 1 hours in advance.", HttpStatus.BAD_REQUEST);
                 }
                 league.setStatus(LeagueStatus.SCHEDULED);
                 league.setScheduledAt(leagueRequest.getScheduledAt());
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             } else {
-                league.setStatus(LeagueStatus.SCHEDULED);
+                league.setStatus(LeagueStatus.ACTIVE);
                 league.setScheduledAt(nowInKolkata);
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             }
