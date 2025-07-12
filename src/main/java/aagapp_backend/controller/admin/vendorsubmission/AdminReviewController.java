@@ -1011,14 +1011,18 @@ public class AdminReviewController {
             String fcmToken = vendorEntity.getFcmToken();
             String notificationTitle;
             String notificationBody;
+            String planName = request.getRequestedPlanName();
 
             if (approve) {
-                notificationTitle = "Your plan upgrade has been approved";
-                notificationBody = "Congratulations! Your plan upgrade has been approved.";
+                notificationTitle = planName + " plan approved";
+                notificationBody = "Congratulations! Your " + planName + " upgrade has been approved.";
             } else {
-                notificationTitle = "Your plan upgrade has been rejected";
-                notificationBody = "We regret to inform you that your plan upgrade has been rejected.";
+                notificationTitle = planName + " plan rejected";
+                notificationBody = "We regret to inform you that your " + planName + " upgrade has been rejected.";
             }
+
+
+
 
             if (vendorEntity.getService_provider_id() != null) {
                 Notification notification = new Notification();
