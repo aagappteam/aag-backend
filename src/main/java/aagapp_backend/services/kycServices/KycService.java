@@ -97,15 +97,18 @@ public class KycService {
             String panKey = "kyc/pan/" + System.currentTimeMillis() + panExtension;
             s3Service.uploadPhoto(panKey, panImage);
             String panUrl = s3Service.getFileUrl(panKey);
+            if(mailId!=null) {
+                emailService.sendKycUploadEmail(mailId, name);
 
-            emailService.sendKycUploadEmail(mailId, name);
+            }
+
 
             // Save KYC
             KycEntity kycEntity = new KycEntity();
             kycEntity.setUserOrVendorId(userOrVendorId);
             kycEntity.setRole(role);
             kycEntity.setMobileNumber(mobileNumber);
-            kycEntity.setEmail(mailId);
+            kycEntity.setEmail(mailId!=null?mailId:"");
             kycEntity.setName(name);
             kycEntity.setAadharNo(adharNo);
             kycEntity.setPanNo(panNo);
@@ -163,7 +166,6 @@ public class KycService {
             throw new RuntimeException("Invalid role specified in KYC record");
         }
 
-        // Prepare notification and email
         String title;
         if (isVerified == KycStatus.VERIFIED) {
             description = "KYC Verified";
