@@ -339,15 +339,15 @@ public class TournamentService {
             if (tournamentRequest.getScheduledAt() != null) {
 
                 ZonedDateTime scheduledInKolkata = tournamentRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
-                    throw new BusinessException("The game must be scheduled at least 4 hours in advance." , HttpStatus.BAD_REQUEST);
+                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(1))) {
+                    throw new BusinessException("The game must be scheduled at least 1 hours in advance." , HttpStatus.BAD_REQUEST);
                 }
                 tournament.setStatus(TournamentStatus.SCHEDULED);
                 tournament.setScheduledAt(scheduledInKolkata);
 
             } else {
                 tournament.setStatus(TournamentStatus.SCHEDULED);
-            tournament.setScheduledAt(nowInKolkata.plusHours(1));
+                tournament.setScheduledAt(nowInKolkata.plusHours(1));
 //              tournament.setScheduledAt(nowInKolkata.plusMinutes(4));
 
             }
