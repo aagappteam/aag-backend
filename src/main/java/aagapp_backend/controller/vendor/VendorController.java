@@ -929,16 +929,31 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         // Apply the filter based on filterType and fetch all data
         switch (filterType.toLowerCase()) {
             case "referrals":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("followercount"))); // Sorting by referral count
+                allVendors = vendorRepository.findAll(
+                        Sort.by(Sort.Order.desc("followercount"))
+                                .and(Sort.by(Sort.Order.asc("createdDate")))
+                );
+
+//                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("followercount"))); // Sorting by referral count
                 break;
 
             case "totalwallet":
 //                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance"))); // Sorting by wallet balance
-                filteredVendors = monthlyEarningRepository.findAll(Sort.by(Sort.Order.desc("earnedAmount")));
+//                filteredVendors = monthlyEarningRepository.findAll(Sort.by(Sort.Order.desc("earnedAmount")));
+                filteredVendors = monthlyEarningRepository.findAll(
+                        Sort.by(Sort.Order.desc("earnedAmount"))
+                                .and(Sort.by(Sort.Order.asc("createdDate")))
+                );
+
                 break;
 
             case "participants":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament"))); // Sorting by participants
+//                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament"))); // Sorting by participants
+                allVendors = vendorRepository.findAll(
+                        Sort.by(Sort.Order.desc("totalParticipatedInGameTournament"))
+                                .and(Sort.by(Sort.Order.asc("createdDate")))
+                );
+
                 break;
 
             default:

@@ -1,6 +1,8 @@
 package aagapp_backend.controller.admin.vendorsubmission;
 
+import aagapp_backend.components.ZonedDateTimeAdapter;
 import aagapp_backend.dto.GameRequest;
+import aagapp_backend.dto.NotificationRequest;
 import aagapp_backend.dto.TournamentUpdateRequest;
 import aagapp_backend.dto.WithdrawalRequestResponseDTO;
 import aagapp_backend.entity.CustomCustomer;
@@ -30,11 +32,14 @@ import aagapp_backend.services.admin.InvoiceServiceAdmin;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.faqs.FAQService;
+import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.ticket.TicketService;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import aagapp_backend.spec.WithdrawalRequestSpecification;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +60,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -73,6 +79,8 @@ public class AdminReviewController {
 
     @Autowired
     private VendorRepository vendorRepository;
+    @Autowired
+    private NotoficationFirebase notificationFirebase;
 
     @Autowired
     private CustomCustomerService customCustomerService;
@@ -976,10 +984,73 @@ public class AdminReviewController {
         }
     }
 
-
-
-
     @PostMapping("/approve-upgrade")
+    public ResponseEntity<?> handleUpgradeRequest(@RequestBody Map<String, Object> payload) {
+        try {
+            if (!payload.containsKey("requestId") || payload.get("requestId") == null) {
+                return responseService.generateErrorResponse("Request ID is required", HttpStatus.BAD_REQUEST);
+            }
+            if (!payload.containsKey("approve") || payload.get("approve") == null) {
+                return responseService.generateErrorResponse("Approve flag is required", HttpStatus.BAD_REQUEST);
+            }
+
+            Long requestId = Long.parseLong(payload.get("requestId").toString());
+            boolean approve = Boolean.parseBoolean(payload.get("approve").toString());
+            String remarks = payload.getOrDefault("remarks", null) != null ? payload.get("remarks").toString() : null;
+
+            PlanUpgradeRequest request = paymentPlanUpgradeRepository.findById(requestId)
+                    .orElseThrow(() -> new RuntimeException("Upgrade request not found"));
+
+            request.setApprovedDate(LocalDateTime.now());
+            request.setAdminRemarks(remarks);
+            request.setStatus(approve ? RequestStatus.APPROVED : RequestStatus.REJECTED);
+
+            VendorEntity vendorEntity = vendorRepository.findById(request.getVendorId())
+                    .orElseThrow(() -> new BusinessException("Vendor not found", HttpStatus.BAD_REQUEST));
+
+            String fcmToken = vendorEntity.getFcmToken();
+            String notificationTitle;
+            String notificationBody;
+
+            if (approve) {
+                notificationTitle = "Your plan upgrade has been approved";
+                notificationBody = "Congratulations! Your plan upgrade has been approved.";
+            } else {
+                notificationTitle = "Your plan upgrade has been rejected";
+                notificationBody = "We regret to inform you that your plan upgrade has been rejected.";
+            }
+
+            if (vendorEntity.getService_provider_id() != null) {
+                Notification notification = new Notification();
+                notification.setRole("Vendor");
+                notification.setVendorId(vendorEntity.getService_provider_id());
+                notification.setName(notificationTitle);
+                notification.setDescription(notificationTitle);
+                notification.setDetails(notificationBody);
+                notificationRepository.save(notification);
+            }
+            paymentPlanUpgradeRepository.save(request);
+
+            if (fcmToken != null && !fcmToken.isEmpty()) {
+                try {
+                    notificationFirebase.sendNotification(fcmToken, notificationTitle, notificationBody);
+                } catch (Exception e) {
+                    throw new BusinessException("Error sending push notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+
+
+            return responseService.generateSuccessResponse("Request handled successfully", null, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Failed to process upgrade", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+/*    @PostMapping("/approve-upgrade")
     public ResponseEntity<?> handleUpgradeRequest(@RequestBody Map<String, Object> payload) {
 
         try {
@@ -1004,10 +1075,46 @@ public class AdminReviewController {
                 request.setApprovedDate(LocalDateTime.now());
                 request.setAdminRemarks(remarks);
 
+
             } else {
                 request.setStatus(RequestStatus.REJECTED);
                 request.setApprovedDate(LocalDateTime.now());
                 request.setAdminRemarks(remarks);
+
+            }
+
+            VendorEntity vendorEntity = vendorRepository.findById(request.getVendorId())
+                    .orElseThrow(() -> new BusinessException("Opponent Vendor not found", HttpStatus.BAD_REQUEST));
+            String fcmToken = vendorEntity.getFcmToken();
+
+            if(vendorEntity.getService_provider_id()!= null){
+                Notification notification = new Notification();
+                notification.setRole("Vendor");
+
+                notification.setVendorId(vendorEntity.getService_provider_id());
+                notification.setName("Plan Upgrade Approved");
+
+                notification.setDescription("Plan Upgrade Approved");
+                notification.setDetails("Your plan upgrade has been approved");
+                notificationRepository.save(notification);
+            }
+
+
+
+            if (fcmToken != null && !fcmToken.isEmpty()) {
+
+
+                try {
+                    String title = "Your plan upgrade has been approved";
+                    String body = "Congratulations! Your plan upgrade has been approved.";
+
+
+
+                    notificationFirebase.sendNotification(fcmToken, title, body);
+
+                } catch (Exception e) {
+                    throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                }
             }
 
             paymentPlanUpgradeRepository.save(request);
@@ -1022,7 +1129,7 @@ public class AdminReviewController {
 
 
         }
-    }
+    }*/
 
 }
 
