@@ -1043,9 +1043,17 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         }
 
         // Paginate the leaderboard based on the requested page and size
+
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, leaderboard.size());
-        List<Map<String, Object>> paginatedLeaderboard = leaderboard.subList(fromIndex, toIndex);
+        List<Map<String, Object>> paginatedLeaderboard;
+
+        if (fromIndex >= leaderboard.size()) {
+            paginatedLeaderboard = new ArrayList<>();
+        } else {
+            paginatedLeaderboard = leaderboard.subList(fromIndex, toIndex);
+        }
+
 
         // Prepare response data
         Map<String, Object> data = Map.of(

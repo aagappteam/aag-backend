@@ -5,7 +5,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
+import java.util.Date;
 
 @Entity
 @Table(name = "influencer_monthly_earning")
@@ -33,6 +36,9 @@ public class InfluencerMonthlyEarning {
 
     @Column(name = "earned_amount")
     private BigDecimal earnedAmount = BigDecimal.ZERO;
+    @CreationTimestamp
+    @Column(name = "created_date", updatable = false)
+    private Date createdDate;
 
     public BigDecimal getMaxReturnAmount() {
         return rechargeAmount.multiply(BigDecimal.valueOf(multiplier));
