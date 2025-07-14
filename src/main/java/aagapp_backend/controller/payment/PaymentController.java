@@ -7,6 +7,7 @@ import aagapp_backend.entity.payment.PlanEntity;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.RoleService;
 import aagapp_backend.services.admin.InvoiceServiceAdmin;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentService;
@@ -47,6 +48,10 @@ public class PaymentController {
     @Autowired
     private InvoiceServiceAdmin invoiceServiceAdmin;
 
+    @Autowired
+    private RoleService roleService;
+
+
     // Create payment with authorization check and input validation
     @PostMapping("/create/{vendorId}")
     public ResponseEntity<?> createPayment(
@@ -67,15 +72,24 @@ public class PaymentController {
             }
             String token = authorization.substring(7);
             Long venderId = jwtUtil.extractId(token);
+            Integer roleId = jwtUtil.extractRoleId(token);
+            String roleName = roleService.findRoleName(roleId);
 
             if (venderId == null) {
                 return responseService.generateErrorResponse("Invalid or expired token", HttpStatus.UNAUTHORIZED);
             }
 
-            if (!venderId.equals(vendorId)) {
+/*            if (!venderId.equals(vendorId)) {
                 return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
-            }
+            }*/
+            System.out.println("vendorId: " + vendorId);
+            System.out.println("roleName: " + roleName);
 
+            if (!("Admin".equalsIgnoreCase(roleName) || "SuperAdmin".equalsIgnoreCase(roleName))) {
+                if (!venderId.equals(vendorId)) {
+                    return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
+                }
+            }
             // Payment validation: Ensure positive and reasonable amount
             if (paymentRequest.getAmount() <= 0) {
                 return responseService.generateErrorResponse("Invalid payment amount", HttpStatus.BAD_REQUEST);

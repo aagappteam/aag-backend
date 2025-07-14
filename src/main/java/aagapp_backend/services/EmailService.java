@@ -165,7 +165,7 @@ public class EmailService {
         MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
 
         try {
-            helper.setFrom(fromEmail, "AAG App Team");
+            helper.setFrom(fromEmail, "AAG App");
             helper.setTo(to);
             helper.setSubject(subject);
 
@@ -196,7 +196,7 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
 
-            helper.setFrom(fromEmail, "AAG App Team");
+            helper.setFrom(fromEmail, "AAG App");
             helper.setTo(new String[] {
                     "anilkant.mishra@celestialitverse.com",
                     "juned.idreesh@celestialitverse.com"
