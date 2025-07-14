@@ -82,8 +82,7 @@ public class PaymentController {
 /*            if (!venderId.equals(vendorId)) {
                 return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
             }*/
-            System.out.println("vendorId: " + vendorId);
-            System.out.println("roleName: " + roleName);
+
 
             if (!("Admin".equalsIgnoreCase(roleName) || "SuperAdmin".equalsIgnoreCase(roleName))) {
                 if (!venderId.equals(vendorId)) {
