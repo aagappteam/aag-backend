@@ -226,6 +226,24 @@ public class AdminReviewController {
         }
     }
 
+    @GetMapping("/ticket/{ticketId}")
+    public ResponseEntity<?> getTicket(@PathVariable Long ticketId) {
+        try {
+            // Find the ticket by its ID
+            Ticket ticket = ticketRepository.findById(ticketId).orElse(null);
+            if (ticket == null) {
+                return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+            }
+
+            // Return the ticket as a response
+            return responseService.generateSuccessResponse("Ticket found", ticket, HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("An error occurred while retrieving the ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @PutMapping("/close-ticket/{ticketId}")
     public ResponseEntity<?> closeTicket(@PathVariable Long ticketId) {
         try {
