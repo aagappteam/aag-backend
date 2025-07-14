@@ -811,7 +811,7 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
 
         try {
             // Set the "From" address (your company or no-reply email)
-            helper.setFrom("aagappteam@gmail.com", "AAG App Team");
+            helper.setFrom("aagappteam@gmail.com", "AAG App");
 
             // Set the recipient email address
             helper.setTo(paymentEntity.getVendorEntity().getPrimary_email());
@@ -824,7 +824,7 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
                     "Thank you for your payment. You can download your invoice from the following link:\n\n" +
                     invoiceUrl + "\n\n" +
                     "Best regards,\n" +
-                    "AAG App Team\n\n" +
+                    "AAG App\n\n" +
                     "Please ensure to keep this information secure.";
 
             // Set the email body
