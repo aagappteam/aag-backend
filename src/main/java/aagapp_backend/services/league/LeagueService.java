@@ -529,7 +529,7 @@ public class LeagueService {
 //                    notificationFirebase.sendMessageToToken(notificationRequest);
 
                     String title = "Challenge Accepted!";
-                    String body = vendorEntity.getFirst_name() + " is ready. Your league will be active in 15 minutes!";
+                    String body = vendorEntity.getFirst_name() + " is ready. Your league is now live!";
 
                     notificationFirebase.sendNotification(fcmToken, title, body);
                 } catch (Exception e) {

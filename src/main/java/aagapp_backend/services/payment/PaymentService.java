@@ -464,23 +464,19 @@ public class PaymentService {
         return defaultLimit;
     }
     private Integer extractThemeLimit(List<String> features) {
-        // Default limit if no matching feature is found
         Integer defaultLimit = 3;
 
         for (String feature : features) {
-            // Match patterns like "Upto 7 Themes" or "7 Skins", etc.
             Pattern pattern = Pattern.compile("(?i)(?:upto\\s*)?([0-9]+)\\s*(themes|skins?)");
             Matcher matcher = pattern.matcher(feature);
 
             if (matcher.find()) {
-                String number = matcher.group(1); // Extract the number
-              /*  System.out.println("Theme feature found: " + feature);
-                System.out.println("Extracted theme/skin number: " + number);*/
-                return Integer.parseInt(number);  // Return the extracted number
+                String number = matcher.group(1);
+
+                return Integer.parseInt(number);
             }
         }
 
-//        System.out.println("Theme feature not found, returning default limit of " + defaultLimit);
         return defaultLimit;
     }
 

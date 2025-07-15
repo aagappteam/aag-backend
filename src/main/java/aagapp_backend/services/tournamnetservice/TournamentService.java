@@ -369,7 +369,7 @@ public class TournamentService {
             tournament.setShareableLink(shareableLink);
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
             vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);
-            // Return the saved game with the shareable link
+
             return tournamentRepository.save(tournament);
 
         }catch (BusinessException e){
