@@ -496,7 +496,8 @@ public class OtpEndpoint {
                     VendorEntity vendorEntity = new VendorEntity();
                     vendorEntity.setCountry_code(countryCode);
                     vendorEntity.setMobileNumber(mobileNumber);
-                    if (State == null || State.isEmpty()) {
+
+                    if(State!=null) {
                         vendorEntity.setState(State);
                     }
                     vendorEntity.setOtp(otp);

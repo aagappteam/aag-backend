@@ -501,6 +501,186 @@ public class VendorController {
         }
     }
 
+/*    @Transactional
+    @GetMapping("/get-all-vendors")
+    public ResponseEntity<?> getAllServiceProviders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "vendorId", required = false) Long vendorId,
+            @RequestParam(value = "vendorid", required = false) Long vendorid,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "firstName", required = false) String firstName,
+            @RequestParam(value = "planName", required = false) String planName,
+            @RequestParam(value = "isPaid", required = false) Boolean isPaid,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(value = "vendorStatus", required = false) VendorStatus vendorStatus
+    ) {
+        try {
+            int finalLimit = (limit != null) ? limit : (size != null ? size : 10);
+            int startPosition = page * finalLimit;
+
+            if (vendorId != null) {
+                return this.getVendorDetailsById(vendorId, userId);
+            }
+
+            StringBuilder queryString = new StringBuilder("SELECT s FROM VendorEntity s");
+            StringBuilder countQueryString = new StringBuilder("SELECT COUNT(s) FROM VendorEntity s");
+            List<String> conditions = new ArrayList<>();
+
+            // Build dynamic conditions
+            if (status != null && !status.isEmpty()) conditions.add("s.isActive = :status");
+            if (email != null && !email.isEmpty()) conditions.add("LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :email, '%'))");
+
+            if (firstName != null && !firstName.trim().isEmpty()) {
+                String[] nameParts = firstName.trim().split("\\s+");
+                String firstNamePart = nameParts[0].trim();
+                if (nameParts.length == 1) {
+                    conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')))");
+                } else {
+                    if (!firstNamePart.isEmpty()) conditions.add("LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))");
+                    if (nameParts.length >= 2 && !nameParts[1].trim().isEmpty()) {
+                        conditions.add("LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))");
+                    }
+                }
+            }
+
+            if (planName != null && !planName.isEmpty()) conditions.add("LOWER(s.planName) LIKE LOWER(CONCAT('%', :planName, '%'))");
+            if (vendorid != null) conditions.add("s.service_provider_id = :vendorid");
+            if (isPaid != null) conditions.add("s.isPaid = :isPaid");
+            if (startDate != null && endDate != null) conditions.add("s.createdDate BETWEEN :startDate AND :endDate");
+            else if (startDate != null) conditions.add("s.createdDate >= :startDate");
+            else if (endDate != null) conditions.add("s.createdDate <= :endDate");
+            if (vendorStatus != null) conditions.add("s.status = :vendorStatus");
+
+            if (search != null && !search.trim().isEmpty()) {
+                conditions.add("(" +
+                        "LOWER(s.first_name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.last_name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.mobileNumber) LIKE LOWER(CONCAT('%', :search, '%'))" +
+                        ")");
+            }
+
+            // Append WHERE clause
+            if (!conditions.isEmpty()) {
+                String whereClause = String.join(" AND ", conditions);
+                queryString.append(" WHERE ").append(whereClause);
+                countQueryString.append(" WHERE ").append(whereClause);
+            }
+
+            queryString.append(" ORDER BY s.service_provider_id DESC");
+
+            Query countQuery = entityManager.createQuery(countQueryString.toString());
+            Query query = entityManager.createQuery(queryString.toString(), VendorEntity.class);
+
+            // Set parameters
+            setParameters(countQuery, status, email, firstName, planName, vendorid, isPaid, startDate, endDate, vendorStatus, search);
+            setParameters(query, status, email, firstName, planName, vendorid, isPaid, startDate, endDate, vendorStatus, search);
+
+            query.setFirstResult(startPosition);
+            query.setMaxResults(finalLimit);
+
+            Long totalCount = (Long) countQuery.getSingleResult();
+            List<VendorEntity> results = query.getResultList();
+
+            // Fetch vendor details
+            List<Map<String, Object>> vendorDetailList = new ArrayList<>();
+            for (VendorEntity vendor : results) {
+                Map<String, Object> vendorDetailsData = serviceProviderService.VendorDetails(vendor, userId).getBody();
+                if (vendorDetailsData != null && vendorDetailsData.containsKey("data")) {
+                    vendorDetailList.add((Map<String, Object>) vendorDetailsData.get("data"));
+                }
+            }
+
+            // 🔥 Active/Inactive filtered count
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            Date activeSince = Date.from(now.minusMinutes(10).toInstant());
+
+            String baseWhere = !conditions.isEmpty() ? String.join(" AND ", conditions) : "1=1";
+
+            // Active count
+            String activeQueryStr = "SELECT COUNT(s) FROM VendorEntity s WHERE " + baseWhere + " AND s.lastActiveAt >= :activeSince";
+            Query activeCountQuery = entityManager.createQuery(activeQueryStr);
+            setParameters(activeCountQuery, status, email, firstName, planName, vendorid, isPaid, startDate, endDate, vendorStatus, search);
+            activeCountQuery.setParameter("activeSince", activeSince);
+            Long activeCount = (Long) activeCountQuery.getSingleResult();
+
+            // Inactive count
+            String inactiveQueryStr = "SELECT COUNT(s) FROM VendorEntity s WHERE " + baseWhere + " AND (s.lastActiveAt IS NULL OR s.lastActiveAt < :activeSince)";
+            Query inactiveCountQuery = entityManager.createQuery(inactiveQueryStr);
+            setParameters(inactiveCountQuery, status, email, firstName, planName, vendorid, isPaid, startDate, endDate, vendorStatus, search);
+            inactiveCountQuery.setParameter("activeSince", activeSince);
+            Long inactiveCount = (Long) inactiveCountQuery.getSingleResult();
+
+            return ResponseService.generateSuccessResponseWithCountAndStatus(
+                    "List of vendors", vendorDetailList, totalCount, activeCount, inactiveCount, HttpStatus.OK);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }*/
+
+
+    private void setParameters(Query query,
+                               String status,
+                               String email,
+                               String firstName,
+                               String planName,
+                               Long vendorid,
+                               Boolean isPaid,
+                               LocalDate startDate,
+                               LocalDate endDate,
+                               VendorStatus vendorStatus,
+                               String search) {
+
+        if (status != null && !status.isEmpty()) {
+            query.setParameter("status", Boolean.parseBoolean(status));
+        }
+        if (email != null && !email.isEmpty()) {
+            query.setParameter("email", email);
+        }
+
+        if (firstName != null && !firstName.trim().isEmpty()) {
+            String[] nameParts = firstName.trim().split("\\s+");
+            String firstNamePart = nameParts[0].trim();
+            query.setParameter("firstNamePart", firstNamePart);
+            if (nameParts.length >= 2 && !nameParts[1].trim().isEmpty()) {
+                query.setParameter("lastNamePart", nameParts[1].trim());
+            }
+        }
+
+        if (planName != null && !planName.isEmpty()) {
+            query.setParameter("planName", planName);
+        }
+        if (vendorid != null) {
+            query.setParameter("vendorid", vendorid);
+        }
+        if (isPaid != null) {
+            query.setParameter("isPaid", isPaid);
+        }
+        if (startDate != null) {
+            query.setParameter("startDate", Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        }
+        if (endDate != null) {
+            query.setParameter("endDate", Date.from(endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        }
+        if (vendorStatus != null) {
+            query.setParameter("vendorStatus", vendorStatus);
+        }
+        if (search != null && !search.trim().isEmpty()) {
+            query.setParameter("search", search.trim());
+        }
+    }
+
+
 
     public Long getActiveInactiveCounts() {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
