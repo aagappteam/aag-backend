@@ -16,8 +16,10 @@ import aagapp_backend.services.vendor.VenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -53,7 +55,23 @@ public class TicketController {
         }
     }
 
-/*    @GetMapping("/by-role/{role}/{id}")
+    @PostMapping(value = "/message/{ticketId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> postMessageToTicket(
+            @PathVariable Long ticketId,
+            @RequestParam(value = "message", required = false) String message,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam("senderRole") String senderRole
+    ) {
+        try {
+            return ticketService.postMessageToTicket(ticketId, message, file, senderRole);
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error posting message: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+    /*    @GetMapping("/by-role/{role}/{id}")
     public ResponseEntity<?> getTicketsByRoleAndId(@PathVariable String role, @PathVariable Long id, @RequestParam(required = false) TicketEnum status) {
         try {
             return ticketService.getTicketsByRoleAndId(role, id, status);

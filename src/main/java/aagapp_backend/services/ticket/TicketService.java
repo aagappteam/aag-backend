@@ -9,16 +9,19 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.ticket.PredefinedQA;
 import aagapp_backend.entity.ticket.Ticket;
+import aagapp_backend.entity.ticket.TicketMessage;
 import aagapp_backend.enums.AssignedTeam;
 import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.enums.TicketPriority;
 import aagapp_backend.enums.TicketUserType;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.ticket.PredefinedQARepository;
+import aagapp_backend.repository.ticket.TicketMessageRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.s3services.S3Service;
 import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.spec.TicketSpecification;
 import io.micrometer.common.util.StringUtils;
@@ -33,7 +36,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.Query;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,6 +75,12 @@ public class TicketService {
 
     @Autowired
     private VendorRepository vendorRepository;
+
+    @Autowired
+    private TicketMessageRepository ticketMessageRepository;
+
+    @Autowired
+    private S3Service s3Service;
 
     public ResponseEntity<?> createTicket(Map<String, Object> ticketDetails, String token) {
         try {
@@ -126,7 +141,7 @@ public class TicketService {
             ticketDTO.setSubject(ticket.getSubject());
             ticketDTO.setDescription(ticket.getDescription());
             ticketDTO.setStatus(ticket.getStatus().name());
-            ticketDTO.setRemark(ticket.getRemark());
+//            ticketDTO.setRemark(ticket.getRemark());
             ticketDTO.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
             ticketDTO.setRole(ticket.getRole());
 
@@ -229,9 +244,10 @@ public class TicketService {
         dto.setSubject(ticket.getSubject());
         dto.setDescription(ticket.getDescription());
         dto.setStatus(ticket.getStatus().name());
-        dto.setRemark(ticket.getRemark());
+//        dto.setRemark(ticket.getRemark());
         dto.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
         dto.setRole(ticket.getRole());
+        dto.setMessages(ticket.getMessages());
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         dto.setCreatedDate(sdf.format(ticket.getCreatedDate()));
@@ -384,7 +400,7 @@ public class TicketService {
                         return TicketResponseDTO.builder()
                                 .ticketId(ticket.getId())
                                 .subject(ticket.getSubject())
-                                .remark(ticket.getRemark())
+//                                .remark(ticket.getRemark())
                                 .customerOrVendorId(ticket.getCustomerOrVendorId())
                                 .description(ticket.getDescription())
                                 .status(ticket.getStatus() != null ? ticket.getStatus().toString() : null)
@@ -485,13 +501,64 @@ public class TicketService {
 
         // Update status and add remark
         ticket.setStatus(TicketEnum.RESOLVED);
-        ticket.setRemark(remark);
+//        ticket.setRemark(remark);
         ticket.setUpdatedDate(new Date());
 
         ticketRepository.save(ticket);
 
         return responseService.generateSuccessResponse("Ticket marked as resolved with remark", ticket, HttpStatus.OK);
     }
+
+
+    public ResponseEntity<?> postMessageToTicket(Long ticketId, String message, MultipartFile file, String senderRole) {
+        Optional<Ticket> optionalTicket = ticketRepository.findById(ticketId);
+        if (optionalTicket.isEmpty()) {
+            return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+        }
+        if(optionalTicket.get().getStatus().equals(TicketEnum.RESOLVED)){
+            return responseService.generateErrorResponse("Ticket is already resolved", HttpStatus.BAD_REQUEST);
+        }
+
+        boolean isMessageProvided = message != null && !message.isBlank();
+        boolean isFileProvided = file != null && !file.isEmpty();
+
+
+        if (!isMessageProvided && !isFileProvided) {
+            return responseService.generateErrorResponse("Either message or file is required", HttpStatus.BAD_REQUEST);
+        }
+
+        if (isMessageProvided && isFileProvided) {
+            return responseService.generateErrorResponse("Only one of message or file should be provided, not both", HttpStatus.BAD_REQUEST);
+        }
+
+        String finalMessage;
+
+        if (isFileProvided) {
+            try {
+                String uniqueFileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+                String s3FolderPath = "ticket-messages/";
+                s3Service.uploadPhoto(s3FolderPath + uniqueFileName, file);
+                finalMessage = s3Service.getFileUrl(s3FolderPath + uniqueFileName);
+            } catch (IOException e) {
+                return responseService.generateErrorResponse("S3 upload failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            finalMessage = message.trim();
+        }
+
+        TicketMessage ticketMessage = new TicketMessage();
+        ticketMessage.setTicket(optionalTicket.get());
+        ticketMessage.setMessage(finalMessage);
+        ticketMessage.setSenderRole(senderRole.toUpperCase());
+        ticketMessage.setCreatedAt(new Date());
+
+        ticketMessageRepository.save(ticketMessage);
+
+        return responseService.generateSuccessResponse("Message added successfully", null, HttpStatus.OK);
+    }
+
+
+
 
 
     public ResponseEntity<?> getTicketsByAssignedTeam(AssignedTeam assignedTeam, int page, int size) {
@@ -529,7 +596,7 @@ public class TicketService {
                     return TicketResponseDTO.builder()
                             .ticketId(ticket.getId())
                             .subject(ticket.getSubject())
-                            .remark(ticket.getRemark())
+//                            .remark(ticket.getRemark())
                             .customerOrVendorId(ticket.getCustomerOrVendorId())
                             .description(ticket.getDescription())
                             .status(ticket.getStatus() != null ? ticket.getStatus().toString() : null)
