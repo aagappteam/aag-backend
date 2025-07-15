@@ -458,9 +458,6 @@ public class AdminReviewController {
             @PathVariable Long ticketId
     ) {
         try {
-
-                return responseService.generateErrorResponse("Remark is required to resolve a ticket", HttpStatus.BAD_REQUEST);
-
             return ticketService.markTicketAsResolved(ticketId);
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error resolving ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
