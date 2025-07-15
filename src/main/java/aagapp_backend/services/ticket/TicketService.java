@@ -487,7 +487,7 @@ public class TicketService {
 
 
 
-    public ResponseEntity<?> markTicketAsResolved(Long ticketId, String remark) {
+    public ResponseEntity<?> markTicketAsResolved(Long ticketId) {
         Optional<Ticket> optionalTicket = ticketRepository.findById(ticketId);
         if (optionalTicket.isEmpty()) {
             return responseService.generateErrorResponse("Ticket not found with ID: " + ticketId, HttpStatus.NOT_FOUND);

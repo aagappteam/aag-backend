@@ -455,17 +455,13 @@ public class AdminReviewController {
     // Mark ticket as resolved
     @PutMapping("/resolve/{ticketId}")
     public ResponseEntity<?> resolveTicket(
-            @PathVariable Long ticketId,
-            @RequestBody Map<String, String> payload
+            @PathVariable Long ticketId
     ) {
         try {
-            String remark = payload.get("remark");
 
-            if (remark == null || remark.isBlank()) {
                 return responseService.generateErrorResponse("Remark is required to resolve a ticket", HttpStatus.BAD_REQUEST);
-            }
 
-            return ticketService.markTicketAsResolved(ticketId, remark);
+            return ticketService.markTicketAsResolved(ticketId);
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error resolving ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
