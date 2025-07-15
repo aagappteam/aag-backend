@@ -6,6 +6,7 @@ import aagapp_backend.enums.AssignedTeam;
 import aagapp_backend.enums.TicketEnum;
 import aagapp_backend.enums.TicketPriority;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,6 +16,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.CurrentTimestamp;
 
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "tickets", indexes = {
@@ -39,11 +41,14 @@ public class Ticket {
 
     private TicketEnum status;
 
-    private String remark;
+//    private String remark;
 
     private Long customerOrVendorId;
 
     private String role;
+
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TicketMessage> messages;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "priority")
