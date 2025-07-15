@@ -468,6 +468,7 @@ public class OtpEndpoint {
         try {
             String mobileNumber = (String) signupDetails.get("mobileNumber");
             String countryCode = (String) signupDetails.get("countryCode");
+            String State = (String) signupDetails.get("state");
 
 
             mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
@@ -495,6 +496,9 @@ public class OtpEndpoint {
                     VendorEntity vendorEntity = new VendorEntity();
                     vendorEntity.setCountry_code(countryCode);
                     vendorEntity.setMobileNumber(mobileNumber);
+                    if (State == null || State.isEmpty()) {
+                        vendorEntity.setState(State);
+                    }
                     vendorEntity.setOtp(otp);
                     vendorEntity.setRole(4);
                     em.persist(vendorEntity);
