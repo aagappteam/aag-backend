@@ -191,18 +191,17 @@ public class CustomCustomerService {
                     }
                 }
 
-                // Capture name for gender-based logic
                 if ("name".equals(fieldName)) {
                     updatedName = newValue.toString();
                 }
 
-                // Set value using reflection
                 try {
                     Field field = CustomCustomer.class.getDeclaredField(fieldName);
                     field.setAccessible(true);
                     field.set(existingCustomer, newValue);
-                } catch (NoSuchFieldException ignored) {
-                    // Unknown fields are ignored
+                } catch (NoSuchFieldException e) {
+                    return ResponseEntity.status(500)
+                            .body("Field '" + fieldName + "' not found in CustomCustomer class.");
                 }
             }
 
@@ -225,7 +224,9 @@ public class CustomCustomerService {
             entityManager.merge(existingCustomer);
             return ResponseEntity.ok().body("Customer updated successfully");
 
-        } catch (Exception e) {
+        }
+
+        catch (Exception e) {
             return ResponseEntity.status(500).body("Error updating customer: " + e.getMessage());
         }
     }
@@ -295,7 +296,8 @@ public class CustomCustomerService {
 
     @Transactional
     public CustomCustomer provideBonus(CustomCustomer user, BigDecimal bonusAmount) {
-        user.setBonusBalance(user.getBonusBalance().add(bonusAmount));
+        BigDecimal currentBonus = user.getBonusBalance() != null ? user.getBonusBalance() : BigDecimal.ZERO;
+        user.setBonusBalance(currentBonus.add(bonusAmount));
         return entityManager.merge(user);
     }
 
