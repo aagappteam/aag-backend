@@ -17,6 +17,7 @@ import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.withdrawrequest.CustomerWithdrawalRequestRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.RoleService;
 import aagapp_backend.services.admin.InvoiceServiceAdmin;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
@@ -43,6 +44,9 @@ public class WalletController {
 
     @Autowired
     private WalletService walletService;
+
+    @Autowired
+    private RoleService roleService;
 
     @Autowired
     private ResponseService responseService;
@@ -157,6 +161,10 @@ public class WalletController {
             }
 
             String token = authorization.substring(7);
+            Integer roleId = jwtUtil.extractRoleId(token);
+
+            String roleName = roleService.findRoleName(roleId);
+
 
             // Validate customerId
             if (customerId == null) {
@@ -170,8 +178,14 @@ public class WalletController {
             }
 
             // Check if the authenticated user is allowed to access the balance
-            if (!userId.equals(customerId)) {
-                return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
+//            if (!userId.equals(customerId)) {
+//                return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
+//            }
+
+            if (!("Admin".equalsIgnoreCase(roleName) || "SuperAdmin".equalsIgnoreCase(roleName))) {
+                if (!userId.equals(customerId)) {
+                    return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
+                }
             }
 
             // Call the wallet service to retrieve the balance
