@@ -1097,16 +1097,13 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
                                       @RequestParam(value = "page", defaultValue = "0") int page,
                                       @RequestParam(value = "size", defaultValue = "10") int size) {
     try {
-        // Extract the token and find the authenticated vendor
         String jwtToken = token.replace("Bearer ", "");
         Long authorizedVendorId = jwtUtil.extractId(jwtToken);
         VendorEntity authenticatedVendor = entityManager.find(VendorEntity.class, authorizedVendorId);
 
-        // List to store the filtered vendor data
         List<VendorEntity> allVendors = new ArrayList<>();
         List<InfluencerMonthlyEarning> filteredVendors = new ArrayList<>();
 
-        // Apply the filter based on filterType and fetch all data
         switch (filterType.toLowerCase()) {
             case "referrals":
                 allVendors = vendorRepository.findAll(
@@ -1128,13 +1125,26 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
                 break;
 
             case "participants":
-//                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament"))); // Sorting by participants
-                allVendors = vendorRepository.findAll(
-                        Sort.by(Sort.Order.desc("totalParticipatedInGameTournament"))
-                                .and(Sort.by(Sort.Order.asc("createdDate")))
-                );
+                allVendors = vendorRepository.findAll(); // No sorting at DB level
 
-                break;
+                allVendors.sort((v1, v2) -> {
+                    int score1 = 10 * Optional.ofNullable(v1.getTotal_game_published()).orElse(0)
+                            + 50 * Optional.ofNullable(v1.getTotal_league_published()).orElse(0)
+                            + 50 * Optional.ofNullable(v1.getTotal_tournament_published()).orElse(0);
+
+                    int score2 = 10 * Optional.ofNullable(v2.getTotal_game_published()).orElse(0)
+                            + 50 * Optional.ofNullable(v2.getTotal_league_published()).orElse(0)
+                            + 50 * Optional.ofNullable(v2.getTotal_tournament_published()).orElse(0);
+
+                    // First sort by score DESC, then by createdDate ASC
+                    int cmp = Integer.compare(score2, score1);
+                    if (cmp != 0) return cmp;
+
+                    return Optional.ofNullable(v1.getCreatedDate()).orElse(new Date(0))
+                            .compareTo(Optional.ofNullable(v2.getCreatedDate()).orElse(new Date(0)));
+                });
+
+            break;
 
             default:
                 return new ResponseEntity<>(Map.of(
@@ -1148,26 +1158,21 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         List<Map<String, Object>> leaderboard = new ArrayList<>();
 
         if ("totalwallet".equalsIgnoreCase(filterType)) {
-            // Create a map to aggregate earnings by influencerId
             Map<Long, BigDecimal> vendorEarningsMap = new HashMap<>();
 
             for (InfluencerMonthlyEarning earning : filteredVendors) {
                 Long influencerId = earning.getInfluencerId();
                 BigDecimal totalEarning = earning.getEarnedAmount();
-
-                // Sum up the earnings for the same influencerId
                 vendorEarningsMap.put(influencerId, vendorEarningsMap.getOrDefault(influencerId, BigDecimal.ZERO).add(totalEarning));
             }
 
-            // Now, map the data for the leaderboard and fetch vendor details
             leaderboard = vendorEarningsMap.entrySet().stream()
                     .map(entry -> {
                         Long influencerId = entry.getKey();
                         BigDecimal totalWalletBalance = entry.getValue();
 
-                        // Fetch vendor details using influencerId
-                        VendorEntity vendor = entityManager.find(VendorEntity.class, influencerId); // get vendor details
-                        if (vendor == null) return null; // Skip if vendor not found
+                        VendorEntity vendor = entityManager.find(VendorEntity.class, influencerId);
+                        if (vendor == null) return null;
 
                         Map<String, Object> vendorData = new HashMap<>();
                         vendorData.put("service_provider_id", vendor.getService_provider_id());
@@ -1179,11 +1184,11 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
                         return vendorData;
                     })
-                    .filter(Objects::nonNull) // Filter out any null values (in case of missing vendor)
+                    .filter(Objects::nonNull)
                     .sorted((v1, v2) -> {
                         BigDecimal balance1 = (BigDecimal) v1.get("total_wallet_balance");
                         BigDecimal balance2 = (BigDecimal) v2.get("total_wallet_balance");
-                        return balance2.compareTo(balance1);  // Sorting in descending order
+                        return balance2.compareTo(balance1);
                     })
                     .collect(Collectors.toList());
         } else {
@@ -1197,32 +1202,37 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
                 if ("referrals".equalsIgnoreCase(filterType)) {
                     vendorData.put("referralCount", vendor.getFollowercount());
-                } else if ("participants".equalsIgnoreCase(filterType)) {
+                } /*else if ("participants".equalsIgnoreCase(filterType)) {
                     vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
+                }*/
+                else if ("participants".equalsIgnoreCase(filterType)) {
+                    int totalScore = 10 * Optional.ofNullable(vendor.getTotal_game_published()).orElse(0)
+                            + 50 * Optional.ofNullable(vendor.getTotal_league_published()).orElse(0)
+                            + 50 * Optional.ofNullable(vendor.getTotal_tournament_published()).orElse(0);
+
+                    vendorData.put("total_participated", totalScore);
                 }
+
+
+
 
                 return vendorData;
             }).collect(Collectors.toList());
         }
 
-
-        // Rank the vendors based on sorted list (1-based index)
         for (int i = 0; i < leaderboard.size(); i++) {
-            leaderboard.get(i).put("rank", i + 1); // 1-based ranking
+            leaderboard.get(i).put("rank", i + 1);
         }
 
-        // Calculate the rank of the logged-in vendor
         int loggedInVendorRank = -1;
         for (int i = 0; i < leaderboard.size(); i++) {
             Map<String, Object> vendorData = leaderboard.get(i);
             Long vendorId = (Long) vendorData.get("service_provider_id");
             if (vendorId.equals(authenticatedVendor.getService_provider_id())) {
-                loggedInVendorRank = i + 1;  // Vendor ranks are 1-based
+                loggedInVendorRank = i + 1;
                 break;
             }
         }
-
-        // Paginate the leaderboard based on the requested page and size
 
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, leaderboard.size());
@@ -1235,7 +1245,6 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         }
 
 
-        // Prepare response data
         Map<String, Object> data = Map.of(
                 "total_earning", authenticatedVendor.getRefferalbalance(),
                 "referral_code", authenticatedVendor.getReferralCode(),
@@ -1282,7 +1291,6 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-//    Vendor Dashboard api
 
     @GetMapping("/dashboard/{serviceProviderId}")
     public ResponseEntity<?> getDashboardData(@PathVariable Long serviceProviderId) {

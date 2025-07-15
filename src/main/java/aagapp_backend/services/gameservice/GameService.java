@@ -9,6 +9,7 @@ import aagapp_backend.entity.game.*;
 
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.NotificationShare;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
@@ -28,6 +29,7 @@ import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.pricedistribute.MatchService;
@@ -84,6 +86,9 @@ public class GameService {
 
     @Autowired
     private CommonService commonservice;
+
+    @Autowired
+    private NotoficationFirebase notificationFirebase;
 
     @Autowired
     private ThemeRepository themeRepository;
@@ -195,7 +200,6 @@ public class GameService {
 
         while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
             try {
-                logger.info("Updating daily limit for vendor IDs: {}", vendorIds);
                 vendorRepository.updateDailyLimitForVendors(vendorIds);
             } catch (Exception e) {
                 logger.error("Failed to update daily limits for batch page {} with vendorIds: {}", page, vendorIds, e);
@@ -1338,6 +1342,9 @@ public class GameService {
             query.setParameter("vendorId", vendorId);
             query.setParameter("nowInKolkata", nowInKolkata);
             query.setParameter("status", activeStatus);
+            VendorEntity vendor = em.find(VendorEntity.class, vendorId);
+
+            String fcmToken = vendor.getFcmToken();
 
             List<Game> games = query.getResultList();
 
@@ -1347,6 +1354,19 @@ public class GameService {
                 game.setScheduledAt(nowInKolkata);
                 game.setUpdatedDate(nowInKolkata);
                 gameRepository.save(game);
+
+
+                if (fcmToken != null && !fcmToken.isBlank()) {
+                    try {
+                        String gameName = Optional.ofNullable(game.getName()).orElse("Your Game");
+                        String title = "🎮 " + gameName + " is Live now!";
+                        String body = "Your game \"" + gameName + "\" is now active. Dive in and enjoy the action!";
+
+                        notificationFirebase.sendNotification(fcmToken, title, body);
+                    } catch (Exception e) {
+                        throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
 
             }
 
@@ -1384,6 +1404,24 @@ public class GameService {
                 league.setScheduledAt(nowInKolkata);
                 league.setUpdatedDate(nowInKolkata);
                 leagueRepository.save(league);
+
+
+                VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
+
+                // Send notification per league
+                String fcmToken = vendorEntity.getFcmToken();
+                if (fcmToken != null && !fcmToken.isBlank()) {
+                    try {
+                        String leagueName = Optional.ofNullable(league.getName()).orElse("Your League");
+                        String title = "League is Now Live!";
+                        String body = "Your scheduled league \"" + leagueName + "\" has just started. Let's play!";
+
+
+                        notificationFirebase.sendNotification(fcmToken, title, body);
+                    } catch (Exception e) {
+                        throw new BusinessException("Error sending league notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
 
             }
 

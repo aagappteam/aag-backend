@@ -148,9 +148,7 @@ public class VendorEntity {
     private int referralCount;
 
     @Enumerated(EnumType.STRING)
-    private VendorLevelPlan vendorLevelPlan = VendorLevelPlan.getDefaultLevel();
-
-
+    private VendorLevelPlan vendorLevelPlan;
 
     @JsonBackReference("bankDetails-vendor")
     @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -197,7 +195,7 @@ public class VendorEntity {
     private String fcmToken;
 
     @Column(name = "plan_name")
-    private String planName = "Standard";
+    private String planName ;
 
 
 
