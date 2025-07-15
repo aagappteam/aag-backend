@@ -100,6 +100,7 @@ public class Constant {
     public static final String PLAN_PURCHASED_EMAIL_SUBJECT = "AAG Veer - Subscription Plan Purchased";
     public static final String PLAN_EXPIREDEMAIL_SUBJECT = "AAG Veer - Subscription Plan is Expired";
 
+    public static final String PLAN_PURCHASED_AGAIN_EMAIL_SUBJECT = "AAG Veer - Subscription Plan has been Renewed";
 
 
 

@@ -248,6 +248,12 @@ public class PaymentService {
             Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
             Integer themeLimit = extractThemeLimit(planEntity.getFeatures());
             existingVendor.setThemeCount(themeLimit);
+            existingVendor.setPlanName(planEntity.getPlanName());
+
+           /* System.out.println("level : "+ level);
+            System.out.println("dailyGameLimit : "+ dailyGameLimit);
+            System.out.println("themeLimit : "+ themeLimit);
+            System.out.println("initialLevel : "+ initialLevel);*/
 
 
             existingVendor.setDailyLimit(dailyGameLimit);
@@ -283,8 +289,24 @@ public class PaymentService {
         existingVendor.setLeagueStatus(LeagueStatus.AVAILABLE);
 
         // Set expiry date based on the plan duration
-        setPlanExpiry(paymentRequest);
-
+//        setPlanExpiry(paymentRequest);
+        String planDuration = paymentRequest.getPlanDuration();
+        if (planDuration != null) {
+            switch (planDuration.toLowerCase()) {
+                case "monthly":
+                    paymentRequest.setExpiryAt(LocalDateTime.now().plusMonths(1));
+                    break;
+                case "yearly":
+                    paymentRequest.setExpiryAt(LocalDateTime.now().plusYears(1));
+                    break;
+                default:
+                    paymentRequest.setExpiryAt(LocalDateTime.now().plusDays(1));
+                    break;
+            }
+        } else {
+            // Default to 1-day expiry if no plan duration is provided
+            paymentRequest.setExpiryAt(LocalDateTime.now().plusDays(1));
+        }
         // Set the payment type
         paymentRequest.setPaymentType(paymentRequest.getPaymentType());
 
@@ -336,10 +358,7 @@ public class PaymentService {
 
                 }
             }
-            /*if(existingVendor.getPrimary_email()!=null){
-                emailService.sendPlanPurchasedEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
 
-            }*/
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -442,7 +461,6 @@ public class PaymentService {
             }
         }
 
-        System.out.println("Feature not found, returning default limit of " + defaultLimit);
         return defaultLimit;
     }
     private Integer extractThemeLimit(List<String> features) {
@@ -456,13 +474,13 @@ public class PaymentService {
 
             if (matcher.find()) {
                 String number = matcher.group(1); // Extract the number
-                System.out.println("Theme feature found: " + feature);
-                System.out.println("Extracted theme/skin number: " + number);
+              /*  System.out.println("Theme feature found: " + feature);
+                System.out.println("Extracted theme/skin number: " + number);*/
                 return Integer.parseInt(number);  // Return the extracted number
             }
         }
 
-        System.out.println("Theme feature not found, returning default limit of " + defaultLimit);
+//        System.out.println("Theme feature not found, returning default limit of " + defaultLimit);
         return defaultLimit;
     }
 
@@ -495,6 +513,8 @@ public class PaymentService {
             // Default to 1-day expiry if no plan duration is provided
             paymentRequest.setExpiryAt(LocalDateTime.now().plusDays(1));
         }
+//        paymentRepository.save(paymentRequest);
+
     }
 
     private void expireExistingActivePayments(Long vendorId) {
