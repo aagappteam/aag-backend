@@ -299,20 +299,20 @@ public class WalletController {
             KwickPayResponse kpResp = walletService.callPayoutGateway(dto,uniqueTxnId , customer);
 
             // 🧩 Handle based on gateway response
-            switch (kpResp.getStatus().toUpperCase()) {
-                case "TXN":
+//            switch (kpResp.getStatus().toUpperCase()) {
+//                case "TXN":
                     // TXN treated as success: deduct wallet & save record
                     Wallet updatedWallet = walletService.processWithdrawal(dto, kpResp);
                     return responseService.generateSuccessResponse("Withdrawal initiated; final status updates via callback.", updatedWallet, HttpStatus.OK);
 
-                case "FAILED":
-                    return responseService.generateErrorResponse("Gateway payout failed: " + kpResp.getMessage(), HttpStatus.BAD_REQUEST);
-                case "PENDING":
-                    Wallet pendingWallet = walletService.processWithdrawal(dto, kpResp);
-                    return responseService.generateSuccessResponse("Withdrawal initiated; final status updates via callback.", pendingWallet, HttpStatus.OK);
-                default:
-                    throw new BusinessException("Gateway payout failed: " + kpResp.getMessage(), HttpStatus.BAD_REQUEST);
-            }
+//                case "FAILED":
+//                    return responseService.generateErrorResponse("Gateway payout failed: " + kpResp.getMessage(), HttpStatus.BAD_REQUEST);
+//                case "PENDING":
+//                    Wallet pendingWallet = walletService.processWithdrawal(dto, kpResp);
+//                    return responseService.generateSuccessResponse("Withdrawal initiated; final status updates via callback.", pendingWallet, HttpStatus.OK);
+//                default:
+//                    throw new BusinessException("Gateway payout failed: " + kpResp.getMessage(), HttpStatus.BAD_REQUEST);
+//            }
 
         } catch (BusinessException be) {
             return responseService.generateErrorResponse(be.getMessage(), HttpStatus.valueOf(be.getStatusCode()));

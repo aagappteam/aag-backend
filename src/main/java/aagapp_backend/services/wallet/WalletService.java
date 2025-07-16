@@ -261,10 +261,10 @@ public class WalletService {
 
         BigDecimal requestedAmount = BigDecimal.valueOf(dto.getAmount());
 
-        if ("TXN".equalsIgnoreCase(kpResp.getStatus()) || "PENDING".equalsIgnoreCase(kpResp.getStatus())) {
+//        if ("TXN".equalsIgnoreCase(kpResp.getStatus()) || "PENDING".equalsIgnoreCase(kpResp.getStatus())) {
             wallet.setWinningAmount(wallet.getWinningAmount().subtract(requestedAmount));
             walletRepository.save(wallet);
-        }
+//        }
 
         // Save request regardless of TXN/PENDING (don't save if gateway fails completely)
         CustomerWithdrawalRequest withdrawal = new CustomerWithdrawalRequest();
