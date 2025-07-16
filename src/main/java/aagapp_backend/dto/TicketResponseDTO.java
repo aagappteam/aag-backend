@@ -27,4 +27,5 @@ public class TicketResponseDTO {
     private String name;
     private String email;
     private String mobile;
+    private String profilePic;
 }

@@ -372,6 +372,7 @@ public class TicketService {
                         String nameVal = null;
                         String emailVal = null;
                         String mobileVal = null;
+                        String profilePic = null;
 
                         if ("CUSTOMER".equalsIgnoreCase(ticket.getRole())) {
                             Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
@@ -383,6 +384,7 @@ public class TicketService {
                                 nameVal = customer.getName();
                                 emailVal = customer.getEmail();
                                 mobileVal = customer.getMobileNumber();
+                                profilePic = customer.getProfilePic();
                             }
                         } else if ("VENDOR".equalsIgnoreCase(ticket.getRole())) {
                             Optional<VendorEntity> vendorOpt = vendorRepository.findById(ticket.getCustomerOrVendorId());
@@ -394,6 +396,7 @@ public class TicketService {
                                 nameVal = vendor.getName();
                                 emailVal = vendor.getPrimary_email();
                                 mobileVal = vendor.getMobileNumber();
+                                profilePic = vendor.getProfilePic();
                             }
                         }
 
@@ -412,6 +415,7 @@ public class TicketService {
                                 .name(nameVal)
                                 .email(emailVal)
                                 .mobile(mobileVal)
+                                .profilePic(profilePic)
                                 .build();
                     })
                     .filter(Objects::nonNull)
@@ -428,6 +432,57 @@ public class TicketService {
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error filtering tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+
+    public ResponseEntity<?> getTicketById(Long id) {
+        Optional<Ticket> ticketOpt = ticketRepository.findById(id);
+
+        if (ticketOpt.isEmpty()) {
+            return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+        }
+
+        Ticket ticket = ticketOpt.get();
+        String name = null, email = null, mobile = null, profilePic = null;
+
+        if ("CUSTOMER".equalsIgnoreCase(ticket.getRole())) {
+            Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
+            if (customerOpt.isPresent()) {
+                CustomCustomer customer = customerOpt.get();
+                name = customer.getName();
+                email = customer.getEmail();
+                mobile = customer.getMobileNumber();
+                profilePic = customer.getProfilePic(); // Make sure this field exists in your entity
+            }
+        } else if ("VENDOR".equalsIgnoreCase(ticket.getRole())) {
+            Optional<VendorEntity> vendorOpt = vendorRepository.findById(ticket.getCustomerOrVendorId());
+            if (vendorOpt.isPresent()) {
+                VendorEntity vendor = vendorOpt.get();
+                name = vendor.getName();
+                email = vendor.getPrimary_email();
+                mobile = vendor.getMobileNumber();
+                profilePic = vendor.getProfilePic(); // Make sure this field exists in your entity
+            }
+        }
+
+        TicketResponseDTO responseDTO = TicketResponseDTO.builder()
+                .ticketId(ticket.getId())
+                .subject(ticket.getSubject())
+                .description(ticket.getDescription())
+                .status(ticket.getStatus() != null ? ticket.getStatus().toString() : null)
+                .role(ticket.getRole())
+                .customerOrVendorId(ticket.getCustomerOrVendorId())
+                .priority(ticket.getPriority() != null ? ticket.getPriority().toString() : null)
+                .assignedTeam(ticket.getAssignedTeam() != null ? ticket.getAssignedTeam().toString() : null)
+                .createdDate(ticket.getCreatedDate())
+                .updatedDate(ticket.getUpdatedDate())
+                .name(name)
+                .email(email)
+                .mobile(mobile)
+                .profilePic(profilePic)
+                .build();
+
+        return responseService.generateSuccessResponse("ticket", responseDTO, HttpStatus.OK);
     }
 
 
