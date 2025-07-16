@@ -296,8 +296,14 @@ public class WalletController {
             String uniqueTxnId = "AAG" + System.currentTimeMillis();
 
             // 🔐 Secure API call — will throw BusinessException on failure
-            KwickPayResponse kpResp = walletService.callPayoutGateway(dto,uniqueTxnId , customer);
+//            KwickPayResponse kpResp = walletService.callPayoutGateway(dto,uniqueTxnId , customer);
 
+            // 🔧 Use dummy response for testing
+            KwickPayResponse kpResp = new KwickPayResponse();
+            kpResp.setStatus("TXN");
+            kpResp.setMessage("Transaction successful");
+            kpResp.setTxnid(uniqueTxnId);
+            kpResp.setUtr("UTR1234567890");
 
 
             // 🧩 Handle based on gateway response
