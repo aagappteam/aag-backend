@@ -1,11 +1,13 @@
 package aagapp_backend.dto;
 
+import aagapp_backend.entity.ticket.TicketMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @Builder
@@ -19,9 +21,9 @@ public class TicketResponseDTO {
     private String status;
     private String role;
     private Long customerOrVendorId;
-    private String remark;
     private String priority;
     private String assignedTeam;
+    private List<TicketMessage> messages;
     private Date createdDate;
     private Date updatedDate;
     private String name;
