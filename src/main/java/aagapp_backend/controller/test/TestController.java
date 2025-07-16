@@ -14,6 +14,7 @@ import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -241,6 +242,78 @@ public class TestController {
 
         return ResponseEntity.ok("Admin log created successfully.");
     }
+
+    @PutMapping("/update-usernames")
+    @Transactional
+    public ResponseEntity<String> updateVendorUsernames() {
+        List<VendorEntity> vendors = entityManager.createQuery("FROM VendorEntity v WHERE v.user_name IS NULL OR TRIM(v.user_name) = ''", VendorEntity.class)
+                .getResultList();
+
+        int updatedCount = 0;
+
+        for (VendorEntity vendor : vendors) {
+            String firstName = vendor.getFirst_name() != null
+                    ? vendor.getFirst_name().replaceAll("\\s+", "").toLowerCase()
+                    : "aagveer";
+
+            String mobile = vendor.getMobileNumber();
+            String lastFourDigits = (mobile != null && mobile.length() >= 4)
+                    ? mobile.substring(mobile.length() - 4)
+                    : "0000";
+
+            String username = firstName + lastFourDigits;
+
+            // Use JPQL/Native query to only update user_name field
+            entityManager.createQuery("UPDATE VendorEntity v SET v.user_name = :username WHERE v.service_provider_id = :id")
+                    .setParameter("username", username)
+                    .setParameter("id", vendor.getService_provider_id())
+                    .executeUpdate();
+
+            updatedCount++;
+        }
+
+        return ResponseEntity.ok("Updated usernames for " + updatedCount + " vendors.");
+    }
+
+    @PutMapping("/update-customer-usernames")
+    @Transactional
+    public ResponseEntity<String> updateCustomerUsernames() {
+        List<CustomCustomer> customers = entityManager.createQuery(
+                        "FROM CustomCustomer c WHERE c.user_name IS NULL OR TRIM(c.user_name) = ''", CustomCustomer.class)
+                .getResultList();
+
+        int updatedCount = 0;
+
+        for (CustomCustomer customer : customers) {
+            String namePart = customer.getName() != null
+                    ? customer.getName().replaceAll("\\s+", "").toLowerCase()
+                    : "aaguser";
+
+            String mobile = customer.getMobileNumber();
+
+
+
+
+            String lastFourDigits = (mobile != null && mobile.length() >= 4)
+                    ? mobile.substring(mobile.length() - 4)
+                    : "0000";
+
+            String username = namePart + lastFourDigits;
+
+            // Update using JPQL to bypass validation
+            entityManager.createQuery("UPDATE CustomCustomer c SET c.user_name = :username WHERE c.id = :id")
+                    .setParameter("username", username)
+                    .setParameter("id", customer.getId())
+                    .executeUpdate();
+
+            updatedCount++;
+        }
+
+        return ResponseEntity.ok("Updated usernames for " + updatedCount + " customers.");
+    }
+
+
+
 
 
 }

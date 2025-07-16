@@ -260,6 +260,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         vendorInfo.put("id", vendor.getService_provider_id());
         vendorInfo.put("profilePic", vendor.getProfilePic());
         vendorInfo.put("email", vendor.getPrimary_email());
+        vendorInfo.put("user_name", vendor.getUser_name());
         vendorInfo.put("followerCount", followRepo.countByVendorId(vendor.getService_provider_id()));
         vendorInfo.put("isFollowing", true);
 

@@ -140,6 +140,19 @@ public class CustomCustomerService {
         entityManager.persist(customer);
         return customer;
     }
+    private String createCustomerUsername(CustomCustomer customer) {
+        String namePart = customer.getName() != null
+                ? customer.getName().replaceAll("\\s+", "").toLowerCase()
+                : "aaguser";
+
+        String mobile = customer.getMobileNumber();  // make sure this exists
+        String lastFour = (mobile != null && mobile.length() >= 4)
+                ? mobile.substring(mobile.length() - 4)
+                : "0000";
+
+        return namePart + lastFour;
+    }
+
 
 
     @Transactional
@@ -194,6 +207,10 @@ public class CustomCustomerService {
                 if ("name".equals(fieldName)) {
                     updatedName = newValue.toString();
                 }
+                if ("user_name".equals(fieldName)) {
+                    existingCustomer.setUser_name(newValue.toString().trim());
+                    continue;
+                }
 
                 try {
                     Field field = CustomCustomer.class.getDeclaredField(fieldName);
@@ -203,6 +220,13 @@ public class CustomCustomerService {
                     return ResponseEntity.status(500)
                             .body("Field '" + fieldName + "' not found in CustomCustomer class.");
                 }
+            }
+
+            if ((existingCustomer.getUser_name() == null || existingCustomer.getUser_name().trim().isEmpty())
+                    && (updates.get("user_name") == null)) {
+
+                String generatedUsername = createCustomerUsername(existingCustomer);
+                existingCustomer.setUser_name(generatedUsername);
             }
 
             // Gender-based profilePic assignment only if gender has changed
@@ -220,6 +244,8 @@ public class CustomCustomerService {
                     }
                 }
             }
+
+
 
             entityManager.merge(existingCustomer);
             return ResponseEntity.ok().body("Customer updated successfully");
