@@ -14,6 +14,7 @@ import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -241,6 +242,45 @@ public class TestController {
 
         return ResponseEntity.ok("Admin log created successfully.");
     }
+
+    @PutMapping("/update-usernames")
+    @Transactional
+    public ResponseEntity<String> updateVendorUsernames() {
+        List<VendorEntity> vendors = entityManager.createQuery("FROM VendorEntity", VendorEntity.class)
+                .getResultList();
+
+        int updatedCount = 0;
+
+        for (VendorEntity vendor : vendors) {
+            try {
+                String firstName = vendor.getFirst_name() != null
+                        ? vendor.getFirst_name().replaceAll("\\s+", "").toLowerCase()
+                        : "aagveer";
+
+                String mobile = vendor.getMobileNumber();
+                String lastFourDigits = (mobile != null && mobile.length() >= 4)
+                        ? mobile.substring(mobile.length() - 4)
+                        : "0000";
+
+                String username = firstName + lastFourDigits;
+
+                if (vendor.getUser_name() == null || vendor.getUser_name().trim().isEmpty()) {
+                    vendor.setUser_name(username);
+                    entityManager.merge(vendor);
+                    updatedCount++;
+                }
+
+            } catch (Exception e) {
+                System.err.println("Error updating vendor " + vendor.getService_provider_id() + ": " + e.getMessage());
+            }
+        }
+
+        // force flush to catch any DB errors before commit
+        entityManager.flush();
+
+        return ResponseEntity.ok("Updated usernames for " + updatedCount + " vendors.");
+    }
+
 
 
 }

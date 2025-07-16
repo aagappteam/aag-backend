@@ -84,6 +84,16 @@ public class VendorSubmissionService {
             vendorEntity.setPrimary_email(submissionEntity.getEmail());
             vendorEntity.setFirst_name(submissionEntity.getFirstName());
             vendorEntity.setLast_name(submissionEntity.getLastName());
+            String mobile = submissionEntity.getMobileNumber();
+            String lastFourDigits = mobile != null && mobile.length() >= 4
+                    ? mobile.substring(mobile.length() - 4)
+                    : "0000";
+
+            String firstNamePart = submissionEntity.getFirstName() != null
+                    ? submissionEntity.getFirstName().replaceAll("\\s+", "").toLowerCase()
+                    : "AAGVEER";
+
+            vendorEntity.setUser_name(firstNamePart + lastFourDigits);
             entityManager.merge(vendorEntity);  // Update vendor entity
 
             sendonboardingmail(vendorEntity);  // Send onboarding email
