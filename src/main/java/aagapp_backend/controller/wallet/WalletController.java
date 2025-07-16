@@ -4,6 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.AddBalanceRequest;
 import aagapp_backend.dto.CustomerWithdrawalRequestDto;
+import aagapp_backend.dto.KwickPayResponse;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
@@ -32,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -275,65 +277,78 @@ public class WalletController {
     }*/
 
     @PostMapping("/withdrawalAmount")
-    public ResponseEntity<?> withdrawalAmount(@RequestBody CustomerWithdrawalRequestDto customerWithdrawalRequestDto, @RequestHeader(value = "Authorization") String authorization) {
-        try{
-            if (authorization == null || !authorization.startsWith("Bearer ")) {
+    public ResponseEntity<?> withdrawalAmount(
+            @RequestBody CustomerWithdrawalRequestDto dto,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 return responseService.generateErrorResponse("Invalid or missing Authorization header", HttpStatus.BAD_REQUEST);
             }
 
-            String token = authorization.substring(7);
-            Long customerId = customerWithdrawalRequestDto.getCustomerId();
+            String token = authHeader.substring(7);
+            Long customerId = dto.getCustomerId();
+            CustomCustomer customer = walletService.validateCustomer(customerId, token);
 
-            CustomCustomer customer1 = customCustomerService.getCustomerById(customerId);
+            walletService.isEnoughAmount(dto.getAmount(), customerId);
+            walletService.checkDailyLimit(customerId);
+            walletService.validateAmount(dto.getAmount());
 
-            if (customer1.getStatus() != VendorStatus.ACTIVE) {
-                throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+            String uniqueTxnId = "AAG" + System.currentTimeMillis();
+
+            // 🔐 Secure API call — will throw BusinessException on failure
+            KwickPayResponse kpResp = walletService.callPayoutGateway(dto,uniqueTxnId , customer);
+
+            // 🧩 Handle based on gateway response
+            switch (kpResp.getStatus().toUpperCase()) {
+                case "TXN":
+                    // TXN treated as success: deduct wallet & save record
+                    Wallet updatedWallet = walletService.processWithdrawal(dto, kpResp);
+                    return responseService.generateSuccessResponse("Withdrawal initiated; final status updates via callback.", updatedWallet, HttpStatus.OK);
+
+                case "FAILED":
+                    return responseService.generateErrorResponse("Gateway payout failed: " + kpResp.getMessage(), HttpStatus.BAD_REQUEST);
+                case "PENDING":
+                    Wallet pendingWallet = walletService.processWithdrawal(dto, kpResp);
+                    return responseService.generateSuccessResponse("Withdrawal initiated; final status updates via callback.", pendingWallet, HttpStatus.OK);
+                default:
+                    throw new BusinessException("Gateway payout failed: " + kpResp.getMessage(), HttpStatus.BAD_REQUEST);
             }
 
-            // Validate JWT Token
-            Long userId = jwtUtil.extractId(token);
-            if (userId == null) {
-                return responseService.generateErrorResponse("Invalid or expired token", HttpStatus.UNAUTHORIZED);
-            }
-
-            // Check if the user has permission to perform the action
-            if (!userId.equals(customerId)) {
-                return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
-            }
-
-            LocalDateTime startOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-            LocalDateTime endOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
-
-            int todayCount = customerWithdrawalRequestRepository
-                    .countByCustomerIdAndRequestDateBetween(customerId, startOfDay, endOfDay);
-
-            if (todayCount >= 3) {
-                throw new BusinessException("You can only submit 3 withdrawal requests per day.", HttpStatus.BAD_REQUEST);
-            }
-
-            // Validate amount
-            float amount = customerWithdrawalRequestDto.getAmount();
-            if (amount <= 0) {
-                return responseService.generateErrorResponse("Amount must be greater than 0", HttpStatus.BAD_REQUEST);
-            }
-            if (amount > 1000000) {
-                return responseService.generateErrorResponse("Amount is too large", HttpStatus.BAD_REQUEST);
-            }
-            if (amount < 10.0) {
-                return responseService.generateErrorResponse("Amount is too small", HttpStatus.BAD_REQUEST);
-            }
-            // Call the wallet service to withdraw the amount
-            Wallet updatedWallet = walletService.withdrawalAmountFromWallet(customerWithdrawalRequestDto);
-
-            return responseService.generateSuccessResponse("Balance withdrawn successfully", updatedWallet, HttpStatus.OK);
-        }catch (BusinessException e){
-            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Error withdrawing balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (BusinessException be) {
+            return responseService.generateErrorResponse(be.getMessage(), HttpStatus.valueOf(be.getStatusCode()));
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Unexpected error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
+    /*@PostMapping("/callback")
+    public ResponseEntity<String> handleCallback(@RequestBody KwickPayCallbackDto callbackDto) {
+        String gatewayTxnId = callbackDto.getApitxnid();
+        String status = callbackDto.getStatus(); // e.g., "TXN", "FAILED"
+
+        CustomerWithdrawalRequest withdrawal = withdrawalRepo.findByGatewayTxnId(gatewayTxnId);
+        if (withdrawal == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Withdrawal not found");
+
+        if ("TXN".equalsIgnoreCase(status)) {
+            withdrawal.setStatus(WithdrawalStatus.PAID);
+        } else if ("FAILED".equalsIgnoreCase(status)) {
+            withdrawal.setStatus(WithdrawalStatus.FAILED);
+
+            // Refund wallet
+            Wallet wallet = walletRepository.findByCustomCustomer_Id(withdrawal.getCustomer().getId());
+            if (wallet != null) {
+                wallet.setWinningAmount(wallet.getWinningAmount().add(withdrawal.getAmount()));
+                walletRepository.save(wallet);
+            }
+        }
+
+        withdrawal.setGatewayMessage("Callback: " + status);
+        withdrawalRepo.save(withdrawal);
+
+        return ResponseEntity.ok("Callback processed");
+    }
+*/
 
 
     @GetMapping("/withdrawalRequests/{customerId}")

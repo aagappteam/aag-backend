@@ -101,7 +101,9 @@ public class Constant {
     public static final String PLAN_EXPIREDEMAIL_SUBJECT = "AAG Veer - Subscription Plan is Expired";
 
     public static final String PLAN_PURCHASED_AGAIN_EMAIL_SUBJECT = "AAG Veer - Subscription Plan has been Renewed";
-
-
-
+    public static final String KwickPayUrl= "https://ubi.kwicpay.com/api/smartpay/transaction";
+    public static final String KwickPayToken= "K7CAkgS5bm5cX5zqdJ4uJ65Ekp9BwE";
+    public static final String KwickPayTransactionType= "spayout";
+    public static final String KwickPayTransactionMode= "imps";
+    public static final String UNIQUE_TXN_ID = "AAG" + System.currentTimeMillis();
 }

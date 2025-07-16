@@ -21,16 +21,22 @@ public class CustomerWithdrawalRequestDto {
     @Positive(message = "Amount must be a positive number")
     private Float amount;
 
-
-    private String upiId;
-
+    @NotNull
+    @Positive(message = "Amount must be a positive number")
     private String accountNumber;
 
-    private String accountHolderName;
+    @NotNull
+    private String accountHolderFirstName;
 
+    @NotNull
+    private String accountHolderLastName;
+
+    @NotNull
     private String bankName;
 
+    @NotNull
     private String ifscCode;
+
 
     @NotNull(message = "Withdrawal Type must not be null")
     private WithdrawalType withdrawalType;

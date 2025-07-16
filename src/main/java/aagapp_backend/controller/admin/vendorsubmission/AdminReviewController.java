@@ -747,8 +747,8 @@ public class AdminReviewController {
                 notification.setCustomerId(request.getCustomer().getId());
                 notification.setRole("Customer");
                 notification.setDescription("Withdrawal Request Paid");
-                notification.setDetails("Your withdrawal of Rs." + request.getFinalPayoutAmount() + " has been paid successfully.");
-                notification.setAmount(request.getFinalPayoutAmount().doubleValue());
+                notification.setDetails("Your withdrawal of Rs." + request.getAmount() + " has been paid successfully.");
+                notification.setAmount(request.getAmount().doubleValue());
                 notificationRepository.save(notification);
             }
 
@@ -764,8 +764,8 @@ public class AdminReviewController {
                 notification.setCustomerId(request.getCustomer().getId());
                 notification.setRole("Customer");
                 notification.setDescription("Withdrawal Request Rejected");
-                notification.setDetails("Your withdrawal of Rs." + request.getFinalPayoutAmount() + " has been rejected.");
-                notification.setAmount(request.getFinalPayoutAmount().doubleValue());
+                notification.setDetails("Your withdrawal of Rs." + request.getAmount() + " has been rejected.");
+                notification.setAmount(request.getAmount().doubleValue());
                 notificationRepository.save(notification);
             }
 
@@ -876,8 +876,8 @@ public class AdminReviewController {
                         req.getAmount(),
                         req.getStatus(),
                         req.getWithdrawalType(),
-                        req.getProcessingFee(),
-                        req.getFinalPayoutAmount(),
+//                        req.getProcessingFee(),
+//                        req.getFinalPayoutAmount(),
                         req.getRequestDate(),
                         req.getUpdatedAt()
                 );
