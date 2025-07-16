@@ -216,7 +216,7 @@ public class WalletService {
     // ✅ Validate amount constraints
     public void validateAmount(float amount) {
         if (amount <= 0) throw new BusinessException("Amount must be > 0", HttpStatus.BAD_REQUEST);
-        if (amount < 100) throw new BusinessException("Minimum withdrawal Rs.100", HttpStatus.BAD_REQUEST);
+        if (amount < 106) throw new BusinessException("Minimum withdrawal Rs.106", HttpStatus.BAD_REQUEST);
         if (amount > 1000000) throw new BusinessException("Amount too large", HttpStatus.BAD_REQUEST);
     }
 

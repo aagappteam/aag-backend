@@ -295,10 +295,10 @@ public class WalletController {
 
             String uniqueTxnId = "AAG" + System.currentTimeMillis();
 
-            // 🔐 Secure API call — will throw BusinessException on failure
+            // Secure API call — will throw BusinessException on failure
             KwickPayResponse kpResp = walletService.callPayoutGateway(dto,uniqueTxnId , customer);
 
-            // 🧩 Handle based on gateway response
+            // Handle based on gateway response
             switch (kpResp.getStatus().toUpperCase()) {
                 case "TXN":
                     // TXN treated as success: deduct wallet & save record
