@@ -55,7 +55,9 @@ public class VendorEntity {
     private Long service_provider_id;
 
     @Nullable
+    @Column(name = "user_name", unique = true)
     private String user_name;
+
 
     @Nullable
     private String first_name;

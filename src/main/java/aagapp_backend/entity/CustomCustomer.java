@@ -54,6 +54,10 @@ public class CustomCustomer {
     private String name;
 
     @Nullable
+    @Column(name = "user_name", unique = true)
+    private String user_name;
+
+    @Nullable
     private String email;
 
 

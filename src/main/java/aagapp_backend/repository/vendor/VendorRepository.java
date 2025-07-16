@@ -67,7 +67,8 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
             CONCAT(v.first_name, ' ', v.last_name),
             (COALESCE(g.gameCount, 0) + COALESCE(l.leagueCount, 0) + COALESCE(t.tournamentCount, 0)),
             v.primary_email,
-            v.profilePic
+            v.profilePic,
+            v.user_name
         )
         FROM VendorEntity v
         LEFT JOIN (
