@@ -5,7 +5,7 @@ import aagapp_backend.dto.PaymentDashboardDTO;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
 import aagapp_backend.entity.VendorSubmissionEntity;
-import aagapp_backend.entity.VendorSubmissionEntityRepository;
+import aagapp_backend.repository.VendorSubmissionEntityRepository;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PaymentEntity;
@@ -333,7 +333,6 @@ public class PaymentService {
 
         paymentRepository.save(paymentRequest);
 
-        // Email
         try {
             if (existingVendor.getPrimary_email() != null) {
                 if (isFirstPayment(existingVendor)) {
