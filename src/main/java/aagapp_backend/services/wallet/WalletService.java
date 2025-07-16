@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.sql.SQLOutput;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -42,6 +43,8 @@ public class WalletService {
     private CustomCustomerService customCustomerService;
     private ExceptionHandlingService exceptionHandlingService;
     private ResponseService responseService;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
@@ -243,12 +246,14 @@ public class WalletService {
         try {
             ResponseEntity<KwickPayResponse> response = restTemplate.postForEntity(Constant.KwickPayUrl, entity, KwickPayResponse.class);
             KwickPayResponse respBody = response.getBody();
+            System.out.println("respBody" + respBody);
 
             if (respBody == null || respBody.getStatus() == null) {
                 throw new BusinessException("Invalid gateway response", HttpStatus.BAD_GATEWAY);
             }
             return respBody;
         } catch (Exception e) {
+//            e.printStackTrace();
             throw new BusinessException("Failed to connect to KwickPay: " + e.getMessage(), HttpStatus.BAD_GATEWAY);
         }
     }
