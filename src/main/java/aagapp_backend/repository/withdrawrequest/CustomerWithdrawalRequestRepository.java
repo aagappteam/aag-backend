@@ -33,4 +33,5 @@ public interface CustomerWithdrawalRequestRepository extends JpaRepository<Custo
     Long countByStatus(WithdrawalStatus withdrawalStatus);
 
 
+    CustomerWithdrawalRequest findByGatewayTxnId(String clientTxnId);
 }

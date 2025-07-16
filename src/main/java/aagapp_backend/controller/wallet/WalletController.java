@@ -296,31 +296,11 @@ public class WalletController {
             String uniqueTxnId = "AAG" + System.currentTimeMillis();
 
             // 🔐 Secure API call — will throw BusinessException on failure
-//            KwickPayResponse kpResp = walletService.callPayoutGateway(dto,uniqueTxnId , customer);
+            KwickPayResponse kpResp = walletService.callPayoutGateway(dto,uniqueTxnId , customer);
 
-            // 🔧 Use dummy response for testing
-            KwickPayResponse kpResp = new KwickPayResponse();
-            kpResp.setStatus("TXN");
-            kpResp.setMessage("Transaction successful");
-            kpResp.setTxnid(uniqueTxnId);
-            kpResp.setUtr("UTR1234567890");
+            Wallet updatedWallet = walletService.processWithdrawal(dto, kpResp);
+            return responseService.generateSuccessResponse("Withdrawal initiated; final status updates via callback.", updatedWallet, HttpStatus.OK);
 
-
-            // 🧩 Handle based on gateway response
-//            switch (kpResp.getStatus().toUpperCase()) {
-//                case "TXN":
-                    // TXN treated as success: deduct wallet & save record
-                    Wallet updatedWallet = walletService.processWithdrawal(dto, kpResp);
-                    return responseService.generateSuccessResponse("Withdrawal initiated; final status updates via callback.", updatedWallet, HttpStatus.OK);
-
-//                case "FAILED":
-//                    return responseService.generateErrorResponse("Gateway payout failed: " + kpResp.getMessage(), HttpStatus.BAD_REQUEST);
-//                case "PENDING":
-//                    Wallet pendingWallet = walletService.processWithdrawal(dto, kpResp);
-//                    return responseService.generateSuccessResponse("Withdrawal initiated; final status updates via callback.", pendingWallet, HttpStatus.OK);
-//                default:
-//                    throw new BusinessException("Gateway payout failed: " + kpResp.getMessage(), HttpStatus.BAD_REQUEST);
-//            }
 
         } catch (BusinessException be) {
             return responseService.generateErrorResponse(be.getMessage(), HttpStatus.valueOf(be.getStatusCode()));
@@ -330,33 +310,6 @@ public class WalletController {
     }
 
 
-    /*@PostMapping("/callback")
-    public ResponseEntity<String> handleCallback(@RequestBody KwickPayCallbackDto callbackDto) {
-        String gatewayTxnId = callbackDto.getApitxnid();
-        String status = callbackDto.getStatus(); // e.g., "TXN", "FAILED"
-
-        CustomerWithdrawalRequest withdrawal = withdrawalRepo.findByGatewayTxnId(gatewayTxnId);
-        if (withdrawal == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Withdrawal not found");
-
-        if ("TXN".equalsIgnoreCase(status)) {
-            withdrawal.setStatus(WithdrawalStatus.PAID);
-        } else if ("FAILED".equalsIgnoreCase(status)) {
-            withdrawal.setStatus(WithdrawalStatus.FAILED);
-
-            // Refund wallet
-            Wallet wallet = walletRepository.findByCustomCustomer_Id(withdrawal.getCustomer().getId());
-            if (wallet != null) {
-                wallet.setWinningAmount(wallet.getWinningAmount().add(withdrawal.getAmount()));
-                walletRepository.save(wallet);
-            }
-        }
-
-        withdrawal.setGatewayMessage("Callback: " + status);
-        withdrawalRepo.save(withdrawal);
-
-        return ResponseEntity.ok("Callback processed");
-    }
-*/
 
 
     @GetMapping("/withdrawalRequests/{customerId}")

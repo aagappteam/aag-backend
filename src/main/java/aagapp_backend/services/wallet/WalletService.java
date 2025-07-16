@@ -219,38 +219,38 @@ public class WalletService {
     // ✅ Validate amount constraints
     public void validateAmount(float amount) {
         if (amount <= 0) throw new BusinessException("Amount must be > 0", HttpStatus.BAD_REQUEST);
-        if (amount < 100) throw new BusinessException("Minimum withdrawal Rs.100", HttpStatus.BAD_REQUEST);
+        if (amount < 106) throw new BusinessException("Minimum withdrawal Rs.106", HttpStatus.BAD_REQUEST);
         if (amount > 1000000) throw new BusinessException("Amount too large", HttpStatus.BAD_REQUEST);
     }
 
     // ✅ Send request to KwickPay gateway
     public KwickPayResponse callPayoutGateway(CustomerWithdrawalRequestDto dto,  String txnId, CustomCustomer customer) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("token", Constant.KwickPayToken);
-        body.put("transactionType", Constant.KwickPayTransactionType);
-        body.put("apitxnid", txnId);
-        body.put("amount", dto.getAmount().intValue());
-        body.put("firstName", dto.getAccountHolderFirstName());
-        body.put("lastName", dto.getAccountHolderLastName());
-        body.put("email", customer.getEmail());
-        body.put("mobile", customer.getMobileNumber());
-        body.put("mode", Constant.KwickPayTransactionMode);
-        body.put("accountNumber", dto.getAccountNumber());
-        body.put("ifsc", dto.getIfscCode());
-        body.put("bank", dto.getBankName());
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
         try {
+
+                Map<String, Object> body = new HashMap<>();
+                body.put("token", Constant.KwickPayToken);
+                body.put("transactionType", Constant.KwickPayTransactionType);
+                body.put("apitxnid", txnId);
+                body.put("amount", dto.getAmount().intValue());
+                body.put("firstName", dto.getAccountHolderFirstName());
+                body.put("lastName", dto.getAccountHolderLastName());
+                body.put("email", customer.getEmail());
+                body.put("mobile", customer.getMobileNumber());
+                body.put("mode", Constant.KwickPayTransactionMode);
+                body.put("accountNumber", dto.getAccountNumber());
+                body.put("ifsc", dto.getIfscCode());
+                body.put("bank", dto.getBankName());
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+
             ResponseEntity<KwickPayResponse> response = restTemplate.postForEntity(Constant.KwickPayUrl, entity, KwickPayResponse.class);
             KwickPayResponse respBody = response.getBody();
             System.out.println("respBody" + respBody);
 
-            if (respBody == null || respBody.getStatus() == null) {
-                throw new BusinessException("Invalid gateway response", HttpStatus.BAD_GATEWAY);
-            }
             return respBody;
         } catch (Exception e) {
 //            e.printStackTrace();
@@ -266,10 +266,9 @@ public class WalletService {
 
         BigDecimal requestedAmount = BigDecimal.valueOf(dto.getAmount());
 
-//        if ("TXN".equalsIgnoreCase(kpResp.getStatus()) || "PENDING".equalsIgnoreCase(kpResp.getStatus())) {
-            wallet.setWinningAmount(wallet.getWinningAmount().subtract(requestedAmount));
-            walletRepository.save(wallet);
-//        }
+        wallet.setWinningAmount(wallet.getWinningAmount().subtract(requestedAmount));
+        walletRepository.save(wallet);
+
 
         // Save request regardless of TXN/PENDING (don't save if gateway fails completely)
         CustomerWithdrawalRequest withdrawal = new CustomerWithdrawalRequest();
@@ -282,15 +281,7 @@ public class WalletService {
         withdrawal.setWithdrawalType(dto.getWithdrawalType());
         withdrawal.setGatewayTxnId(kpResp.getTxnid());
         withdrawal.setGatewayMessage(kpResp.getMessage());
-
-        // Status depends on response
-        if ("TXN".equalsIgnoreCase(kpResp.getStatus())) {
-            withdrawal.setStatus(WithdrawalStatus.PAID);
-        } else if ("PENDING".equalsIgnoreCase(kpResp.getStatus())) {
-            withdrawal.setStatus(WithdrawalStatus.PENDING);
-        } else {
-            withdrawal.setStatus(WithdrawalStatus.FAILED);
-        }
+        withdrawal.setStatus(WithdrawalStatus.PAID);
 
         customerWithdrawalRequestRepository.save(withdrawal);
 
