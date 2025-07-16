@@ -993,9 +993,10 @@ public class GameService {
             }
 
             if (scheduledAtInKolkata != null) {
-                ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
-
-                if (nowInKolkata.isBefore(oneDayBeforeScheduled)) {
+//                ZonedDateTime oneDayBeforeScheduled = scheduledAtInKolkata.minusDays(1);
+                ZonedDateTime newScheduledTime = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+                ZonedDateTime oneHourFromNow = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusHours(1);
+                if (newScheduledTime.isAfter(oneHourFromNow)) {
 
 
                /* if (gameRequest.getName() != null && !gameRequest.getName().isEmpty()) {
@@ -1019,7 +1020,7 @@ public class GameService {
                     em.merge(game);
                     return ResponseEntity.ok("Game updated successfully");
                 } else {
-                    throw new BusinessException("Game ID: " + game.getId() + " cannot be updated on the scheduled date or after.", HttpStatus.BAD_REQUEST);
+                    throw new BusinessException("Game must be scheduled at least 1 hour after the current time.", HttpStatus.BAD_REQUEST);
                 }
             } else {
                 throw new BusinessException("Game ID: " + game.getId() + " does not have a scheduled time.", HttpStatus.BAD_REQUEST);
