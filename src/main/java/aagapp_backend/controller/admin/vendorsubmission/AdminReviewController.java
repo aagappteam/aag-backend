@@ -229,18 +229,12 @@ public class AdminReviewController {
     @GetMapping("/ticket/{ticketId}")
     public ResponseEntity<?> getTicket(@PathVariable Long ticketId) {
         try {
-            // Find the ticket by its ID
-            Ticket ticket = ticketRepository.findById(ticketId).orElse(null);
-            if (ticket == null) {
-                return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
-            }
-
-            // Return the ticket as a response
-            return responseService.generateSuccessResponse("Ticket found", ticket, HttpStatus.OK);
-
+            return ticketService.getTicketById(ticketId);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("An error occurred while retrieving the ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "An error occurred while retrieving the ticket: " + e.getMessage()));
         }
     }
 
@@ -747,8 +741,8 @@ public class AdminReviewController {
                 notification.setCustomerId(request.getCustomer().getId());
                 notification.setRole("Customer");
                 notification.setDescription("Withdrawal Request Paid");
-                notification.setDetails("Your withdrawal of Rs." + request.getFinalPayoutAmount() + " has been paid successfully.");
-                notification.setAmount(request.getFinalPayoutAmount().doubleValue());
+                notification.setDetails("Your withdrawal of Rs." + request.getAmount() + " has been paid successfully.");
+                notification.setAmount(request.getAmount().doubleValue());
                 notificationRepository.save(notification);
             }
 
@@ -764,8 +758,8 @@ public class AdminReviewController {
                 notification.setCustomerId(request.getCustomer().getId());
                 notification.setRole("Customer");
                 notification.setDescription("Withdrawal Request Rejected");
-                notification.setDetails("Your withdrawal of Rs." + request.getFinalPayoutAmount() + " has been rejected.");
-                notification.setAmount(request.getFinalPayoutAmount().doubleValue());
+                notification.setDetails("Your withdrawal of Rs." + request.getAmount() + " has been rejected.");
+                notification.setAmount(request.getAmount().doubleValue());
                 notificationRepository.save(notification);
             }
 
@@ -876,8 +870,8 @@ public class AdminReviewController {
                         req.getAmount(),
                         req.getStatus(),
                         req.getWithdrawalType(),
-                        req.getProcessingFee(),
-                        req.getFinalPayoutAmount(),
+//                        req.getProcessingFee(),
+//                        req.getFinalPayoutAmount(),
                         req.getRequestDate(),
                         req.getUpdatedAt()
                 );

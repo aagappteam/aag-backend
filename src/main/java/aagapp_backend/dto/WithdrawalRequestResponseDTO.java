@@ -48,8 +48,8 @@ public class WithdrawalRequestResponseDTO {
         this.requestDate = entity.getRequestDate();
         this.adminComment = entity.getAdminComment();
         this.withdrawalType = entity.getWithdrawalType();
-        this.processingFee = entity.getProcessingFee();
-        this.finalPayoutAmount = entity.getFinalPayoutAmount();
+//        this.processingFee = entity.getProcessingFee();
+//        this.finalPayoutAmount = entity.getFinalPayoutAmount();
         this.updatedAt = entity.getUpdatedAt();
         this.accountNumber = entity.getAccountNumber();
         this.accountHolderName = entity.getAccountHolderName();

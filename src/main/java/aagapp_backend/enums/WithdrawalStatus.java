@@ -3,5 +3,6 @@ package aagapp_backend.enums;
 public enum WithdrawalStatus {
     PENDING,
     REJECTED,
-    PAID
+    PAID,
+    FAILED
 }

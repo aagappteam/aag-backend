@@ -35,6 +35,11 @@ public class CustomerWithdrawalRequest {
     @Column(name = "upi_id")
     private String upiId;
 
+    private String gatewayTxnId;
+    private String gatewayStatus;
+
+    private String gatewayMessage;
+
     @Column(name = "account_number")
     private String accountNumber;
 
@@ -61,11 +66,11 @@ public class CustomerWithdrawalRequest {
     @Enumerated(EnumType.STRING)
     private WithdrawalType withdrawalType;
 
-    @Column(name = "processing_fee", nullable = false)
-    private BigDecimal processingFee = BigDecimal.ZERO;
-
-    @Column(name = "final_payout_amount", nullable = false)
-    private BigDecimal finalPayoutAmount;
+//    @Column(name = "processing_fee", nullable = false)
+//    private BigDecimal processingFee = BigDecimal.ZERO;
+//
+//    @Column(name = "final_payout_amount", nullable = false)
+//    private BigDecimal finalPayoutAmount;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
