@@ -286,19 +286,18 @@ public class WalletController {
             }
 
             String token = authHeader.substring(7);
-            Long customerId = dto.getCustomerId();
-            CustomCustomer customer = walletService.validateCustomer(customerId, token);
 
-            walletService.isEnoughAmount(dto.getAmount(), customerId);
-            walletService.checkDailyLimit(customerId);
+            walletService.validateCustomer(dto.getCustomerId(), token);
+            walletService.isEnoughAmount(dto.getAmount(), dto.getCustomerId());
+            walletService.checkDailyLimit(dto.getCustomerId());
             walletService.validateAmount(dto.getAmount());
 
             String uniqueTxnId = "AAG" + System.currentTimeMillis();
 
-            // 🔐 Secure API call — will throw BusinessException on failure
-            KwickPayResponse kpResp = walletService.callPayoutGateway(dto,uniqueTxnId , customer);
+            // Secure API call — will throw BusinessException on failure
+//            walletService.callPayoutGateway(dto,uniqueTxnId , customer);
 
-            Wallet updatedWallet = walletService.processWithdrawal(dto, kpResp);
+            Wallet updatedWallet = walletService.processWithdrawal(dto, uniqueTxnId);
             return responseService.generateSuccessResponse("Withdrawal initiated; final status updates via callback.", updatedWallet, HttpStatus.OK);
 
 

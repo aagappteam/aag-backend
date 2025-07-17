@@ -203,9 +203,12 @@ public class WalletService {
     }
 
     public void isEnoughAmount(float amount, Long customerId) {
-        Wallet wallet = walletRepository.findByCustomCustomer(customCustomerService.getCustomerById(customerId));
+        Wallet wallet = walletRepository.findByCustomCustomer_Id(customerId);
         if (wallet == null) throw new BusinessException("Wallet not found", HttpStatus.NOT_FOUND);
-        if (wallet.getUnplayedBalance() < amount) throw new BusinessException("Insufficient balance in the wallet", HttpStatus.BAD_REQUEST);
+        BigDecimal requestedAmount = BigDecimal.valueOf(amount);
+        if (wallet.getWinningAmount().compareTo(requestedAmount) < 0) {
+            throw new BusinessException("Insufficient balance in the wallet", HttpStatus.BAD_REQUEST);
+        }
     }
 
     // ✅ Check daily withdrawal limit
@@ -249,7 +252,11 @@ public class WalletService {
 
             ResponseEntity<KwickPayResponse> response = restTemplate.postForEntity(Constant.KwickPayUrl, entity, KwickPayResponse.class);
             KwickPayResponse respBody = response.getBody();
-            System.out.println("respBody" + respBody);
+
+            if (respBody != null && "ERR".equalsIgnoreCase(respBody.getStatuscode())) {
+                String msg = respBody.getMessage();
+                    throw new BusinessException("KwickPay Error: " + msg, HttpStatus.BAD_REQUEST);
+            }
 
             return respBody;
         } catch (Exception e) {
@@ -260,7 +267,7 @@ public class WalletService {
 
     // ✅ Process transaction only if KwickPay returns TXN
     @Transactional
-    public Wallet processWithdrawal(CustomerWithdrawalRequestDto dto, KwickPayResponse kpResp) {
+    public Wallet processWithdrawal(CustomerWithdrawalRequestDto dto,  String uniqueClientId) {
         Wallet wallet = walletRepository.findByCustomCustomer_Id(dto.getCustomerId());
         if (wallet == null) throw new BusinessException("No wallet found", HttpStatus.NOT_FOUND);
 
@@ -278,10 +285,9 @@ public class WalletService {
         withdrawal.setIfscCode(dto.getIfscCode());
         withdrawal.setBankName(dto.getBankName());
         withdrawal.setAccountHolderName(dto.getAccountHolderFirstName() + " " + dto.getAccountHolderLastName());
-        withdrawal.setWithdrawalType(dto.getWithdrawalType());
-        withdrawal.setGatewayTxnId(kpResp.getTxnid());
-        withdrawal.setGatewayMessage(kpResp.getMessage());
-        withdrawal.setStatus(WithdrawalStatus.PAID);
+//        withdrawal.setWithdrawalType(dto.getWithdrawalType());
+        withdrawal.setStatus(WithdrawalStatus.PENDING);
+        withdrawal.setClientId(uniqueClientId);
 
         customerWithdrawalRequestRepository.save(withdrawal);
 
@@ -290,13 +296,35 @@ public class WalletService {
         n.setRole("Customer");
         n.setCustomerId(dto.getCustomerId());
         n.setDescription("Withdrawal Request Submitted");
-        n.setDetails("Your Rs." + dto.getAmount() + " " + dto.getWithdrawalType() + " withdrawal is " + withdrawal.getStatus());
+        n.setDetails("Your Rs." + dto.getAmount() + " " + "dto.getWithdrawalType()" + " withdrawal is " + withdrawal.getStatus());
         n.setAmount(dto.getAmount().doubleValue());
         notificationRepository.save(n);
 
         return wallet;
     }
+
+
+    @Transactional
+    public void refundAmountToWallet(String clientTxnId, float amount) {
+        CustomerWithdrawalRequest withdrawalRequest = customerWithdrawalRequestRepository.findByClientId(clientTxnId);
+        if (withdrawalRequest == null) throw new BusinessException("No withdrawal request found", HttpStatus.NOT_FOUND);
+        if (withdrawalRequest.getStatus() != WithdrawalStatus.FAILED) throw new BusinessException("Withdrawal request is not failed", HttpStatus.BAD_REQUEST);
+        Long customerId = withdrawalRequest.getCustomer().getId();
+        Wallet wallet = walletRepository.findByCustomCustomer_Id(customerId);
+        if (wallet == null) throw new BusinessException("Wallet not found for refund", HttpStatus.NOT_FOUND);
+
+        BigDecimal refundAmount = BigDecimal.valueOf(amount);
+        wallet.setWinningAmount(wallet.getWinningAmount().add(refundAmount));
+        walletRepository.save(wallet);
+
+        // Notify the customer about the refund
+        Notification notification = new Notification();
+        notification.setRole("Customer");
+        notification.setCustomerId(customerId);
+        notification.setDescription("Withdrawal Refunded");
+        notification.setDetails("Refund of Rs." + amount + " processed due to failure.");
+        notification.setAmount((double) amount);
+        notificationRepository.save(notification);
+    }
+
 }
-
-
-//{"status":"TUP","message":"Transaction Under Process","rrn":35}

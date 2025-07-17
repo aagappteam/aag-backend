@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 public class KwickPayResponse {
     private String status;
+    private String statuscode;
     private String message;
     private String txnid;
     private String utr;
