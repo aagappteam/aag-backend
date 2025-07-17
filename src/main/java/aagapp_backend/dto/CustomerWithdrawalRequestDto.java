@@ -38,6 +38,6 @@ public class CustomerWithdrawalRequestDto {
     private String ifscCode;
 
 
-    @NotNull(message = "Withdrawal Type must not be null")
-    private WithdrawalType withdrawalType;
+//    @NotNull(message = "Withdrawal Type must not be null")
+//    private WithdrawalType withdrawalType;
 }

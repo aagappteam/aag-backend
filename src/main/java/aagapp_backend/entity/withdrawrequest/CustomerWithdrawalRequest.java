@@ -32,11 +32,13 @@ public class CustomerWithdrawalRequest {
     @Column(name = "amount", nullable = false)
     private BigDecimal amount;
 
-    @Column(name = "upi_id")
-    private String upiId;
+//    @Column(name = "upi_id")
+//    private String upiId;
 
-    private String gatewayTxnId;
-    private String gatewayStatus;
+    private String clientId;
+    private String txnId;
+//    private String npciTxnId;
+    private String payId;
 
     private String gatewayMessage;
 
@@ -59,12 +61,12 @@ public class CustomerWithdrawalRequest {
     @Column(name = "request_date", nullable = false)
     private LocalDateTime requestDate = LocalDateTime.now();
 
-    @Column(name = "admin_comment")
-    private String adminComment;
+//    @Column(name = "admin_comment")
+//    private String adminComment;
 
-    @Column(name = "withdrawal_type", nullable = false)
+    @Column(name = "withdrawal_type")
     @Enumerated(EnumType.STRING)
-    private WithdrawalType withdrawalType;
+    private WithdrawalType withdrawalType=WithdrawalType.INSTANT;
 
 //    @Column(name = "processing_fee", nullable = false)
 //    private BigDecimal processingFee = BigDecimal.ZERO;

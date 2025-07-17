@@ -732,7 +732,7 @@ public class AdminReviewController {
             }
 
             request.setStatus(status);
-            request.setAdminComment(comment);
+//            request.setAdminComment(comment);
 
             if (status == WithdrawalStatus.PAID) {
 
@@ -862,14 +862,14 @@ public class AdminReviewController {
                         safe(customer.getEmail()),
                         safe(customer.getMobileNumber()),
                         safe(customer.getState()),
-                        safe(req.getUpiId()),
+//                        safe(req.getUpiId()),
                         safe(req.getAccountNumber()),
                         safe(req.getBankName()),
                         safe(req.getAccountHolderName()),
                         safe(req.getIfscCode()),
                         req.getAmount(),
                         req.getStatus(),
-                        req.getWithdrawalType(),
+//                        req.getWithdrawalType(),
 //                        req.getProcessingFee(),
 //                        req.getFinalPayoutAmount(),
                         req.getRequestDate(),
