@@ -22,7 +22,9 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -303,6 +305,10 @@ public class InvoiceServiceAdmin {
             String serviceType,
             Pageable pageable
     ) {
+        // Ensure sorting by id if not specified
+        if (pageable.getSort().isUnsorted()) {
+            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("id").descending());
+        }
         Specification<InvoiceAdmin> spec = Specification
                 .where(InvoiceAdminSpecification.hasId(id))
                 .and(InvoiceAdminSpecification.hasName(name))
