@@ -76,6 +76,7 @@ public class SecurityConfig {
                                "/actuator/**",
 
                                "/otp/**",
+                               "/payment/**",
                                "/health/**",
                                "/winning/**",
                                "/account/**",

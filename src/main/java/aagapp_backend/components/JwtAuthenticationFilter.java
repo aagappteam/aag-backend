@@ -215,6 +215,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/enq")
                 || requestURI.startsWith("/MerchantAcknowledgement")
                 || requestURI.startsWith("/Bank")
+                || requestURI.startsWith("/payment")
 
                 ;
     }
