@@ -4,6 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.dto.PermissionUpdateRequest;
 import aagapp_backend.entity.CustomCustomer;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import aagapp_backend.enums.ProfileStatus;
 import aagapp_backend.services.exception.BusinessException;
@@ -250,7 +251,28 @@ public class CustomCustomerService {
             entityManager.merge(existingCustomer);
             return ResponseEntity.ok().body("Customer updated successfully");
 
+        }catch (DataIntegrityViolationException e) {
+            Throwable rootCause = e.getRootCause();
+            String message = (rootCause != null) ? rootCause.getMessage() : e.getMessage();
+
+            if (message != null) {
+                if (message.contains("user_name")) {
+                    return ResponseEntity.badRequest().body("Username already exists.");
+                } else if (message.contains("email")) {
+                    return ResponseEntity.badRequest().body("Email is already in use.");
+                } else if (message.contains("mobile_number")) {
+                    return ResponseEntity.badRequest().body("Mobile number is already registered.");
+                } else if (message.contains("referral_code")) {
+                    return ResponseEntity.badRequest().body("Referral code already exists.");
+                } else {
+                    return ResponseEntity.badRequest().body("Duplicate value violates a unique constraint.");
+                }
+            }
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("A unique constraint was violated. Please check your input.");
         }
+
 
         catch (Exception e) {
             return ResponseEntity.status(500).body("Error updating customer: " + e.getMessage());

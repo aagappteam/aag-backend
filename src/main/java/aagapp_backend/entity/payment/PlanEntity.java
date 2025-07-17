@@ -35,6 +35,7 @@ public class PlanEntity {
     @Column(name = "price", nullable = false)
     private Double price;
 
+
     @Column(name = "subtitle", nullable = false)
     private String subtitle;
 
