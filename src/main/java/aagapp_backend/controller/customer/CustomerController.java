@@ -19,6 +19,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -238,13 +239,32 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
             customCustomerService.updateCustomer(userId, userdetails);
             return responseService.generateSuccessResponse("User Details Updated", customCustomer, HttpStatus.OK);
 
-        } catch (IllegalArgumentException e) {
+        }catch (DataIntegrityViolationException e) {
+            String message = extractConstraintMessage(e);
+            return ResponseService.generateErrorResponse(message, HttpStatus.BAD_REQUEST);
+        }  catch (IllegalArgumentException e) {
             return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Some error updating: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    private String extractConstraintMessage(DataIntegrityViolationException e) {
+        Throwable root = e.getRootCause();
+        String message = root != null ? root.getMessage() : e.getMessage();
+
+        if (message == null) return "A unique constraint was violated.";
+
+        message = message.toLowerCase();
+
+        if (message.contains("user_name")) return "Username already exists.";
+        if (message.contains("email")) return "Email is already in use.";
+        if (message.contains("mobile_number")) return "Mobile number is already registered.";
+        if (message.contains("referral_code")) return "Referral code already exists.";
+
+        return "Duplicate value violates a unique constraint.";
+    }
+
 
     @Cacheable(value = "customerDetailsCache", key = "#userId")
     @Transactional
