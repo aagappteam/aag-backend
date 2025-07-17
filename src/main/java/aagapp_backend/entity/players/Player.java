@@ -87,12 +87,24 @@ public class Player {
         return Constant.PROFILE_IMAGE_URL;
     }
 
-    public String getPlayerName() {
+   /* public String getPlayerName() {
         if (customer != null && customer.getName() != null) {
             return customer.getName();
         }
         return "Aag User";
+    }*/
+
+    public String getPlayerName() {
+        if (customer != null) {
+            if (customer.getUser_name() != null) {
+                return customer.getUser_name();
+            } else if (customer.getName() != null) {
+                return customer.getName();
+            }
+        }
+        return "Aag User";
     }
+
 
 
     @PrePersist
