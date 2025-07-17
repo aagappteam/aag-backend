@@ -98,7 +98,8 @@ public class SecurityConfig {
                                "/ws/info",
                                "/app/**",
                                "/topic/**",
-                               "/ludo-websocket/**"
+                               "/ludo-websocket/**",
+                               "/payment/payout-callback"
 
                                /*   "/vendor/**"*/
 

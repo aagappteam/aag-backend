@@ -191,6 +191,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 firstSegment = segments[0];
             }
         }
+        System.out.println("Request URI: " + requestURI);
 
         return "/".equals(requestURI)
                 || requestURI.startsWith("/account")
@@ -215,7 +216,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/enq")
                 || requestURI.startsWith("/MerchantAcknowledgement")
                 || requestURI.startsWith("/Bank")
-                || requestURI.startsWith("/payment")
+                || requestURI.equals("/payment/payout-callback")
 
                 ;
     }
