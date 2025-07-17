@@ -63,7 +63,8 @@ public class PrivilegeInterceptor implements HandlerInterceptor {
             "/MerchantAcknowledgement",
             "/Bank",
             "/ws",
-            "/ludo-websocket"
+            "/ludo-websocket",
+            "/payment/payout-callback"
     );
 
     @Override
