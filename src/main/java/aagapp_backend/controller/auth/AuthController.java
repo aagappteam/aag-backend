@@ -36,7 +36,7 @@ public class AuthController {
 
         String roleName = roleService.findRoleName(roleId);
 
-        Role role = roleRepo.findById(Long.valueOf(roleId)).orElseThrow();
+        Role role = roleRepo.findById(roleId).orElseThrow();
 
         List<String> privileges = role.getPrivileges().stream()
                 .map(Privilege::getName)

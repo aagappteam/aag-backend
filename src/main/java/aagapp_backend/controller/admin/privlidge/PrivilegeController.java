@@ -245,22 +245,19 @@ public class PrivilegeController {
     @PostMapping("/assign-privileges")
     public ResponseEntity<?> assignPrivilegesToRole(@RequestBody Map<String, Object> request) {
         try {
-            Long roleId = Long.valueOf(request.get("roleId").toString());
+            Integer roleId = Integer.valueOf(request.get("roleId").toString());
             List<Integer> newPrivilegeIds = (List<Integer>) request.get("privilegeIds");
 
             Role role = roleRepository.findById(roleId)
                     .orElseThrow(() -> new RuntimeException("Role not found"));
 
-            // Fetch current privileges
             Set<Privilege> currentPrivileges = role.getPrivileges();
 
-            // Fetch new privileges to add
             Set<Privilege> newPrivileges = newPrivilegeIds.stream()
                     .map(id -> privilegeRepo.findById(Long.valueOf(id))
                             .orElseThrow(() -> new RuntimeException("Privilege not found: " + id)))
                     .collect(Collectors.toSet());
 
-            // Merge
             currentPrivileges.addAll(newPrivileges);
 
             role.setPrivileges(currentPrivileges);

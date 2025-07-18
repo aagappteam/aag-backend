@@ -327,7 +327,7 @@ public class AdminService
 
             // ✅ Skip menus/privileges for super admin (roleId = 2)
             if (customAdmin.getRole() != 2) {
-                Role role = roleRepo.findById((long) customAdmin.getRole())
+                Role role = roleRepo.findById((int) customAdmin.getRole())
                         .orElseThrow(() -> new RuntimeException("Role not found"));
 
                 Set<Privilege> rolePrivileges = role.getPrivileges();

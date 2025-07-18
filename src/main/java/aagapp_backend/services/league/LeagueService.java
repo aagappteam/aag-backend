@@ -2307,7 +2307,6 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     @Transactional
 //    @Scheduled(cron = "*/50 * * * * *") // Runs every 2 seconds for testing
     @Scheduled(cron = "0 0 * * * *")
-
     public void autoPublishLeagueForVendor_6306470701() {
         Optional<VendorEntity> vendorOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_6306470701);
         Optional<VendorEntity> opponentOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_9628577197);
