@@ -383,7 +383,7 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
             }
 
-            String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), role, ipAddress, userAgent);
+            String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), role, ipAddress, userAgent);
             customAdmin.setToken(newToken);
             em.persist(customAdmin);
             return responseService.generateSuccessResponse("New token has been generated", customAdmin.getToken(), HttpStatus.OK);
@@ -450,7 +450,7 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
             }
 
-            String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), role, ipAddress, userAgent);
+            String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), role, ipAddress, userAgent);
             customAdmin.setToken(newToken);
             em.persist(customAdmin);
             return responseService.generateSuccessResponse("New token has been generated", customAdmin.getToken(), HttpStatus.OK);

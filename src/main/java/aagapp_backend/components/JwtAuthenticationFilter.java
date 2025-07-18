@@ -301,7 +301,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                  cusomAdmin=entityManager.find(CustomAdmin.class,id);
                 if (cusomAdmin != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            cusomAdmin.getAdmin_id(), null, new ArrayList<>());
+                            cusomAdmin.getAdminId(), null, new ArrayList<>());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     return false;
@@ -392,7 +392,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean authenticateAdmin(Long id, String jwt, String ipAddress, String userAgent, HttpServletResponse response,HttpServletRequest request) throws IOException {
         CustomAdmin customAdmin = entityManager.find(CustomAdmin.class, id);
         if (customAdmin != null && jwtUtil.validateToken(jwt, ipAddress, userAgent)) {
-            setAuthentication(customAdmin.getAdmin_id(),request);
+            setAuthentication(customAdmin.getAdminId(),request);
             return true;
         } else {
             respondWithUnauthorized(response, "Invalid data provided for this admin");

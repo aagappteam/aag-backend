@@ -239,7 +239,7 @@ public class AdminService
 
                     return ResponseEntity.ok(responseBody);
                 } else {
-                    String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), role, ipAddress, userAgent);
+                    String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), role, ipAddress, userAgent);
 
                     customAdmin.setToken(newToken);
                     entityManager.persist(customAdmin);
@@ -308,7 +308,7 @@ public class AdminService
 
             // 🎟️ Generate Token
             String token = jwtUtil.generateToken(
-                    customAdmin.getAdmin_id(),
+                    customAdmin.getAdminId(),
                     customAdmin.getRole(),
                     request.getRemoteAddr(),
                     request.getHeader("User-Agent")
@@ -543,7 +543,7 @@ public class AdminService
 
                 return ResponseEntity.ok(responseBody);
             } else {
-                String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), customAdmin.getRole(), ipAddress, userAgent);
+                String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), customAdmin.getRole(), ipAddress, userAgent);
                 session.setAttribute(tokenKey, newToken);
 
                 customAdmin.setToken(newToken);
