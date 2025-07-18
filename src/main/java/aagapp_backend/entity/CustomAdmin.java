@@ -32,7 +32,9 @@ public class CustomAdmin
 {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long admin_id;
+    @Column(name = "admin_id")
+    private Long adminId;
+
 
     private int role;
     private String password;

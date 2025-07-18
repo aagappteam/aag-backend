@@ -20,7 +20,7 @@ public class CustomAdminDTO {
 
     // Constructor
     public CustomAdminDTO(CustomAdmin admin, String roleName) {
-        this.adminId = admin.getAdmin_id();
+        this.adminId = admin.getAdminId();
         this.role = admin.getRole();
         this.roleName = roleName;
         this.userName = admin.getUser_name();

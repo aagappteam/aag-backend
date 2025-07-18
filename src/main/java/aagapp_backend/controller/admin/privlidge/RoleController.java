@@ -386,15 +386,26 @@ public class RoleController {
             @RequestParam(required = false) String userName
     ) {
         try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "admin_id"));
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "adminId"));
 
             Integer roleId = null;
             if (roleName != null && !roleName.isBlank()) {
-                roleId = roleRepository.findByRoleNameIgnoreCase(roleName)
-                        .map(Role::getRoleId)
-                        .orElse(null);
+                // Convert roleName to Integer roleId
+                Optional<Role> roleOptional = roleRepository.findByRoleNameIgnoreCase(roleName);
+                if (roleOptional.isPresent()) {
+                    roleId = roleOptional.get().getRoleId();
+                } else {
+                    // Return empty list if roleName is invalid
+                    return responseService.generateSuccessResponseWithCount(
+                            "No admins found for the given role name",
+                            Collections.emptyList(),
+                            0L,
+                            HttpStatus.OK
+                    );
+                }
             }
 
+            // Apply filtering
             Specification<CustomAdmin> spec = Specification
                     .where(CustomAdminSpecification.hasRole(roleId))
                     .and(CustomAdminSpecification.hasMobileNumber(mobileNumber))
@@ -402,7 +413,7 @@ public class RoleController {
 
             Page<CustomAdmin> customAdminPage = adminRepo.findAll(spec, pageable);
 
-            // Convert each CustomAdmin → CustomAdminDTO with roleName
+            // Map entities to DTOs with resolved roleName
             List<CustomAdminDTO> dtoList = customAdminPage.getContent().stream().map(admin -> {
                 String resolvedRoleName = roleRepository.findById(admin.getRole())
                         .map(Role::getRoleName)
@@ -418,11 +429,10 @@ public class RoleController {
             );
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "ERROR", "message", e.getMessage()));
+            exceptionHandlingImplement.handleException(e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
 
 
