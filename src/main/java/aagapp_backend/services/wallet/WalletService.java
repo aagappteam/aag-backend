@@ -258,6 +258,10 @@ public class WalletService {
                     throw new BusinessException("KwickPay Error: " + msg, HttpStatus.BAD_REQUEST);
             }
 
+            CustomerWithdrawalRequest withdrawal = new CustomerWithdrawalRequest();
+            withdrawal.setClientId(txnId);
+            customerWithdrawalRequestRepository.save(withdrawal);
+
             return respBody;
         } catch (Exception e) {
 //            e.printStackTrace();
@@ -278,7 +282,7 @@ public class WalletService {
 
 
         // Save request regardless of TXN/PENDING (don't save if gateway fails completely)
-        CustomerWithdrawalRequest withdrawal = new CustomerWithdrawalRequest();
+        CustomerWithdrawalRequest withdrawal = customerWithdrawalRequestRepository.findByClientId(uniqueClientId);
         withdrawal.setCustomer(customCustomerService.getCustomerById(dto.getCustomerId()));
         withdrawal.setAmount(requestedAmount);
         withdrawal.setAccountNumber(dto.getAccountNumber());
