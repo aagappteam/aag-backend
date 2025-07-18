@@ -95,7 +95,8 @@ public class PrivilegeInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        Long roleId = Long.valueOf(jwtUtil.extractRoleId(token));
+//        Long roleId = Long.valueOf(jwtUtil.extractRoleId(token));
+        Integer roleId = Integer.valueOf(jwtUtil.extractRoleId(token));
 
         //  Skip privilege check for Vendor (4) and User (5)
 

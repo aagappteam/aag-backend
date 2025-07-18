@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface CustomAdminRepository extends JpaRepository<CustomAdmin, Long> {
+public interface CustomAdminRepository extends JpaRepository<CustomAdmin, Long> , JpaSpecificationExecutor<CustomAdmin>{
     Optional<CustomAdmin> findByMobileNumber(String mobile);
 
 }

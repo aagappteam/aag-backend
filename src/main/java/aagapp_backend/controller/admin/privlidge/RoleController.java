@@ -2,6 +2,7 @@ package aagapp_backend.controller.admin.privlidge;
 
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.components.cache.PrivilegeMappingCache;
+import aagapp_backend.dto.CustomAdminDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.Role;
 import aagapp_backend.entity.admin.Privilege;
@@ -10,10 +11,12 @@ import aagapp_backend.repository.admin.PrivilegeRepository;
 import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.RoleService;
+import aagapp_backend.services.admin.CustomAdminSpecification;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +33,9 @@ public class RoleController {
     private ExceptionHandlingImplement exceptionHandlingImplement;
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private PrivilegeMappingCache privilegeMappingCache;
@@ -108,7 +114,7 @@ public class RoleController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "roleId") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir,
-            @RequestParam(required = false) Long roleId
+            @RequestParam(required = false) Integer roleId
     ) {
         Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -187,7 +193,7 @@ public class RoleController {
             String password = request.get("password").toString();
             String countryCode = request.getOrDefault("countryCode", "+91").toString();
 
-            Long roleId = Long.valueOf(request.get("roleId").toString());
+            Integer roleId = Integer.valueOf(request.get("roleId").toString());
 
             // Check if mobile exists
             Optional<CustomAdmin> existingUser = adminRepo.findByMobileNumber(mobile);
@@ -299,12 +305,10 @@ public class RoleController {
 //    edit user and add privlidge
 
     @GetMapping("/menus-with-selected")
-    public ResponseEntity<?> getMenusWithSelectedPrivileges(@RequestParam Long roleId) {
+    public ResponseEntity<?> getMenusWithSelectedPrivileges(@RequestParam Integer roleId) {
         try {
-            //  Step 1: Fetch all privileges (menus & submenus)
             List<Privilege> allPrivileges = privilegeRepo.findAll();
 
-            //  Step 2: Fetch role and its assigned privileges
             Role role = roleRepo.findById(roleId)
                     .orElseThrow(() -> new RuntimeException("Role not found"));
             Set<Long> selectedPrivilegeIds = role.getPrivileges().stream()
@@ -345,6 +349,81 @@ public class RoleController {
                     .body(Map.of("status", "ERROR", "message", e.getMessage()));
         }
     }
+
+//    get all custom admin with pagination
+
+/*    @GetMapping("/custom-admins")
+    public ResponseEntity<?> getCustomAdminsWithPagination(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Integer role,
+            @RequestParam(required = false) String mobileNumber,
+            @RequestParam(required = false) String userName
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+
+            Specification<CustomAdmin> spec = Specification
+                    .where(CustomAdminSpecification.hasRole(role))
+                    .and(CustomAdminSpecification.hasMobileNumber(mobileNumber))
+                    .and(CustomAdminSpecification.hasUserName(userName));
+
+            Page<CustomAdmin> customAdminPage = adminRepo.findAll(spec, pageable);
+            return responseService.generateSuccessResponseWithCount("Custom Admins fetched successfully", customAdminPage.getContent(),customAdminPage.getTotalElements(), HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "ERROR", "message", e.getMessage()));
+        }
+    }*/
+
+
+    @GetMapping("/custom-admins")
+    public ResponseEntity<?> getCustomAdminsWithPagination(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String roleName,
+            @RequestParam(required = false) String mobileNumber,
+            @RequestParam(required = false) String userName
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "admin_id"));
+
+            Integer roleId = null;
+            if (roleName != null && !roleName.isBlank()) {
+                roleId = roleRepository.findByRoleNameIgnoreCase(roleName)
+                        .map(Role::getRoleId)
+                        .orElse(null);
+            }
+
+            Specification<CustomAdmin> spec = Specification
+                    .where(CustomAdminSpecification.hasRole(roleId))
+                    .and(CustomAdminSpecification.hasMobileNumber(mobileNumber))
+                    .and(CustomAdminSpecification.hasUserName(userName));
+
+            Page<CustomAdmin> customAdminPage = adminRepo.findAll(spec, pageable);
+
+            // Convert each CustomAdmin → CustomAdminDTO with roleName
+            List<CustomAdminDTO> dtoList = customAdminPage.getContent().stream().map(admin -> {
+                String resolvedRoleName = roleRepository.findById(admin.getRole())
+                        .map(Role::getRoleName)
+                        .orElse("Unknown");
+                return new CustomAdminDTO(admin, resolvedRoleName);
+            }).toList();
+
+            return responseService.generateSuccessResponseWithCount(
+                    "Custom Admins fetched successfully",
+                    dtoList,
+                    customAdminPage.getTotalElements(),
+                    HttpStatus.OK
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "ERROR", "message", e.getMessage()));
+        }
+    }
+
+
 
 
 
