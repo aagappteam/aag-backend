@@ -1,5 +1,6 @@
 package aagapp_backend.services.kycServices;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.dto.KycVerificationRequest;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -182,6 +184,22 @@ public class KycService {
             details = "Your KYC status was changed to: " + isVerified.name();
             title = "KYC Status Changed";
         }
+
+        if (isVerified == KycStatus.VERIFIED) {
+            if ("USER".equalsIgnoreCase(role)) {
+                CustomCustomer customer = customCustomerRepository.findById(userOrVendorId)
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                if (customer.getBonusBalance() != null) {
+                    BigDecimal bonusToAdd = Constant.KYC_VERIFICATION_BONUS;
+
+                    customer.setBonusBalance(customer.getBonusBalance().add(bonusToAdd));
+
+                    customCustomerRepository.save(customer);
+                }
+            }
+        }
+
 
         // Save in-app notification
         notification.setDescription(description);

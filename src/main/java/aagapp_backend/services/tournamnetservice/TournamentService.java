@@ -32,6 +32,7 @@ import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.gameservice.GameService;
+import aagapp_backend.services.social.FollowerNotificationService;
 import aagapp_backend.spec.TournamentSpecification;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,6 +62,9 @@ public class TournamentService {
 
     @Autowired
     private VendorWalletRepository walletRepo;
+
+    @Autowired
+    private FollowerNotificationService followerNotificationService;
 
     @Autowired
     private CommonService commonService;
@@ -369,6 +373,7 @@ public class TournamentService {
             tournament.setShareableLink(shareableLink);
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
             vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);
+            followerNotificationService.notifyFollowersInParallel("tournament", tournament.getName(), vendorEntity);
 
             return tournamentRepository.save(tournament);
 

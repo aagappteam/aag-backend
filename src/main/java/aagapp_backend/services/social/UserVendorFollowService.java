@@ -357,15 +357,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
     }
 
 
-/*    public void notifyFollowers(Long vendorId, String title, String body) {
-        List<UserVendorFollow> followers = followRepo.findByVendorId(vendorId);
-        for (UserVendorFollow follow : followers) {
-            String token = follow.getUser().getFcmToken();
-            if (token != null) {
-                sendPushNotification(token, title, body);
-            }
-        }
-    }*/
+
 
     private void sendPushNotification(String token, String title, String body) {
         // Implementation to send notification using Firebase or other service

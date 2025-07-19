@@ -36,6 +36,7 @@ import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.pricedistribute.MatchService;
+import aagapp_backend.services.social.FollowerNotificationService;
 import aagapp_backend.spec.LeagueSpecification;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -73,6 +74,8 @@ public class LeagueService {
 
     @Autowired
     private NotoficationFirebase notificationFirebase;
+    @Autowired
+    private FollowerNotificationService followerNotificationService;
 
     @Autowired
     private CommonService commonService;
@@ -537,6 +540,8 @@ public class LeagueService {
                     throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
+            followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), vendorEntity);
+
             return leagueRepository.save(savedLeague);
 
         } catch (Exception e) {
