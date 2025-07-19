@@ -17,5 +17,7 @@ public interface PaymentPlanUpgradeRepository extends JpaRepository<PlanUpgradeR
     long countByStatus(RequestStatus requestStatus);
 
     Optional<PlanUpgradeRequest> findTopByVendorIdAndStatusOrderByApprovedDateDesc(Long vendorId, RequestStatus requestStatus);
+
+    Optional<PlanUpgradeRequest> findTopByVendorIdAndRequestedPlanIdOrderByRequestDateDesc(Long vendorId, Long id);
 }
 
