@@ -9,6 +9,7 @@ import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.RoleService;
 import aagapp_backend.services.admin.InvoiceServiceAdmin;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentService;
 import jakarta.mail.MessagingException;
@@ -100,7 +101,11 @@ public class PaymentController {
             invoiceServiceAdmin.createInvoiceForVendor(payment.getAmount(), vendorId);
             return responseService.generateSuccessResponse("Payment created successfully", payment, HttpStatus.CREATED);
 
-        } catch (Exception e) {
+        }catch (BusinessException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
+        catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while processing the payment: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
