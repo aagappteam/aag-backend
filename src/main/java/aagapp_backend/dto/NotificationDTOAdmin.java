@@ -20,7 +20,6 @@ public class NotificationDTOAdmin {
     private String description;
     private String details;
     private String createdDate;
-
     private Double amount;
     private String vendorName;
     private String vendorEmail;

@@ -4,6 +4,7 @@ import aagapp_backend.dto.DashboardResponseAdmin;
 import aagapp_backend.dto.NotificationDTO;
 import aagapp_backend.dto.NotificationDTOAdmin;
 import aagapp_backend.dto.NotificationResponseTansectionDTO;
+import aagapp_backend.dto.admin.Transaction;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -655,6 +656,88 @@ public class DashboardAdmin {
         }
     }
 
+    public Page<Transaction> getFilteredNotificationsDto(
+            String role,
+            Long vendorId,
+            Long customerId,
+            Double amount,
+            Double minAmount,
+            Double maxAmount,
+            ZonedDateTime startDate,
+            ZonedDateTime endDate,
+            String description,
+            String details,
+            int page,
+            int size,
+            String search
+    ) {
+        Specification<Notification> spec = Specification
+                .where(NotificationSpecifications.hasRole(role))
+                .and(NotificationSpecifications.hasVendorId(vendorId))
+                .and(NotificationSpecifications.hasCustomerId(customerId))
+                .and(NotificationSpecifications.hasAmount(amount))
+                .and(NotificationSpecifications.hasMinAmount(minAmount))
+                .and(NotificationSpecifications.hasMaxAmount(maxAmount))
+                .and(NotificationSpecifications.createdBetween(startDate, endDate))
+                .and(NotificationSpecifications.descriptionContains(description))
+                .and(NotificationSpecifications.detailsContains(details));
+
+        // Fetch all matching records from DB (not paginated yet)
+        List<Notification> fullList = notificationRepository.findAll(spec, Sort.by("createdDate").descending());
+
+        // Enrich with name and email
+        List<Transaction> enrichedList = fullList.stream().map(n -> {
+            final String[] name = {""};
+            final String[] email = {""};
+
+            if ("VENDOR".equalsIgnoreCase(n.getRole()) && n.getVendorId() != null) {
+                vendorRepository.findById(n.getVendorId()).ifPresent(v -> {
+                    name[0] = (v.getFirst_name() + " " + v.getLast_name()).trim();
+                    email[0] = v.getPrimary_email();
+                });
+            } else if ("CUSTOMER".equalsIgnoreCase(n.getRole()) && n.getCustomerId() != null) {
+                customerRepository.findById(n.getCustomerId()).ifPresent(c -> {
+                    name[0] = c.getName();
+                    email[0] = c.getEmail();
+                });
+            }
+
+            return new Transaction(
+                    n.getId(),
+                    n.getVendorId(),
+                    n.getCustomerId(),
+                    n.getRole(),
+                    name[0],
+                    email[0],
+                    n.getDescription(),
+                    n.getAmount(),
+                    n.getDetails(),
+                    n.getCreatedDate()
+            );
+        }).collect(Collectors.toList());
+
+        // Apply search filtering if needed
+        if (search != null && !search.isBlank()) {
+            String lowered = normalize(search);
+            enrichedList = enrichedList.stream()
+                    .filter(dto ->
+                            containsIgnoreCase(dto.getName(), lowered) ||
+                                    containsIgnoreCase(dto.getEmail(), lowered))
+                    .collect(Collectors.toList());
+        }
+
+        int start = Math.min(page * size, enrichedList.size());
+        int end = Math.min(start + size, enrichedList.size());
+        List<Transaction> pagedList = enrichedList.subList(start, end);
+
+        return new PageImpl<>(pagedList, PageRequest.of(page, size), enrichedList.size());
+    }
+    private boolean containsIgnoreCase(String source, String keyword) {
+        return source != null && source.toLowerCase().contains(keyword.toLowerCase());
+    }
+
+
+
 
     public Page<Notification> getFilteredNotifications(
             String role,
@@ -685,6 +768,26 @@ public class DashboardAdmin {
         Page<Notification> dbFiltered = notificationRepository.findAll(
                 spec, PageRequest.of(page, size, Sort.by("createdDate").descending()));
 
+
+        dbFiltered.getContent().forEach(n -> {
+            if ("vendor".equalsIgnoreCase(n.getRole()) && n.getVendorId() != null) {
+                vendorRepository.findById(n.getVendorId()).ifPresent(v -> {
+                    n.setName(v.getName());
+//                    n.setprimaryEmail(v.getPrimary_email());
+                });
+            } else if ("customer".equalsIgnoreCase(n.getRole()) && n.getCustomerId() != null) {
+                customerRepository.findById(n.getCustomerId()).ifPresent(c -> {
+                    n.setName(c.getName());
+//                    n.setEmail(c.getEmail());
+                });
+            }
+        });
+
+        // In-memory filtering after name/email enrichment
+       /* if (search != null && !search.isBlank()) {
+            List<Notification> filtered = filterByUserOrVendorInfo(dbFiltered.getContent(), search, role);
+            return new PageImpl<>(filtered, PageRequest.of(page, size), filtered.size());
+        }*/
         // In-memory filtering based on search keyword
         if (search != null && !search.isBlank()) {
             List<Notification> filtered = filterByUserOrVendorInfo(dbFiltered.getContent(), search, role);
@@ -696,7 +799,8 @@ public class DashboardAdmin {
 
 
     private List<Notification> filterByUserOrVendorInfo(List<Notification> notifications, String keyword, String role) {
-        String loweredKeyword = keyword.toLowerCase();
+//        String loweredKeyword = keyword.toLowerCase();
+        String loweredKeyword = normalize(keyword);
 
         if ("CUSTOMER".equalsIgnoreCase(role)) {
             Set<Long> customerIds = notifications.stream()
@@ -740,6 +844,10 @@ public class DashboardAdmin {
 
         return notifications;
     }
+    private String normalize(String input) {
+        return input == null ? "" : input.toLowerCase().replaceAll("\\s+", " ").trim();
+    }
+
 
 
 

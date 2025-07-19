@@ -11,6 +11,7 @@ import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.social.UserVendorFollow;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.*;
@@ -22,6 +23,7 @@ import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.repository.game.*;
 
 import aagapp_backend.repository.league.LeagueRepository;
+import aagapp_backend.repository.social.UserVendorFollowRepository;
 import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.CommonService;
@@ -33,6 +35,7 @@ import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.payment.PaymentFeatures;
 import aagapp_backend.services.pricedistribute.MatchService;
+import aagapp_backend.services.social.FollowerNotificationService;
 import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.spec.GameSpecification;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -89,6 +92,10 @@ public class GameService {
 
     @Autowired
     private NotoficationFirebase notificationFirebase;
+
+    @Autowired
+    private FollowerNotificationService followerNotificationService;
+
 
     @Autowired
     private ThemeRepository themeRepository;
@@ -351,6 +358,11 @@ public class GameService {
         // Generate a shareable link for the game
         String shareableLink = generateShareableLink(savedGame.getId(),vendorId);
         savedGame.setShareableLink(shareableLink);
+
+
+//        List<UserVendorFollow> followers = userVendorFollowRepository.findByVendor_ServiceProviderId(vendorId);
+        followerNotificationService.notifyFollowersInParallel("game", game.getName(), vendorEntity);
+
 
         return gameRepository.save(savedGame);
 

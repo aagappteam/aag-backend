@@ -3,6 +3,7 @@ package aagapp_backend.controller.admin;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
 import aagapp_backend.dto.*;
+import aagapp_backend.dto.admin.Transaction;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
@@ -314,9 +315,9 @@ public class AdminDetailsController {
             @RequestParam(required = false) String search
     ) {
         try {
-            Page<Notification> notifications = dashboardAdmin.getFilteredNotifications(
+            Page<Transaction> notifications = dashboardAdmin.getFilteredNotificationsDto(
                     role, vendorId, customerId, amount, minAmount, maxAmount,
-                    startDate, endDate, description, details, page, size,search
+                    startDate, endDate, description, details, page, size, search
             );
             return responseService.generateSuccessResponseWithCount(
                     "Notifications retrieved successfully.",
