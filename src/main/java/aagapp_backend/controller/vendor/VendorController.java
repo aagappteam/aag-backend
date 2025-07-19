@@ -488,37 +488,10 @@ public class VendorController {
 
             List<Map<String, Object>> vendorDetailList = new ArrayList<>();
             for (VendorEntity vendor : results) {
-                /*Map<String, Object> vendorDetailsData = serviceProviderService.VendorDetails(vendor, userId).getBody();
+                Map<String, Object> vendorDetailsData = serviceProviderService.VendorDetails(vendor, userId).getBody();
                 if (vendorDetailsData != null && vendorDetailsData.containsKey("data")) {
                     vendorDetailList.add((Map<String, Object>) vendorDetailsData.get("data"));
-                }*/
-                Map<String, Object> vendorDetailsData = serviceProviderService.VendorDetails(vendor, userId).getBody();
-                Map<String, Object> dataMap = (Map<String, Object>) vendorDetailsData.get("data");
-
-                if (dataMap != null && vendor.getIsPrivate() != null && vendor.getIsPrivate()) {
-                    Object vendorDetailsObj = dataMap.get("venderDetails");
-
-                    if (vendorDetailsObj instanceof Map) {
-                        Map<String, Object> vendorDetailsMap = (Map<String, Object>) vendorDetailsObj;
-
-                        // Safely get mobile
-                        String mobile = (String) vendorDetailsMap.get("mobileNumber");
-                        String last4Digits = (mobile != null && mobile.length() >= 4)
-                                ? mobile.substring(mobile.length() - 4)
-                                : "0000";
-
-                        vendorDetailsMap.put("first_name", "Anonymous");
-                        vendorDetailsMap.put("last_name", "User");
-                        vendorDetailsMap.put("user_name", "anonymous" + last4Digits);
-                        vendorDetailsMap.put("profilePic", null); // assuming you want to blank it
-                    } else {
-                        System.out.println("venderDetails is null or not a Map");
-                    }
-
-                    // Return full data map with modified fields
-                    vendorDetailList.add(dataMap); // ⬅ make sure you're returning this
                 }
-
 
             }
 
