@@ -258,38 +258,22 @@ public class VendorEntity {
     @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private VendorSubmissionEntity submissionEntity;
 
-//    // Custom getter for first_name
-//    public String getFirst_name() {
-//        if (isPrivate != null && isPrivate) {
-//            return "Anonymous";
-//        }
-//        return first_name;
-//    }
-//
-//    // Custom getter for last_name
-//    public String getLast_name() {
-//        if (isPrivate != null && isPrivate) {
-//            return "User";
-//        }
-//        return last_name;
-//    }
-
-
-    @Transient
-    public String getFirst_name(Long requesterId) {
-        if (Boolean.TRUE.equals(this.isPrivate) && !this.service_provider_id.equals(requesterId)) {
+    // Custom getter for first_name
+    public String getFirst_name() {
+        if (isPrivate != null && isPrivate) {
             return "Anonymous";
         }
-        return this.first_name;
+        return first_name;
     }
 
-    @Transient
-    public String getLast_name(Long requesterId) {
-        if (Boolean.TRUE.equals(this.isPrivate) && !this.service_provider_id.equals(requesterId)) {
+    // Custom getter for last_name
+    public String getLast_name() {
+        if (isPrivate != null && isPrivate) {
             return "User";
         }
-        return this.last_name;
+        return last_name;
     }
+
 
     @Transient
     public String getName() {
