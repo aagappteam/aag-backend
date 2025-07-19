@@ -23,6 +23,7 @@ public class MonthlyEarningWithVendorDTO {
     private String vendorName;
     private String mobile;
     private String email;
+    private String createdDate;
 
     // Constructor
     public MonthlyEarningWithVendorDTO(InfluencerMonthlyEarning e, VendorEntity vendor) {
@@ -37,6 +38,7 @@ public class MonthlyEarningWithVendorDTO {
         this.vendorName = vendor.getFirst_name() + " " + vendor.getLast_name();
         this.mobile = vendor.getMobileNumber();
         this.email = vendor.getPrimary_email();
+        this.createdDate = e.getCreatedDate().toString();
     }
 
 }
