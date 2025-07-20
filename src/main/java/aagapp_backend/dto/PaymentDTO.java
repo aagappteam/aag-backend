@@ -29,7 +29,6 @@ public class PaymentDTO {
     private PaymentType paymentType;
     private String fromUser;
     private String toUser;
-    private String downloadInvoice;
     private Boolean isTest;
 
 
@@ -46,7 +45,6 @@ public class PaymentDTO {
         this.paymentType = payment.getPaymentType();
         this.fromUser = payment.getFromUser();
         this.toUser = payment.getToUser();
-        this.downloadInvoice = payment.getDownloadInvoice();
         this.isTest = payment.getIsTest();
     }
 }

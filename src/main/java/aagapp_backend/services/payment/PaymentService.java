@@ -28,6 +28,7 @@ import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
+import jakarta.mail.util.ByteArrayDataSource;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
@@ -281,8 +282,8 @@ public class PaymentService {
         paymentRequest.setTransactionId(UUID.randomUUID().toString());
         paymentRequest.setFromUser(existingVendor.getFirst_name());
         paymentRequest.setToUser("Aag App");
-        String invoiceUrl = generateInvoiceUrl(paymentRequest.getTransactionId());
-        paymentRequest.setDownloadInvoice(invoiceUrl);
+//        String invoiceUrl = generateInvoiceUrl(paymentRequest.getTransactionId());
+//        paymentRequest.setDownloadInvoice(invoiceUrl);
         paymentRequest.setStatus(PaymentStatus.ACTIVE);
         existingVendor.setLeagueStatus(LeagueStatus.AVAILABLE);
 
@@ -473,8 +474,8 @@ public class PaymentService {
         paymentRequest.setTransactionId(UUID.randomUUID().toString());
         paymentRequest.setFromUser(existingVendor.getFirst_name());
         paymentRequest.setToUser("Aag App");
-        String invoiceUrl = generateInvoiceUrl(paymentRequest.getTransactionId());
-        paymentRequest.setDownloadInvoice(invoiceUrl);
+//        String invoiceUrl = generateInvoiceUrl(paymentRequest.getTransactionId());
+//        paymentRequest.setDownloadInvoice(invoiceUrl);
         paymentRequest.setStatus(PaymentStatus.ACTIVE);
         existingVendor.setLeagueStatus(LeagueStatus.AVAILABLE);
 
@@ -1205,44 +1206,33 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
     }
 
 
-    public void sendEmail(PaymentEntity paymentEntity, String invoiceUrl) throws MessagingException {
-        // Create the MimeMessage for the email
+    public void sendEmailWithAttachment(PaymentEntity paymentEntity, byte[] pdfData, String fileName) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
+        MimeMessageHelper helper = new MimeMessageHelper(message, true); // `true` enables attachment
 
         try {
-            // Set the "From" address (your company or no-reply email)
             helper.setFrom("aagappteam@gmail.com", "AAG App");
-
-            // Set the recipient email address
             helper.setTo(paymentEntity.getVendorEntity().getPrimary_email());
-
-            // Set the subject of the email
             helper.setSubject("Your Payment Invoice");
 
-            // Construct the email body text, including the invoice URL
-            String emailBody = "Dear "+paymentEntity.getVendorEntity().getFirst_name()+" "+paymentEntity.getVendorEntity().getLast_name()+"\n\n" +
-                    "Thank you for your payment. You can download your invoice from the following link:\n\n" +
-                    invoiceUrl + "\n\n" +
+            String emailBody = "Dear " + paymentEntity.getVendorEntity().getFirst_name() + " " +
+                    paymentEntity.getVendorEntity().getLast_name() + ",\n\n" +
+                    "Thank you for your payment. Please find your invoice attached.\n\n" +
                     "Best regards,\n" +
-                    "AAG App\n\n" +
-                    "Please ensure to keep this information secure.";
+                    "AAG App";
 
-            // Set the email body
             helper.setText(emailBody);
 
-            // Send the email
+            // Attach the PDF
+            ByteArrayDataSource dataSource = new ByteArrayDataSource(pdfData, "application/pdf");
+            helper.addAttachment(fileName, dataSource);
+
             mailSender.send(message);
-        } catch (MessagingException e) {
-            // Handle any messaging errors (e.g., invalid addresses or issues with the email)
+        } catch (MessagingException | MailException | UnsupportedEncodingException e) {
             throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
-        } catch (MailException e) {
-            // Handle other mail-related exceptions (e.g., connection issues with SMTP server)
-            throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
         }
     }
+
 
     public void expireChosenPlan(Long vendorId) {
         // Get the current time for expiry
