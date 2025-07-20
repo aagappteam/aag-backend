@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface InvoiceAdminRepository extends JpaRepository<InvoiceAdmin, Long>, JpaSpecificationExecutor<InvoiceAdmin> {
@@ -22,6 +23,9 @@ public interface InvoiceAdminRepository extends JpaRepository<InvoiceAdmin, Long
     List<InvoiceAdmin> findByInvoiceDateGreaterThanEqual(String startDate);
 
     List<InvoiceAdmin> findByInvoiceDateLessThanEqual(String endDate);
+
+    Optional<InvoiceAdmin> findByPaymentId(String invoiceNo);
+
     // existing query methods
 }
 
