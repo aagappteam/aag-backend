@@ -40,6 +40,8 @@ public class InvoiceAdmin {
     // Invoice Number
     private String invoiceNo;
 
+    private String paymentId;
+
     // Invoice Date
     private String invoiceDate;
 

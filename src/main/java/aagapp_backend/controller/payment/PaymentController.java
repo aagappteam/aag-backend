@@ -16,7 +16,9 @@ import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.*;
@@ -98,7 +100,7 @@ public class PaymentController {
 
             PaymentEntity payment = paymentService.createPayment(paymentRequest, vendorId);
 
-            invoiceServiceAdmin.createInvoiceForVendor(payment.getAmount(), vendorId);
+            invoiceServiceAdmin.createInvoiceForVendor(payment.getAmount(), vendorId, payment.getTransactionId());
             return responseService.generateSuccessResponse("Payment created successfully", payment, HttpStatus.CREATED);
 
         }catch (BusinessException e) {
@@ -160,6 +162,21 @@ public class PaymentController {
     }
 
 
+    @GetMapping("/downloadInvoice")
+    public ResponseEntity<byte[]> downloadInvoice(@RequestParam String paymentId) {
+        try {
+            byte[] pdfData = invoiceServiceAdmin.generateInvoicePdfForVendorRecharge(paymentId);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice-" + paymentId + ".pdf")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfData);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
+        }
+    }
 
     // Get transactions by vendor ID with optional transaction reference filter and JWT validation
     @GetMapping("/getTransactionsByVendorId/{vendorId}")
