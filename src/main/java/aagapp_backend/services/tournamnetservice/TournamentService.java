@@ -664,27 +664,6 @@ public class TournamentService {
     }
 
     @Transactional
-    public Page<Tournament> getAllStatusTournamentsByVendor(Pageable pageable, Long vendorId) {
-        try {
-            List<TournamentStatus> statuses = List.of(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
-
-            if (vendorId != null) {
-                return tournamentRepository.findByStatusInAndVendorId(statuses, vendorId, pageable);
-            } else {
-                return tournamentRepository.findByStatusIn(statuses, pageable);
-            }
-
-        } catch (BusinessException e) {
-            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
-            throw e;
-        } catch (Exception e) {
-            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            throw new RuntimeException("Error fetching tournaments: " + e.getMessage(), e);
-        }
-    }
-
-
-    @Transactional
     public Page<Tournament> getAllActiveScheduledTournamentsByVendor(Pageable pageable, Long vendorId) {
         try {
             TournamentStatus status = TournamentStatus.ACTIVE;
