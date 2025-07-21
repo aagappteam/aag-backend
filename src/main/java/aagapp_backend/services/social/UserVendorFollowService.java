@@ -462,7 +462,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         return response;
 
     }
-    public Map<String, Object> getFeedOfVendors(int page, int size, Long currentUserId) {
+/*    public Map<String, Object> getFeedOfVendors(int page, int size, Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
         Pageable subPageable = PageRequest.of(0, 10);
 
@@ -508,13 +508,12 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         response.put("vendors", vendors);
 
         return response;
-    }
+    }*/
 
 
 
     //following vendors
-/*
-    public Map<String, Object> getFeedOfVendors( int page, int size) {
+    public Map<String, Object> getFeedOfVendors( int page, int size, Long currentUserId) {
 //        Pageable pageable = PageRequest.of(page, size);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
@@ -534,7 +533,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
             vendorInfo.put("profilePic", vendor.getProfilePic());
             vendorInfo.put("email", vendor.getPrimary_email());
             vendorInfo.put("followerCount", followRepo.countByVendorId(vendorId));
-            vendorInfo.put("isFollowing", true);
+            vendorInfo.put("isFollowing", currentUserId != null && followRepo.existsByUserIdAndVendorId(currentUserId, vendorId));
 
             Page<GetGameResponseDTO> games = gameService.getAllGames("ACTIVE", vendorId, pageable1, null);
             vendorInfo.put("games", games.getContent() != null ? games.getContent() : Collections.emptyList());
@@ -542,7 +541,9 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
             Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(pageable1, vendorId);
             vendorInfo.put("leagues", leaguesPage.getContent() != null ? leaguesPage.getContent() : Collections.emptyList());
 
-            Page<Tournament> gamesPage = tournamentService.getAllActiveTournamentsByVendor(pageable1,vendorId);
+            List<TournamentStatus> statuses = Arrays.asList(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
+            Page<Tournament> gamesPage = tournamentService.getAllTournaments(pageable, statuses, vendorId, null);
+//            Page<Tournament> gamesPage = tournamentService.getAllActiveTournamentsByVendor(pageable1,vendorId);
             vendorInfo.put("tournaments", gamesPage.getContent() != null ? gamesPage.getContent() : Collections.emptyList());
 
             return vendorInfo;
@@ -564,7 +565,6 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         return response;
 
     }
-*/
 
     public Map<String, Object> getFeedOfVendorId(Long vendorId, int page, int size) {
         Optional<VendorEntity> optionalVendor = vendorRepo.findById(vendorId);
