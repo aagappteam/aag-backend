@@ -19,6 +19,7 @@ public class TournamentGetallDTO {
     private Long id;
     private Long vendorId;
     private String vendorProfilePic;
+    private String vendorName;
 
     private String name;
     private Double totalPrizePool;
