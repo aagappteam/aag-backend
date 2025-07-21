@@ -67,6 +67,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -540,9 +541,12 @@ public class LeagueService {
                     throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
-            followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), vendorEntity);
 
-            return leagueRepository.save(savedLeague);
+
+            CompletableFuture.runAsync(() -> {
+                followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), vendorEntity);
+            });
+            return savedLeague;
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);

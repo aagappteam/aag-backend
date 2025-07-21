@@ -36,6 +36,7 @@ public class FollowerNotificationService {
     private final Executor executor = Executors.newFixedThreadPool(10); // Customize based on load
 
 
+    @Async
     public void notifyFollowersInParallel(String contentType, String contentName, VendorEntity vendor) {
         int page = 0;
         int size = 100;

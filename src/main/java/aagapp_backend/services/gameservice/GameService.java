@@ -74,6 +74,7 @@ import org.springframework.http.*;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -360,11 +361,12 @@ public class GameService {
         savedGame.setShareableLink(shareableLink);
 
 
-//        List<UserVendorFollow> followers = userVendorFollowRepository.findByVendor_ServiceProviderId(vendorId);
-        followerNotificationService.notifyFollowersInParallel("game", game.getName(), vendorEntity);
+        CompletableFuture.runAsync(() -> {
+            followerNotificationService.notifyFollowersInParallel("game", savedGame.getName(), vendorEntity);
+        });
+        return savedGame;
 
-
-        return gameRepository.save(savedGame);
+//        return gameRepository.save(savedGame);
 
 
     }
