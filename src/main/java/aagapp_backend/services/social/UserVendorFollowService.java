@@ -389,7 +389,8 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
 
     //following vendors
     public Map<String, Object> getFollowingVendors(Long userId, int page, int size, String firstName) {
-        Pageable pageable = PageRequest.of(page, size);
+//        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
         CustomCustomer user = customCustomerRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("User not found " + userId, HttpStatus.BAD_REQUEST));
@@ -464,7 +465,9 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
 
     //following vendors
     public Map<String, Object> getFeedOfVendors( int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+//        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+
         Pageable pageable1 = PageRequest.of(0, 10);
         Page<VendorEntity> followPage = vendorRepo.findAll(pageable);
 

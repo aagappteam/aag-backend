@@ -55,6 +55,7 @@ import java.math.RoundingMode;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -364,18 +365,18 @@ public class TournamentService {
 
 
 
-            // Save the game to get the game ID
-//            Tournament savedTournament = tournamentRepository.save(tournament);
-
-
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(tournament.getId(),vendorId);
             tournament.setShareableLink(shareableLink);
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
             vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);
-            followerNotificationService.notifyFollowersInParallel("tournament", tournament.getName(), vendorEntity);
 
-            return tournamentRepository.save(tournament);
+            // Send notification asynchronously (non-blocking)
+            CompletableFuture.runAsync(() ->
+                    followerNotificationService.notifyFollowersInParallel("tournament", savedTournament.getName(), vendorEntity)
+            );
+
+            return savedTournament;
 
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
