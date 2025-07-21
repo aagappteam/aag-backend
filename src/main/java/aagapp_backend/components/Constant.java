@@ -30,7 +30,7 @@ public class Constant {
 
     public static final String BEARER_CONST= "Bearer ";
     public static final String REFERRAL_CODE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.referralCode = :referralCode";
-    public static final float USER_REFERAL_BALANCE = 100.0f;
+    public static final float USER_REFERAL_BALANCE = 50.0f;
     public static final String REFERAL_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     public static final Integer TENMOVES =10;
     public static final Integer SIXTEENMOVES =16;
