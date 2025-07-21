@@ -186,8 +186,12 @@ public class TournamentController {
         // Set vendorProfilePic from vendorEntity (can be null-safe)
         if (tournament.getVendorEntity() != null) {
             dto.setVendorProfilePic(tournament.getVendorEntity().getProfilePic());
+            dto.setVendorName(tournament.getVendorEntity().getName());
+
         } else {
             dto.setVendorProfilePic(""); // or default image URL
+            dto.setVendorName("");
+
         }
 
         dto.setName(tournament.getName());
