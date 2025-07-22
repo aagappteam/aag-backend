@@ -151,6 +151,13 @@ public class LeagueService {
     @Transactional
     public Challenge createChallenge(LeagueRequest leagueRequest, Long vendorId) {
         try {
+            List<League> pendingLeagues = leagueRepository.findActiveLeagues(vendorId, LeagueStatus.PENDING);
+
+            if (!pendingLeagues.isEmpty()) {
+                throw new BusinessException("You already have a pending league. Please wait for admin approval before creating a new one.", HttpStatus.BAD_REQUEST);
+            }
+
+
 
             AagAvailableGames game = aagGameRepository.findById(leagueRequest.getExistinggameId()).orElse(null);
             if (leagueRequest.getFee() <= 0)
