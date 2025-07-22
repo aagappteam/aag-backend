@@ -73,6 +73,7 @@ public class KycService {
                 mailId = vendor.getPrimary_email();
                 name = vendor.getName();
                 vendor.setKycStatus(KycStatus.PENDING);
+                vendorRepository.save(vendor);
             } else if (role.equalsIgnoreCase("user") || role.equalsIgnoreCase("customer")) {
                 CustomCustomer user = customCustomerRepository.findById(userOrVendorId)
                         .orElseThrow(() -> new RuntimeException("User not found"));
@@ -80,6 +81,8 @@ public class KycService {
                 mailId = user.getEmail();
                 name = user.getName();
                 user.setKycStatus(KycStatus.PENDING);
+                customCustomerRepository.save(user);
+
             } else {
                 throw new RuntimeException("Invalid role");
             }
