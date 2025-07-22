@@ -845,8 +845,16 @@ public class LeagueService {
             return responseService.generateErrorResponse("Player already entered the league. You can take extra passes to contribute to the league", HttpStatus.BAD_REQUEST);
         }
 
+        BigDecimal fee = BigDecimal.valueOf(league.getFee()).stripTrailingZeros();
+        String feeString = fee.toPlainString();
 
-        commonService.deductFromWallet(playerId, league.getFee(), "Rs. " + league.getFee() + " deducted for playing " + league.getName() + " league");
+        commonService.deductFromWallet(
+                playerId,
+                league.getFee(),
+                "Rs. " + feeString + " deducted for playing " + league.getName() + " league"
+        );
+
+//        commonService.deductFromWallet(playerId, league.getFee(), "Rs. " + league.getFee() + " deducted for playing " + league.getName() + " league");
 
         // Create new LeaguePass with 3 passes
         LeaguePass pass = new LeaguePass();
@@ -931,8 +939,16 @@ public class LeagueService {
         if (pass == null) {
             return responseService.generateErrorResponse("Player has not entered the league yet. Please enter the league first.", HttpStatus.BAD_REQUEST);
         }
+        BigDecimal fee = BigDecimal.valueOf(league.getFee()).stripTrailingZeros();
+        String feeString = fee.toPlainString();
 
-        commonService.deductFromWallet(playerId, league.getFee(), "Rs. " + league.getFee() + " deducted for Extra Pass " + league.getName() + " league");
+        commonService.deductFromWallet(
+                playerId,
+                league.getFee(),
+                "Rs. " + feeString + " deducted for Extra Pass " + league.getName() + " league"
+        );
+
+//        commonService.deductFromWallet(playerId, league.getFee(), "Rs. " + league.getFee() + " deducted for Extra Pass " + league.getName() + " league");
 
         BigDecimal entryFee = BigDecimal.valueOf(league.getFee());
         BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
@@ -2182,7 +2198,9 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 notification.setName(player.getCustomer().getName()!=null?player.getCustomer().getName():"N/A");
                 notification.setDescription("Wallet balance credited");
                 notification.setAmount(prize.doubleValue());
-                notification.setDetails("Rs. " + prize.doubleValue() + " won in " + league.getName());
+//                notification.setDetails("Rs. " + prize.doubleValue() + " won in " + league.getName());
+                notification.setDetails("Rs. " + prize.stripTrailingZeros().toPlainString() + " won in " + league.getName());
+
                 notification.setRole("Customer");
                 notificationRepository.save(notification);
             }
@@ -2207,7 +2225,9 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     notification.setDescription("Wallet balance credited");
                     notification.setName(player.getCustomer().getName()!=null?player.getCustomer().getName():"N/A");
                     notification.setAmount(equalShare.doubleValue());
-                    notification.setDetails("Rs. " + equalShare.doubleValue() + " won in " + league.getName());
+                    notification.setDetails("Rs. " + equalShare.stripTrailingZeros().toPlainString() + " won in " + league.getName());
+
+//                    notification.setDetails("Rs. " + equalShare.doubleValue() + " won in " + league.getName());
                     notification.setRole("Customer");
                     notificationRepository.save(notification);
                 }

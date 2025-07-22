@@ -474,8 +474,16 @@ public class GameService {
 
             GameRoom gameRoom = findAvailableGameRoom(game);
 
+            BigDecimal fee = BigDecimal.valueOf(game.getFee()).stripTrailingZeros();
+            String feeString = fee.toPlainString();
 
-            commonservice.deductFromWallet(playerId, game.getFee(),"Rs. " + game.getFee() + " deducted for playing " + game.getName() + " game");
+            commonservice.deductFromWallet(
+                    playerId,
+                    game.getFee(),
+                    "Rs. " + feeString + " deducted for playing " + game.getName() + " game"
+            );
+
+//            commonservice.deductFromWallet(playerId, game.getFee(),"Rs. " + game.getFee() + " deducted for playing " + game.getName() + " game");
 
             commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
 

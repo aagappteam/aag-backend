@@ -398,10 +398,18 @@ public class TournamentService {
                 throw new BusinessException("Tournament is already active" , HttpStatus.BAD_REQUEST);
 
             }
+            BigDecimal entryFeetosent = BigDecimal.valueOf(tournament.getEntryFee()).stripTrailingZeros();
+            String feeString = entryFeetosent.toPlainString();
 
-            commonService.deductFromWallet(playerId, (double) tournament.getEntryFee(), "Rs. " + tournament.getEntryFee() + " deducted for playing " + tournament.getName() + " tournament");
+            commonService.deductFromWallet(
+                    playerId,
+                    (double) tournament.getEntryFee(),
+                    "Rs. " + feeString + " deducted for playing " + tournament.getName() + " tournament"
+            );
 
-            BigDecimal entryFee = BigDecimal.valueOf(tournament.getEntryFee());
+//            commonService.deductFromWallet(playerId, (double) tournament.getEntryFee(), "Rs. " + tournament.getEntryFee() + " deducted for playing " + tournament.getName() + " tournament");
+
+//            BigDecimal entryFee = BigDecimal.valueOf(tournament.getEntryFee());
 
             BigDecimal vendorShareAmount = PriceConstant.VENDOR_REVENUE_PERCENT;
             commonService.addVendorEarningForPayment(tournament.getVendorId(), BigDecimal.valueOf(tournament.getEntryFee()), vendorShareAmount);
@@ -784,7 +792,10 @@ public class TournamentService {
 
             Notification notification = new Notification();
             notification.setAmount(userPrizePool.doubleValue());
-            notification.setDetails("You won ₹ " + userPrizePool + " in Round 1");
+//            notification.setDetails("You won ₹ " + userPrizePool + " in Round 1");
+            String prizeStr = userPrizePool.stripTrailingZeros().toPlainString();
+            notification.setDetails("You won ₹ " + prizeStr + " in Round 1");
+
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
             notification.setCustomerId(winner.getCustomer().getId());
@@ -2011,7 +2022,10 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         for (TournamentResultRecord winner : uniqueWinners) {
             Notification notification = new Notification();
             notification.setAmount(finalPayoutPerWinner.doubleValue());
-            notification.setDetails("You won Rs. " + finalPayoutPerWinner + " in Round " + round);
+//            notification.setDetails("You won Rs. " + finalPayoutPerWinner + " in Round " + round);
+            String payoutStr = finalPayoutPerWinner.stripTrailingZeros().toPlainString();
+            notification.setDetails("You won Rs. " + payoutStr + " in Round " + round);
+
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
@@ -2480,10 +2494,13 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 result.setRound(nextRound);
                 result.setPlayedAt(LocalDateTime.now());
                 tournamentResultRecordRepository.save(result);
+                BigDecimal prize = tournament.getRoomprize();
 
                 Notification notification = new Notification();
                 notification.setAmount(tournament.getRoomprize().doubleValue());
-                notification.setDetails("You won ₹ " + tournament.getRoomprize().doubleValue() + " in Round " + nextRound);
+//                notification.setDetails("You won ₹ " + tournament.getRoomprize().doubleValue() + " in Round " + nextRound);
+                notification.setDetails("You won ₹ " + prize.stripTrailingZeros().toPlainString() + " in Round " + nextRound);
+
                 notification.setDescription("Round Prize");
                 notification.setRole("Customer");
                 notification.setCustomerId(readyPlayers.get(0).getPlayer().getPlayerId());
