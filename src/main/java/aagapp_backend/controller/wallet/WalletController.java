@@ -134,7 +134,9 @@ public class WalletController {
 */
             notification.setDescription("Wallet balance added"); // Example NotificationType for a successful
             notification.setAmount((double) amount);
-            notification.setDetails("Rs. " +amount + " added to Wallet"); // Example NotificationType for a successful
+//            notification.setDetails("Rs. " +amount + " added to Wallet"); // Example NotificationType for a successful
+            BigDecimal formattedAmount = BigDecimal.valueOf(amount).stripTrailingZeros();
+            notification.setDetails("Rs. " + formattedAmount.toPlainString() + " added to Wallet");
 
             notificationRepository.save(notification);
             invoiceServiceAdmin.createInvoiceForCustomer((double)amount, customerId);

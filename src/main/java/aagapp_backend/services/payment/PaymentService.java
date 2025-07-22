@@ -334,8 +334,12 @@ public class PaymentService {
                 " " +
                 (existingVendor.getLast_name() != null ? existingVendor.getLast_name() : "N/A");
         notification.setName(fullName.trim());
+        String amountStr = new BigDecimal(paymentRequest.getAmount().toString())
+                .stripTrailingZeros()
+                .toPlainString();
 
-        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
+        notification.setDetails("Purchase of Rs. " + amountStr + " has been processed");
+//        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
         notificationRepository.save(notification);
 
         paymentRepository.save(paymentRequest);
@@ -537,7 +541,13 @@ public class PaymentService {
         String fullName = (existingVendor.getFirst_name() != null ? existingVendor.getFirst_name() : "N/A") +
                 " " + (existingVendor.getLast_name() != null ? existingVendor.getLast_name() : "N/A");
         notification.setName(fullName.trim());
-        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
+        String amountStr = new BigDecimal(paymentRequest.getAmount().toString())
+                .stripTrailingZeros()
+                .toPlainString();
+
+        notification.setDetails("Purchase of Rs. " + amountStr + " has been processed");
+
+//        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
         notificationRepository.save(notification);
 
         paymentRepository.save(paymentRequest);
