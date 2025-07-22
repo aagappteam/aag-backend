@@ -4,6 +4,8 @@ import aagapp_backend.components.ZonedDateTimeAdapter;
 import aagapp_backend.dto.*;
 import aagapp_backend.dto.admin.league.AdminLeagueUpdateRequest;
 import aagapp_backend.entity.Challenge;
+import aagapp_backend.entity.CustomAdmin;
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueResultRecord;
@@ -401,6 +403,9 @@ public class LeagueController {
 
             notificationRepository.save(notification);
 
+
+
+
             if (challenge.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("League scheduled successfully", publishedLeague, HttpStatus.CREATED);
             } else {
@@ -426,6 +431,7 @@ public class LeagueController {
             return responseService.generateErrorResponse("Error publishing league" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     @PostMapping("/update-leagues-by-admin")
     public ResponseEntity<?> updateLeagueStatusByAdmin(@RequestBody AdminLeagueUpdateRequest request) {

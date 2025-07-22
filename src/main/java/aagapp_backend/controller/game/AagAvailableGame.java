@@ -29,7 +29,7 @@ public class AagAvailableGame {
 
     // Create a new game
     @PostMapping("/create")
-    @CacheEvict(value = "gamesCache", allEntries = true) // Clears the cache when a new game is created
+//    @CacheEvict(value = "gamesCache", allEntries = true) // Clears the cache when a new game is created
 
     public ResponseEntity<?> createGame(@RequestBody GameRequestDTO gameRequestDTO) {
         try {
@@ -44,7 +44,7 @@ public class AagAvailableGame {
 
     // Get all games with pagination (optional)
     @GetMapping("/get-all-games")
-    @Cacheable(value = "gamesCache", key = "#page + '-' + #size") // Caches the response based on page and size
+//    @Cacheable(value = "gamesCache", key = "#page + '-' + #size") // Caches the response based on page and size
 
     public ResponseEntity<?> getAllGames(
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -75,7 +75,7 @@ public class AagAvailableGame {
 
     // Get a game by ID
     @GetMapping("get-one-game/{gameId}")
-    @Cacheable(value = "gameCache", key = "#gameId") // Caches the response based on the game ID
+//    @Cacheable(value = "gameCache", key = "#gameId") // Caches the response based on the game ID
 
     public ResponseEntity<?> getGameById(@PathVariable Long gameId) {
         try {
@@ -94,7 +94,7 @@ public class AagAvailableGame {
 
     // Update a game
     @PutMapping("/update-game/{gameId}")
-    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
+//    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
     public ResponseEntity<?> updateGame(@PathVariable Long gameId, @RequestBody GameRequestDTO gameRequestDTO) {
         try {
             GameResponseDTO updatedGame = gameService.updateGame(gameId, gameRequestDTO);
@@ -111,7 +111,7 @@ public class AagAvailableGame {
 
     // Delete a game
     @DeleteMapping("/delete-aag-game/{gameId}")
-    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
+//    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
     public ResponseEntity<?> deleteGame(@PathVariable Long gameId) {
         try {
             gameService.deleteGame(gameId);

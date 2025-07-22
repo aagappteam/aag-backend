@@ -1,9 +1,11 @@
 package aagapp_backend.services;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.notification.Notification;
@@ -14,11 +16,13 @@ import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.NotificationShareRepository;
+import aagapp_backend.repository.admin.AdminLogsInterface;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.payment.PaymentService;
+import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.checkerframework.checker.units.qual.A;
@@ -27,10 +31,12 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
@@ -38,6 +44,14 @@ import java.util.Optional;
 
 @Service
 public class CommonService {
+
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private AdminLogsInterface adminLogsInterface;
+
     private CustomCustomerService customCustomerService;
     private PlayerRepository playerRepository;
     private PaymentService paymentService;
@@ -248,6 +262,30 @@ public class CommonService {
             existing.setRechargeAmount(ammount);
             existing.setMultiplier(multiplier);
             earningRepository.save(existing);
+        }
+    }
+
+    public void notifyAdminsByRole(int role, String type, String name, Double fee, Long id, ZonedDateTime createdAtHtml) throws MessagingException, IOException {
+        List<CustomAdmin> admins = entityManager.createQuery(
+                        "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
+                .setParameter("role", role)
+                .getResultList();
+
+        AdminLogs adminLogs = new AdminLogs();
+        adminLogs.setMessage("New " + type + " created");
+        adminLogs.setTargetRole("Admin");
+        adminLogs.setPerformedBy("System");
+        adminLogs.setTargetId(id);
+        adminLogs.setTargetType(type);
+        adminLogs.setCreatedDate(createdAtHtml);
+        adminLogsInterface.save(adminLogs);
+
+        for (CustomAdmin admin : admins) {
+            String email = admin.getEmail();
+            if (email != null && !email.isEmpty()) {
+
+                emailService.sendEmailLeague(admin, type, name, fee, id, createdAtHtml);
+            }
         }
     }
 }

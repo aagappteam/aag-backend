@@ -39,6 +39,9 @@ public class CustomAdmin
     private int role;
     private String password;
     private String user_name;
+
+    private String email;
+
     private String otp;
     @Size(min = 9, max = 13)
     private String mobileNumber;
