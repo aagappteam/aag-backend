@@ -44,7 +44,7 @@ public class AagAvailableGame {
 
     // Get all games with pagination (optional)
     @GetMapping("/get-all-games")
-    @Cacheable(value = "gamesCache", key = "#page + '-' + #size") // Caches the response based on page and size
+//    @Cacheable(value = "gamesCache", key = "#page + '-' + #size") // Caches the response based on page and size
 
     public ResponseEntity<?> getAllGames(
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -75,7 +75,7 @@ public class AagAvailableGame {
 
     // Get a game by ID
     @GetMapping("get-one-game/{gameId}")
-    @Cacheable(value = "gameCache", key = "#gameId") // Caches the response based on the game ID
+//    @Cacheable(value = "gameCache", key = "#gameId") // Caches the response based on the game ID
 
     public ResponseEntity<?> getGameById(@PathVariable Long gameId) {
         try {
