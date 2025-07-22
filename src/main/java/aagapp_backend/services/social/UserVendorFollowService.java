@@ -389,6 +389,110 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
 
 
     //following vendors
+    public Map<String, Object> getFollowingVendorsOld(Long userId, int page, int size, String firstName) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+
+        CustomCustomer user = customCustomerRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("User not found " + userId, HttpStatus.BAD_REQUEST));
+
+        Page<UserVendorFollow> followPage = followRepo.findByUserId(user.getId(), Pageable.unpaged());
+
+        Stream<UserVendorFollow> followStream = followPage.getContent().stream();
+
+        if (firstName != null && !firstName.trim().isEmpty()) {
+            String[] nameParts = firstName.trim().split(" ");
+            String firstNamePart = nameParts[0].toLowerCase();
+            String lastNamePart = nameParts.length > 1 ? nameParts[1].toLowerCase() : "";
+
+            followStream = followStream.filter(follow -> {
+                VendorEntity vendor = follow.getVendor();
+                String vendorFirstName = Optional.ofNullable(vendor.getFirst_name()).orElse("").toLowerCase();
+                String vendorLastName = Optional.ofNullable(vendor.getLast_name()).orElse("").toLowerCase();
+
+                if (nameParts.length == 1) {
+                    return vendorFirstName.contains(firstNamePart) || vendorLastName.contains(firstNamePart);
+                } else {
+                    return vendorFirstName.contains(firstNamePart) && vendorLastName.contains(lastNamePart);
+                }
+            });
+        }
+
+        List<Map<String, Object>> filteredVendors = followStream.map(follow -> {
+            VendorEntity vendor = follow.getVendor();
+            Long vendorId = vendor.getService_provider_id();
+
+            Map<String, Object> vendorInfo = new HashMap<>();
+            vendorInfo.put("name", vendor.getName());
+            vendorInfo.put("id", vendorId);
+            vendorInfo.put("profilePic", vendor.getProfilePic());
+            vendorInfo.put("email", vendor.getPrimary_email());
+            vendorInfo.put("followerCount", followRepo.countByVendorId(vendorId));
+            vendorInfo.put("isFollowing", true);
+
+            List<Map<String, Object>> combinedActivities = new ArrayList<>();
+
+            // Games
+            Page<GetGameResponseDTO> games = gameService.getAllGames("ACTIVE", vendorId, Pageable.unpaged(), null);
+            for (GetGameResponseDTO game : games.getContent()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("type", "GAME");
+                item.put("createdDate", game.getCreatedAt());
+                item.put("data", game);
+                combinedActivities.add(item);
+            }
+
+            // Leagues
+            Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(Pageable.unpaged(), vendorId);
+            for (League league : leaguesPage.getContent()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("type", "LEAGUE");
+                item.put("createdDate", league.getCreatedDate());
+                item.put("data", league);
+                combinedActivities.add(item);
+            }
+
+            // Tournaments
+            Page<Tournament> tournamentsPage = tournamentService.getAllActiveTournamentsByVendor(Pageable.unpaged(), vendorId);
+            for (Tournament tournament : tournamentsPage.getContent()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("type", "TOURNAMENT");
+                item.put("createdDate", tournament.getCreatedDate());
+                item.put("data", tournament);
+                combinedActivities.add(item);
+            }
+
+            // Sort by createdDate (descending)
+            combinedActivities.sort((a, b) -> {
+                LocalDateTime dateA = (LocalDateTime) a.get("createdDate");
+                LocalDateTime dateB = (LocalDateTime) b.get("createdDate");
+                return dateB.compareTo(dateA);
+            });
+
+            vendorInfo.put("recentActivities", combinedActivities);
+
+            return vendorInfo;
+        }).collect(Collectors.toList());
+
+        // Pagination manually
+        int start = Math.min(page * size, filteredVendors.size());
+        int end = Math.min(start + size, filteredVendors.size());
+        List<Map<String, Object>> paginatedList = filteredVendors.subList(start, end);
+
+        Map<String, Object> vendorPageMap = new HashMap<>();
+        vendorPageMap.put("content", paginatedList);
+        vendorPageMap.put("pageNumber", page);
+        vendorPageMap.put("pageSize", size);
+        vendorPageMap.put("totalPages", (int) Math.ceil((double) filteredVendors.size() / size));
+        vendorPageMap.put("totalElements", filteredVendors.size());
+        vendorPageMap.put("last", end == filteredVendors.size());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("vendors", vendorPageMap);
+
+        return response;
+    }
+
+
     public Map<String, Object> getFollowingVendors(Long userId, int page, int size, String firstName) {
 //        Pageable pageable = PageRequest.of(page, size);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
