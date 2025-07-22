@@ -924,9 +924,30 @@ public class LeagueService {
         existingPass.setSelectedTeamId(teamId);
         team.setTeamPlayersCount(team.getTeamPlayersCount() + 1);
         player.setTeam(team);
+
+        createDefaultRecord(
+                player,
+                league,
+                team,
+                0L, // You can update this if actual roomId is available later
+                LocalDateTime.now()
+        );
         leaguePassRepository.save(existingPass);
 
         return responseService.generateSuccessResponse("Team selected successfully", "player selected team" + team.getTeamName(), HttpStatus.OK);
+    }
+
+    public static LeagueResultRecord createDefaultRecord(Player player, League league, LeagueTeam team, Long roomId, LocalDateTime playedAt) {
+        LeagueResultRecord record = new LeagueResultRecord();
+        record.setPlayer(player);
+        record.setLeague(league);
+        record.setLeagueTeam(team);
+        record.setRoomId(roomId); // You may set to 0L or a placeholder if unknown
+        record.setPlayedAt(playedAt);
+        record.setTotalScore(0);
+        record.setIsWinner(false);
+        record.setUpdatedDate(ZonedDateTime.now());
+        return record;
     }
 
 
