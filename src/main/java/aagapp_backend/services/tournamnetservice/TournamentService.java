@@ -284,6 +284,9 @@ public class TournamentService {
         try {
 
             VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
+            if (tournamentRepository.existsByVendorIdAndStatus(vendorId, TournamentStatus.PENDING)) {
+                throw new BusinessException("You already have a pending tournament. Please wait for admin approval before publishing another.", HttpStatus.BAD_REQUEST);
+            }
             if (vendorEntity.getStatus() != VendorStatus.ACTIVE) {
                 throw new BusinessException("Vendor is suspended or blocked. Publishing is not allowed.", HttpStatus.BAD_REQUEST);
             }
@@ -291,7 +294,6 @@ public class TournamentService {
             Tournament tournament = new Tournament();
 
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(tournamentRequest.getExistinggameId());
-//            tournament.setGameUrl(gameAvailable.get().getGameImage());
 
 
             AagAvailableGames gameEntity = gameAvailable.orElseThrow(() ->
@@ -355,6 +357,8 @@ public class TournamentService {
                 tournament.setStatus(TournamentStatus.PENDING);
                 tournament.setScheduledAt(scheduledInKolkata15);
 
+            }else {
+               throw new BusinessException("Scheduled date is required" , HttpStatus.BAD_REQUEST);
             }
 
            /* else {
@@ -2702,4 +2706,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
     public Tournament saveTournament(Tournament tournament) {
         return tournamentRepository.save(tournament);
     }
+
+
+
 }

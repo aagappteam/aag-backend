@@ -115,4 +115,6 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
 
     @Query("SELECT g FROM Tournament g WHERE g.vendorEntity.id = :vendorId")
     List<Tournament> findByVendorId(@Param("vendorId") Long vendorId);
+
+    boolean existsByVendorIdAndStatus(Long vendorId, TournamentStatus tournamentStatus);
 }

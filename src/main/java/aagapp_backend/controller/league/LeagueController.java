@@ -2,6 +2,7 @@ package aagapp_backend.controller.league;
 
 import aagapp_backend.components.ZonedDateTimeAdapter;
 import aagapp_backend.dto.*;
+import aagapp_backend.dto.admin.league.AdminLeagueUpdateRequest;
 import aagapp_backend.entity.Challenge;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
@@ -391,30 +392,14 @@ public class LeagueController {
             League publishedLeague = leagueService.publishLeague(challenge, vendorId);
 
 
-/*            // Now create a single notification for the vendor
+            // Now create a single notification for the vendor
             Notification notification = new Notification();
-            notification.setRole("Vendor");
-
             notification.setVendorId(vendorId);
-            if (challenge.getScheduledAt() != null) {
-*//*
-                notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
-*//*
-                notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
-                notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
-            } else {
-*//*
-                notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
-*//*
-                notification.setDescription("Published Game"); // Example NotificationType for a successful
-                notification.setDetails("Game has been Published"); // Example NotificationType for a successful
-            }
+            notification.setRole("Vendor");
+            notification.setDescription("League Submitted for Review");
+            notification.setDetails("Your league has been submitted and is pending admin approval before going live at the scheduled time.");
 
-
-
-
-
-            notificationRepository.save(notification);*/
+            notificationRepository.save(notification);
 
             if (challenge.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("League scheduled successfully", publishedLeague, HttpStatus.CREATED);
@@ -439,6 +424,23 @@ public class LeagueController {
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error publishing league" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/update-leagues-by-admin")
+    public ResponseEntity<?> updateLeagueStatusByAdmin(@RequestBody AdminLeagueUpdateRequest request) {
+        try {
+            League updatedLeague = leagueService.updateLeagueStatusByAdmin(request);
+            return responseService.generateSuccessResponse("League status updated", updatedLeague, HttpStatus.OK);
+        } catch (BusinessException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse("Entity not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (IllegalArgumentException e) {
+            return responseService.generateErrorResponse("Invalid data: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error updating league status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

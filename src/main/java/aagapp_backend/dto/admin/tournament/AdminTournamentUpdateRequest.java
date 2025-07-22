@@ -6,7 +6,8 @@ import lombok.Data;
 @Data
 public class AdminTournamentUpdateRequest {
     private Long tournamentId;
-    private TournamentStatus status; // APPROVED or REJECTED
-    private String message; // Optional feedback
+    private Long vendorId;
+    private TournamentStatus status;
+    private String message;
 }
 

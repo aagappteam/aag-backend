@@ -236,6 +236,28 @@ public class EmailService {
     }
 
 
+    public void sendLeagueEmail(
+            VendorEntity vendorEntity, String title, String body
+    ) throws IOException {
+
+        // Load HTML template (same for approval/rejection, use placeholders inside)
+        String template = loadTemplate("email-templates/vendor-league-status.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+        // Replace placeholders with dynamic content
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{title}", title)
+                .replace("{body}", body);
+
+        try {
+            sendEmail(to, title, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending league status email: " + e.getMessage(), e);
+        }
+    }
 
 
 
