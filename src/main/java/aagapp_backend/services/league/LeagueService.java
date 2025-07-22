@@ -5,6 +5,7 @@ import aagapp_backend.components.ZonedDateTimeAdapter;
 import aagapp_backend.components.pricelogic.PriceConstant;
 import aagapp_backend.dto.*;
 
+import aagapp_backend.dto.admin.league.AdminLeagueUpdateRequest;
 import aagapp_backend.entity.*;
 import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.game.Game;
@@ -31,6 +32,7 @@ import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CommonService;
 import aagapp_backend.services.CustomCustomerService;
+import aagapp_backend.services.EmailService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
@@ -75,6 +77,9 @@ public class LeagueService {
 
     @Autowired
     private NotoficationFirebase notificationFirebase;
+
+    @Autowired
+    private EmailService emailService;
     @Autowired
     private FollowerNotificationService followerNotificationService;
 
@@ -452,18 +457,20 @@ public class LeagueService {
                 league.setMove(leagueRequest.getMove());
             }
 
-            // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusMinutes(15);
             if (leagueRequest.getScheduledAt() != null) {
                 ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
                 if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(1))) {
                     throw new BusinessException("The game must be scheduled at least 1 hours in advance.", HttpStatus.BAD_REQUEST);
                 }
-                league.setStatus(LeagueStatus.SCHEDULED);
-                league.setScheduledAt(leagueRequest.getScheduledAt());
+                league.setStatus(LeagueStatus.PENDING);
+                ZonedDateTime scheduledInKolkata15 = leagueRequest.getScheduledAt()
+                        .withZoneSameInstant(ZoneId.of("Asia/Kolkata"))
+                        .plusMinutes(15);
+                league.setScheduledAt(scheduledInKolkata15);
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             } else {
-                league.setStatus(LeagueStatus.ACTIVE);
+                league.setStatus(LeagueStatus.PENDING);
                 league.setScheduledAt(nowInKolkata);
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             }
@@ -513,21 +520,19 @@ public class LeagueService {
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(savedLeague.getId(),vendorId);
             savedLeague.setShareableLink(shareableLink);
-            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
+/*            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
             opponentVendor.setPublishedLimit((opponentVendor.getPublishedLimit() == null ? 0 : opponentVendor.getPublishedLimit()) + 1);
             vendorEntity.setTotal_league_published(vendorEntity.getTotal_league_published() == null ? 0 : vendorEntity.getTotal_league_published() + 1);
-            opponentVendor.setTotal_league_published(opponentVendor.getTotal_league_published() == null ? 0 : opponentVendor.getTotal_league_published() + 1);
+            opponentVendor.setTotal_league_published(opponentVendor.getTotal_league_published() == null ? 0 : opponentVendor.getTotal_league_published() + 1);*/
+
+
             // Return the saved game with the shareable link
 
             String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
 
             if (fcmToken != null && !fcmToken.isEmpty()) {
 
-              /*  NotificationRequest notificationRequest = new NotificationRequest();
-                notificationRequest.setToken(fcmToken);
-                notificationRequest.setTitle("Challenge Accepted!");
-                notificationRequest.setBody(vendorEntity.getFirst_name() + " is ready. Your league will be active in 15 minutes!");
-                notificationRequest.setTopic("League Challenge Accepted"); // Optional, just for tagging*/
+
 
                 try {
 //                    notificationFirebase.sendMessageToToken(notificationRequest);
@@ -537,7 +542,6 @@ public class LeagueService {
 
                     notificationFirebase.sendNotification(fcmToken, title, body);
                 } catch (Exception e) {
-//                    System.out.println("Error sending notification: " + e.getMessage());
                     throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
@@ -2459,6 +2463,89 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     private int getRandomFee() {
         List<Integer> fees = List.of(10, 25, 50);
         return fees.get(new Random().nextInt(fees.size()));
+    }
+
+
+    public League updateLeagueStatusByAdmin(AdminLeagueUpdateRequest request) {
+        try {
+            League league = leagueRepository.findById(request.getLeagueId())
+                    .orElseThrow(() -> new NoSuchElementException("League not found with ID: " + request.getLeagueId()));
+
+            VendorEntity vendorEntity = vendorRepository.findById(request.getVendorId())
+                    .orElseThrow(() -> new NoSuchElementException("Vendor not found with ID: " + request.getVendorId()));
+
+            Challenge challenge = challangeRepository.findById(request.getChallengerId())
+                    .orElseThrow(() -> new NoSuchElementException("This Challenge is not found"));
+
+            VendorEntity opponentVendor = vendorRepository.findById(challenge.getVendorId())
+                    .orElseThrow(() -> new NoSuchElementException("Opponent vendor not found with ID: " + challenge.getVendorId()));
+
+            String title;
+            String body;
+
+            if (request.getStatus() == LeagueStatus.APPROVED) {
+                title = "League Approved";
+                body = "Your league has been approved and will go live in 1 hour.";
+
+                league.setStatus(LeagueStatus.SCHEDULED);
+
+                vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
+                vendorEntity.setTotal_league_published(vendorEntity.getTotal_league_published() == null ? 0 : vendorEntity.getTotal_league_published() + 1);
+
+                opponentVendor.setPublishedLimit((opponentVendor.getPublishedLimit() == null ? 0 : opponentVendor.getPublishedLimit()) + 1);
+                opponentVendor.setTotal_league_published(opponentVendor.getTotal_league_published() == null ? 0 : opponentVendor.getTotal_league_published() + 1);
+
+            } else if (request.getStatus() == LeagueStatus.REJECTED) {
+                title = "League Rejected";
+                body = "Your league has been rejected by the admin.";
+                if (request.getMessage() != null && !request.getMessage().isEmpty()) {
+                    body += " Reason: " + request.getMessage();
+                }
+
+                league.setStatus(LeagueStatus.REJECTED);
+            } else {
+                throw new IllegalArgumentException("Invalid league status: " + request.getStatus());
+            }
+
+            leagueRepository.save(league);
+
+            // Save notifications for both vendors
+            Notification vendorNotification = new Notification();
+            vendorNotification.setRole("Vendor");
+            vendorNotification.setVendorId(vendorEntity.getService_provider_id());
+            vendorNotification.setDescription(title);
+            vendorNotification.setDetails(body);
+            notificationRepository.save(vendorNotification);
+
+            Notification opponentNotification = new Notification();
+            opponentNotification.setRole("Vendor");
+            opponentNotification.setVendorId(opponentVendor.getService_provider_id());
+            opponentNotification.setDescription(title);
+            opponentNotification.setDetails(body);
+            notificationRepository.save(opponentNotification);
+
+            // Send emails to both vendors
+            if (vendorEntity.getPrimary_email() != null) {
+                emailService.sendTournamentEmail(vendorEntity, title, body);
+            }
+            if (opponentVendor.getPrimary_email() != null) {
+                emailService.sendTournamentEmail(opponentVendor, title, body);
+            }
+
+            // Push FCM to both vendors' followers
+            CompletableFuture.runAsync(() ->
+                    followerNotificationService.notifyFollowersInParallel("league", league.getName(), vendorEntity)
+            );
+            CompletableFuture.runAsync(() ->
+                    followerNotificationService.notifyFollowersInParallel("league", league.getName(), opponentVendor)
+            );
+
+            return league;
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error updating league status: " + e.getMessage(), e);
+        }
     }
 
 

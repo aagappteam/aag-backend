@@ -234,4 +234,54 @@ public class EmailService {
             throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
         }
     }
+
+
+    public void sendLeagueEmail(
+            VendorEntity vendorEntity, String title, String body
+    ) throws IOException {
+
+        // Load HTML template (same for approval/rejection, use placeholders inside)
+        String template = loadTemplate("email-templates/vendor-league-status.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+        // Replace placeholders with dynamic content
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{title}", title)
+                .replace("{body}", body);
+
+        try {
+            sendEmail(to, title, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending league status email: " + e.getMessage(), e);
+        }
+    }
+
+
+
+    public void sendTournamentEmail(
+            VendorEntity vendorEntity, String title, String body
+    ) throws IOException {
+
+        // Load HTML template (same for approval/rejection, use placeholders inside)
+        String template = loadTemplate("email-templates/vendor-tournament-status.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+        // Replace placeholders with dynamic content
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{title}", title)
+                .replace("{body}", body);
+
+        try {
+            sendEmail(to, title, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
+        }
+    }
+
 }

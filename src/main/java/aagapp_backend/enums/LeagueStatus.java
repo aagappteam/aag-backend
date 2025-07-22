@@ -13,5 +13,5 @@ public enum LeagueStatus {
     DECLINED,
     CHALLENGED,
     ENGAGED,
-    LIVE
+    APPROVED, LIVE
 }

@@ -220,7 +220,7 @@ public class TestController {
     }
 
 
-    @PostMapping("/log-action")
+   /* @PostMapping("/log-action")
     public ResponseEntity<?> logAdminTestAction(@RequestParam Long targetId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String performedBy = authentication.getName();
@@ -241,7 +241,7 @@ public class TestController {
         adminLogService.logAction(activity, actorRole, performedBy, targetId, targetType);
 
         return ResponseEntity.ok("Admin log created successfully.");
-    }
+    }*/
 
     @PutMapping("/update-usernames")
     @Transactional

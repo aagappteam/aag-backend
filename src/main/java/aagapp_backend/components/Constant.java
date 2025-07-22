@@ -36,8 +36,8 @@ public class Constant {
     public static final Integer SIXTEENMOVES =16;
     public static final BigDecimal USER_PERCENTAGE = new BigDecimal("0.62");
     public static final Double MAX_FEE = 100.0;
-    public static final long LEAGUE_SESSION_TIME = 1;
-    public static final long LEAGUE_SESSION_TIME_2 = 2;
+    public static final long LEAGUE_SESSION_TIME = 4;
+    public static final long LEAGUE_SESSION_TIME_2 = 4;
 
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";

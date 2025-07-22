@@ -1,10 +1,12 @@
 package aagapp_backend.controller.tournament;
 
 import aagapp_backend.dto.*;
+import aagapp_backend.dto.admin.tournament.AdminTournamentUpdateRequest;
 import aagapp_backend.dto.tournament.MatchResultRequest;
 import aagapp_backend.dto.tournament.TournamentGetallDTO;
 import aagapp_backend.dto.tournament.TournamentJoinRequest;
 import aagapp_backend.dto.tournament.TournamentRoomDetailsDTO;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
@@ -19,11 +21,15 @@ import aagapp_backend.repository.tournament.TournamentPlayerRegistrationReposito
 import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
 import aagapp_backend.repository.tournament.TournamentRoomRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.ApiConstants;
+import aagapp_backend.services.EmailService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.payment.PaymentFeatures;
+import aagapp_backend.services.social.FollowerNotificationService;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -39,16 +45,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.naming.LimitExceededException;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/tournament")
 public class TournamentController {
+    @Autowired
+    private EmailService emailService;
 
+
+    @Autowired
+    private FollowerNotificationService followerNotificationService;
+
+    @Autowired
+    private VendorRepository vendorRepository;
     private ResponseService responseService;
     private ExceptionHandlingImplement exceptionHandling;
     private PaymentFeatures paymentFeatures;
@@ -294,15 +310,17 @@ public class TournamentController {
     public ResponseEntity<?> publishGame(@PathVariable Long vendorId, @RequestBody TournamentRequest tournamentRequest) {
         try {
 
+
+
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
 
             if (paymentEntity.getStatusCode() != HttpStatus.OK) {
                 return paymentEntity;
             }
 
-           Tournament publishedGame = tournamentService.publishTournament(tournamentRequest, vendorId);
+            Tournament publishedGame = tournamentService.publishTournament(tournamentRequest, vendorId);
 
-/*            // Now create a single notification for the vendor
+            // Now create a single notification for the vendor
             Notification notification = new Notification();
             notification.setRole("Vendor");
             
@@ -310,20 +328,17 @@ public class TournamentController {
 
             notification.setVendorId(vendorId);
             if (tournamentRequest.getScheduledAt() != null) {
-//                notification.setType(NotificationType.GAME_SCHEDULED);
 
 
-                notification.setDescription("Scheduled Tournament");
-                notification.setDetails("Tournament has been Scheduled");
+                notification.setDescription("Tournament Submitted for Review");
+                notification.setDetails("Your Tournament has been submitted and is pending admin approval before going live at the scheduled time.");
             }else{
-//                notification.setType(NotificationType.GAME_PUBLISHED);
 
-                notification.setDescription("Published Tournament");
-                notification.setDetails("Tournament has been Published");
+                return responseService.generateErrorResponse("Invalid scheduled date ", HttpStatus.BAD_REQUEST);
             }
 
 
-            notificationRepository.save(notification);*/
+            notificationRepository.save(notification);
 
             if (tournamentRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("Tournament scheduled successfully", publishedGame, HttpStatus.CREATED);
@@ -348,6 +363,85 @@ public class TournamentController {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error publishing Tournaments" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @PostMapping("/update-tournaments-by-admin")
+    public ResponseEntity<?> updateTournamentStatusByAdmin(@RequestBody AdminTournamentUpdateRequest request) throws IOException {
+       try {
+
+
+           ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(request.getVendorId());
+
+           if (paymentEntity.getStatusCode() != HttpStatus.OK) {
+               return paymentEntity;
+           }
+
+
+           Tournament tournament = tournamentService.getTournamentById(request.getTournamentId());
+           if (tournament == null) {
+               return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tournament not found");
+           }
+
+
+           Notification notification = new Notification();
+           notification.setRole("Vendor");
+           notification.setVendorId(tournament.getVendorId());
+
+           VendorEntity vendor = vendorRepository.findById(tournament.getVendorId()).orElse(null);
+           String email = vendor != null ? vendor.getPrimary_email() : null;
+
+           String title;
+           String body;
+
+           if (request.getStatus() == TournamentStatus.APPROVED) {
+               title = "Tournament Approved";
+               body = "Your tournament has been approved and will go live in 1 hour.";
+               tournament.setStatus(TournamentStatus.SCHEDULED);
+               tournamentService.saveTournament(tournament);
+
+               vendor.setPublishedLimit((vendor.getPublishedLimit() == null ? 0 : vendor.getPublishedLimit()) + 1);
+               vendor.setTotal_tournament_published(vendor.getTotal_tournament_published() == null ? 0 : vendor.getTotal_tournament_published() + 1);
+               // Send notification asynchronously (non-blocking)
+                CompletableFuture.runAsync(() ->
+                        followerNotificationService.notifyFollowersInParallel("tournament", tournament.getName(), vendor)
+                );
+
+
+           } else if (request.getStatus() == TournamentStatus.REJECTED) {
+               title = "Tournament Rejected";
+               body = "Your tournament has been rejected by the admin.";
+               if (request.getMessage() != null && !request.getMessage().isEmpty()) {
+                   body += " Reason: " + request.getMessage();
+               }
+               tournament.setStatus(TournamentStatus.REJECTED);
+               tournamentService.saveTournament(tournament);
+
+           } else {
+               return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid tournament status");
+           }
+
+           notification.setDescription(title);
+           notification.setDetails(body);
+           notificationRepository.save(notification);
+
+           if (email != null) {
+               emailService.sendTournamentEmail( vendor,title, body);
+           }
+
+           return responseService.generateSuccessResponse("Tournament status updated", tournament, HttpStatus.OK);
+       }catch (BusinessException e){
+           return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+       }
+       catch (NoSuchElementException e) {
+           return responseService.generateErrorResponse("Required entity not found " + e.getMessage(), HttpStatus.NOT_FOUND);
+
+       } catch (IllegalArgumentException e) {
+           exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+           return responseService.generateErrorResponse("Invalid  data " + e.getMessage(), HttpStatus.BAD_REQUEST);
+       }catch (Exception e) {
+           exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+           return responseService.generateErrorResponse("Error updating tournament status" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+       }
     }
 
     @PostMapping("/register/{tournamentId}/{playerId}")
