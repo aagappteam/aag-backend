@@ -54,6 +54,9 @@ public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
     PaymentEntity findByTransactionId(String transactionId);
 
 
+    List<PaymentEntity> findAllByExpiryAtBeforeAndStatus(LocalDateTime now, PaymentStatus paymentStatus);
 
 
+    // Optional: get latest active subscription for a vendor
+//    PaymentEntity findTopByVendorEntity_IdAndStatusOrderByExpiryAtDesc(Long vendorId, PaymentStatus status);
 }

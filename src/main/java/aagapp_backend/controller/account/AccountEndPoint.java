@@ -3,6 +3,7 @@ package aagapp_backend.controller.account;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
+import aagapp_backend.dto.ReferralValidationRequest;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -10,6 +11,7 @@ import aagapp_backend.services.*;
 import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import aagapp_backend.services.referal.ReferralValidationService;
 import aagapp_backend.services.vendor.VenderService;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +33,9 @@ import java.util.Map;
         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
 )
 public class AccountEndPoint {
+
+    @Autowired
+    private ReferralValidationService referralValidationService;
 
     private ExceptionHandlingImplement exceptionHandling;
     private TwilioService twilioService;
@@ -366,7 +371,7 @@ public class AccountEndPoint {
         return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
     }
 
-    @jakarta.transaction.Transactional
+   /* @jakarta.transaction.Transactional
     @RequestMapping(value = "admin-login-with-password", method = RequestMethod.POST)
     public ResponseEntity<?> adminLoginWithPassword(@RequestBody Map<String, Object> loginDetails, HttpSession session, HttpServletRequest request) {
         try {
@@ -414,7 +419,72 @@ public class AccountEndPoint {
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.BAD_REQUEST);
 
         }
+    }*/
+   @jakarta.transaction.Transactional
+   @RequestMapping(value = "/admin-login-with-password", method = RequestMethod.POST)
+   public ResponseEntity<?> adminLoginWithPassword(@RequestBody Map<String, Object> loginDetails,
+                                                   HttpSession session,
+                                                   HttpServletRequest request) {
+       try {
+           if (loginDetails == null || loginDetails.isEmpty()) {
+               return responseService.generateErrorResponse("Invalid data", HttpStatus.BAD_REQUEST);
+           }
+
+           String username = (String) loginDetails.getOrDefault("username", "");
+           String mobileNumber = (String) loginDetails.get("mobileNumber");
+           String countryCode = (String) loginDetails.getOrDefault("countryCode", Constant.COUNTRY_CODE);
+           String password = (String) loginDetails.get("password");
+//           Integer role = (Integer) loginDetails.get("role");
+
+           // 🔍 Validate input
+           if (mobileNumber == null || password == null ) {
+               return responseService.generateErrorResponse("Mobile, password, and role are required", HttpStatus.BAD_REQUEST);
+           }
+
+           // 🔐 Find Admin by mobile number and country code
+           CustomAdmin customAdmin = adminService.findAdminByPhone(mobileNumber, countryCode);
+
+           if (customAdmin == null) {
+               return responseService.generateErrorResponse("Admin not found with mobile: " + mobileNumber, HttpStatus.NOT_FOUND);
+           }
+
+           // 🔍 Check role validity
+          /* String roleName = roleService.findRoleName(role);
+           if (roleName == null) {
+               return responseService.generateErrorResponse("Invalid role", HttpStatus.BAD_REQUEST);
+           }*/
+
+          /* if (customAdmin.getRole() != role) {
+               return responseService.generateErrorResponse(
+                       "Admin does not have " + roleName + " role",
+                       HttpStatus.BAD_REQUEST
+               );
+           }*/
+
+
+           //  Password Check
+           if (!passwordEncoder.matches(password, customAdmin.getPassword())) {
+               return responseService.generateErrorResponse("Invalid password", HttpStatus.BAD_REQUEST);
+           }
+
+           //  Generate Token & Login Response
+           return adminService.loginWithPasswordForAdmin(loginDetails, request, session);
+
+       } catch (IllegalArgumentException e) {
+           return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+       } catch (Exception e) {
+           exceptionHandling.handleException(e);
+           return responseService.generateErrorResponse("Some error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+       }
+   }
+
+//   refferal code verification of vendor and user
+    @PostMapping("/refferalcode-validate")
+    public ResponseEntity<?> validateReferralCode(@RequestBody ReferralValidationRequest request) {
+        return referralValidationService.validateReferralCode(request.getReferralCode(), request.getRoleId());
     }
+
+
 
 
 }

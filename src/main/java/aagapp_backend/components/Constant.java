@@ -1,6 +1,7 @@
 package aagapp_backend.components;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 
 public class Constant {
@@ -11,10 +12,17 @@ public class Constant {
     public static final double AAG_WIN_PERCENT = 0.33;
     public static final double VENDOR_WIN_PERCENT = 0.05;
 
+
+
     public static final Double LEAGUE_PASSES_FEE = 7.0;
     public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(1000.00);
     public static final int MULTIPLIER = 4;
     public static final int LEAGUE_PASS_COUNT = 3;
+    public static final String MOBILE_6306470701 =   "6306470701";
+    public static final String MOBILE_9628577197 = "9628577197";
+    public static final List<String> TEST_MOBILE_NUMBERS = List.of(MOBILE_6306470701, MOBILE_9628577197);
+    public static final BigDecimal KYC_VERIFICATION_BONUS = BigDecimal.valueOf(50);
+
     public static String ludobaseurl = "https://gamebackend.aagapp.com/game-api/ludo";
     public static String snakebaseUrl = "https://gamebackend.aagapp.com/game-api/snake";
 /*    public static String ludobaseurl = "http://3.110.44.61:8082";
@@ -29,6 +37,8 @@ public class Constant {
     public static final BigDecimal USER_PERCENTAGE = new BigDecimal("0.62");
     public static final Double MAX_FEE = 100.0;
     public static final long LEAGUE_SESSION_TIME = 1;
+    public static final long LEAGUE_SESSION_TIME_2 = 2;
+
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";
     public static String PHONE_QUERY_OTP = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode AND c.profileStatus=:profileStatus";
@@ -47,6 +57,17 @@ public class Constant {
     public static int ADMIN_VENDOR_PROVIDER_ROLE = 3;
     public static int VENDOR_ROLE = 4;
     public static int CUSTOMER_ROLE=5;
+    public static int FINANCE_ROLE = 6;
+
+
+
+    public static final String  ROLE_SUPPORT = "SUPPORT";
+    public static final String  ROLE_ADMIN = "ADMIN";
+    public static final String  ROLE_ADMIN_VENDOR_PROVIDER = "ADMIN_VENDOR_PROVIDER";
+    public static final String  ROLE_VENDOR = "VENDOR";
+    public static final String ROLE_CUSTOMER="CUSTOMER";
+    public static final String ROLE_FINANCE = "FINANCE";
+
 
     public static final String SP_USERNAME_QUERY = "SELECT s FROM VendorEntity s WHERE s.user_name LIKE :username";
     public static final String SP_EMAIL_QUERY = "SELECT s FROM VendorEntity s WHERE s.primary_email LIKE :email";
@@ -78,7 +99,12 @@ public class Constant {
     public static final String KYC_APPROVED_EMAIL_SUBJECT = "AAG Veer - Customer Kyc Approved";
     public static final String KYC_REJECTED_EMAIL_SUBJECT = "AAG Veer - Customer Kyc Rejected";
     public static final String PLAN_PURCHASED_EMAIL_SUBJECT = "AAG Veer - Subscription Plan Purchased";
+    public static final String PLAN_EXPIREDEMAIL_SUBJECT = "AAG Veer - Subscription Plan is Expired";
 
-
-
+    public static final String PLAN_PURCHASED_AGAIN_EMAIL_SUBJECT = "AAG Veer - Subscription Plan has been Renewed";
+    public static final String KwickPayUrl= "https://ubi.kwicpay.com/api/smartpay/transaction";
+    public static final String KwickPayToken= "K7CAkgS5bm5cX5zqdJ4uJ65Ekp9BwD";
+    public static final String KwickPayTransactionType= "spayout";
+    public static final String KwickPayTransactionMode= "imps";
+    public static final String UNIQUE_TXN_ID = "AAG" + System.currentTimeMillis();
 }

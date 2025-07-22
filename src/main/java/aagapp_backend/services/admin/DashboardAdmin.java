@@ -3,6 +3,8 @@ package aagapp_backend.services.admin;
 import aagapp_backend.dto.DashboardResponseAdmin;
 import aagapp_backend.dto.NotificationDTO;
 import aagapp_backend.dto.NotificationDTOAdmin;
+import aagapp_backend.dto.NotificationResponseTansectionDTO;
+import aagapp_backend.dto.admin.Transaction;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -10,10 +12,12 @@ import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.NotificationShareRepository;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.GameResultRecordRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueResultRecordRepository;
 import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.spec.NotificationShareSpecification;
 import aagapp_backend.spec.NotificationSpecifications;
 import jakarta.persistence.EntityManager;
@@ -30,7 +34,10 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static io.netty.util.AsciiString.containsIgnoreCase;
 
 @Service
 public class DashboardAdmin {
@@ -52,6 +59,12 @@ public class DashboardAdmin {
 
     @Autowired
     private NotificationShareRepository notificationShareRepository;
+
+    @Autowired
+    private CustomCustomerRepository customerRepository;
+
+    @Autowired
+    private VendorRepository vendorRepository;
 
 
     public DashboardResponseAdmin getDashboard() {
@@ -303,13 +316,15 @@ public class DashboardAdmin {
     public Page<NotificationDTOAdmin> getAllNotifications(
             int page, int size,
             Double amount, String vendorName, String detailsTerm,
-            ZonedDateTime createdFrom, ZonedDateTime createdTo, Long customerId, Long vendorId
+            ZonedDateTime createdFrom, ZonedDateTime createdTo, Long customerId, Long vendorId, String search
     ) {
         Specification<NotificationShare> spec = Specification
                 .where(NotificationShareSpecification.hasAmount(amount))
                 .and(NotificationShareSpecification.vendorNameContains(vendorName))
                 .and(NotificationShareSpecification.detailsContains(detailsTerm))
                 .and(NotificationShareSpecification.vendorId(vendorId))
+                .and(NotificationShareSpecification.vendorCommonSearch(search))
+                .and(NotificationShareSpecification.createdAfter(createdFrom))
                 .and(NotificationShareSpecification.createdBetween(createdFrom, createdTo));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
@@ -332,7 +347,8 @@ public class DashboardAdmin {
                     formatted,
                     ns.getAmount(),
                     name,
-                    email
+                    email,
+                    v.getMobileNumber()
             );
         }).toList();
 
@@ -597,12 +613,14 @@ public class DashboardAdmin {
 
                 String displayName = "N/A";
                 String displayEmail = "N/A";
+                String displayMobile = "N/A";
 
                 if (role == null || role.trim().isEmpty()) {
                     // Vendor columns at index 8,9,10
                     String vendorFirstName = row[8] != null ? (String) row[8] : null;
                     String vendorLastName = row[9] != null ? (String) row[9] : null;
                     String vendorEmail = row[10] != null ? (String) row[10] : null;
+                    String mobile = row[11] != null ? (String) row[11] : null;
                     displayName = ((vendorFirstName != null ? vendorFirstName : "") + " " + (vendorLastName != null ? vendorLastName : "")).trim();
                     displayEmail = vendorEmail != null ? vendorEmail : "N/A";
                 } else {
@@ -611,6 +629,7 @@ public class DashboardAdmin {
                     String customerEmail = row[9] != null ? (String) row[9] : null;
                     displayName = customerName != null ? customerName : "N/A";
                     displayEmail = customerEmail != null ? customerEmail : "N/A";
+                    String mobile = row[10] != null ? (String) row[10] : null;
                 }
 
                 NotificationDTOAdmin dto = new NotificationDTOAdmin(
@@ -622,7 +641,8 @@ public class DashboardAdmin {
                         formattedDate,
                         amountValue,
                         displayName,
-                        displayEmail
+                        displayEmail,
+                        displayMobile
                 );
                 resultDtoList.add(dto);
             }
@@ -635,6 +655,88 @@ public class DashboardAdmin {
             throw new RuntimeException("Error fetching notifications: " + e.getMessage(), e);
         }
     }
+
+    public Page<Transaction> getFilteredNotificationsDto(
+            String role,
+            Long vendorId,
+            Long customerId,
+            Double amount,
+            Double minAmount,
+            Double maxAmount,
+            ZonedDateTime startDate,
+            ZonedDateTime endDate,
+            String description,
+            String details,
+            int page,
+            int size,
+            String search
+    ) {
+        Specification<Notification> spec = Specification
+                .where(NotificationSpecifications.hasRole(role))
+                .and(NotificationSpecifications.hasVendorId(vendorId))
+                .and(NotificationSpecifications.hasCustomerId(customerId))
+                .and(NotificationSpecifications.hasAmount(amount))
+                .and(NotificationSpecifications.hasMinAmount(minAmount))
+                .and(NotificationSpecifications.hasMaxAmount(maxAmount))
+                .and(NotificationSpecifications.createdBetween(startDate, endDate))
+                .and(NotificationSpecifications.descriptionContains(description))
+                .and(NotificationSpecifications.detailsContains(details));
+
+        // Fetch all matching records from DB (not paginated yet)
+        List<Notification> fullList = notificationRepository.findAll(spec, Sort.by("createdDate").descending());
+
+        // Enrich with name and email
+        List<Transaction> enrichedList = fullList.stream().map(n -> {
+            final String[] name = {""};
+            final String[] email = {""};
+
+            if ("VENDOR".equalsIgnoreCase(n.getRole()) && n.getVendorId() != null) {
+                vendorRepository.findById(n.getVendorId()).ifPresent(v -> {
+                    name[0] = (v.getFirst_name() + " " + v.getLast_name()).trim();
+                    email[0] = v.getPrimary_email();
+                });
+            } else if ("CUSTOMER".equalsIgnoreCase(n.getRole()) && n.getCustomerId() != null) {
+                customerRepository.findById(n.getCustomerId()).ifPresent(c -> {
+                    name[0] = c.getName();
+                    email[0] = c.getEmail();
+                });
+            }
+
+            return new Transaction(
+                    n.getId(),
+                    n.getVendorId(),
+                    n.getCustomerId(),
+                    n.getRole(),
+                    name[0],
+                    email[0],
+                    n.getDescription(),
+                    n.getAmount(),
+                    n.getDetails(),
+                    n.getCreatedDate()
+            );
+        }).collect(Collectors.toList());
+
+        // Apply search filtering if needed
+        if (search != null && !search.isBlank()) {
+            String lowered = normalize(search);
+            enrichedList = enrichedList.stream()
+                    .filter(dto ->
+                            containsIgnoreCase(dto.getName(), lowered) ||
+                                    containsIgnoreCase(dto.getEmail(), lowered))
+                    .collect(Collectors.toList());
+        }
+
+        int start = Math.min(page * size, enrichedList.size());
+        int end = Math.min(start + size, enrichedList.size());
+        List<Transaction> pagedList = enrichedList.subList(start, end);
+
+        return new PageImpl<>(pagedList, PageRequest.of(page, size), enrichedList.size());
+    }
+    private boolean containsIgnoreCase(String source, String keyword) {
+        return source != null && source.toLowerCase().contains(keyword.toLowerCase());
+    }
+
+
 
 
     public Page<Notification> getFilteredNotifications(
@@ -649,7 +751,8 @@ public class DashboardAdmin {
             String description,
             String details,
             int page,
-            int size
+            int size,
+            String search
     ) {
         Specification<Notification> spec = Specification
                 .where(NotificationSpecifications.hasRole(role))
@@ -662,30 +765,147 @@ public class DashboardAdmin {
                 .and(NotificationSpecifications.descriptionContains(description))
                 .and(NotificationSpecifications.detailsContains(details));
 
-        return notificationRepository.findAll(spec, PageRequest.of(page, size, Sort.by("createdDate").descending()));
+        Page<Notification> dbFiltered = notificationRepository.findAll(
+                spec, PageRequest.of(page, size, Sort.by("createdDate").descending()));
+
+
+        dbFiltered.getContent().forEach(n -> {
+            if ("vendor".equalsIgnoreCase(n.getRole()) && n.getVendorId() != null) {
+                vendorRepository.findById(n.getVendorId()).ifPresent(v -> {
+                    n.setName(v.getName());
+//                    n.setprimaryEmail(v.getPrimary_email());
+                });
+            } else if ("customer".equalsIgnoreCase(n.getRole()) && n.getCustomerId() != null) {
+                customerRepository.findById(n.getCustomerId()).ifPresent(c -> {
+                    n.setName(c.getName());
+//                    n.setEmail(c.getEmail());
+                });
+            }
+        });
+
+        // In-memory filtering after name/email enrichment
+       /* if (search != null && !search.isBlank()) {
+            List<Notification> filtered = filterByUserOrVendorInfo(dbFiltered.getContent(), search, role);
+            return new PageImpl<>(filtered, PageRequest.of(page, size), filtered.size());
+        }*/
+        // In-memory filtering based on search keyword
+        if (search != null && !search.isBlank()) {
+            List<Notification> filtered = filterByUserOrVendorInfo(dbFiltered.getContent(), search, role);
+            return new PageImpl<>(filtered, PageRequest.of(page, size), filtered.size());
+        }
+
+        return dbFiltered;
     }
 
 
-    // Helper Methods
-    private Map<Long, VendorEntity> fetchVendorsByIds(Set<Long> vendorIds) {
-        if (vendorIds.isEmpty()) return Collections.emptyMap();
-        List<VendorEntity> vendors = entityManager.createQuery(
-                        "SELECT v FROM VendorEntity v WHERE v.id IN :ids", VendorEntity.class)
-                .setParameter("ids", vendorIds)
-                .getResultList();
-        return vendors.stream().collect(Collectors.toMap(VendorEntity::getService_provider_id, v -> v));
+    private List<Notification> filterByUserOrVendorInfo(List<Notification> notifications, String keyword, String role) {
+//        String loweredKeyword = keyword.toLowerCase();
+        String loweredKeyword = normalize(keyword);
+
+        if ("CUSTOMER".equalsIgnoreCase(role)) {
+            Set<Long> customerIds = notifications.stream()
+                    .map(Notification::getCustomerId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            Map<Long, CustomCustomer> customerMap = customerRepository.findAllById(customerIds).stream()
+                    .collect(Collectors.toMap(CustomCustomer::getId, Function.identity()));
+
+            return notifications.stream()
+                    .filter(n -> {
+                        CustomCustomer c = customerMap.get(n.getCustomerId());
+                        return c != null && (
+                                containsIgnoreCase(c.getName(), loweredKeyword)
+                                        || containsIgnoreCase(c.getEmail(), loweredKeyword)
+                                        || containsIgnoreCase(c.getMobileNumber(), loweredKeyword)
+                        );
+                    }).collect(Collectors.toList());
+
+        } else if ("VENDOR".equalsIgnoreCase(role)) {
+            Set<Long> vendorIds = notifications.stream()
+                    .map(Notification::getVendorId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            Map<Long, VendorEntity> vendorMap = vendorRepository.findAllById(vendorIds).stream()
+                    .collect(Collectors.toMap(VendorEntity::getService_provider_id, Function.identity()));
+
+            return notifications.stream()
+                    .filter(n -> {
+                        VendorEntity v = vendorMap.get(n.getVendorId());
+                        return v != null && (
+                                containsIgnoreCase(v.getFirst_name(), loweredKeyword)
+                                        || containsIgnoreCase(v.getLast_name(), loweredKeyword)
+                                        || containsIgnoreCase(v.getPrimary_email(), loweredKeyword)
+                                        || containsIgnoreCase(v.getMobileNumber(), loweredKeyword)
+                        );
+                    }).collect(Collectors.toList());
+        }
+
+        return notifications;
+    }
+    private String normalize(String input) {
+        return input == null ? "" : input.toLowerCase().replaceAll("\\s+", " ").trim();
     }
 
-    private Map<Long, CustomCustomer> fetchCustomersByIds(Set<Long> customerIds) {
-        if (customerIds.isEmpty()) return Collections.emptyMap();
-        List<CustomCustomer> customers = entityManager.createQuery(
-                        "SELECT c FROM CustomCustomer c WHERE c.customerId IN :ids", CustomCustomer.class)
-                .setParameter("ids", customerIds)
-                .getResultList();
-        return customers.stream().collect(Collectors.toMap(CustomCustomer::getId, c -> c));
-    }
 
 
+
+    /*private List<NotificationResponseTansectionDTO> mapToDTOs(List<Notification> notifications, String role) {
+        List<NotificationResponseTansectionDTO> dtoList = new ArrayList<>();
+
+        if ("CUSTOMER".equalsIgnoreCase(role)) {
+            Set<Long> customerIds = notifications.stream().map(Notification::getCustomerId).filter(Objects::nonNull).collect(Collectors.toSet());
+            Map<Long, CustomCustomer> customerMap = customerRepository.findAllById(customerIds).stream()
+                    .collect(Collectors.toMap(CustomCustomer::getId, Function.identity()));
+
+            for (Notification n : notifications) {
+                CustomCustomer c = customerMap.get(n.getCustomerId());
+                NotificationResponseTansectionDTO dto = new NotificationResponseTansectionDTO(
+                        n.getId(),
+                        n.getVendorId(),
+                        n.getCustomerId(),
+                        n.getRole(),
+                        n.getName(),
+                        n.getDescription(),
+                        n.getAmount(),
+                        n.getDetails(),
+                        n.getCreatedDate(),
+                        c != null ? c.getName() : null,
+                        c != null ? c.getEmail() : null,
+                        c != null ? c.getMobileNumber() : null
+                );
+                dtoList.add(dto);
+            }
+        } else if ("VENDOR".equalsIgnoreCase(role)) {
+            Set<Long> vendorIds = notifications.stream().map(Notification::getVendorId).filter(Objects::nonNull).collect(Collectors.toSet());
+            Map<Long, VendorEntity> vendorMap = vendorRepository.findAllById(vendorIds).stream()
+                    .collect(Collectors.toMap(VendorEntity::getService_provider_id, Function.identity()));
+
+            for (Notification n : notifications) {
+                VendorEntity v = vendorMap.get(n.getVendorId());
+                String vendorFullName = (v != null ? (v.getFirst_name() + " " + v.getLast_name()) : null);
+
+                NotificationResponseTansectionDTO dto = new NotificationResponseTansectionDTO(
+                        n.getId(),
+                        n.getVendorId(),
+                        n.getCustomerId(),
+                        n.getRole(),
+                        n.getName(),
+                        n.getDescription(),
+                        n.getAmount(),
+                        n.getDetails(),
+                        n.getCreatedDate(),
+                        vendorFullName,
+                        v != null ? v.getPrimary_email() : null,
+                        v != null ? v.getMobileNumber() : null
+                );
+                dtoList.add(dto);
+            }
+        }
+
+        return dtoList;
+    }*/
 
 
 

@@ -20,14 +20,14 @@ public class NotificationDTOAdmin {
     private String description;
     private String details;
     private String createdDate;
-
     private Double amount;
     private String vendorName;
     private String vendorEmail;
+    private String mobileNumber;
 
     public NotificationDTOAdmin(Long id, Long vendorId, String role,
                                 String description, String details, String createdDate,
-                                Double amount, String vendorName, String vendorEmail) {
+                                Double amount, String vendorName, String vendorEmail, String mobileNumber) {
         this.id = id;
         this.vendorId = vendorId;
         this.role = role;
@@ -37,6 +37,7 @@ public class NotificationDTOAdmin {
         this.amount = amount;
         this.vendorName = vendorName;
         this.vendorEmail = vendorEmail;
+        this.mobileNumber = mobileNumber;
     }
 
 

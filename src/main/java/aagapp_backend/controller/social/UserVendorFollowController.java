@@ -1,4 +1,5 @@
 package aagapp_backend.controller.social;
+import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.TopHostWeekDto;
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.dto.TopVendorWeekDto;
@@ -23,6 +24,9 @@ import java.util.NoSuchElementException;
 @RestController
 @RequestMapping("/follow")
 public class UserVendorFollowController {
+    @Autowired
+    private JwtUtil jwtUtil;
+
 
     @Autowired
     private UserVendorFollowService followService;
@@ -168,9 +172,19 @@ public class UserVendorFollowController {
     @GetMapping("/all-feed")
     public ResponseEntity<Map<String, Object>> getFeedOfUser(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
 
-        Map<String, Object> data = followService.getFeedOfVendors( page, size);
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String token = authHeader.substring(7);
+        Long tokenUserId = jwtUtil.extractId(token);
+
+        Map<String, Object> data = followService.getFeedOfVendors( page, size,tokenUserId);
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "User feed Vendors List");

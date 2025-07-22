@@ -4,27 +4,31 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.dto.PaymentDashboardDTO;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorReferral;
+import aagapp_backend.entity.VendorSubmissionEntity;
+import aagapp_backend.entity.payment.PlanUpgradeRequest;
+import aagapp_backend.repository.VendorSubmissionEntityRepository;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
-import aagapp_backend.enums.LeagueStatus;
-import aagapp_backend.enums.PaymentStatus;
-import aagapp_backend.enums.VendorLevelPlan;
-import aagapp_backend.enums.VendorStatus;
+import aagapp_backend.enums.*;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
+import aagapp_backend.repository.payment.PaymentPlanUpgradeRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
 import aagapp_backend.repository.payment.PlanRepository;
 import aagapp_backend.repository.vendor.VendorReferralRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.CommonService;
 import aagapp_backend.services.EmailService;
 import aagapp_backend.services.NotificationService;
 
 import aagapp_backend.services.exception.BusinessException;
+import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
+import jakarta.mail.util.ByteArrayDataSource;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
@@ -38,7 +42,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +53,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -57,8 +62,22 @@ import java.util.regex.Pattern;
 @Service
 public class PaymentService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
+    @Autowired
+    private EmailService emailService;
 
+    @Autowired
+    private PaymentPlanUpgradeRepository planUpgradeRequestRepository;
+
+    @Autowired
+    private VendorSubmissionEntityRepository vendorSubmissionEntityRepository;
+
+    @Autowired
+    private VendorRepository vendorRepository;
+
+    @Autowired
+    private ExceptionHandlingImplement exceptionHandlingImplement;
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
     private PaymentRepository paymentRepository;
     private CommonService commonService;
     private InfluencerMonthlyEarningRepository earningRepository;
@@ -69,8 +88,6 @@ public class PaymentService {
     private NotificationRepository notificationRepository;
     private JavaMailSender mailSender;
 
-    @Autowired
-    private EmailService emailService;
 
     @Autowired
     public void setPaymentRepository(PaymentRepository paymentRepository) {
@@ -118,6 +135,75 @@ public class PaymentService {
         this.mailSender = mailSender;
     }
 
+ @Scheduled(cron = "0 0 * * * *") // Runs every hour
+    public void expireOldSubscriptions() {
+        List<PaymentEntity> expiredPayments = paymentRepository.findAllByExpiryAtBeforeAndStatus(
+                LocalDateTime.now(), PaymentStatus.ACTIVE
+        );
+        for (PaymentEntity payment : expiredPayments) {
+            try {
+
+                System.out.println("Expiring subscription ID: " + payment.getId() + " at " + LocalDateTime.now());
+                payment.setStatus(PaymentStatus.EXPIRED);
+                payment.setExpiredAt(LocalDateTime.now());
+                paymentRepository.save(payment);
+
+                VendorEntity vendor = payment.getVendorEntity();
+                if (vendor != null && vendor.getPrimary_email() != null) {
+
+                    PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
+                    if (!Constant.TEST_MOBILE_NUMBERS.contains(vendor.getMobileNumber())) {
+                        emailService.sendSubscriptionExpiredMail(
+                                vendor.getPrimary_email(),
+                                vendor.getFirst_name(),
+                                LocalDateTime.now(),
+                                planEntity.getPlanName(),
+                                payment.getAmount()
+                        );
+                        vendor.setIsPaid(false);
+                        vendorRepository.save(vendor);
+
+                    }
+
+                }
+
+
+                //  Create new subscription if this is the specific vendor
+                if (vendor != null && Constant.TEST_MOBILE_NUMBERS.contains(vendor.getMobileNumber())) {
+
+                    PaymentEntity newPayment = new PaymentEntity();
+                    newPayment.setVendorEntity(vendor);
+                    newPayment.setAmount(50000.0);
+                    newPayment.setPlanDuration("Monthly");
+                    newPayment.setPaymentType(PaymentType.CREDIT);
+                    newPayment.setStatus(PaymentStatus.ACTIVE);
+                    newPayment.setPlanId(5L); // Plan ID 5
+                    newPayment.setCreatedAt(LocalDateTime.now());
+                    newPayment.setExpiryAt(LocalDateTime.now().plusMonths(1));
+                    newPayment.setIsTest(true);
+
+                    paymentRepository.save(newPayment);
+                    PlanEntity planEntity = entityManager.find(PlanEntity.class, newPayment.getPlanId());
+
+                    vendor.setPlanName(planEntity.getPlanName());
+                    vendor.setIsPaid(true);
+//                    only for testing
+                    vendor.setDailyLimit(20);
+                    vendorRepository.save(vendor);
+                }
+
+            } catch (Exception e) {
+                exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                System.err.println("Failed to expire subscription ID: " + payment.getId() +
+                        " | Error: " + e.getMessage());
+            }
+        }
+
+        System.out.println("Subscription expiry task completed at " + LocalDateTime.now());
+    }
+
+
+
 
     public List<PaymentEntity> findActivePlansByVendorId(Long vendorId) {
         String query = "SELECT p FROM PaymentEntity p WHERE p.vendorEntity.id = :vendorId AND p.status = 'ACTIVE'";
@@ -133,6 +219,365 @@ public class PaymentService {
 
 //    @todo:_ Need to rework on this according to level and plan details
     @Transactional
+    public PaymentEntity createPaymentOld(PaymentEntity paymentRequest, Long vendorId) {
+        VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
+
+        if (existingVendor == null) {
+            throw new RuntimeException("Vendor not found with ID: " + vendorId);
+        }
+
+        if (existingVendor.getStatus() != VendorStatus.ACTIVE) {
+            throw new BusinessException("Vendor is suspended or blocked. Payment is not allowed.", HttpStatus.BAD_REQUEST);
+        }
+
+        Long planId = paymentRequest.getPlanId();
+        PlanEntity selectedPlan = entityManager.find(PlanEntity.class, planId);
+        if (selectedPlan == null) {
+            throw new RuntimeException("Invalid plan ID: " + planId);
+        }
+
+        if (isFirstPayment(existingVendor)) {
+            VendorSubmissionEntity vendorSubmissionEntity = vendorSubmissionEntityRepository.findByVendorEntity(existingVendor);
+            if (vendorSubmissionEntity != null && Boolean.TRUE.equals(vendorSubmissionEntity.getApproved())) {
+                String approvedPlan = vendorSubmissionEntity.getPlanName().trim().toUpperCase();
+                String selectedPlanName = selectedPlan.getPlanName().trim().toUpperCase();
+
+                if (!approvedPlan.equals(selectedPlanName)) {
+                    throw new BusinessException(
+                            "You are already approved for the " + approvedPlan + " plan. You cannot switch to a different plan (" + selectedPlanName + ").",
+                            HttpStatus.BAD_REQUEST
+                    );
+                }
+            }
+        }
+
+        // Set vendor level based on plan name
+        String planName = selectedPlan.getPlanName().toUpperCase();
+        VendorLevelPlan initialLevel = VendorLevelPlan.STANDARD_A;
+
+        if (planName.contains("PRO")) {
+            initialLevel = VendorLevelPlan.PRO_A;
+        } else if (planName.contains("ELITE")) {
+            initialLevel = VendorLevelPlan.ELITE_A;
+        }
+
+        // Associate the vendor with the payment
+        paymentRequest.setVendorEntity(existingVendor);
+        paymentRequest.setPlanId(selectedPlan.getId());
+        paymentRequest.setAmount(selectedPlan.getPrice());
+
+        if (vendorId != null) {
+            Integer dailyGameLimit = extractDailyGameLimit(selectedPlan.getFeatures());
+            Integer themeLimit = extractThemeLimit(selectedPlan.getFeatures());
+
+            existingVendor.setThemeCount(themeLimit);
+            existingVendor.setPlanName(selectedPlan.getPlanName());
+            existingVendor.setDailyLimit(dailyGameLimit);
+            existingVendor.setVendorLevelPlan(initialLevel);
+
+            paymentRequest.setDailyLimit(dailyGameLimit);
+        }
+
+        paymentRequest.setPlanDuration(selectedPlan.getPlanVariant());
+        paymentRequest.setTransactionId(UUID.randomUUID().toString());
+        paymentRequest.setFromUser(existingVendor.getFirst_name());
+        paymentRequest.setToUser("Aag App");
+//        String invoiceUrl = generateInvoiceUrl(paymentRequest.getTransactionId());
+//        paymentRequest.setDownloadInvoice(invoiceUrl);
+        paymentRequest.setStatus(PaymentStatus.ACTIVE);
+        existingVendor.setLeagueStatus(LeagueStatus.AVAILABLE);
+
+        // Set expiry date based on plan duration
+        String planDuration = paymentRequest.getPlanDuration();
+        if (planDuration != null) {
+            switch (planDuration.toLowerCase()) {
+                case "monthly":
+                    paymentRequest.setExpiryAt(LocalDateTime.now().plusMonths(1));
+                    break;
+                case "yearly":
+                    paymentRequest.setExpiryAt(LocalDateTime.now().plusYears(1));
+                    break;
+                default:
+                    paymentRequest.setExpiryAt(LocalDateTime.now().plusDays(1));
+                    break;
+            }
+        } else {
+            paymentRequest.setExpiryAt(LocalDateTime.now().plusDays(1));
+        }
+
+        paymentRequest.setPaymentType(paymentRequest.getPaymentType());
+
+        // Expire any existing active payments
+        expireExistingActivePayments(vendorId);
+
+        // Handle referral reward on first payment
+        if (isFirstPayment(existingVendor)) {
+            Optional<VendorReferral> vendorReferralOpt = Optional.ofNullable(vendorReferralRepository.findByReferredId(existingVendor));
+            if (vendorReferralOpt.isPresent()) {
+                VendorEntity referrer = vendorReferralOpt.get().getReferrerId();
+                double commission = calculateReferralCommission(referrer, paymentRequest.getAmount());
+                updateReferrerWallet(referrer, commission);
+            }
+        }
+
+        // Set vendor as paid
+        existingVendor.setIsPaid(true);
+        entityManager.persist(existingVendor);
+
+        // Notification
+        Notification notification = new Notification();
+        notification.setVendorId(existingVendor.getService_provider_id());
+        notification.setRole("Vendor");
+        notification.setDescription("Plan purchased");
+        notification.setAmount(paymentRequest.getAmount());
+        String fullName = (existingVendor.getFirst_name() != null ? existingVendor.getFirst_name() : "N/A") +
+                " " +
+                (existingVendor.getLast_name() != null ? existingVendor.getLast_name() : "N/A");
+        notification.setName(fullName.trim());
+
+        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
+        notificationRepository.save(notification);
+
+        paymentRepository.save(paymentRequest);
+
+        try {
+            if (existingVendor.getPrimary_email() != null) {
+                if (isFirstPayment(existingVendor)) {
+                    emailService.sendPlanPurchasedEmail(
+                            existingVendor.getPrimary_email(),
+                            existingVendor.getName(),
+                            paymentRequest.getCreatedAt(),
+                            selectedPlan.getPlanName(),
+                            paymentRequest.getAmount()
+                    );
+                } else {
+                    emailService.sendPlanRenewEmail(
+                            existingVendor.getPrimary_email(),
+                            existingVendor.getName(),
+                            paymentRequest.getCreatedAt(),
+                            selectedPlan.getPlanName(),
+                            paymentRequest.getAmount()
+                    );
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        commonService.createOrUpdateMonthlyPlan(
+                existingVendor.getService_provider_id(),
+                BigDecimal.valueOf(paymentRequest.getAmount()),
+                Constant.MULTIPLIER
+        );
+
+        return paymentRequest;
+    }
+    @Transactional
+    public PaymentEntity createPayment(PaymentEntity paymentRequest, Long vendorId) {
+        VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
+
+        if (existingVendor == null) {
+            throw new RuntimeException("Vendor not found with ID: " + vendorId);
+        }
+
+        if (existingVendor.getStatus() != VendorStatus.ACTIVE) {
+            throw new BusinessException("Vendor is suspended or blocked. Payment is not allowed.", HttpStatus.BAD_REQUEST);
+        }
+
+        Long planId = paymentRequest.getPlanId();
+        PlanEntity selectedPlan = entityManager.find(PlanEntity.class, planId);
+        if (selectedPlan == null) {
+            throw new RuntimeException("Invalid plan ID: " + planId);
+        }
+
+        // max 2 payments per month
+        LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusSeconds(1);
+
+        Long monthlyPaymentCount = entityManager.createQuery(
+                        "SELECT COUNT(p) FROM PaymentEntity p WHERE p.vendorEntity.id = :vendorId AND p.createdAt BETWEEN :start AND :end",
+                        Long.class
+                )
+                .setParameter("vendorId", vendorId)
+                .setParameter("start", startOfMonth)
+                .setParameter("end", endOfMonth)
+                .getSingleResult();
+
+        if (monthlyPaymentCount >= 2) {
+            throw new BusinessException("Monthly payment limit reached. You can make a maximum of 2 payments per month.", HttpStatus.BAD_REQUEST);
+        }
+
+        System.out.println("isFirstPayment(existingVendor): " + isFirstPayment(existingVendor));
+
+
+        if (isFirstPayment(existingVendor)) {
+            VendorSubmissionEntity vendorSubmissionEntity = vendorSubmissionEntityRepository.findByVendorEntity(existingVendor);
+
+            if (vendorSubmissionEntity == null || !Boolean.TRUE.equals(vendorSubmissionEntity.getApproved())) {
+
+                throw new BusinessException("Vendor is not approved by admin. Cannot proceed with payment.", HttpStatus.BAD_REQUEST);
+            }
+
+            String approvedPlan = vendorSubmissionEntity.getPlanName().trim().toUpperCase();
+            String selectedPlanName = selectedPlan.getPlanName().trim().toUpperCase();
+
+            if (!approvedPlan.equals(selectedPlanName)) {
+                throw new BusinessException(
+                        "Your current approved plan is \"" + approvedPlan + "\". Switching to another plan (\"" + selectedPlanName + "\") is not allowed without admin approval.",
+                        HttpStatus.BAD_REQUEST
+                );
+
+            }
+        }
+
+
+        if (!isFirstPayment(existingVendor)) {
+            String currentPlan = existingVendor.getPlanName();
+
+            if (!selectedPlan.getPlanName().equals(currentPlan)) {
+                Optional<PlanUpgradeRequest> upgradeRequestOpt = planUpgradeRequestRepository
+                        .findTopByVendorIdAndRequestedPlanIdOrderByRequestDateDesc(vendorId, selectedPlan.getId());
+
+                if (upgradeRequestOpt.isEmpty() || upgradeRequestOpt.get().getStatus() != RequestStatus.APPROVED) {
+                    throw new BusinessException("Plan upgrade not approved by admin for this plan.", HttpStatus.BAD_REQUEST);
+                }
+            }
+        }
+
+
+        // Set vendor level based on plan name
+        String planName = selectedPlan.getPlanName().toUpperCase();
+        VendorLevelPlan initialLevel = VendorLevelPlan.STANDARD_A;
+        if (planName.contains("PRO")) {
+            initialLevel = VendorLevelPlan.PRO_A;
+        } else if (planName.contains("ELITE")) {
+            initialLevel = VendorLevelPlan.ELITE_A;
+        }
+
+        paymentRequest.setVendorEntity(existingVendor);
+        paymentRequest.setPlanId(selectedPlan.getId());
+        paymentRequest.setAmount(selectedPlan.getPrice());
+
+        if (vendorId != null) {
+            Integer dailyGameLimit = extractDailyGameLimit(selectedPlan.getFeatures());
+            Integer themeLimit = extractThemeLimit(selectedPlan.getFeatures());
+
+            existingVendor.setThemeCount(themeLimit);
+            existingVendor.setPlanName(selectedPlan.getPlanName());
+            existingVendor.setDailyLimit(dailyGameLimit);
+            existingVendor.setVendorLevelPlan(initialLevel);
+
+            paymentRequest.setDailyLimit(dailyGameLimit);
+        }
+
+        paymentRequest.setPlanDuration(selectedPlan.getPlanVariant());
+        paymentRequest.setTransactionId(UUID.randomUUID().toString());
+        paymentRequest.setFromUser(existingVendor.getFirst_name());
+        paymentRequest.setToUser("Aag App");
+//        String invoiceUrl = generateInvoiceUrl(paymentRequest.getTransactionId());
+//        paymentRequest.setDownloadInvoice(invoiceUrl);
+        paymentRequest.setStatus(PaymentStatus.ACTIVE);
+        existingVendor.setLeagueStatus(LeagueStatus.AVAILABLE);
+
+        TypedQuery<PaymentEntity> query = entityManager.createQuery(
+                "SELECT p FROM PaymentEntity p WHERE p.vendorEntity.id = :vendorId AND p.status = :status ORDER BY p.expiryAt DESC",
+                PaymentEntity.class
+        );
+        query.setParameter("vendorId", vendorId);
+        query.setParameter("status", PaymentStatus.ACTIVE);
+        query.setMaxResults(1);
+
+        List<PaymentEntity> activePayments = query.getResultList();
+        LocalDateTime newExpiry;
+
+        if (!activePayments.isEmpty()) {
+            PaymentEntity latestPayment = activePayments.get(0);
+            LocalDateTime oldExpiry = latestPayment.getExpiryAt();
+
+            latestPayment.setStatus(PaymentStatus.EXPIRED);
+            latestPayment.setExpiredAt(LocalDateTime.now());
+            entityManager.merge(latestPayment);
+
+            boolean isSamePlan = Objects.equals(latestPayment.getPlanId(), selectedPlan.getId());
+
+            if (isSamePlan) {
+                newExpiry = (oldExpiry != null && oldExpiry.isAfter(LocalDateTime.now()))
+                        ? oldExpiry.plusMonths(1)
+                        : LocalDateTime.now().plusMonths(1);
+            } else {
+                newExpiry = LocalDateTime.now().plusMonths(1);
+            }
+
+        } else {
+            // No active plan, fresh purchase
+            newExpiry = LocalDateTime.now().plusMonths(1);
+        }
+
+        paymentRequest.setExpiryAt(newExpiry);
+        paymentRequest.setPaymentType(paymentRequest.getPaymentType());
+
+        if (isFirstPayment(existingVendor)) {
+            Optional<VendorReferral> vendorReferralOpt = Optional.ofNullable(vendorReferralRepository.findByReferredId(existingVendor));
+            if (vendorReferralOpt.isPresent()) {
+                VendorEntity referrer = vendorReferralOpt.get().getReferrerId();
+                double commission = calculateReferralCommission(referrer, paymentRequest.getAmount());
+                updateReferrerWallet(referrer, commission);
+            }
+        }
+
+        existingVendor.setIsPaid(true);
+        entityManager.persist(existingVendor);
+
+        // Notification
+        Notification notification = new Notification();
+        notification.setVendorId(existingVendor.getService_provider_id());
+        notification.setRole("Vendor");
+        notification.setDescription("Plan purchased");
+        notification.setAmount(paymentRequest.getAmount());
+        String fullName = (existingVendor.getFirst_name() != null ? existingVendor.getFirst_name() : "N/A") +
+                " " + (existingVendor.getLast_name() != null ? existingVendor.getLast_name() : "N/A");
+        notification.setName(fullName.trim());
+        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
+        notificationRepository.save(notification);
+
+        paymentRepository.save(paymentRequest);
+
+        try {
+            if (existingVendor.getPrimary_email() != null) {
+                if (isFirstPayment(existingVendor)) {
+                    emailService.sendPlanPurchasedEmail(
+                            existingVendor.getPrimary_email(),
+                            existingVendor.getName(),
+                            paymentRequest.getCreatedAt(),
+                            selectedPlan.getPlanName(),
+                            paymentRequest.getAmount()
+                    );
+                } else {
+                    emailService.sendPlanRenewEmail(
+                            existingVendor.getPrimary_email(),
+                            existingVendor.getName(),
+                            paymentRequest.getCreatedAt(),
+                            selectedPlan.getPlanName(),
+                            paymentRequest.getAmount()
+                    );
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        commonService.createOrUpdateMonthlyPlan(
+                existingVendor.getService_provider_id(),
+                BigDecimal.valueOf(paymentRequest.getAmount()),
+                Constant.MULTIPLIER
+        );
+
+        return paymentRequest;
+    }
+
+
+
+/*    @Transactional
     public PaymentEntity createPayment(PaymentEntity paymentRequest, Long vendorId) {
         VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
 
@@ -146,9 +591,25 @@ public class PaymentService {
             throw new RuntimeException("Invalid plan ID: " + planId);
         }
 
-        if (existingVendor == null) {
-            throw new RuntimeException("Vendor not found with ID: " + vendorId);
+
+        PlanEntity selectedPlan = entityManager.find(PlanEntity.class, planId);
+
+
+        if (isFirstPayment(existingVendor)) {
+            VendorSubmissionEntity vendorSubmissionEntity = vendorRequestRepository.findByVendorEntity(existingVendor);
+            if (vendorSubmissionEntity != null && Boolean.TRUE.equals(vendorSubmissionEntity.getApproved())) {
+                String approvedPlan = vendorSubmissionEntity.getPlanName().trim().toUpperCase();
+                String selectedPlanName = selectedPlan.getPlanName().trim().toUpperCase();
+
+                if (!approvedPlan.equals(selectedPlanName)) {
+                    throw new BusinessException(
+                            "You are already approved for the " + approvedPlan + " plan. You cannot switch to a different plan (" + selectedPlanName + ").",
+                            HttpStatus.BAD_REQUEST
+                    );
+                }
+            }
         }
+
 
         // Set vendor level based on plan name
         String planName = planEntity.getPlanName().toUpperCase();
@@ -161,8 +622,8 @@ public class PaymentService {
         }
 
 
-       /* List<String> planFeatures = planEntity.getFeatures();
-        Integer dailyGameLimit = extractDailyGameLimitByPlan(planFeatures); // Implement logic for extracting game limit*/
+       *//* List<String> planFeatures = planEntity.getFeatures();
+        Integer dailyGameLimit = extractDailyGameLimitByPlan(planFeatures); // Implement logic for extracting game limit*//*
 
         // Associate the vendor with the payment
         paymentRequest.setVendorEntity(existingVendor);
@@ -172,17 +633,20 @@ public class PaymentService {
             VendorLevelPlan level = existingVendor.getVendorLevelPlan();
             Integer dailyGameLimit = extractDailyGameLimit(planEntity.getFeatures());
             Integer themeLimit = extractThemeLimit(planEntity.getFeatures());
-            existingVendor.setThemeCount(2);
-
-            /*
             existingVendor.setThemeCount(themeLimit);
-*/
+            existingVendor.setPlanName(planEntity.getPlanName());
+
+           *//* System.out.println("level : "+ level);
+            System.out.println("dailyGameLimit : "+ dailyGameLimit);
+            System.out.println("themeLimit : "+ themeLimit);
+            System.out.println("initialLevel : "+ initialLevel);*//*
+
 
             existingVendor.setDailyLimit(dailyGameLimit);
             existingVendor.setVendorLevelPlan(initialLevel);
-/*
+*//*
             existingVendor.setDailyLimit(level.getDailyGameLimit());
-*/
+*//*
             paymentRequest.setDailyLimit(dailyGameLimit);
         }
 
@@ -190,12 +654,12 @@ public class PaymentService {
         VendorLevelPlan currentLevel = existingVendor.getVendorLevelPlan();
 
         // Get the new plan level (for example, upgrading to PRO_C)
-/*        VendorLevelPlan newLevel = getVendorLevelFromPlan(planEntity); // Implement this logic based on the selected plan
+*//*        VendorLevelPlan newLevel = getVendorLevelFromPlan(planEntity); // Implement this logic based on the selected plan
 
         if (newLevel != currentLevel) {
 
             updateVendorLevel(existingVendor, newLevel, planEntity);
-        }*/
+        }*//*
         paymentRequest.setPlanDuration(planEntity.getPlanVariant());
 
         // Generate a unique transaction ID
@@ -211,8 +675,24 @@ public class PaymentService {
         existingVendor.setLeagueStatus(LeagueStatus.AVAILABLE);
 
         // Set expiry date based on the plan duration
-        setPlanExpiry(paymentRequest);
-
+//        setPlanExpiry(paymentRequest);
+        String planDuration = paymentRequest.getPlanDuration();
+        if (planDuration != null) {
+            switch (planDuration.toLowerCase()) {
+                case "monthly":
+                    paymentRequest.setExpiryAt(LocalDateTime.now().plusMonths(1));
+                    break;
+                case "yearly":
+                    paymentRequest.setExpiryAt(LocalDateTime.now().plusYears(1));
+                    break;
+                default:
+                    paymentRequest.setExpiryAt(LocalDateTime.now().plusDays(1));
+                    break;
+            }
+        } else {
+            // Default to 1-day expiry if no plan duration is provided
+            paymentRequest.setExpiryAt(LocalDateTime.now().plusDays(1));
+        }
         // Set the payment type
         paymentRequest.setPaymentType(paymentRequest.getPaymentType());
 
@@ -230,7 +710,9 @@ public class PaymentService {
         }
 
 
-        // Save and return the newly created payment
+
+
+            // Save and return the newly created payment
         existingVendor.setIsPaid(true);
         entityManager.persist(existingVendor);
 
@@ -239,18 +721,30 @@ public class PaymentService {
         Notification notification = new Notification();
         notification.setVendorId(existingVendor.getService_provider_id());  // Set the vendor ID
         notification.setRole("Vendor");  // The role is "Vendor"
-/*
+*//*
         notification.setType(NotificationType.PAYMENT_SUCCESS);  // Example NotificationType for a successful payment
-*/
+*//*
         notification.setDescription("Plan purchased"); // Example NotificationType for a successful
         notification.setAmount(paymentRequest.getAmount());
+        notification.setName(existingVendor.getFirst_name() != null ? existingVendor.getFirst_name() : "N/A" +existingVendor.getFirst_name()!=null ? existingVendor.getLast_name() : "N/A");
         notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
 
         notificationRepository.save(notification);
         paymentRepository.save(paymentRequest);
         //send mail
         try {
-            emailService.sendPlanPurchasedEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
+            if (isFirstPayment(existingVendor)) {
+                if(existingVendor.getPrimary_email()!=null){
+                    emailService.sendPlanPurchasedEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
+
+                }
+            }else{
+                if(existingVendor.getPrimary_email()!=null){
+                    emailService.sendPlanRenewEmail(existingVendor.getPrimary_email(), existingVendor.getName(),paymentRequest.getCreatedAt(), planEntity.getPlanName(), paymentRequest.getAmount());
+
+                }
+            }
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -258,7 +752,7 @@ public class PaymentService {
 
 
         return paymentRequest;
-    }
+    }*/
 
     // Helper method to update the vendor's level and associated features
     private void updateVendorLevel(VendorEntity existingVendor, VendorLevelPlan newLevel, PlanEntity planEntity) {
@@ -348,33 +842,27 @@ public class PaymentService {
 
             if (matcher.find()) {
                 String number = matcher.group(1); // Extract the number
-                System.out.println("Feature found: " + feature);
-                System.out.println("Extracted number: " + number);
+
                 return Integer.parseInt(number);  // Return the extracted number
             }
         }
 
-        System.out.println("Feature not found, returning default limit of " + defaultLimit);
         return defaultLimit;
     }
     private Integer extractThemeLimit(List<String> features) {
-        // Default limit if no matching feature is found
         Integer defaultLimit = 3;
 
         for (String feature : features) {
-            // Match patterns like "Upto 7 Themes" or "7 Skins", etc.
             Pattern pattern = Pattern.compile("(?i)(?:upto\\s*)?([0-9]+)\\s*(themes|skins?)");
             Matcher matcher = pattern.matcher(feature);
 
             if (matcher.find()) {
-                String number = matcher.group(1); // Extract the number
-                System.out.println("Theme feature found: " + feature);
-                System.out.println("Extracted theme/skin number: " + number);
-                return Integer.parseInt(number);  // Return the extracted number
+                String number = matcher.group(1);
+
+                return Integer.parseInt(number);
             }
         }
 
-        System.out.println("Theme feature not found, returning default limit of " + defaultLimit);
         return defaultLimit;
     }
 
@@ -407,6 +895,8 @@ public class PaymentService {
             // Default to 1-day expiry if no plan duration is provided
             paymentRequest.setExpiryAt(LocalDateTime.now().plusDays(1));
         }
+//        paymentRepository.save(paymentRequest);
+
     }
 
     private void expireExistingActivePayments(Long vendorId) {
@@ -565,9 +1055,8 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
 
     List<PaymentEntity> activePlanOptional = getActivePlanByVendorId(vendorId);
 
-    System.out.println("Active Plan Optional: " + activePlanOptional);
     if (activePlanOptional.isEmpty()) {
-        return Optional.of(new PaymentDashboardDTO(
+        return Optional.of(new PaymentDashboardDTO("NO",
                 "NA", "NA", "0x", publishedLimit + "/" + 0, 0L, 0D, "0x", 0, 0, 10
         ));
     }
@@ -575,7 +1064,6 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
     PaymentEntity paymentEntity = activePlanOptional.get(0);
     Long paymentId = paymentEntity.getId(); // NOT planId, use actual PaymentEntity ID
 
-    System.out.println("Payment ID: " + paymentId);
     Optional<PlanEntity> planEntityOptional = planRepository.findById(paymentEntity.getPlanId());
     String dailyLimitString = publishedLimit + "/" + dailyLimit;
 
@@ -614,6 +1102,7 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
             int totalBoxes = 10;
 
             return new PaymentDashboardDTO(
+                    "YES",
                     planEntity.getPlanName(),
                     planEntity.getPlanVariant(),
                     dailyPercentage != null ? dailyPercentage + "x" : "0x",
@@ -626,7 +1115,7 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
                     totalBoxes
             );
         }).orElseGet(() -> new PaymentDashboardDTO(
-                "NA", "NA", "0x", publishedLimit + "/" + 0, paymentId, 0D, "0x", 0, 0, 10
+                "NO","NA", "NA", "0x", publishedLimit + "/" + 0, paymentId, 0D, "0x", 0, 0, 10
         )));
 }
 
@@ -717,44 +1206,33 @@ public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorId(Long vendor
     }
 
 
-    public void sendEmail(PaymentEntity paymentEntity, String invoiceUrl) throws MessagingException {
-        // Create the MimeMessage for the email
+    public void sendEmailWithAttachment(PaymentEntity paymentEntity, byte[] pdfData, String fileName) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
+        MimeMessageHelper helper = new MimeMessageHelper(message, true); // `true` enables attachment
 
         try {
-            // Set the "From" address (your company or no-reply email)
-            helper.setFrom("aagappteam@gmail.com", "AAG App Team");
-
-            // Set the recipient email address
+            helper.setFrom("aagappteam@gmail.com", "AAG App");
             helper.setTo(paymentEntity.getVendorEntity().getPrimary_email());
-
-            // Set the subject of the email
             helper.setSubject("Your Payment Invoice");
 
-            // Construct the email body text, including the invoice URL
-            String emailBody = "Dear "+paymentEntity.getVendorEntity().getFirst_name()+" "+paymentEntity.getVendorEntity().getLast_name()+"\n\n" +
-                    "Thank you for your payment. You can download your invoice from the following link:\n\n" +
-                    invoiceUrl + "\n\n" +
+            String emailBody = "Dear " + paymentEntity.getVendorEntity().getFirst_name() + " " +
+                    paymentEntity.getVendorEntity().getLast_name() + ",\n\n" +
+                    "Thank you for your payment. Please find your invoice attached.\n\n" +
                     "Best regards,\n" +
-                    "AAG App Team\n\n" +
-                    "Please ensure to keep this information secure.";
+                    "AAG App";
 
-            // Set the email body
             helper.setText(emailBody);
 
-            // Send the email
+            // Attach the PDF
+            ByteArrayDataSource dataSource = new ByteArrayDataSource(pdfData, "application/pdf");
+            helper.addAttachment(fileName, dataSource);
+
             mailSender.send(message);
-        } catch (MessagingException e) {
-            // Handle any messaging errors (e.g., invalid addresses or issues with the email)
+        } catch (MessagingException | MailException | UnsupportedEncodingException e) {
             throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
-        } catch (MailException e) {
-            // Handle other mail-related exceptions (e.g., connection issues with SMTP server)
-            throw new MessagingException("Error while sending invoice email: " + e.getMessage(), e);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
         }
     }
+
 
     public void expireChosenPlan(Long vendorId) {
         // Get the current time for expiry

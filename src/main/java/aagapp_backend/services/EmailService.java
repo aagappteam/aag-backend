@@ -74,7 +74,11 @@ public class EmailService {
 
     public void sendPlanPurchasedEmail(String to, String name, LocalDateTime date, String plan, Double amount) throws IOException {
         String template = loadTemplate("email-templates/Subscription Plan Purchased.html");
-        String formattedDate = date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+//    String formattedDate = date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        LocalDateTime purchaseDate = LocalDateTime.now(); // Now
+        LocalDateTime renewalDate = purchaseDate.plusMonths(1); // 1 month later
+        String formattedDate = renewalDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+
         String messageBody = template
                 .replace("{Name}", name)
                 .replace("{Date}", formattedDate)
@@ -82,6 +86,25 @@ public class EmailService {
                 .replace("{Amount}", amount.toString());
         try {
             sendEmail(to, Constant.PLAN_PURCHASED_EMAIL_SUBJECT, messageBody,true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending plan purchase email: " + e.getMessage(), e);
+        }
+    }
+    public void sendPlanRenewEmail(String to, String name, LocalDateTime date, String plan, Double amount) throws IOException {
+        String template = loadTemplate("email-templates/Subscription Plan Renewed.html");
+//        String formattedDate = date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        LocalDateTime purchaseDate = LocalDateTime.now(); // Now
+        LocalDateTime renewalDate = purchaseDate.plusMonths(1); // 1 month later
+
+        String formattedDate = renewalDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+
+        String messageBody = template
+                .replace("{Name}", name)
+                .replace("{Date}", formattedDate)
+                .replace("{Plan}", plan)
+                .replace("{Amount}", amount.toString());
+        try {
+            sendEmail(to, Constant.PLAN_PURCHASED_AGAIN_EMAIL_SUBJECT, messageBody,true);
         } catch (MessagingException e) {
             throw new RuntimeException("Error sending plan purchase email: " + e.getMessage(), e);
         }
@@ -142,7 +165,7 @@ public class EmailService {
         MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
 
         try {
-            helper.setFrom(fromEmail, "AAG App Team");
+            helper.setFrom(fromEmail, "AAG App");
             helper.setTo(to);
             helper.setSubject(subject);
 
@@ -173,7 +196,7 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "utf-8");
 
-            helper.setFrom(fromEmail, "AAG App Team");
+            helper.setFrom(fromEmail, "AAG App");
             helper.setTo(new String[] {
                     "anilkant.mishra@celestialitverse.com",
                     "juned.idreesh@celestialitverse.com"
@@ -188,5 +211,27 @@ public class EmailService {
             e.printStackTrace();
         }
     }
+//    send expiry mail
+    public void sendSubscriptionExpiredMail(String to, String name, LocalDateTime date, String plan, Double amount) throws IOException {
+        // Load HTML template
+        String template = loadTemplate("email-templates/SubscriptionPlanExpired.html");
 
+        String formattedDate = date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+
+
+
+        String messageBody = template
+                .replace("{Name}", name)
+                .replace("{Date}", formattedDate)
+                .replace("{Plan}", plan)
+                .replace("{Amount}", amount.toString());
+
+
+        try {
+            // Send email
+            sendEmail(to, Constant.PLAN_EXPIREDEMAIL_SUBJECT, messageBody,true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
+        }
+    }
 }

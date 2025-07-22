@@ -3,6 +3,7 @@ package aagapp_backend.controller.admin;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
 import aagapp_backend.dto.*;
+import aagapp_backend.dto.admin.Transaction;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
@@ -14,9 +15,9 @@ import aagapp_backend.services.admin.DashboardAdmin;
 import aagapp_backend.spec.InfluencerMonthlyEarningSpecification;
 import aagapp_backend.spec.NotificationShareSpecification;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.*;
+import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.withdrawrequest.WithdrawalRequestRepository;
@@ -27,7 +28,6 @@ import aagapp_backend.services.vendor.VenderService;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -52,7 +52,6 @@ import static io.netty.util.internal.StringUtil.escapeCsv;
 
 @RestController
 @RequestMapping("/admin")
-
 public class AdminDetailsController {
 
     @Autowired
@@ -84,7 +83,7 @@ public class AdminDetailsController {
     private AdminService adminService;
 
     @Autowired
-    public void setAdminService(AdminService adminService) {
+    public void setAdminService(@Lazy AdminService adminService) {
         this.adminService = adminService;
     }
 
@@ -179,6 +178,7 @@ public class AdminDetailsController {
             @RequestParam(required = false) String vendorName,
             @RequestParam(required = false) String details,
             @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Long vendorId,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
@@ -186,7 +186,7 @@ public class AdminDetailsController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdTo
     ) {
         Page<NotificationDTOAdmin> result = dashboardAdmin.getAllNotifications(
-                page, size, amount, vendorName, details, createdFrom, createdTo, customerId, vendorId
+                page, size, amount, vendorName, details, createdFrom, createdTo, customerId, vendorId, search
         );
         return responseService.generateSuccessResponseWithCount(
                 "Notifications retrieved successfully.",
@@ -202,6 +202,7 @@ public class AdminDetailsController {
             @RequestParam(required = false) String vendorName,
             @RequestParam(required = false) String details,
             @RequestParam(required = false) Long vendorId,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime createdFrom,
             @RequestParam(required = false)
@@ -219,6 +220,7 @@ public class AdminDetailsController {
                 .and(NotificationShareSpecification.vendorNameContains(vendorName))
                 .and(NotificationShareSpecification.detailsContains(details))
                 .and(NotificationShareSpecification.vendorId(vendorId))
+                .and(NotificationShareSpecification.vendorCommonSearch(search))
                 .and(NotificationShareSpecification.createdBetween(createdFrom, createdTo));
 
         // Fetch all matching records (no pagination)
@@ -229,6 +231,7 @@ public class AdminDetailsController {
             VendorEntity v = ns.getVendor();
             String name = v != null ? v.getFirst_name() + " " + v.getLast_name() : "N/A";
             String email = v != null ? v.getPrimary_email() : "N/A";
+            String mobileNumber = v != null ? v.getMobileNumber() : "N/A";
             String formattedDate = ns.getCreatedDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
             return new NotificationDTOAdmin(
@@ -240,7 +243,8 @@ public class AdminDetailsController {
                     formattedDate,
                     ns.getAmount(),
                     name,
-                    email
+                    email,
+                    mobileNumber
             );
         }).toList();
 
@@ -307,12 +311,13 @@ public class AdminDetailsController {
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String details,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
     ) {
         try {
-            Page<Notification> notifications = dashboardAdmin.getFilteredNotifications(
+            Page<Transaction> notifications = dashboardAdmin.getFilteredNotificationsDto(
                     role, vendorId, customerId, amount, minAmount, maxAmount,
-                    startDate, endDate, description, details, page, size
+                    startDate, endDate, description, details, page, size, search
             );
             return responseService.generateSuccessResponseWithCount(
                     "Notifications retrieved successfully.",
@@ -344,13 +349,14 @@ public class AdminDetailsController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime endDate,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String details,
-            HttpServletResponse response
+            HttpServletResponse response,
+            @RequestParam(required = false) String search
     ) {
         try {
             // Fetch all filtered notifications (no pagination)
             List<Notification> notifications = dashboardAdmin.getFilteredNotifications(
                     role, vendorId, customerId, amount, minAmount, maxAmount,
-                    startDate, endDate, description, details, 0, Integer.MAX_VALUE
+                    startDate, endDate, description, details, 0, Integer.MAX_VALUE,search
             ).getContent();
 
             // Set response headers for file download
@@ -417,6 +423,7 @@ public class AdminDetailsController {
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection
     ) {
@@ -427,7 +434,7 @@ public class AdminDetailsController {
 
         Specification<InfluencerMonthlyEarning> spec = InfluencerMonthlyEarningSpecification.filter(
                 influencerId, monthYear, startDate, endDate, minEarning, maxEarning,
-                minRecharge, maxRecharge, multiplier
+                minRecharge, maxRecharge, multiplier, search
         );
 
         Page<InfluencerMonthlyEarning> pageResult = earningRepo.findAll(spec, pageable);
@@ -453,6 +460,7 @@ public class AdminDetailsController {
             @RequestParam(required = false) BigDecimal maxEarning,
             @RequestParam(required = false) BigDecimal minRecharge,
             @RequestParam(required = false) BigDecimal maxRecharge,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Integer multiplier,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection,
@@ -465,7 +473,7 @@ public class AdminDetailsController {
         // Use the spec you already have
         Specification<InfluencerMonthlyEarning> spec = InfluencerMonthlyEarningSpecification.filter(
                 influencerId, monthYear, startDate, endDate,
-                minEarning, maxEarning, minRecharge, maxRecharge, multiplier
+                minEarning, maxEarning, minRecharge, maxRecharge, multiplier, search
         );
 
         List<InfluencerMonthlyEarning> earnings = earningRepo.findAll(spec, sort);
@@ -476,13 +484,13 @@ public class AdminDetailsController {
 
         // Writer setup
         PrintWriter writer = response.getWriter();
-        writer.println("ID,Influencer ID,Month,Recharge Amount,Multiplier,Earned Amount,Max Return,Vendor Name,Mobile");
+        writer.println("ID,Influencer ID,Month,Recharge Amount,Multiplier,Earned Amount,Max Return,Vendor Name,Mobile,Email");
 
         for (InfluencerMonthlyEarning e : earnings) {
             VendorEntity vendor = vendorRepository.findByServiceProviderId(e.getInfluencerId());
 
             writer.printf(
-                    "%d,%d,%s,%s,%d,%s,%s,%s,%s%n",
+                    "%d,%d,%s,%s,%d,%s,%s,%s,%s,%s%n",
                     e.getId(),
                     e.getInfluencerId(),
                     e.getMonthYear(),
@@ -491,7 +499,8 @@ public class AdminDetailsController {
                     e.getEarnedAmount(),
                     e.getMaxReturnAmount(),
                     vendor != null ? vendor.getName() : "",
-                    vendor != null ? vendor.getMobileNumber() : ""
+                    vendor != null ? vendor.getMobileNumber() : "",
+                    vendor != null ? vendor.getPrimary_email() : ""
             );
         }
 
@@ -508,7 +517,8 @@ public class AdminDetailsController {
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String monthYear
 
-    ) {
+
+            ) {
         int pageSize = (limit != null) ? limit : (size != null ? size : 10);
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Order.desc("id")));
@@ -535,6 +545,7 @@ public class AdminDetailsController {
     @GetMapping("/withdrawal-requests")
     public ResponseEntity<?> getAllRequests(
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Long influencerId,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(required = false) Integer limit,
@@ -569,6 +580,11 @@ public class AdminDetailsController {
                 requestsPage = withdrawalRepo.findAll(pageable);
             }
 
+            if (search != null && !search.isEmpty()) {
+                requestsPage = filterBySearchTerm(requestsPage, search, pageable);
+            }
+
+
             List<WithdrawalRequestHistoryDTO> dtoList = requestsPage.getContent().stream().map(request -> {
                 VendorEntity vendor = vendorRepository.findById(request.getInfluencerId()).orElse(null);
                 String name = vendor != null
@@ -598,6 +614,33 @@ public class AdminDetailsController {
             );
         }
     }
+
+    private Page<WithdrawalRequest> filterBySearchTerm(Page<WithdrawalRequest> requestsPage, String searchTerm, Pageable pageable) {
+        // Query all requests and filter based on the search term
+        List<WithdrawalRequest> filteredRequests = requestsPage.getContent().stream()
+                .filter(request -> {
+                    VendorEntity vendor = vendorRepository.findById(request.getInfluencerId()).orElse(null);
+                    if (vendor == null) return false;
+
+                    // Concatenate name parts (first and last name)
+                    String name = (vendor.getFirst_name() != null ? vendor.getFirst_name().toLowerCase() : "") +
+                            (vendor.getLast_name() != null ? " " + vendor.getLast_name().toLowerCase() : "");
+
+                    // Check if the search term is present in email, mobile or name
+                    String searchTermLower = searchTerm.toLowerCase();
+                    String email = vendor.getPrimary_email() != null ? vendor.getPrimary_email().toLowerCase() : "";
+                    String mobile = vendor.getMobileNumber() != null ? vendor.getMobileNumber().toLowerCase() : "";
+
+                    return email.contains(searchTermLower) ||
+                            mobile.contains(searchTermLower) ||
+                            name.contains(searchTermLower);
+                })
+                .collect(Collectors.toList());
+
+        // Create a new Page object for the filtered results
+        return new PageImpl<>(filteredRequests, pageable, filteredRequests.size());
+    }
+
 
 
 

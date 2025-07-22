@@ -60,6 +60,19 @@ public class AagAvailableGame {
        }
     }
 
+//    get game icon by theme id
+    @GetMapping("/get-game-icon/{themeId}")
+    public ResponseEntity<?> getGameIconByThemeId(@PathVariable Long themeId) {
+        try {
+            String gameIconUrl = gameService.getGameIconByThemeId(themeId);
+//            return new ResponseEntity<>(gameIconUrl, HttpStatus.OK);
+            return responseService.generateSuccessResponse("Game Icon fetched successfully", gameIconUrl, HttpStatus.OK);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     // Get a game by ID
     @GetMapping("get-one-game/{gameId}")
     @Cacheable(value = "gameCache", key = "#gameId") // Caches the response based on the game ID

@@ -36,6 +36,8 @@ import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.pricedistribute.MatchService;
+import aagapp_backend.services.social.FollowerNotificationService;
+import aagapp_backend.spec.LeagueSpecification;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -48,6 +50,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -64,6 +67,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,6 +75,8 @@ public class LeagueService {
 
     @Autowired
     private NotoficationFirebase notificationFirebase;
+    @Autowired
+    private FollowerNotificationService followerNotificationService;
 
     @Autowired
     private CommonService commonService;
@@ -262,6 +268,7 @@ public class LeagueService {
                 notification.setRole("Vendor");
 
                 notification.setVendorId(opponentVendor.getService_provider_id());
+                notification.setName(opponentVendor.getFirst_name()!= null ? opponentVendor.getFirst_name(): "N/A" + " " + opponentVendor.getLast_name()!= null ? opponentVendor.getLast_name(): "N/A");
 
                 notification.setDescription("League challenge");
                 notification.setDetails(vendor.getFirst_name() + " has challenged for a League");
@@ -449,14 +456,14 @@ public class LeagueService {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).plusMinutes(15);
             if (leagueRequest.getScheduledAt() != null) {
                 ZonedDateTime scheduledInKolkata = leagueRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
-                    throw new BusinessException("The game must be scheduled at least 4 hours in advance.", HttpStatus.BAD_REQUEST);
+                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(1))) {
+                    throw new BusinessException("The game must be scheduled at least 1 hours in advance.", HttpStatus.BAD_REQUEST);
                 }
                 league.setStatus(LeagueStatus.SCHEDULED);
                 league.setScheduledAt(leagueRequest.getScheduledAt());
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             } else {
-                league.setStatus(LeagueStatus.SCHEDULED);
+                league.setStatus(LeagueStatus.ACTIVE);
                 league.setScheduledAt(nowInKolkata);
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             }
@@ -526,7 +533,7 @@ public class LeagueService {
 //                    notificationFirebase.sendMessageToToken(notificationRequest);
 
                     String title = "Challenge Accepted!";
-                    String body = vendorEntity.getFirst_name() + " is ready. Your league will be active in 15 minutes!";
+                    String body = vendorEntity.getFirst_name() + " is ready. Your league is now live!";
 
                     notificationFirebase.sendNotification(fcmToken, title, body);
                 } catch (Exception e) {
@@ -534,7 +541,12 @@ public class LeagueService {
                     throw new BusinessException("Error sending notification: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
-            return leagueRepository.save(savedLeague);
+
+
+            CompletableFuture.runAsync(() -> {
+                followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), vendorEntity);
+            });
+            return savedLeague;
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -728,6 +740,33 @@ public class LeagueService {
         }
     }
 
+
+    public Page<League> getLeaguesWithFilters(
+            String name,
+            String gameName,
+            Long challengingVendorId,
+            String challengingVendorName,
+            Double fee,
+            Integer move,
+            LeagueStatus status,
+            Long vendorId,
+            Long opponentVendorId,
+            String opponentVendorName,
+            String vendorFirstName,
+            String vendorLastName,
+            String vendorMobileNumber,
+            String vendorPrimaryEmail,
+            String search,
+            Pageable pageable
+    ) {
+        Specification<League> spec = LeagueSpecification.withFilters(
+                name, gameName, challengingVendorId, challengingVendorName, fee, move,
+                status, vendorId, opponentVendorId, opponentVendorName,
+                vendorFirstName, vendorLastName, vendorMobileNumber, vendorPrimaryEmail, search
+        );
+
+        return leagueRepository.findAll(spec, pageable);
+    }
 
 
     public Page<League> getAllActiveLeaguesByVendor(Pageable pageable, Long vendorId) {
@@ -1851,6 +1890,8 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                             return new PlayerLeagueScoreDTO(
                                     player.getPlayerName(),
+                                    player.getCustomer().getMobileNumber()!=null ? player.getCustomer().getMobileNumber() : "N/A",
+                                    player.getCustomer().getState()!=null ? player.getCustomer().getState() : "N/A",
                                     player.getPlayerProfilePic(),
                                     isCurrentUser,
                                     totalScore,
@@ -1867,6 +1908,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                 teamDetails.add(new TeamDetailsDTO(
                         team.getTeamName(),
+                        league.getFee(),
                         team.getProfilePic(),
                         team.getTotalScore(),
                         paginatedPlayers
@@ -2137,6 +2179,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 walletRepo.save(wallet);
                 Notification notification = new Notification();
                 notification.setCustomerId(player.getPlayerId());
+                notification.setName(player.getCustomer().getName()!=null?player.getCustomer().getName():"N/A");
                 notification.setDescription("Wallet balance credited");
                 notification.setAmount(prize.doubleValue());
                 notification.setDetails("Rs. " + prize.doubleValue() + " won in " + league.getName());
@@ -2162,6 +2205,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     Notification notification = new Notification();
                     notification.setCustomerId(player.getPlayerId());
                     notification.setDescription("Wallet balance credited");
+                    notification.setName(player.getCustomer().getName()!=null?player.getCustomer().getName():"N/A");
                     notification.setAmount(equalShare.doubleValue());
                     notification.setDetails("Rs. " + equalShare.doubleValue() + " won in " + league.getName());
                     notification.setRole("Customer");
@@ -2228,6 +2272,28 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     }
 
 
+    public BigDecimal getTotalWinningsOfPlayer(Long playerId) {
+        try {
+            // Step 1: Get distinct league IDs where this player has participated
+            List<Long> leagueIds = leagueResultRecordRepository.findDistinctLeagueIdsByPlayerId(playerId);
+
+            BigDecimal totalWinnings = BigDecimal.ZERO;
+
+            for (Long leagueId : leagueIds) {
+                BigDecimal prize = getPlayerWinningPrize(leagueId, playerId);
+                totalWinnings = totalWinnings.add(prize);
+            }
+
+            return totalWinnings;
+
+        } catch (Exception e) {
+            exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+
+
     public Long getScheduledCount() {
         String sql = "SELECT COUNT(*) FROM aag_league g WHERE g.status = 'SCHEDULED'";
         Query query = em.createNativeQuery(sql);
@@ -2246,4 +2312,134 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         Query query = em.createNativeQuery(sql);
         return ((Number) query.getSingleResult()).longValue();
     }
+
+    @Transactional
+//    @Scheduled(cron = "*/50 * * * * *") // Runs every 2 seconds for testing
+    @Scheduled(cron = "0 0 * * * *")
+    public void autoPublishLeagueForVendor_6306470701() {
+        Optional<VendorEntity> vendorOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_6306470701);
+        Optional<VendorEntity> opponentOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_9628577197);
+
+        if (vendorOpt.isEmpty() || opponentOpt.isEmpty()) {
+            System.out.println("❌ Vendor or Opponent not found.");
+            return;
+        }
+
+        VendorEntity vendor = vendorOpt.get();
+        VendorEntity opponentVendor = opponentOpt.get();
+        Long vendorId = vendor.getService_provider_id();
+
+        System.out.println("✅ League Cron: Vendor " + vendorId + ", Opponent " + opponentVendor.getService_provider_id());
+
+        List<AagAvailableGames> games = aagGameRepository.findAll();
+
+        for (AagAvailableGames game : games) {
+            Long gameId = game.getId();
+            String gameName = game.getGameName();
+
+            List<Long> themeIds = game.getThemes().stream()
+                    .map(ThemeEntity::getId)
+                    .sorted()
+                    .toList();
+
+            for (Long themeId : themeIds) {
+                ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+                ZonedDateTime startOfDay = now.toLocalDate().atStartOfDay(now.getZone());
+                ZonedDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
+
+                Optional<Long> alreadyPublished = leagueRepository.findThemeIdIfPublishedToday(
+                        vendorId, gameId, themeId, LeagueStatus.ACTIVE, startOfDay, endOfDay
+                );
+                if (alreadyPublished.isPresent()) {
+                    System.out.println("⏩ League with theme " + themeId + " already published today.");
+                    continue;
+                }
+
+                try {
+                    League league = new League();
+
+                    league.setName(vendor.getFirst_name() + " v/s " + opponentVendor.getFirst_name());
+                    league.setVendorEntity(vendor); // ✅ Correct vendor set here
+                    league.setOpponentVendorId(opponentVendor.getService_provider_id());
+                    league.setChallengingVendorId(vendor.getService_provider_id()); // Vendor is challenging
+                    league.setOpponentVendorName(opponentVendor.getFirst_name());
+                    league.setChallengingVendorName(vendor.getFirst_name());
+                    league.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
+                    league.setChallengingVendorProfilePic(vendor.getProfilePic());
+
+                    league.setAagGameId(gameId);
+                    league.setTheme(em.find(ThemeEntity.class, themeId));
+                    int randomFee = getRandomFee();
+                    league.setFee((double) randomFee);
+
+                    // Set moves based on fee
+                    if (randomFee > 10) {
+                        league.setMove(Constant.TENMOVES);
+                    } else {
+                        league.setMove(Constant.SIXTEENMOVES);
+                    }
+
+                    league.setLeagueUrl(commonService.resolveGameImageUrl(game, themeId));
+                    league.setMinPlayersPerTeam(1);
+                    league.setMaxPlayersPerTeam(2);
+
+                    ZonedDateTime scheduledAt = now.plusMinutes(15);
+                    league.setScheduledAt(now);
+                    league.setEndDate(scheduledAt.plusHours(Constant.LEAGUE_SESSION_TIME_2));
+                    league.setStatus(LeagueStatus.ACTIVE);
+                    league.setGameName(gameName);
+                    league.setCreatedDate(now);
+                    league.setUpdatedDate(now);
+
+                    League savedLeague = leagueRepository.save(league);
+
+                    // ✅ Create teams
+                    LeagueTeam team1 = new LeagueTeam();
+                    team1.setTeamName("Team " + vendor.getFirst_name());
+                    team1.setVendor(vendor);
+                    team1.setProfilePic(vendor.getProfilePic());
+                    team1.setLeague(savedLeague);
+
+                    LeagueTeam team2 = new LeagueTeam();
+                    team2.setTeamName("Team " + opponentVendor.getFirst_name());
+                    team2.setVendor(opponentVendor);
+                    team2.setProfilePic(opponentVendor.getProfilePic());
+                    team2.setLeague(savedLeague);
+
+                    leagueTeamRepository.saveAll(List.of(team1, team2));
+
+                    // ✅ Create room
+                    LeagueRoom room = createNewEmptyRoom(savedLeague);
+                    leagueRoomRepository.save(room);
+
+                    // ✅ Generate shareable link
+                    String shareLink = generateShareableLink(savedLeague.getId(), vendorId);
+                    savedLeague.setShareableLink(shareLink);
+                    leagueRepository.save(savedLeague);
+
+                    // ✅ Update stats
+                    vendor.setPublishedLimit((vendor.getPublishedLimit() == null ? 0 : vendor.getPublishedLimit()) + 1);
+                    opponentVendor.setPublishedLimit((opponentVendor.getPublishedLimit() == null ? 0 : opponentVendor.getPublishedLimit()) + 1);
+                    vendor.setTotal_league_published((vendor.getTotal_league_published() == null ? 0 : vendor.getTotal_league_published()) + 1);
+                    opponentVendor.setTotal_league_published((opponentVendor.getTotal_league_published() == null ? 0 : opponentVendor.getTotal_league_published()) + 1);
+
+                    System.out.println("✅ League published with theme " + themeId + " for game " + gameName);
+                    return; // Exit after one publish
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to publish league: " + e.getMessage());
+                }
+
+                break; // prevent multiple leagues in one run
+            }
+
+            System.out.println("🔁 No unpublished themes left for game: " + gameName);
+        }
+    }
+
+    private int getRandomFee() {
+        List<Integer> fees = List.of(10, 25, 50);
+        return fees.get(new Random().nextInt(fees.size()));
+    }
+
+
 }

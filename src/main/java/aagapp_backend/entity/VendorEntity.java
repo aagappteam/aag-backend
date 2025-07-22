@@ -55,7 +55,9 @@ public class VendorEntity {
     private Long service_provider_id;
 
     @Nullable
+    @Column(name = "user_name", unique = true)
     private String user_name;
+
 
     @Nullable
     private String first_name;
@@ -148,9 +150,7 @@ public class VendorEntity {
     private int referralCount;
 
     @Enumerated(EnumType.STRING)
-    private VendorLevelPlan vendorLevelPlan = VendorLevelPlan.getDefaultLevel();
-
-
+    private VendorLevelPlan vendorLevelPlan;
 
     @JsonBackReference("bankDetails-vendor")
     @OneToMany(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -197,7 +197,7 @@ public class VendorEntity {
     private String fcmToken;
 
     @Column(name = "plan_name")
-    private String planName = "Standard";
+    private String planName ;
 
 
 
@@ -273,6 +273,8 @@ public class VendorEntity {
         }
         return last_name;
     }
+
+
     @Transient
     public String getName() {
         return this.first_name + " " + this.last_name;

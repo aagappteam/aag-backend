@@ -3,14 +3,27 @@ package aagapp_backend.services.ticket;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 
+import aagapp_backend.dto.TicketDTO;
+import aagapp_backend.dto.TicketResponseDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.ticket.PredefinedQA;
 import aagapp_backend.entity.ticket.Ticket;
+import aagapp_backend.entity.ticket.TicketMessage;
+import aagapp_backend.enums.AssignedTeam;
 import aagapp_backend.enums.TicketEnum;
+import aagapp_backend.enums.TicketPriority;
+import aagapp_backend.enums.TicketUserType;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
+import aagapp_backend.repository.ticket.PredefinedQARepository;
+import aagapp_backend.repository.ticket.TicketMessageRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.s3services.S3Service;
 import aagapp_backend.services.vendor.VenderService;
+import aagapp_backend.spec.TicketSpecification;
 import io.micrometer.common.util.StringUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -18,16 +31,20 @@ import org.springframework.data.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.Query;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,6 +67,21 @@ public class TicketService {
     @Autowired
     private EntityManager em;
 
+    @Autowired
+    private PredefinedQARepository qaRepository;
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
+
+    @Autowired
+    private VendorRepository vendorRepository;
+
+    @Autowired
+    private TicketMessageRepository ticketMessageRepository;
+
+    @Autowired
+    private S3Service s3Service;
+
     public ResponseEntity<?> createTicket(Map<String, Object> ticketDetails, String token) {
         try {
             // Extract User ID and Role from JWT Token
@@ -66,7 +98,6 @@ public class TicketService {
                     return responseService.generateErrorResponse("Vendor not found", HttpStatus.NOT_FOUND);
                 }
                 userorvendorrole = "Vendor";
-                EmailId = vendor.getPrimary_email();
 
             } else if (role == Constant.CUSTOMER_ROLE) {
                 CustomCustomer customer = customCustomerService.getCustomerById(userId);
@@ -74,7 +105,6 @@ public class TicketService {
                     return responseService.generateErrorResponse("Customer not found", HttpStatus.NOT_FOUND);
                 }
                 userorvendorrole = "Customer";
-                EmailId = customer.getEmail();
             } else {
                 return responseService.generateErrorResponse("Unauthorized role", HttpStatus.UNAUTHORIZED);
             }
@@ -96,17 +126,32 @@ public class TicketService {
             Ticket ticket = new Ticket();
             ticket.setSubject(subject);
             ticket.setDescription(description);
-            ticket.setStatus(TicketEnum.OPEN);
+            ticket.setStatus(TicketEnum.PENDING);
             ticket.setCustomerOrVendorId(userId);
             ticket.setRole(userorvendorrole);
-            ticket.setEmail(EmailId);
             ticket.setCreatedDate(new Date());
             ticket.setUpdatedDate(new Date());
 
             // Save the ticket to the database
             ticket = ticketRepository.save(ticket);
 
-            return responseService.generateSuccessResponse("Ticket raised successfully", ticket, HttpStatus.CREATED);
+            // Map entity to DTO
+            TicketDTO ticketDTO = new TicketDTO();
+            ticketDTO.setId(ticket.getId());
+            ticketDTO.setSubject(ticket.getSubject());
+            ticketDTO.setDescription(ticket.getDescription());
+            ticketDTO.setStatus(ticket.getStatus().name());
+//            ticketDTO.setRemark(ticket.getRemark());
+            ticketDTO.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
+            ticketDTO.setRole(ticket.getRole());
+
+            // Format the date to "yyyy-MM-dd HH:mm:ss"
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            ticketDTO.setCreatedDate(sdf.format(ticket.getCreatedDate()));
+            ticketDTO.setUpdatedDate(sdf.format(ticket.getUpdatedDate()));
+
+            // Return response with DTO
+            return responseService.generateSuccessResponse("Ticket raised successfully", ticketDTO, HttpStatus.CREATED);
 
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error raising ticket: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -181,18 +226,34 @@ public class TicketService {
             List<Ticket> tickets = query.getResultList();
             Long totalCount = countQuery.getSingleResult();
 
-           /* Map<String, Object> response = new HashMap<>();
-            response.put("data", tickets);
-            response.put("currentPage", pageNumber);
-            response.put("pageSize", pageSize);
-            response.put("totalItems", totalCount);
-            response.put("totalPages", (int) Math.ceil((double) totalCount / pageSize));*/
+            List<TicketDTO> ticketDTOs = tickets.stream()
+                    .map(this::mapToDTO)
+                    .collect(Collectors.toList());
 
-            return responseService.generateSuccessResponseWithCount("Tickets fetched successfully", tickets,totalCount, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithCount("Tickets fetched successfully", ticketDTOs, totalCount, HttpStatus.OK);
+
 
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private TicketDTO mapToDTO(Ticket ticket) {
+        TicketDTO dto = new TicketDTO();
+        dto.setId(ticket.getId());
+        dto.setSubject(ticket.getSubject());
+        dto.setDescription(ticket.getDescription());
+        dto.setStatus(ticket.getStatus().name());
+//        dto.setRemark(ticket.getRemark());
+        dto.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
+        dto.setRole(ticket.getRole());
+        dto.setMessages(ticket.getMessages());
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        dto.setCreatedDate(sdf.format(ticket.getCreatedDate()));
+        dto.setUpdatedDate(sdf.format(ticket.getUpdatedDate()));
+
+        return dto;
     }
 
 
@@ -263,6 +324,358 @@ public class TicketService {
             query.setParameter("role", role);
         }
     }
+
+    public Page<PredefinedQA> getPredefinedQAByRole(String role, int page, int size, String keyword) {
+        try {
+            TicketUserType userType;
+
+            if ("customer".equalsIgnoreCase(role)) {
+                userType = TicketUserType.CUSTOMER;
+            } else if ("vendor".equalsIgnoreCase(role)) {
+                userType = TicketUserType.VENDOR;
+            } else {
+                throw new IllegalArgumentException("Invalid role. Must be 'customer' or 'vendor'");
+            }
+
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                return qaRepository.findByUserTypeAndKeyword(userType, keyword, pageable);
+            } else {
+                return qaRepository.findByUserType(userType, pageable);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching predefined questions: " + e.getMessage(), e);
+        }
+    }
+
+
+
+    public ResponseEntity<?> getFilteredTickets(
+            int page, int size,
+            String name, String email, String mobile, String search,
+            String subject, String description, TicketEnum status,
+            String remark, String role, TicketPriority priority,
+            AssignedTeam assignedTeam,
+            Date createdDate, Date updatedDate
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+
+            // Apply only Ticket-specific filters here
+            Specification<Ticket> spec = TicketSpecification.getTicketFilters(subject, description, status, remark, role, priority, assignedTeam, createdDate, updatedDate);
+
+            Page<Ticket> ticketPage = ticketRepository.findAll(spec, pageable);
+
+            List<TicketResponseDTO> responseList = ticketPage.getContent().stream()
+                    .map(ticket -> {
+                        String nameVal = null;
+                        String emailVal = null;
+                        String mobileVal = null;
+                        String profilePic = null;
+
+                        if ("CUSTOMER".equalsIgnoreCase(ticket.getRole())) {
+                            Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
+                            if (customerOpt.isPresent()) {
+                                CustomCustomer customer = customerOpt.get();
+                                if (!matchesUserFilters(customer.getName(), customer.getEmail(), customer.getMobileNumber(), name, email, mobile, search)) {
+                                    return null;
+                                }
+                                nameVal = customer.getName();
+                                emailVal = customer.getEmail();
+                                mobileVal = customer.getMobileNumber();
+                                profilePic = customer.getProfilePic();
+                            }
+                        } else if ("VENDOR".equalsIgnoreCase(ticket.getRole())) {
+                            Optional<VendorEntity> vendorOpt = vendorRepository.findById(ticket.getCustomerOrVendorId());
+                            if (vendorOpt.isPresent()) {
+                                VendorEntity vendor = vendorOpt.get();
+                                if (!matchesUserFilters(vendor.getName(), vendor.getPrimary_email(), vendor.getMobileNumber(), name, email, mobile, search)) {
+                                    return null;
+                                }
+                                nameVal = vendor.getName();
+                                emailVal = vendor.getPrimary_email();
+                                mobileVal = vendor.getMobileNumber();
+                                profilePic = vendor.getProfilePic();
+                            }
+                        }
+
+                        return TicketResponseDTO.builder()
+                                .ticketId(ticket.getId())
+                                .subject(ticket.getSubject())
+                                .messages(ticket.getMessages())
+                                .customerOrVendorId(ticket.getCustomerOrVendorId())
+                                .description(ticket.getDescription())
+                                .status(ticket.getStatus() != null ? ticket.getStatus().toString() : null)
+                                .priority(ticket.getPriority() != null ? ticket.getPriority().toString() : null)
+                                .role(ticket.getRole())
+                                .assignedTeam(String.valueOf(ticket.getAssignedTeam()))
+                                .createdDate(ticket.getCreatedDate())
+                                .updatedDate(ticket.getUpdatedDate())
+                                .name(nameVal)
+                                .email(emailVal)
+                                .mobile(mobileVal)
+                                .profilePic(profilePic)
+                                .build();
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            Specification<Ticket> baseSpec = TicketSpecification.getTicketFilters(subject, description, null, remark, role, priority, assignedTeam, createdDate, updatedDate);
+
+            long pendingCount = ticketRepository.count(baseSpec.and((root, query, cb) -> cb.equal(root.get("status"), TicketEnum.PENDING)));
+            long processingCount = ticketRepository.count(baseSpec.and((root, query, cb) -> cb.equal(root.get("status"), TicketEnum.PROCESSING)));
+            long resolvedCount = ticketRepository.count(baseSpec.and((root, query, cb) -> cb.equal(root.get("status"), TicketEnum.RESOLVED)));
+
+            return responseService.generateSuccessResponseForTicket("responseList", responseList,responseList.stream().count(),pendingCount,processingCount,resolvedCount ,HttpStatus.OK);
+
+        } catch (Exception e) {
+            return responseService.generateErrorResponse("Error filtering tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    public ResponseEntity<?> getTicketById(Long id) {
+        Optional<Ticket> ticketOpt = ticketRepository.findById(id);
+
+        if (ticketOpt.isEmpty()) {
+            return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+        }
+
+        Ticket ticket = ticketOpt.get();
+        String name = null, email = null, mobile = null, profilePic = null;
+
+        if ("CUSTOMER".equalsIgnoreCase(ticket.getRole())) {
+            Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
+            if (customerOpt.isPresent()) {
+                CustomCustomer customer = customerOpt.get();
+                name = customer.getName();
+                email = customer.getEmail();
+                mobile = customer.getMobileNumber();
+                profilePic = customer.getProfilePic(); // Make sure this field exists in your entity
+            }
+        } else if ("VENDOR".equalsIgnoreCase(ticket.getRole())) {
+            Optional<VendorEntity> vendorOpt = vendorRepository.findById(ticket.getCustomerOrVendorId());
+            if (vendorOpt.isPresent()) {
+                VendorEntity vendor = vendorOpt.get();
+                name = vendor.getName();
+                email = vendor.getPrimary_email();
+                mobile = vendor.getMobileNumber();
+                profilePic = vendor.getProfilePic(); // Make sure this field exists in your entity
+            }
+        }
+
+        TicketResponseDTO responseDTO = TicketResponseDTO.builder()
+                .ticketId(ticket.getId())
+                .subject(ticket.getSubject())
+                .description(ticket.getDescription())
+                .status(ticket.getStatus() != null ? ticket.getStatus().toString() : null)
+                .role(ticket.getRole())
+                .messages(ticket.getMessages())
+                .customerOrVendorId(ticket.getCustomerOrVendorId())
+                .priority(ticket.getPriority() != null ? ticket.getPriority().toString() : null)
+                .assignedTeam(ticket.getAssignedTeam() != null ? ticket.getAssignedTeam().toString() : null)
+                .createdDate(ticket.getCreatedDate())
+                .updatedDate(ticket.getUpdatedDate())
+                .name(name)
+                .email(email)
+                .mobile(mobile)
+                .profilePic(profilePic)
+                .build();
+
+        return responseService.generateSuccessResponse("ticket", responseDTO, HttpStatus.OK);
+    }
+
+
+    private boolean matchesUserFilters(String uName, String uEmail, String uMobile,
+                                       String name, String email, String mobile, String search) {
+        if (name != null && (uName == null || !uName.toLowerCase().contains(name.toLowerCase()))) return false;
+        if (email != null && (uEmail == null || !uEmail.toLowerCase().contains(email.toLowerCase()))) return false;
+        if (mobile != null && (uMobile == null || !uMobile.contains(mobile))) return false;
+
+        if (search != null) {
+            String s = search.toLowerCase();
+            return (uName != null && uName.toLowerCase().contains(s)) ||
+                    (uEmail != null && uEmail.toLowerCase().contains(s)) ||
+                    (uMobile != null && uMobile.contains(s));
+        }
+
+        return true;
+    }
+
+
+
+
+    public ResponseEntity<?> assignTicket(Long ticketId, String teamStr, String priorityStr) {
+        Optional<Ticket> optional = ticketRepository.findById(ticketId);
+        if (optional.isEmpty()) {
+            return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+        }
+
+        Ticket ticket = optional.get();
+
+        // Parse and validate AssignedTeam
+        AssignedTeam team;
+        try {
+            team = AssignedTeam.valueOf(teamStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return responseService.generateErrorResponse("Invalid assigned team", HttpStatus.BAD_REQUEST);
+        }
+
+        // Parse and validate TicketPriority
+        TicketPriority priority;
+        try {
+            priority = TicketPriority.valueOf(priorityStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return responseService.generateErrorResponse("Invalid priority level", HttpStatus.BAD_REQUEST);
+        }
+
+        // Apply updates
+        ticket.setAssignedTeam(team);
+        ticket.setPriority(priority);
+        ticket.setStatus(TicketEnum.PROCESSING);
+        ticket.setUpdatedDate(new Date());
+
+        ticketRepository.save(ticket);
+
+        return responseService.generateSuccessResponse("Ticket assigned successfully", ticket, HttpStatus.OK);
+    }
+
+
+
+    public ResponseEntity<?> markTicketAsResolved(Long ticketId) {
+        Optional<Ticket> optionalTicket = ticketRepository.findById(ticketId);
+        if (optionalTicket.isEmpty()) {
+            return responseService.generateErrorResponse("Ticket not found with ID: " + ticketId, HttpStatus.NOT_FOUND);
+        }
+
+        Ticket ticket = optionalTicket.get();
+
+        if (TicketEnum.RESOLVED.equals(ticket.getStatus())) {
+            return responseService.generateSuccessResponse("Ticket is already marked as resolved", ticket, HttpStatus.OK);
+        }
+
+        // Update status and add remark
+        ticket.setStatus(TicketEnum.RESOLVED);
+//        ticket.setRemark(remark);
+        ticket.setUpdatedDate(new Date());
+
+        ticketRepository.save(ticket);
+
+        return responseService.generateSuccessResponse("Ticket marked as resolved with remark", ticket, HttpStatus.OK);
+    }
+
+
+    public ResponseEntity<?> postMessageToTicket(Long ticketId, String message, MultipartFile file, String senderRole) {
+        Optional<Ticket> optionalTicket = ticketRepository.findById(ticketId);
+        if (optionalTicket.isEmpty()) {
+            return responseService.generateErrorResponse("Ticket not found", HttpStatus.NOT_FOUND);
+        }
+        if(optionalTicket.get().getStatus().equals(TicketEnum.RESOLVED)){
+            return responseService.generateErrorResponse("Ticket is already resolved", HttpStatus.BAD_REQUEST);
+        }
+
+        boolean isMessageProvided = message != null && !message.isBlank();
+        boolean isFileProvided = file != null && !file.isEmpty();
+
+
+        if (!isMessageProvided && !isFileProvided) {
+            return responseService.generateErrorResponse("Either message or file is required", HttpStatus.BAD_REQUEST);
+        }
+
+        if (isMessageProvided && isFileProvided) {
+            return responseService.generateErrorResponse("Only one of message or file should be provided, not both", HttpStatus.BAD_REQUEST);
+        }
+
+        String finalMessage;
+
+        if (isFileProvided) {
+            try {
+                String uniqueFileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+                String s3FolderPath = "ticket-messages/";
+                s3Service.uploadPhoto(s3FolderPath + uniqueFileName, file);
+                finalMessage = s3Service.getFileUrl(s3FolderPath + uniqueFileName);
+            } catch (IOException e) {
+                return responseService.generateErrorResponse("S3 upload failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            finalMessage = message.trim();
+        }
+
+        TicketMessage ticketMessage = new TicketMessage();
+        ticketMessage.setTicket(optionalTicket.get());
+        ticketMessage.setMessage(finalMessage);
+        ticketMessage.setSenderRole(senderRole.toUpperCase());
+        ticketMessage.setCreatedAt(new Date());
+
+        ticketMessageRepository.save(ticketMessage);
+
+        return responseService.generateSuccessResponse("Message added successfully", null, HttpStatus.OK);
+    }
+
+
+
+
+
+    public ResponseEntity<?> getTicketsByAssignedTeam(AssignedTeam assignedTeam, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+
+        // Filter tickets by assignedTeam
+        Specification<Ticket> spec = (root, query, cb) -> cb.equal(root.get("assignedTeam"), assignedTeam);
+
+        Page<Ticket> ticketPage = ticketRepository.findAll(spec, pageable);
+
+        List<TicketResponseDTO> responseList = ticketPage.getContent().stream()
+                .map(ticket -> {
+                    String nameVal = null;
+                    String emailVal = null;
+                    String mobileVal = null;
+
+                    if ("CUSTOMER".equalsIgnoreCase(ticket.getRole())) {
+                        Optional<CustomCustomer> customerOpt = customCustomerRepository.findById(ticket.getCustomerOrVendorId());
+                        if (customerOpt.isPresent()) {
+                            CustomCustomer customer = customerOpt.get();
+                            nameVal = customer.getName();
+                            emailVal = customer.getEmail();
+                            mobileVal = customer.getMobileNumber();
+                        }
+                    } else if ("VENDOR".equalsIgnoreCase(ticket.getRole())) {
+                        Optional<VendorEntity> vendorOpt = vendorRepository.findById(ticket.getCustomerOrVendorId());
+                        if (vendorOpt.isPresent()) {
+                            VendorEntity vendor = vendorOpt.get();
+                            nameVal = vendor.getName();
+                            emailVal = vendor.getPrimary_email();
+                            mobileVal = vendor.getMobileNumber();
+                        }
+                    }
+
+                    return TicketResponseDTO.builder()
+                            .ticketId(ticket.getId())
+                            .subject(ticket.getSubject())
+//                            .remark(ticket.getRemark())
+                            .customerOrVendorId(ticket.getCustomerOrVendorId())
+                            .description(ticket.getDescription())
+                            .status(ticket.getStatus() != null ? ticket.getStatus().toString() : null)
+                            .priority(ticket.getPriority() != null ? ticket.getPriority().toString() : null)
+                            .role(ticket.getRole())
+                            .assignedTeam(String.valueOf(ticket.getAssignedTeam()))
+                            .createdDate(ticket.getCreatedDate())
+                            .updatedDate(ticket.getUpdatedDate())
+                            .name(nameVal)
+                            .email(emailVal)
+                            .mobile(mobileVal)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return responseService.generateSuccessResponseWithCount(
+                "tickets",
+                responseList,
+                ticketPage.getTotalElements(),
+                HttpStatus.OK
+        );
+    }
+
 
 
 }

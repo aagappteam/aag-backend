@@ -33,4 +33,6 @@ public interface CustomCustomerRepository extends JpaRepository<CustomCustomer, 
 
     @Query("SELECT COUNT(v) FROM CustomCustomer v WHERE v.lastActiveAt < :activeSince OR v.lastActiveAt IS NULL")
     Long countInactiveVendors(Date activeSince);
+
+    Optional<Object> findByReferralCode(String referralCode);
 }

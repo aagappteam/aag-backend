@@ -70,7 +70,7 @@ public class DashboardService {
         List<InfluencerGameDTO> influencerGames = new ArrayList<>();
 
         // Filter vendors with followerCount > 0
-        topVendors.stream()
+/*        topVendors.stream()
                 .filter(v -> v.getFollowerCount() > 0)
                 .forEach(top -> {
                     List<Game> vendorGames = gameRepo.findByVendorIdAndStatusAndEndDateAfter(
@@ -85,7 +85,43 @@ public class DashboardService {
                             .toList();
 
                     influencerGames.addAll(vendorGameDTOs);
-                });
+                });*/
+
+        List<InfluencerGameDTO> allInfluencerGames = topVendors.stream()
+                .filter(v -> v.getFollowerCount() > 0)
+                .flatMap(top -> {
+                    List<Game> vendorGames = gameRepo.findByVendorIdAndStatusAndEndDateAfter(
+                            top.getVendorId(),
+                            GameStatus.ACTIVE,
+                            currentDate,
+                            PageRequest.of(influencerPage, size)
+                    );
+
+                    String vendorName = top.getVendorName();
+
+                    return vendorGames.stream()
+                            .map(g -> new InfluencerGameDTO(mapToDTO(g), vendorName));
+                })
+                .toList();
+
+        influencerGames.addAll(allInfluencerGames);
+
+
+
+
+        // Fallback: if popularGames is empty, reuse latestGames
+            if (popularGames.isEmpty()) {
+                popularGames = latest.getContent().stream()
+                        .map(game -> new PopularGameDTO(mapToDTO(game), 0L)) // 0L as default room count
+                        .toList();
+            }
+
+    // Fallback: if influencerGames is empty, reuse latestGames
+            if (influencerGames.isEmpty()) {
+                influencerGames = latest.getContent().stream()
+                        .map(game -> new InfluencerGameDTO(mapToDTO(game), ""))
+                        .toList();
+            }
 
 
         return new DashboardResponse(

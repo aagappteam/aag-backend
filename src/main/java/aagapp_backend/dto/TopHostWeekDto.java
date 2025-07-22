@@ -13,13 +13,15 @@ public class TopHostWeekDto {
     private Long publishCount;
     private String primaryEmail;
     private String profilePicture;
+    private String user_name;
 
-    public TopHostWeekDto(Long hostId, String hostName, Long publishCount, String email, String profilePic) {
+    public TopHostWeekDto(Long hostId, String hostName, Long publishCount, String email, String profilePic,String user_name) {
         this.vendorId = hostId;
         this.vendorName = hostName;
         this.publishCount = publishCount;
         this.primaryEmail = email;
         this.profilePicture = profilePic;
+        this.user_name = user_name;
     }
 
     // Getters and setters

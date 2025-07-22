@@ -2,24 +2,27 @@ package aagapp_backend.controller.payment;
 
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.PaymentDTO;
+import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
+import aagapp_backend.repository.admin.InvoiceAdminRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
-import aagapp_backend.services.ApiConstants;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.RoleService;
 import aagapp_backend.services.admin.InvoiceServiceAdmin;
+import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PaymentService;
-import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityManager;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -47,6 +50,13 @@ public class PaymentController {
     @Autowired
     private InvoiceServiceAdmin invoiceServiceAdmin;
 
+    @Autowired
+    private RoleService roleService;
+
+    @Autowired
+    private InvoiceAdminRepository invoiceAdminRepository;
+
+
     // Create payment with authorization check and input validation
     @PostMapping("/create/{vendorId}")
     public ResponseEntity<?> createPayment(
@@ -67,15 +77,23 @@ public class PaymentController {
             }
             String token = authorization.substring(7);
             Long venderId = jwtUtil.extractId(token);
+            Integer roleId = jwtUtil.extractRoleId(token);
+            String roleName = roleService.findRoleName(roleId);
 
             if (venderId == null) {
                 return responseService.generateErrorResponse("Invalid or expired token", HttpStatus.UNAUTHORIZED);
             }
 
-            if (!venderId.equals(vendorId)) {
+/*            if (!venderId.equals(vendorId)) {
                 return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
-            }
+            }*/
 
+
+            if (!("Admin".equalsIgnoreCase(roleName) || "SuperAdmin".equalsIgnoreCase(roleName))) {
+                if (!venderId.equals(vendorId)) {
+                    return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
+                }
+            }
             // Payment validation: Ensure positive and reasonable amount
             if (paymentRequest.getAmount() <= 0) {
                 return responseService.generateErrorResponse("Invalid payment amount", HttpStatus.BAD_REQUEST);
@@ -84,10 +102,14 @@ public class PaymentController {
 
             PaymentEntity payment = paymentService.createPayment(paymentRequest, vendorId);
 
-            invoiceServiceAdmin.createInvoiceForVendor(payment.getAmount(), vendorId);
+            invoiceServiceAdmin.createInvoiceForVendor(payment.getAmount(), vendorId, payment.getTransactionId());
             return responseService.generateSuccessResponse("Payment created successfully", payment, HttpStatus.CREATED);
 
-        } catch (Exception e) {
+        }catch (BusinessException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
+        catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while processing the payment: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -138,6 +160,23 @@ public class PaymentController {
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An error occurred while fetching payments: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @GetMapping("/downloadInvoice")
+    public ResponseEntity<byte[]> downloadInvoice(@RequestParam String paymentId) {
+        try {
+            byte[] pdfData = invoiceServiceAdmin.generateInvoicePdfForVendorRecharge(paymentId);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice-" + paymentId + ".pdf")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfData);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
         }
     }
 
@@ -238,40 +277,33 @@ public class PaymentController {
     @PostMapping("/send-invoice-email")
     public ResponseEntity<?> sendInvoiceByEmail(@RequestParam String transactionId) {
         try {
-            // Find the payment using the transaction ID
+
+            Optional<InvoiceAdmin> invoiceAdmin = invoiceAdminRepository.findByPaymentId(transactionId);
             PaymentEntity paymentEntity = paymentRepository.findByTransactionId(transactionId);
 
-            // If payment is not found, return a bad request response
-            if (paymentEntity == null) {
+            if (invoiceAdmin.isEmpty()) {
                 return responseService.generateErrorResponse("Payment or transaction not found.", HttpStatus.BAD_REQUEST);
             }
 
-            // Retrieve the invoice URL from the payment
-            String invoiceUrl = paymentEntity.getDownloadInvoice();
 
-            // If no invoice URL is available, return an error
-            if (invoiceUrl == null || invoiceUrl.isEmpty()) {
-                return responseService.generateErrorResponse("Invoice link is not available.", HttpStatus.BAD_REQUEST);
-            }
-
-            // Send the invoice URL to the vendor's email
             try {
-                // Assuming paymentEntity.getVendorEntity().getPrimary_email() returns the vendor's email
-                paymentService.sendEmail(paymentEntity, invoiceUrl);
-            } catch (MessagingException e) {
-                // Catch and handle any email sending exceptions
+                byte[] pdfBytes = invoiceServiceAdmin.generateInvoicePdfForVendorRecharge(transactionId);
+                paymentService.sendEmailWithAttachment(paymentEntity, pdfBytes, "Invoice_" + transactionId + ".pdf");
+            } catch (Exception e) {
                 return responseService.generateErrorResponse("An error occurred while sending the invoice: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
-            // Using generateSuccessResponse for a successful response
-            return responseService.generateSuccessResponse("Invoice link sent on " + paymentEntity.getVendorEntity().getPrimary_email() + " successfully.", null, HttpStatus.OK);
-
+            return responseService.generateSuccessResponse(
+                    "Invoice sent to " + paymentEntity.getVendorEntity().getPrimary_email() + " successfully.",
+                    null,
+                    HttpStatus.OK
+            );
         } catch (Exception e) {
-            // Catch any unexpected exceptions
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("An unexpected error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
 
 

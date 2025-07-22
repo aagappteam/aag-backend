@@ -8,15 +8,20 @@ import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.services.*;
+import aagapp_backend.services.admin.AdminLogService;
 import aagapp_backend.services.download.InfluencerEarningsService;
 import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -27,6 +32,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/test")
 public class TestController {
+
+    @Autowired
+    private AdminLogService adminLogService;
 
     private EmailService emailService;
     private CommonService commonService;
@@ -210,4 +218,102 @@ public class TestController {
 
         return responseService.generateSuccessResponse("Monthly plan created/updated successfully", null, HttpStatus.OK);
     }
+
+
+    @PostMapping("/log-action")
+    public ResponseEntity<?> logAdminTestAction(@RequestParam Long targetId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String performedBy = authentication.getName();
+
+        String actorRole = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(auth -> auth.startsWith("ROLE_"))
+                .findFirst()
+                .orElse("ROLE_UNKNOWN");
+
+        if (actorRole.startsWith("ROLE_")) {
+            actorRole = actorRole.substring(5); // e.g., "ADMIN"
+        }
+
+        String targetType = "TEST_ENTITY";
+        String activity = "Performed test admin action for entity ID " + targetId;
+
+        adminLogService.logAction(activity, actorRole, performedBy, targetId, targetType);
+
+        return ResponseEntity.ok("Admin log created successfully.");
+    }
+
+    @PutMapping("/update-usernames")
+    @Transactional
+    public ResponseEntity<String> updateVendorUsernames() {
+        List<VendorEntity> vendors = entityManager.createQuery("FROM VendorEntity v WHERE v.user_name IS NULL OR TRIM(v.user_name) = ''", VendorEntity.class)
+                .getResultList();
+
+        int updatedCount = 0;
+
+        for (VendorEntity vendor : vendors) {
+            String firstName = vendor.getFirst_name() != null
+                    ? vendor.getFirst_name().replaceAll("\\s+", "").toLowerCase()
+                    : "aagveer";
+
+            String mobile = vendor.getMobileNumber();
+            String lastFourDigits = (mobile != null && mobile.length() >= 4)
+                    ? mobile.substring(mobile.length() - 4)
+                    : "0000";
+
+            String username = firstName + lastFourDigits;
+
+            // Use JPQL/Native query to only update user_name field
+            entityManager.createQuery("UPDATE VendorEntity v SET v.user_name = :username WHERE v.service_provider_id = :id")
+                    .setParameter("username", username)
+                    .setParameter("id", vendor.getService_provider_id())
+                    .executeUpdate();
+
+            updatedCount++;
+        }
+
+        return ResponseEntity.ok("Updated usernames for " + updatedCount + " vendors.");
+    }
+
+    @PutMapping("/update-customer-usernames")
+    @Transactional
+    public ResponseEntity<String> updateCustomerUsernames() {
+        List<CustomCustomer> customers = entityManager.createQuery(
+                        "FROM CustomCustomer c WHERE c.user_name IS NULL OR TRIM(c.user_name) = ''", CustomCustomer.class)
+                .getResultList();
+
+        int updatedCount = 0;
+
+        for (CustomCustomer customer : customers) {
+            String namePart = customer.getName() != null
+                    ? customer.getName().replaceAll("\\s+", "").toLowerCase()
+                    : "aaguser";
+
+            String mobile = customer.getMobileNumber();
+
+
+
+
+            String lastFourDigits = (mobile != null && mobile.length() >= 4)
+                    ? mobile.substring(mobile.length() - 4)
+                    : "0000";
+
+            String username = namePart + lastFourDigits;
+
+            // Update using JPQL to bypass validation
+            entityManager.createQuery("UPDATE CustomCustomer c SET c.user_name = :username WHERE c.id = :id")
+                    .setParameter("username", username)
+                    .setParameter("id", customer.getId())
+                    .executeUpdate();
+
+            updatedCount++;
+        }
+
+        return ResponseEntity.ok("Updated usernames for " + updatedCount + " customers.");
+    }
+
+
+
+
+
 }

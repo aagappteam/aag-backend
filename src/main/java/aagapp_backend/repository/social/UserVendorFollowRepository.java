@@ -2,6 +2,7 @@ package aagapp_backend.repository.social;
 
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.dto.TopVendorWeekDto;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.social.UserVendorFollow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -67,9 +68,17 @@ List<TopVendorDto> findTopVendorsWithFollowerCount();*/
     //feed
 
 
+    @Query("SELECT COUNT(uvf) FROM UserVendorFollow uvf WHERE uvf.vendor.service_provider_id = :vendorId AND uvf.followedAt BETWEEN :startDate AND :endDate")
+    int countFollowersBetweenDates(@Param("vendorId") Long vendorId,
+                                   @Param("startDate") LocalDateTime startDate,
+                                   @Param("endDate") LocalDateTime endDate);
 
 
 
+    Page<UserVendorFollow> findByVendor(VendorEntity vendor, Pageable pageable);
+
+    @Query("SELECT uvf FROM UserVendorFollow uvf WHERE uvf.vendor.service_provider_id = :vendorId")
+    Page<UserVendorFollow> findFollowersByVendorId(@Param("vendorId") Long vendorId, Pageable pageable);
 }
 
 

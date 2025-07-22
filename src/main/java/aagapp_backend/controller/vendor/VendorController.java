@@ -310,9 +310,12 @@ public class VendorController {
             @RequestParam(value = "firstName", required = false) String firstName,
             @RequestParam(value = "planName", required = false) String planName,
             @RequestParam(value = "isPaid", required = false) Boolean isPaid,
+            @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(value = "vendorStatus", required = false) VendorStatus vendorStatus
+            @RequestParam(value = "vendorStatus", required = false) VendorStatus vendorStatus,
+            @RequestHeader(value = "Authorization", required = false) String authHeader
+
     ) {
         try {
             int finalLimit = (limit != null) ? limit : (size != null ? size : 10);
@@ -320,6 +323,11 @@ public class VendorController {
 
             if (vendorId != null) {
                 return this.getVendorDetailsById(vendorId, userId);
+            }
+
+            String token = null;
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7); // remove "Bearer "
             }
 
             StringBuilder queryString = new StringBuilder("SELECT s FROM VendorEntity s");
@@ -383,6 +391,16 @@ public class VendorController {
             // Vendor Status (enum filter)
             if (vendorStatus != null) {
                 conditions.add("s.status = :vendorStatus");
+            }
+
+            // 🔍 Common search filter
+            if (search != null && !search.trim().isEmpty()) {
+                conditions.add("(" +
+                        "LOWER(s.first_name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.last_name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.mobileNumber) LIKE LOWER(CONCAT('%', :search, '%'))" +
+                        ")");
             }
 
             // Append WHERE clause
@@ -455,6 +473,12 @@ public class VendorController {
                 query.setParameter("vendorStatus", vendorStatus);
             }
 
+            // Set parameter for common search filter
+            if (search != null && !search.trim().isEmpty()) {
+                countQuery.setParameter("search", search.trim());
+                query.setParameter("search", search.trim());
+            }
+
             // Pagination
             query.setFirstResult(startPosition);
             query.setMaxResults(finalLimit);
@@ -468,10 +492,15 @@ public class VendorController {
                 if (vendorDetailsData != null && vendorDetailsData.containsKey("data")) {
                     vendorDetailList.add((Map<String, Object>) vendorDetailsData.get("data"));
                 }
+
             }
 
             Long activeCount = this.getActiveInactiveCounts();
-            Long inactiveCount = totalCount - activeCount;
+            Long inactiveCount =0L;
+            if(totalCount!=0) {
+                 inactiveCount = totalCount - activeCount;
+
+            }
 
             return ResponseService.generateSuccessResponseWithCountAndStatus(
                     "List of vendors", vendorDetailList, totalCount, activeCount, inactiveCount, HttpStatus.OK);
@@ -483,6 +512,186 @@ public class VendorController {
             return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+/*    @Transactional
+    @GetMapping("/get-all-vendors")
+    public ResponseEntity<?> getAllServiceProviders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "vendorId", required = false) Long vendorId,
+            @RequestParam(value = "vendorid", required = false) Long vendorid,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "firstName", required = false) String firstName,
+            @RequestParam(value = "planName", required = false) String planName,
+            @RequestParam(value = "isPaid", required = false) Boolean isPaid,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(value = "vendorStatus", required = false) VendorStatus vendorStatus
+    ) {
+        try {
+            int finalLimit = (limit != null) ? limit : (size != null ? size : 10);
+            int startPosition = page * finalLimit;
+
+            if (vendorId != null) {
+                return this.getVendorDetailsById(vendorId, userId);
+            }
+
+            StringBuilder queryString = new StringBuilder("SELECT s FROM VendorEntity s");
+            StringBuilder countQueryString = new StringBuilder("SELECT COUNT(s) FROM VendorEntity s");
+            List<String> conditions = new ArrayList<>();
+
+            // Build dynamic conditions
+            if (status != null && !status.isEmpty()) conditions.add("s.isActive = :status");
+            if (email != null && !email.isEmpty()) conditions.add("LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :email, '%'))");
+
+            if (firstName != null && !firstName.trim().isEmpty()) {
+                String[] nameParts = firstName.trim().split("\\s+");
+                String firstNamePart = nameParts[0].trim();
+                if (nameParts.length == 1) {
+                    conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')))");
+                } else {
+                    if (!firstNamePart.isEmpty()) conditions.add("LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))");
+                    if (nameParts.length >= 2 && !nameParts[1].trim().isEmpty()) {
+                        conditions.add("LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))");
+                    }
+                }
+            }
+
+            if (planName != null && !planName.isEmpty()) conditions.add("LOWER(s.planName) LIKE LOWER(CONCAT('%', :planName, '%'))");
+            if (vendorid != null) conditions.add("s.service_provider_id = :vendorid");
+            if (isPaid != null) conditions.add("s.isPaid = :isPaid");
+            if (startDate != null && endDate != null) conditions.add("s.createdDate BETWEEN :startDate AND :endDate");
+            else if (startDate != null) conditions.add("s.createdDate >= :startDate");
+            else if (endDate != null) conditions.add("s.createdDate <= :endDate");
+            if (vendorStatus != null) conditions.add("s.status = :vendorStatus");
+
+            if (search != null && !search.trim().isEmpty()) {
+                conditions.add("(" +
+                        "LOWER(s.first_name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.last_name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.primary_email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(s.mobileNumber) LIKE LOWER(CONCAT('%', :search, '%'))" +
+                        ")");
+            }
+
+            // Append WHERE clause
+            if (!conditions.isEmpty()) {
+                String whereClause = String.join(" AND ", conditions);
+                queryString.append(" WHERE ").append(whereClause);
+                countQueryString.append(" WHERE ").append(whereClause);
+            }
+
+            queryString.append(" ORDER BY s.service_provider_id DESC");
+
+            Query countQuery = entityManager.createQuery(countQueryString.toString());
+            Query query = entityManager.createQuery(queryString.toString(), VendorEntity.class);
+
+            // Set parameters
+            setParameters(countQuery, status, email, firstName, planName, vendorid, isPaid, startDate, endDate, vendorStatus, search);
+            setParameters(query, status, email, firstName, planName, vendorid, isPaid, startDate, endDate, vendorStatus, search);
+
+            query.setFirstResult(startPosition);
+            query.setMaxResults(finalLimit);
+
+            Long totalCount = (Long) countQuery.getSingleResult();
+            List<VendorEntity> results = query.getResultList();
+
+            // Fetch vendor details
+            List<Map<String, Object>> vendorDetailList = new ArrayList<>();
+            for (VendorEntity vendor : results) {
+                Map<String, Object> vendorDetailsData = serviceProviderService.VendorDetails(vendor, userId).getBody();
+                if (vendorDetailsData != null && vendorDetailsData.containsKey("data")) {
+                    vendorDetailList.add((Map<String, Object>) vendorDetailsData.get("data"));
+                }
+            }
+
+            // 🔥 Active/Inactive filtered count
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            Date activeSince = Date.from(now.minusMinutes(10).toInstant());
+
+            String baseWhere = !conditions.isEmpty() ? String.join(" AND ", conditions) : "1=1";
+
+            // Active count
+            String activeQueryStr = "SELECT COUNT(s) FROM VendorEntity s WHERE " + baseWhere + " AND s.lastActiveAt >= :activeSince";
+            Query activeCountQuery = entityManager.createQuery(activeQueryStr);
+            setParameters(activeCountQuery, status, email, firstName, planName, vendorid, isPaid, startDate, endDate, vendorStatus, search);
+            activeCountQuery.setParameter("activeSince", activeSince);
+            Long activeCount = (Long) activeCountQuery.getSingleResult();
+
+            // Inactive count
+            String inactiveQueryStr = "SELECT COUNT(s) FROM VendorEntity s WHERE " + baseWhere + " AND (s.lastActiveAt IS NULL OR s.lastActiveAt < :activeSince)";
+            Query inactiveCountQuery = entityManager.createQuery(inactiveQueryStr);
+            setParameters(inactiveCountQuery, status, email, firstName, planName, vendorid, isPaid, startDate, endDate, vendorStatus, search);
+            inactiveCountQuery.setParameter("activeSince", activeSince);
+            Long inactiveCount = (Long) inactiveCountQuery.getSingleResult();
+
+            return ResponseService.generateSuccessResponseWithCountAndStatus(
+                    "List of vendors", vendorDetailList, totalCount, activeCount, inactiveCount, HttpStatus.OK);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Some issue in fetching service providers: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }*/
+
+
+    private void setParameters(Query query,
+                               String status,
+                               String email,
+                               String firstName,
+                               String planName,
+                               Long vendorid,
+                               Boolean isPaid,
+                               LocalDate startDate,
+                               LocalDate endDate,
+                               VendorStatus vendorStatus,
+                               String search) {
+
+        if (status != null && !status.isEmpty()) {
+            query.setParameter("status", Boolean.parseBoolean(status));
+        }
+        if (email != null && !email.isEmpty()) {
+            query.setParameter("email", email);
+        }
+
+        if (firstName != null && !firstName.trim().isEmpty()) {
+            String[] nameParts = firstName.trim().split("\\s+");
+            String firstNamePart = nameParts[0].trim();
+            query.setParameter("firstNamePart", firstNamePart);
+            if (nameParts.length >= 2 && !nameParts[1].trim().isEmpty()) {
+                query.setParameter("lastNamePart", nameParts[1].trim());
+            }
+        }
+
+        if (planName != null && !planName.isEmpty()) {
+            query.setParameter("planName", planName);
+        }
+        if (vendorid != null) {
+            query.setParameter("vendorid", vendorid);
+        }
+        if (isPaid != null) {
+            query.setParameter("isPaid", isPaid);
+        }
+        if (startDate != null) {
+            query.setParameter("startDate", Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        }
+        if (endDate != null) {
+            query.setParameter("endDate", Date.from(endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        }
+        if (vendorStatus != null) {
+            query.setParameter("vendorStatus", vendorStatus);
+        }
+        if (search != null && !search.trim().isEmpty()) {
+            query.setParameter("search", search.trim());
+        }
+    }
+
 
 
     public Long getActiveInactiveCounts() {
@@ -900,29 +1109,54 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
                                       @RequestParam(value = "page", defaultValue = "0") int page,
                                       @RequestParam(value = "size", defaultValue = "10") int size) {
     try {
-        // Extract the token and find the authenticated vendor
         String jwtToken = token.replace("Bearer ", "");
         Long authorizedVendorId = jwtUtil.extractId(jwtToken);
         VendorEntity authenticatedVendor = entityManager.find(VendorEntity.class, authorizedVendorId);
 
-        // List to store the filtered vendor data
         List<VendorEntity> allVendors = new ArrayList<>();
         List<InfluencerMonthlyEarning> filteredVendors = new ArrayList<>();
 
-        // Apply the filter based on filterType and fetch all data
         switch (filterType.toLowerCase()) {
             case "referrals":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("followercount"))); // Sorting by referral count
+                allVendors = vendorRepository.findAll(
+                        Sort.by(Sort.Order.desc("followercount"))
+                                .and(Sort.by(Sort.Order.asc("createdDate")))
+                );
+
+//                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("followercount"))); // Sorting by referral count
                 break;
 
             case "totalwallet":
 //                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalWalletBalance"))); // Sorting by wallet balance
-                filteredVendors = monthlyEarningRepository.findAll(Sort.by(Sort.Order.desc("earnedAmount")));
+//                filteredVendors = monthlyEarningRepository.findAll(Sort.by(Sort.Order.desc("earnedAmount")));
+                filteredVendors = monthlyEarningRepository.findAll(
+                        Sort.by(Sort.Order.desc("earnedAmount"))
+                                .and(Sort.by(Sort.Order.asc("createdDate")))
+                );
+
                 break;
 
             case "participants":
-                allVendors = vendorRepository.findAll(Sort.by(Sort.Order.desc("totalParticipatedInGameTournament"))); // Sorting by participants
-                break;
+                allVendors = vendorRepository.findAll(); // No sorting at DB level
+
+                allVendors.sort((v1, v2) -> {
+                    int score1 = 10 * Optional.ofNullable(v1.getTotal_game_published()).orElse(0)
+                            + 50 * Optional.ofNullable(v1.getTotal_league_published()).orElse(0)
+                            + 50 * Optional.ofNullable(v1.getTotal_tournament_published()).orElse(0);
+
+                    int score2 = 10 * Optional.ofNullable(v2.getTotal_game_published()).orElse(0)
+                            + 50 * Optional.ofNullable(v2.getTotal_league_published()).orElse(0)
+                            + 50 * Optional.ofNullable(v2.getTotal_tournament_published()).orElse(0);
+
+                    // First sort by score DESC, then by createdDate ASC
+                    int cmp = Integer.compare(score2, score1);
+                    if (cmp != 0) return cmp;
+
+                    return Optional.ofNullable(v1.getCreatedDate()).orElse(new Date(0))
+                            .compareTo(Optional.ofNullable(v2.getCreatedDate()).orElse(new Date(0)));
+                });
+
+            break;
 
             default:
                 return new ResponseEntity<>(Map.of(
@@ -936,20 +1170,39 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         List<Map<String, Object>> leaderboard = new ArrayList<>();
 
         if ("totalwallet".equalsIgnoreCase(filterType)) {
+            Map<Long, BigDecimal> vendorEarningsMap = new HashMap<>();
+
             for (InfluencerMonthlyEarning earning : filteredVendors) {
-                VendorEntity vendor = entityManager.find(VendorEntity.class, earning.getInfluencerId()); // get vendor details
-                if (vendor == null) continue;
-
-                Map<String, Object> vendorData = new HashMap<>();
-                vendorData.put("service_provider_id", vendor.getService_provider_id());
-                vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
-                vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
-                        .map(firstName -> firstName + " " + vendor.getLast_name())
-                        .orElse(null));
-                vendorData.put("total_wallet_balance", earning.getEarnedAmount());
-
-                leaderboard.add(vendorData);
+                Long influencerId = earning.getInfluencerId();
+                BigDecimal totalEarning = earning.getEarnedAmount();
+                vendorEarningsMap.put(influencerId, vendorEarningsMap.getOrDefault(influencerId, BigDecimal.ZERO).add(totalEarning));
             }
+
+            leaderboard = vendorEarningsMap.entrySet().stream()
+                    .map(entry -> {
+                        Long influencerId = entry.getKey();
+                        BigDecimal totalWalletBalance = entry.getValue();
+
+                        VendorEntity vendor = entityManager.find(VendorEntity.class, influencerId);
+                        if (vendor == null) return null;
+
+                        Map<String, Object> vendorData = new HashMap<>();
+                        vendorData.put("service_provider_id", vendor.getService_provider_id());
+                        vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
+                        vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
+                                .map(firstName -> firstName + " " + vendor.getLast_name())
+                                .orElse(null));
+                        vendorData.put("total_wallet_balance", totalWalletBalance);
+
+                        return vendorData;
+                    })
+                    .filter(Objects::nonNull)
+                    .sorted((v1, v2) -> {
+                        BigDecimal balance1 = (BigDecimal) v1.get("total_wallet_balance");
+                        BigDecimal balance2 = (BigDecimal) v2.get("total_wallet_balance");
+                        return balance2.compareTo(balance1);
+                    })
+                    .collect(Collectors.toList());
         } else {
             leaderboard = allVendors.stream().map(vendor -> {
                 Map<String, Object> vendorData = new HashMap<>();
@@ -961,37 +1214,49 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
                 if ("referrals".equalsIgnoreCase(filterType)) {
                     vendorData.put("referralCount", vendor.getFollowercount());
-                } else if ("participants".equalsIgnoreCase(filterType)) {
+                } /*else if ("participants".equalsIgnoreCase(filterType)) {
                     vendorData.put("total_participated", vendor.getTotalParticipatedInGameTournament());
+                }*/
+                else if ("participants".equalsIgnoreCase(filterType)) {
+                    int totalScore = 10 * Optional.ofNullable(vendor.getTotal_game_published()).orElse(0)
+                            + 50 * Optional.ofNullable(vendor.getTotal_league_published()).orElse(0)
+                            + 50 * Optional.ofNullable(vendor.getTotal_tournament_published()).orElse(0);
+
+                    vendorData.put("total_participated", totalScore);
                 }
+
+
+
 
                 return vendorData;
             }).collect(Collectors.toList());
         }
 
-
-        // Rank the vendors based on sorted list (1-based index)
         for (int i = 0; i < leaderboard.size(); i++) {
-            leaderboard.get(i).put("rank", i + 1); // 1-based ranking
+            leaderboard.get(i).put("rank", i + 1);
         }
 
-        // Calculate the rank of the logged-in vendor
         int loggedInVendorRank = -1;
         for (int i = 0; i < leaderboard.size(); i++) {
             Map<String, Object> vendorData = leaderboard.get(i);
             Long vendorId = (Long) vendorData.get("service_provider_id");
             if (vendorId.equals(authenticatedVendor.getService_provider_id())) {
-                loggedInVendorRank = i + 1;  // Vendor ranks are 1-based
+                loggedInVendorRank = i + 1;
                 break;
             }
         }
 
-        // Paginate the leaderboard based on the requested page and size
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, leaderboard.size());
-        List<Map<String, Object>> paginatedLeaderboard = leaderboard.subList(fromIndex, toIndex);
+        List<Map<String, Object>> paginatedLeaderboard;
 
-        // Prepare response data
+        if (fromIndex >= leaderboard.size()) {
+            paginatedLeaderboard = new ArrayList<>();
+        } else {
+            paginatedLeaderboard = leaderboard.subList(fromIndex, toIndex);
+        }
+
+
         Map<String, Object> data = Map.of(
                 "total_earning", authenticatedVendor.getRefferalbalance(),
                 "referral_code", authenticatedVendor.getReferralCode(),
@@ -1038,7 +1303,6 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-//    Vendor Dashboard api
 
     @GetMapping("/dashboard/{serviceProviderId}")
     public ResponseEntity<?> getDashboardData(@PathVariable Long serviceProviderId) {

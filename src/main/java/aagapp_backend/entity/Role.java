@@ -1,5 +1,6 @@
 package aagapp_backend.entity;
 
+import aagapp_backend.entity.admin.Privilege;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,6 +9,8 @@ import lombok.Setter;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "custom_role_table")
@@ -21,6 +24,9 @@ public class Role
 
 private int roleId;
     private String roleName;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    private Set<Privilege> privileges = new HashSet<>();
     private LocalDateTime createdAt; // Use LocalDateTime for timestamps
     private LocalDateTime updatedAt; // Use LocalDateTime for timestamps
     private String createdBy;

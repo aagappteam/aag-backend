@@ -30,6 +30,18 @@ public class ResponseService {
         return new ResponseEntity<>(successResponse, status);
     }
 
+    public static ResponseEntity<?> generateSuccessResponseWithOuterCount(String message, Object data, Long count, HttpStatus status) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", message);
+        response.put("data", data);
+        response.put("totalCount", count); // Moved to outer level
+        response.put("status", status);
+        response.put("status_code", status.value());
+        return new ResponseEntity<>(response, status);
+    }
+
+
+
     public static ResponseEntity<ErrorResponse> generateErrorResponse(String message,HttpStatus status)
     {
         ErrorResponse errorResponse=new ErrorResponse();
@@ -127,6 +139,20 @@ public class ResponseService {
         return new ResponseEntity<>(response, status);
     }
 
+
+    public static ResponseEntity<?> generateSuccessResponseForVendorUpgrade(String message, List<?> data, Long count, Long openTicketCount, Long closedTicketCount,Long pendingCount, HttpStatus status) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("message", message);
+        response.put("data", data);
+        response.put("totalCount", count);
+        response.put("approvedCount", openTicketCount);
+        response.put("rejectedCount", closedTicketCount);
+        response.put("pendingCount", pendingCount);
+
+        response.put("status", status);
+        response.put("status_code", status.value());
+        return new ResponseEntity<>(response, status);
+    }
     public static ResponseEntity<?> generateSuccessResponseForWithdrwalRequest(String message, List<?> data, Long count, Long approvedCount,Long rejectedCount,Long pendingCount, HttpStatus status) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("message", message);
@@ -141,5 +167,33 @@ public class ResponseService {
     }
 
 
+    public static ResponseEntity<SuccessResponse> generateVendorSuccessResponse(
+            String message,
+            Map<String, Object> flatData,
+            HttpStatus status
+    ) {
+        SuccessResponse response = new SuccessResponse();
+        response.setMessage(message);
+        response.setStatus(HttpStatus.valueOf(status.getReasonPhrase()));
+        response.setStatus_code(status.value());
+        response.setData(flatData);  // You want entire map with keys like "data", "page", etc.
+
+        return new ResponseEntity<>(response, status);
+    }
+
+
+
+    public static ResponseEntity<?> generateSuccessResponseForTicket(String message, List<?> data, Long count, Long pendingCount, Long processingCount,Long resoledCount, HttpStatus status) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("message", message);
+        response.put("data", data);
+        response.put("totalCount", count);
+        response.put("pendingCount", pendingCount);
+        response.put("processingCount", processingCount);
+        response.put("resolvedCount", resoledCount);
+        response.put("status", status);
+        response.put("status_code", status.value());
+        return new ResponseEntity<>(response, status);
+    }
 
 }

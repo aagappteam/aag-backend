@@ -32,16 +32,16 @@ import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.gameservice.GameService;
+import aagapp_backend.services.social.FollowerNotificationService;
+import aagapp_backend.spec.TournamentSpecification;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.*;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -55,6 +55,7 @@ import java.math.RoundingMode;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,6 +63,9 @@ public class TournamentService {
 
     @Autowired
     private VendorWalletRepository walletRepo;
+
+    @Autowired
+    private FollowerNotificationService followerNotificationService;
 
     @Autowired
     private CommonService commonService;
@@ -338,17 +342,18 @@ public class TournamentService {
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             if (tournamentRequest.getScheduledAt() != null) {
+
                 ZonedDateTime scheduledInKolkata = tournamentRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
-                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(4))) {
-                    throw new BusinessException("The game must be scheduled at least 4 hours in advance." , HttpStatus.BAD_REQUEST);
+                if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(1))) {
+                    throw new BusinessException("The game must be scheduled at least 1 hours in advance." , HttpStatus.BAD_REQUEST);
                 }
                 tournament.setStatus(TournamentStatus.SCHEDULED);
                 tournament.setScheduledAt(scheduledInKolkata);
 
             } else {
                 tournament.setStatus(TournamentStatus.SCHEDULED);
-//               tournament.setScheduledAt(nowInKolkata.plusHours(1));
-              tournament.setScheduledAt(nowInKolkata.plusMinutes(4));
+                tournament.setScheduledAt(nowInKolkata.plusHours(1));
+//              tournament.setScheduledAt(nowInKolkata.plusMinutes(4));
 
             }
 
@@ -360,17 +365,18 @@ public class TournamentService {
 
 
 
-            // Save the game to get the game ID
-//            Tournament savedTournament = tournamentRepository.save(tournament);
-
-
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(tournament.getId(),vendorId);
             tournament.setShareableLink(shareableLink);
             vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
             vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);
-            // Return the saved game with the shareable link
-            return tournamentRepository.save(tournament);
+
+            // Send notification asynchronously (non-blocking)
+            CompletableFuture.runAsync(() ->
+                    followerNotificationService.notifyFollowersInParallel("tournament", savedTournament.getName(), vendorEntity)
+            );
+
+            return savedTournament;
 
         }catch (BusinessException e){
             exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
@@ -605,6 +611,18 @@ public class TournamentService {
 
 
 
+
+    public Page<Tournament> getFilteredTournaments(
+            Integer page, Integer size, Sort sort,
+            Long id, Long vendorId, String name, BigDecimal totalPrizePool, TournamentStatus status,
+            String vendorName, String vendorEmail, String vendorMobile, String search
+    ) {
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Specification<Tournament> spec = TournamentSpecification.withFilters(id, vendorId, name, totalPrizePool, status, vendorName, vendorEmail, vendorMobile, search);
+        return tournamentRepository.findAll(spec, pageable);
+    }
+
+
 /*    @Transactional
     public Page<Tournament> getAllTournaments(Pageable pageable, List<TournamentStatus> statuses, Long vendorId,String gamename) {
         try {
@@ -770,6 +788,8 @@ public class TournamentService {
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
             notification.setCustomerId(winner.getCustomer().getId());
+            notification.setName(winner.getCustomer().getName()!=null?winner.getCustomer().getName():"N/A");
+
             notificationRepository.save(notification);
 
             String fcmToken = tournament.getVendorEntity().getFcmToken();
@@ -1995,6 +2015,8 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
+            notification.setName(winner.getPlayer().getCustomer().getName()!=null?winner.getPlayer().getCustomer().getName():"N/A");
+
             notificationRepository.save(notification);
 
             Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
@@ -2465,6 +2487,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 notification.setDescription("Round Prize");
                 notification.setRole("Customer");
                 notification.setCustomerId(readyPlayers.get(0).getPlayer().getPlayerId());
+                notification.setName(readyPlayers.get(0).getPlayer().getCustomer().getName()!=null?readyPlayers.get(0).getPlayer().getCustomer().getName():"N/A");
                 notificationRepository.save(notification);
                 return "🏁 Only one player remains. Tournament finished.";
             }
@@ -2553,4 +2576,94 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         Query query = em.createNativeQuery(sql);
         return ((Number) query.getSingleResult()).longValue();
     }
+
+
+    @Transactional
+//   @Scheduled(cron = "0 0 0/4 * * *")
+    @Scheduled(cron = "0 0 0/2 * * *")
+
+    public void autoPublishTournamentForVendor_6306470701() {
+        Optional<VendorEntity> vendorOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_6306470701);
+        if (vendorOpt.isEmpty()) {
+            System.out.println(" Vendor with mobile 6306470701 not found.");
+            return;
+        }
+
+        VendorEntity vendor = vendorOpt.get();
+        Long vendorId = vendor.getService_provider_id();
+        System.out.println(" Vendor found: " + vendorId);
+
+        List<AagAvailableGames> availableGames = aagGameRepository.findAll();
+
+        for (AagAvailableGames gameMeta : availableGames) {
+            Long gameId = gameMeta.getId();
+            String gameName = gameMeta.getGameName();
+
+            List<Long> themeIds = gameMeta.getThemes().stream()
+                    .map(ThemeEntity::getId)
+                    .sorted()
+                    .toList();
+
+            if (themeIds.isEmpty()) {
+                System.out.println("⚠ No themes found for game: " + gameName);
+                continue;
+            }
+
+            for (Long themeId : themeIds) {
+                // Skip if already published today
+                ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+                ZonedDateTime startOfDay = now.toLocalDate().atStartOfDay(now.getZone());
+                ZonedDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
+
+                Optional<Long> alreadyPublished = tournamentRepository.findThemeIdIfPublishedToday(
+                        vendorId, gameId, themeId, TournamentStatus.SCHEDULED, startOfDay, endOfDay
+                );
+                if (alreadyPublished.isPresent()) {
+                    System.out.println("⏩ Theme " + themeId + " already published today for Tournament of game " + gameId);
+                    continue;
+                }
+
+                // Build tournament request
+                TournamentRequest request = new TournamentRequest();
+                List<Integer> entryFees = List.of(10, 25, 50);
+                Integer entryfee = entryFees.get(new Random().nextInt(entryFees.size()));
+//                Integer entryfee = 25;
+                Integer particpant  = 512;
+
+                Double totalPrize = (double) entryfee * particpant;
+
+                BigDecimal revenueAmmountforuser = BigDecimal.valueOf(totalPrize).multiply(PriceConstant.USER_PRIZE_PERCENT);
+                int totalPlayers = particpant;
+
+                int totalRounds = (int) Math.ceil(Math.log(totalPlayers) / Math.log(2));
+                BigDecimal entryFeePerUser = BigDecimal.valueOf(entryfee);
+
+                BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers));
+
+                BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
+                BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
+                request.setName(gameName);
+                request.setExistinggameId(gameId);
+//                request.setTotalPrizePool(totalCollection.doubleValue());
+                request.setThemeId(themeId);
+                request.setParticipants(512); // or use dynamic value
+                request.setEntryFee(entryfee);
+
+
+
+                try {
+                 Tournament tournament = publishTournament(request, vendorId);
+                    System.out.println("✅ Published TOURNAMENT " + gameName + " with theme " + themeId + " for vendor " + vendorId);
+                    return;
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to publish TOURNAMENT for game ID " + gameId + ": " + e.getMessage());
+                }
+
+                break; // Only one tournament publish per run
+            }
+
+            System.out.println("🔁 No unpublished tournament themes left for game ID: " + gameId + " (" + gameName + ")");
+        }
+    }
+
 }

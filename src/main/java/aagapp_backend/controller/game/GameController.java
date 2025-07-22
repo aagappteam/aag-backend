@@ -150,13 +150,16 @@ public class GameController {
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "gamename", required = false) String gamename,
             @RequestParam(value = "vendorName", required = false) String vendorName,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "mobileNumber", required = false) String mobileNumber,
             @RequestParam(value = "startDate", required = false) ZonedDateTime startDateStr,
             @RequestParam(value = "endDate", required = false) ZonedDateTime endDateStr,
+            @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "vendorId", required = false) Long vendorId) {
 
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<GetGameResponseDTO> games = gameService.getAllGamesByAdmin(status, vendorId, gamename, vendorName, startDateStr, endDateStr, pageable);
+            Page<GetGameResponseDTO> games = gameService.getAllGamesByAdmin(status, vendorId, gamename, vendorName, email, mobileNumber, startDateStr, endDateStr, search ,pageable);
 
             Long scheduledCount = gameService.getScheduledCount();
             Long activeCount = gameService.getActiveCount();
@@ -245,36 +248,11 @@ public class GameController {
         try {
 
             ResponseEntity<?> paymentEntity = paymentFeatures.canPublishGame(vendorId);
-
             if (paymentEntity.getStatusCode() != HttpStatus.OK) {
                 return paymentEntity;
             }
 
             Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId, existinggameId);
-
-            // Now create a single notification for the vendor
-/*            Notification notification = new Notification();
-            notification.setRole("Vendor");
-
-
-            notification.setVendorId(vendorId);
-            if (gameRequest.getScheduledAt() != null) {
-*//*
-                notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
-*//*
-                notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
-                notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
-            }else{
-*//*
-                notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
-*//*
-                notification.setDescription("Published Game"); // Example NotificationType for a successful
-                notification.setDetails("Game has been Published"); // Example NotificationType for a successful
-            }
-
-
-
-            notificationRepository.save(notification);*/
 
             if (gameRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("Game scheduled successfully", publishedGame, HttpStatus.CREATED);
@@ -417,25 +395,30 @@ public class GameController {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
             Map<String, Object> response = new HashMap<>();
+            long totalCount = 0;
 
-            // Handle event filtering based on events type
             switch (events.toLowerCase()) {
                 case "game":
                     // Filter for 'game' only
                     Page<GetGameResponseDTO> games = gameleaguetournamentservice.getAllGames(status, vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("games", games.getContent());
+                    totalCount = games.getTotalElements();
+
                     break;
 
                 case "league":
                     // Filter for 'league' only
                     Page<LeagueResponseDTO> leagues = gameleaguetournamentservice.getAllLeagues(status,vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("leagues", leagues.getContent());
+                    totalCount = leagues.getTotalElements();
+
                     break;
 
                 case "tournament":
                     // Filter for 'tournament' only
                     Page<TournamentResponseDTO> tournaments = gameleaguetournamentservice.getAllTournaments(status,vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("tournaments", tournaments.getContent());
+
                     break;
 
                 case "league_tournament":
@@ -447,13 +430,15 @@ public class GameController {
                     leagueAndTournament.put("leagues", allLeagues.getContent());
                     leagueAndTournament.put("tournaments", allTournaments.getContent());
                     response.put("league_tournament", leagueAndTournament);
+                    totalCount = allLeagues.getTotalElements() + allTournaments.getTotalElements();
+
                     break;
 
                 default:
                     return responseService.generateErrorResponse("Invalid 'events' value. Allowed values are: game, league, tournament, league_tournament.", HttpStatus.BAD_REQUEST);
             }
 
-            return responseService.generateSuccessResponse("Scheduled events fetched successfully", response, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithOuterCount("Scheduled events fetched successfully", response, totalCount, HttpStatus.OK);
         }catch (BusinessException e){
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {

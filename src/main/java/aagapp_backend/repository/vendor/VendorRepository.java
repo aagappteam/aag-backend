@@ -16,6 +16,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     //    List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
@@ -66,7 +67,8 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
             CONCAT(v.first_name, ' ', v.last_name),
             (COALESCE(g.gameCount, 0) + COALESCE(l.leagueCount, 0) + COALESCE(t.tournamentCount, 0)),
             v.primary_email,
-            v.profilePic
+            v.profilePic,
+            v.user_name
         )
         FROM VendorEntity v
         LEFT JOIN (
@@ -92,4 +94,8 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
         """)
     List<TopHostWeekDto> findTopHostsThisWeek(@Param("startOfWeek") ZonedDateTime startOfWeek,
                                               @Param("endOfWeek") ZonedDateTime endOfWeek);
+
+    Optional<Object> findByReferralCode(String referralCode);
+
+    Optional<VendorEntity> findByMobileNumber(String mobileNumber);
 }

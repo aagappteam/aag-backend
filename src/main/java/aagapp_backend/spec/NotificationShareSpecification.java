@@ -79,4 +79,22 @@ public class NotificationShareSpecification {
         };
     }
 
+    public static Specification<NotificationShare> vendorCommonSearch(String searchKey) {
+        return (root, query, cb) -> {
+            if (searchKey == null || searchKey.isBlank()) return null;
+
+            Join<NotificationShare, VendorEntity> vendor = root.join("vendor", JoinType.LEFT);
+            String pattern = "%" + searchKey.toLowerCase() + "%";
+
+            return cb.or(
+                    cb.like(cb.lower(vendor.get("first_name")), pattern),
+                    cb.like(cb.lower(vendor.get("last_name")), pattern),
+                    cb.like(cb.lower(vendor.get("primary_email")), pattern),
+                    cb.like(cb.lower(vendor.get("mobileNumber")), pattern)
+            );
+        };
+    }
+
+
+
 }

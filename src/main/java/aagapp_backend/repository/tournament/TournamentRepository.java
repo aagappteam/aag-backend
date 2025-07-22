@@ -5,15 +5,17 @@ import aagapp_backend.enums.TournamentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface TournamentRepository extends JpaRepository<Tournament, Long> {
+public interface TournamentRepository extends JpaRepository<Tournament, Long>, JpaSpecificationExecutor<Tournament> {
     Page<Tournament> findTournamentByStatusAndVendorId(TournamentStatus status, Long vendorId, Pageable pageable);
 
     List<Tournament> findByStatusAndScheduledAtBetween(TournamentStatus status, ZonedDateTime start, ZonedDateTime end);
@@ -82,4 +84,35 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
             Pageable pageable
     );
 
+    @Query("SELECT t.theme.id FROM Tournament t " +
+            "WHERE t.vendorId = :vendorId " +
+            "AND t.existinggameId = :gameId " +
+            "AND t.theme.id = :themeId " +
+            "AND t.status = :status " +
+            "AND t.createdDate BETWEEN :startOfDay AND :endOfDay")
+    Optional<Long> findThemeIdIfPublishedToday(
+            @Param("vendorId") Long vendorId,
+            @Param("gameId") Long gameId,
+            @Param("themeId") Long themeId,
+            @Param("status") TournamentStatus status,
+            @Param("startOfDay") ZonedDateTime startOfDay,
+            @Param("endOfDay") ZonedDateTime endOfDay
+    );
+
+    @Query(value = "SELECT COUNT(*) FROM tournament WHERE vendorentity_service_provider_id = :vendorId", nativeQuery = true)
+    Long countByVendorId(@Param("vendorId") Long vendorId);
+
+
+    @Query("SELECT COUNT(t) FROM Tournament t WHERE t.vendorEntity.service_provider_id = :vendorId AND t.createdDate BETWEEN :start AND :end")
+    Long countTournamentsBetweenDates(@Param("vendorId") Long vendorId,
+                                      @Param("start") ZonedDateTime start,
+                                      @Param("end") ZonedDateTime end);
+
+    @Query("SELECT t FROM Tournament t WHERE t.vendorEntity.service_provider_id = :vendorId AND t.createdDate BETWEEN :start AND :end")
+    List<Tournament> findTournamentsBetweenDates(@Param("vendorId") Long vendorId,
+                                                 @Param("start") ZonedDateTime start,
+                                                 @Param("end") ZonedDateTime end);
+
+    @Query("SELECT g FROM Tournament g WHERE g.vendorEntity.id = :vendorId")
+    List<Tournament> findByVendorId(@Param("vendorId") Long vendorId);
 }

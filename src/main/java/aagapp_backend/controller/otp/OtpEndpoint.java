@@ -90,7 +90,7 @@ public class OtpEndpoint {
     }
 
     @Autowired
-    public void setAdminService(AdminService adminService) {
+    public void setAdminService(@Lazy AdminService adminService) {
         this.adminService = adminService;
     }
 
@@ -383,7 +383,7 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
             }
 
-            String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), role, ipAddress, userAgent);
+            String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), role, ipAddress, userAgent);
             customAdmin.setToken(newToken);
             em.persist(customAdmin);
             return responseService.generateSuccessResponse("New token has been generated", customAdmin.getToken(), HttpStatus.OK);
@@ -450,7 +450,7 @@ public class OtpEndpoint {
                 return responseService.generateErrorResponse(ApiConstants.NO_EXISTING_RECORDS_FOUND, HttpStatus.NOT_FOUND);
             }
 
-            String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), role, ipAddress, userAgent);
+            String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), role, ipAddress, userAgent);
             customAdmin.setToken(newToken);
             em.persist(customAdmin);
             return responseService.generateSuccessResponse("New token has been generated", customAdmin.getToken(), HttpStatus.OK);
@@ -468,6 +468,7 @@ public class OtpEndpoint {
         try {
             String mobileNumber = (String) signupDetails.get("mobileNumber");
             String countryCode = (String) signupDetails.get("countryCode");
+            String State = (String) signupDetails.get("state");
 
 
             mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
@@ -495,6 +496,10 @@ public class OtpEndpoint {
                     VendorEntity vendorEntity = new VendorEntity();
                     vendorEntity.setCountry_code(countryCode);
                     vendorEntity.setMobileNumber(mobileNumber);
+
+                    if(State!=null) {
+                        vendorEntity.setState(State);
+                    }
                     vendorEntity.setOtp(otp);
                     vendorEntity.setRole(4);
                     em.persist(vendorEntity);

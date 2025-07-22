@@ -96,7 +96,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String requestURI = request.getRequestURI();
 
-        if (requestURI.startsWith("/ludo-websocket")) {
+       /* if (requestURI.startsWith("/ludo-websocket")) {
             logger.info("Bypassing JWT authentication for WebSocket handshake");
             chain.doFilter(request, response);
             return;
@@ -104,7 +104,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (requestURI.startsWith("/ws") || requestURI.startsWith("/websocket")) {
             chain.doFilter(request, response);
             return;
-        }
+        }*/
 
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -113,10 +113,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
 
-            if (requestURI.startsWith("/swagger-ui") || requestURI.startsWith("/v3/api-docs")) {
+/*            if (requestURI.startsWith("/swagger-ui") || requestURI.startsWith("/v3/api-docs")) {
                 chain.doFilter(request, response);
                 return;
-            }
+            }*/
 
             if (isUnsecuredUri(requestURI) || bypassimages(requestURI)) {
 
@@ -191,6 +191,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 firstSegment = segments[0];
             }
         }
+        System.out.println("Request URI: " + requestURI);
 
         return "/".equals(requestURI)
                 || requestURI.startsWith("/account")
@@ -215,6 +216,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/enq")
                 || requestURI.startsWith("/MerchantAcknowledgement")
                 || requestURI.startsWith("/Bank")
+                || requestURI.equals("/payment/payout-callback")
 
                 ;
     }
@@ -232,10 +234,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String jwt = authorizationHeader.substring(BEARER_PREFIX_LENGTH);
         Long id = jwtUtil.extractId(jwt);
 
-      /*  if (tokenBlacklist.isTokenBlacklisted(jwt)) {
-            respondWithUnauthorized(response, "Token has been blacklisted");
-            return true;
-        }*/
 
         if (id == null) {
             respondWithUnauthorized(response, "Invalid details in token");
@@ -298,12 +296,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     respondWithUnauthorized(response, "Invalid data provided for this vendor");
                     return true;
                 }
-            } else if (roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(jwtUtil.extractRoleId(jwt)).equals(Constant.roleAdminServiceProvider)) {
+            } else{
 //                return false;
                  cusomAdmin=entityManager.find(CustomAdmin.class,id);
                 if (cusomAdmin != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            cusomAdmin.getAdmin_id(), null, new ArrayList<>());
+                            cusomAdmin.getAdminId(), null, new ArrayList<>());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     return false;
@@ -311,15 +309,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     respondWithUnauthorized(response, "Invalid data provided for this user");
                     return true;
                 }
-            } else {
-                respondWithUnauthorized(response, "Invalid data provided for this user");
-                return true;
             }
         }
         return false;
     }
 
-    private void respondWithUnauthorized(HttpServletResponse response, String message) throws IOException {
+    public void respondWithUnauthorized(HttpServletResponse response, String message) throws IOException {
         if (response.isCommitted()) {
             return;
         }
@@ -397,7 +392,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean authenticateAdmin(Long id, String jwt, String ipAddress, String userAgent, HttpServletResponse response,HttpServletRequest request) throws IOException {
         CustomAdmin customAdmin = entityManager.find(CustomAdmin.class, id);
         if (customAdmin != null && jwtUtil.validateToken(jwt, ipAddress, userAgent)) {
-            setAuthentication(customAdmin.getAdmin_id(),request);
+            setAuthentication(customAdmin.getAdminId(),request);
             return true;
         } else {
             respondWithUnauthorized(response, "Invalid data provided for this admin");

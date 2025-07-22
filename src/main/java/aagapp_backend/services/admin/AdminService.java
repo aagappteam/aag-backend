@@ -4,6 +4,10 @@ import aagapp_backend.components.CommonData;
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomAdmin;
+import aagapp_backend.entity.Role;
+import aagapp_backend.entity.admin.Privilege;
+import aagapp_backend.repository.admin.PrivilegeRepository;
+import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.services.*;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.vendor.VenderService;
@@ -32,17 +36,19 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.*;
 
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminService
 {
 
+    @Autowired
+    private PrivilegeRepository privilegeRepo;
 
+    private RoleRepository roleRepo;
     private EntityManager entityManager;
     private ExceptionHandlingImplement exceptionHandling;
     private VenderService serviceProviderService;
@@ -60,6 +66,11 @@ public class AdminService
     @PersistenceContext
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    @Autowired
+    public void setRoleRepo(RoleRepository roleRepo) {
+        this.roleRepo = roleRepo;
     }
 
     @Autowired
@@ -228,7 +239,7 @@ public class AdminService
 
                     return ResponseEntity.ok(responseBody);
                 } else {
-                    String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), role, ipAddress, userAgent);
+                    String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), role, ipAddress, userAgent);
 
                     customAdmin.setToken(newToken);
                     entityManager.persist(customAdmin);
@@ -266,6 +277,204 @@ public class AdminService
         return ResponseEntity.ok(responseBody);
     }
 
+    public ResponseEntity<?> loginWithPasswordForAdmin(@RequestBody Map<String, Object> customAdminDetails,
+                                                       HttpServletRequest request,
+                                                       HttpSession session) {
+        try {
+            String mobileNumber = (String) customAdminDetails.get("mobileNumber");
+            if (mobileNumber != null && mobileNumber.startsWith("0")) {
+                mobileNumber = mobileNumber.substring(1);
+            }
+
+            String password = (String) customAdminDetails.get("password");
+            String countryCode = (String) customAdminDetails.getOrDefault("countryCode", Constant.COUNTRY_CODE);
+
+            if (password == null || password.isEmpty()) {
+                return responseService.generateErrorResponse("Password cannot be empty", HttpStatus.BAD_REQUEST);
+            }
+            if (mobileNumber == null || mobileNumber.isEmpty()) {
+                return responseService.generateErrorResponse("Empty Phone Number", HttpStatus.BAD_REQUEST);
+            }
+
+            // 🔐 Authenticate Admin
+            CustomAdmin customAdmin = findAdminByPhone(mobileNumber, countryCode);
+            if (customAdmin == null) {
+                return responseService.generateErrorResponse("User not found", HttpStatus.NOT_FOUND);
+            }
+
+            if (!passwordEncoder.matches(password, customAdmin.getPassword())) {
+                return responseService.generateErrorResponse("Invalid Password", HttpStatus.BAD_REQUEST);
+            }
+
+            // 🎟️ Generate Token
+            String token = jwtUtil.generateToken(
+                    customAdmin.getAdminId(),
+                    customAdmin.getRole(),
+                    request.getRemoteAddr(),
+                    request.getHeader("User-Agent")
+            );
+
+            // 📦 Base Response
+            Map<String, Object> data = new HashMap<>();
+            data.put("customAdminDetails", customAdmin);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("status_code", 200);
+            response.put("status", "OK");
+            response.put("message", "Admin has been logged in");
+            response.put("token", token);
+            response.put("data", data);
+
+            // ✅ Skip menus/privileges for super admin (roleId = 2)
+            if (customAdmin.getRole() != 2) {
+                Role role = roleRepo.findById((int) customAdmin.getRole())
+                        .orElseThrow(() -> new RuntimeException("Role not found"));
+
+                Set<Privilege> rolePrivileges = role.getPrivileges();
+
+                // Find all unique parentMenu names from SUBMENU privileges
+                Set<String> parentMenuNames = rolePrivileges.stream()
+                        .filter(p -> "SUBMENU".equalsIgnoreCase(p.getType()) && p.getParentMenu() != null)
+                        .map(Privilege::getParentMenu)
+                        .collect(Collectors.toSet());
+
+                Set<String> assignedMenuNames = rolePrivileges.stream()
+                        .filter(p -> "MENU".equalsIgnoreCase(p.getType()))
+                        .map(Privilege::getName)
+                        .collect(Collectors.toSet());
+
+        // Merge both sets (parent menus + directly assigned menus)
+                        Set<String> allMenuNames = new HashSet<>();
+                        allMenuNames.addAll(parentMenuNames);
+                        allMenuNames.addAll(assignedMenuNames);
+
+        // Fetch all related MENU privilege objects
+                        List<Privilege> menuPrivileges = privilegeRepo.findAllByNameIn(allMenuNames);
+
+
+                List<Map<String, Object>> menusList = new ArrayList<>();
+
+                for (Privilege menu : menuPrivileges) {
+                    Map<String, Object> menuMap = new HashMap<>();
+                    menuMap.put("menuId", menu.getId());
+                    menuMap.put("menuName", menu.getName());
+
+                    List<Map<String, Object>> submenus = rolePrivileges.stream()
+                            .filter(p -> "SUBMENU".equalsIgnoreCase(p.getType()) &&
+                                    menu.getName().equalsIgnoreCase(p.getParentMenu()))
+                            .map(sub -> {
+                                Map<String, Object> map = new HashMap<>();
+                                map.put("submenuId", sub.getId());
+                                map.put("submenuName", sub.getName());
+                                return map;
+                            })
+                            .collect(Collectors.toList());
+
+                    menuMap.put("submenus", submenus);
+                    menusList.add(menuMap);
+                }
+
+                response.put("menus", menusList);
+                response.put("privileges", rolePrivileges.stream().map(Privilege::getName).toList());
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Some error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    /**
+     * Utility method to clean and format menu/submenu names.
+     * Example:*
+
+
+
+/*    public ResponseEntity<?> loginWithPasswordForAdmin(@RequestBody Map<String, Object> customAdminDetails,
+                                                       HttpServletRequest request,
+                                                       HttpSession session) {
+        try {
+            String mobileNumber = (String) customAdminDetails.get("mobileNumber");
+            if (mobileNumber != null && mobileNumber.startsWith("0")) {
+                mobileNumber = mobileNumber.substring(1);
+            }
+
+            String password = (String) customAdminDetails.get("password");
+            String countryCode = (String) customAdminDetails.getOrDefault("countryCode", Constant.COUNTRY_CODE);
+
+            if (password == null || password.isEmpty()) {
+                return responseService.generateErrorResponse("Password cannot be empty", HttpStatus.BAD_REQUEST);
+            }
+            if (mobileNumber == null || mobileNumber.isEmpty()) {
+                return responseService.generateErrorResponse("Empty Phone Number", HttpStatus.BAD_REQUEST);
+            }
+
+            // Authenticate Admin
+            CustomAdmin customAdmin = findAdminByPhone(mobileNumber, countryCode);
+            if (customAdmin == null) {
+                return responseService.generateErrorResponse("User not found", HttpStatus.NOT_FOUND);
+            }
+
+            if (!passwordEncoder.matches(password, customAdmin.getPassword())) {
+                return responseService.generateErrorResponse("Invalid Password", HttpStatus.BAD_REQUEST);
+            }
+
+            // Generate Token
+            String token = jwtUtil.generateToken(
+                    customAdmin.getAdmin_id(),
+                    customAdmin.getRole(),
+                    request.getRemoteAddr(),
+                    request.getHeader("User-Agent")
+            );
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("customAdminDetails", customAdmin);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("status_code", 200);
+            response.put("status", "OK");
+            response.put("message", "Admin has been logged in");
+            response.put("token", token);
+            response.put("data", data);
+
+            // ✅ Skip menus and privileges for admin role (e.g., roleId = 2)
+            if (customAdmin.getRole() != 2) {
+                Role role = roleRepo.findById((long) customAdmin.getRole())
+                        .orElseThrow(() -> new RuntimeException("Role not found"));
+
+                // Build Menus & Submenus
+                Map<String, List<String>> menus = new HashMap<>();
+                role.getPrivileges().forEach(priv -> {
+                    if ("MENU".equalsIgnoreCase(priv.getType())) {
+                        menus.put(priv.getName().replace("ACCESS_", "").replace("_", " "), new ArrayList<>());
+                    }
+                });
+
+                role.getPrivileges().forEach(priv -> {
+                    if ("SUBMENU".equalsIgnoreCase(priv.getType()) && priv.getParentMenu() != null) {
+                        String parentKey = priv.getParentMenu().replace("ACCESS_", "").replace("_", " ");
+                        menus.computeIfAbsent(parentKey, k -> new ArrayList<>())
+                                .add(priv.getName().replace("ACCESS_" + priv.getParentMenu() + "_", "").replace("_", " "));
+                    }
+                });
+
+                response.put("menus", menus);
+                response.put("privileges", role.getPrivileges().stream().map(Privilege::getName).toList());
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Some error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }*/
+
+
+/*
     public ResponseEntity<?> loginWithPasswordForAdmin(@RequestBody Map<String, Object> customAdminDetails, HttpServletRequest request, HttpSession session) {
         try {
             String mobileNumber = (String) customAdminDetails.get("mobileNumber");
@@ -293,6 +502,7 @@ public class AdminService
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+*/
 
     public ResponseEntity<?> authenticateByPhone(String mobileNumber, String countryCode, String password, HttpServletRequest request, HttpSession session) {
         CustomAdmin existingAdmin = findAdminByPhone(mobileNumber, countryCode);
@@ -333,7 +543,7 @@ public class AdminService
 
                 return ResponseEntity.ok(responseBody);
             } else {
-                String newToken = jwtUtil.generateToken(customAdmin.getAdmin_id(), customAdmin.getRole(), ipAddress, userAgent);
+                String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), customAdmin.getRole(), ipAddress, userAgent);
                 session.setAttribute(tokenKey, newToken);
 
                 customAdmin.setToken(newToken);

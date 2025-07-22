@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface GameRepository extends JpaRepository<Game, Long>, JpaSpecificationExecutor<Game> {
@@ -65,8 +66,65 @@ public interface GameRepository extends JpaRepository<Game, Long>, JpaSpecificat
             Pageable pageable
     );
 
+    @Query("SELECT g.theme.id FROM Game g WHERE g.vendorEntity.service_provider_id = :vendorId AND g.aaggameid = :gameId AND g.theme IS NOT NULL")
+    List<Long> findThemeIdsByVendorAndGame(@Param("vendorId") Long vendorId, @Param("gameId") Long gameId);
+
+    @Query("SELECT MAX(g.theme.id) FROM Game g WHERE g.vendorEntity.service_provider_id = :vendorId AND g.aaggameid = :gameId")
+    Long findLastThemeIdByVendorAndGame(@Param("vendorId") Long vendorId, @Param("gameId") Long gameId);
+
+    @Query("SELECT COUNT(DISTINCT g.theme.id) FROM Game g WHERE g.vendorEntity.service_provider_id = :vendorId")
+    Long countDistinctThemeIdByVendor(@Param("vendorId") Long vendorId);
+
+    @Query("SELECT g.theme.id FROM Game g WHERE g.vendorEntity.service_provider_id = :vendorId AND g.aaggameid = :gameId AND g.status = :status")
+    List<Long> findThemeIdsByVendorAndGameAndStatus(Long vendorId, Long gameId, GameStatus status);
+
+    @Query("SELECT g.theme.id FROM Game g " +
+            "WHERE g.vendorEntity.service_provider_id = :vendorId " +
+            "AND g.aaggameid = :gameId " +
+            "AND g.theme.id = :themeId " +
+            "AND g.status = :status " +
+            "AND g.createdDate BETWEEN :startOfDay AND :endOfDay")
+    Optional<Long> findThemeIdIfPublishedToday(
+            @Param("vendorId") Long vendorId,
+            @Param("gameId") Long gameId,
+            @Param("themeId") Long themeId,
+            @Param("status") GameStatus status,
+            @Param("startOfDay") ZonedDateTime startOfDay,
+            @Param("endOfDay") ZonedDateTime endOfDay
+    );
+
+
+
+    @Query("SELECT DISTINCT g.theme.id FROM Game g " +
+            "WHERE g.vendorEntity.service_provider_id = :vendorId " +
+            "AND g.aaggameid = :gameId " +
+            "AND g.status IN :statuses")
+    List<Long> findThemeIdsByVendorAndGameAndStatuses(
+            @Param("vendorId") Long vendorId,
+            @Param("gameId") Long gameId,
+            @Param("statuses") List<GameStatus> statuses);
+
+
+
 /*    @Query("SELECT g FROM Game g WHERE g.vendorEntity = :vendorEntity AND g.scheduledAt >= :startTime AND g.scheduledAt <= :endTime")
     List<Game> findByVendorEntityAndScheduledAtWithin24Hours(VendorEntity vendorEntity, ZonedDateTime startTime, ZonedDateTime endTime);*/
+
+
+    @Query(value = "SELECT COUNT(*) FROM aag_ludo_game WHERE vendor_id = :vendorId", nativeQuery = true)
+    Long countByVendorId(Long vendorId);
+
+    @Query("SELECT COUNT(g) FROM Game g WHERE g.vendorEntity.service_provider_id = :vendorId AND g.createdDate BETWEEN :start AND :end")
+    Long countGamesBetweenDates(@Param("vendorId") Long vendorId,
+                                @Param("start") ZonedDateTime start,
+                                @Param("end") ZonedDateTime end);
+
+    @Query("SELECT g FROM Game g WHERE g.vendorEntity.service_provider_id = :vendorId AND g.createdDate BETWEEN :start AND :end")
+    List<Game> findGamesBetweenDates(@Param("vendorId") Long vendorId,
+                                     @Param("start") ZonedDateTime start,
+                                     @Param("end") ZonedDateTime end);
+
+    @Query("SELECT g FROM Game g WHERE g.vendorEntity.id = :vendorId")
+    List<Game> findByVendorId(@Param("vendorId") Long vendorId);
 
 
 }

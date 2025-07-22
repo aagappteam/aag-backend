@@ -7,6 +7,7 @@ import aagapp_backend.services.NotificationService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,30 +44,36 @@ public class NotificationController {
     public ResponseEntity<?> getNotifications(
             @PathVariable Long id,
             @PathVariable String role,
-            @RequestParam(defaultValue = "0") int page,  // Default to page 0
-            @RequestParam(defaultValue = "10") int size, // Default to size 10
-            @RequestParam(required = false) String transaction, // New filter: transaction (non-null amount)
-            @RequestParam(required = false) String activity) { // New filter: activity
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String transaction,
+            @RequestParam(required = false) String activity) {
 
         try {
-            // Fetch notificationxs from the service layer with pagination and filters
-            List<Notification> notifications = notificationService.getNotifications(id, role, page, size, transaction, activity);
+            Page<Notification> notificationPage = notificationService.getNotifications(id, role, page, size, transaction, activity);
 
-            if (notifications.isEmpty()) {
+            if (notificationPage.isEmpty()) {
                 return responseService.generateErrorResponse("No notifications found", HttpStatus.OK);
             }
 
-            List<NotificationDTO> notificationDTOs = notifications.stream()
+            List<NotificationDTO> notificationDTOs = notificationPage.getContent()
+                    .stream()
                     .map(NotificationDTO::new)
                     .collect(Collectors.toList());
 
-            return responseService.generateSuccessResponse("Notifications fetched successfully", notificationDTOs, HttpStatus.OK);
+            return responseService.generateSuccessResponseWithCount(
+                    "Notifications fetched successfully",
+                    notificationDTOs,
+                    notificationPage.getTotalElements(),
+                    HttpStatus.OK
+            );
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error fetching notifications: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
 
 }

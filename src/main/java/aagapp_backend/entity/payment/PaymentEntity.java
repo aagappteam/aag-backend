@@ -81,8 +81,8 @@ public class PaymentEntity {
     @Column(name = "to_User")
     private String toUser;
 
-    @Column(name = "download_invoice")
-    private String downloadInvoice;
+//    @Column(name = "download_invoice")
+//    private String downloadInvoice;
 
 /*    @ManyToOne
     @JoinColumn(name = "plan_id", referencedColumnName = "id")
@@ -94,5 +94,10 @@ public class PaymentEntity {
 
     @Column(name = "transaction_date")
     private LocalDateTime transactionDate;
+
+
+    @Column(name = "expired_at", updatable = true)
+    private LocalDateTime expiredAt;
+
 
 }

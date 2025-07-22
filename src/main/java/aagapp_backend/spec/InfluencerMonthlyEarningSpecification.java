@@ -1,7 +1,8 @@
 package aagapp_backend.spec;
 
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
-import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,7 +18,8 @@ public class InfluencerMonthlyEarningSpecification {
             BigDecimal maxEarning,
             BigDecimal minRecharge,
             BigDecimal maxRecharge,
-            Integer multiplier
+            Integer multiplier,
+            String search
     ) {
         return (root, query, cb) -> {
             Predicate p = cb.conjunction();
@@ -52,6 +54,26 @@ public class InfluencerMonthlyEarningSpecification {
             if (multiplier != null) {
                 p = cb.and(p, cb.equal(root.get("multiplier"), multiplier));
             }
+
+            if (search != null && !search.trim().isEmpty()) {
+                String keyword = "%" + search.trim().toLowerCase() + "%";
+
+                // Perform a subquery join with VendorEntity
+                Subquery<Long> vendorSubquery = query.subquery(Long.class);
+                Root<VendorEntity> vendorRoot = vendorSubquery.from(VendorEntity.class);
+
+                Predicate vendorPredicate = cb.or(
+                        cb.like(cb.lower(vendorRoot.get("first_name")), keyword),
+                        cb.like(cb.lower(vendorRoot.get("last_name")), keyword),
+                        cb.like(cb.lower(vendorRoot.get("primary_email")), keyword),
+                        cb.like(cb.lower(vendorRoot.get("mobileNumber")), keyword)
+                );
+
+                vendorSubquery.select(vendorRoot.get("service_provider_id")).where(vendorPredicate);
+
+                p = cb.and(p, root.get("influencerId").in(vendorSubquery));
+            }
+
 
 
             // Similar logic could be added for influencerName if influencer entity exists

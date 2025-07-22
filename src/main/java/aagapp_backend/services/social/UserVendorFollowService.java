@@ -9,6 +9,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.social.UserVendorFollow;
 import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.social.UserVendorFollowRepository;
@@ -260,6 +261,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         vendorInfo.put("id", vendor.getService_provider_id());
         vendorInfo.put("profilePic", vendor.getProfilePic());
         vendorInfo.put("email", vendor.getPrimary_email());
+        vendorInfo.put("user_name", vendor.getUser_name());
         vendorInfo.put("followerCount", followRepo.countByVendorId(vendor.getService_provider_id()));
         vendorInfo.put("isFollowing", true);
 
@@ -356,15 +358,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
     }
 
 
-/*    public void notifyFollowers(Long vendorId, String title, String body) {
-        List<UserVendorFollow> followers = followRepo.findByVendorId(vendorId);
-        for (UserVendorFollow follow : followers) {
-            String token = follow.getUser().getFcmToken();
-            if (token != null) {
-                sendPushNotification(token, title, body);
-            }
-        }
-    }*/
+
 
     private void sendPushNotification(String token, String title, String body) {
         // Implementation to send notification using Firebase or other service
@@ -396,7 +390,8 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
 
     //following vendors
     public Map<String, Object> getFollowingVendors(Long userId, int page, int size, String firstName) {
-        Pageable pageable = PageRequest.of(page, size);
+//        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
         CustomCustomer user = customCustomerRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("User not found " + userId, HttpStatus.BAD_REQUEST));
@@ -467,11 +462,61 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         return response;
 
     }
+/*    public Map<String, Object> getFeedOfVendors(int page, int size, Long currentUserId) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Pageable subPageable = PageRequest.of(0, 10);
+
+        Page<VendorEntity> vendorPage = vendorRepo.findAll(pageable);
+
+        List<Map<String, Object>> vendorContent = vendorPage.getContent().stream().map(vendor -> {
+            Map<String, Object> vendorInfo = new HashMap<>();
+            Long vendorId = vendor.getService_provider_id();
+
+            vendorInfo.put("id", vendorId);
+            vendorInfo.put("name", vendor.getName() != null ? vendor.getName() : "null null");
+            vendorInfo.put("email", vendor.getPrimary_email());
+            vendorInfo.put("profilePic", vendor.getProfilePic());
+            vendorInfo.put("followerCount", followRepo.countByVendorId(vendorId));
+            vendorInfo.put("isFollowing", currentUserId != null && followRepo.existsByUserIdAndVendorId(currentUserId, vendorId));
+
+            // Games
+            Page<GetGameResponseDTO> games = gameService.getAllGames("ACTIVE", vendorId, subPageable, null);
+            vendorInfo.put("games", games.hasContent() ? games.getContent() : Collections.emptyList());
+
+            // Leagues
+            Page<League> leagues = leagueService.getAllActiveLeaguesByVendor(subPageable, vendorId);
+            vendorInfo.put("leagues", leagues.hasContent() ? leagues.getContent() : Collections.emptyList());
+
+            // Tournaments
+            List<TournamentStatus> statuses = Arrays.asList(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
+            Page<Tournament> tournaments = tournamentService.getAllTournaments(pageable, statuses, null, null);
+
+            vendorInfo.put("tournaments", tournaments.hasContent() ? tournaments.getContent() : Collections.emptyList());
+
+            return vendorInfo;
+        }).collect(Collectors.toList());
+
+        Map<String, Object> vendors = new HashMap<>();
+        vendors.put("pageNumber", vendorPage.getNumber());
+        vendors.put("pageSize", vendorPage.getSize());
+        vendors.put("totalElements", vendorPage.getTotalElements());
+        vendors.put("totalPages", vendorPage.getTotalPages());
+        vendors.put("last", vendorPage.isLast());
+        vendors.put("content", vendorContent);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("vendors", vendors);
+
+        return response;
+    }*/
+
 
 
     //following vendors
-    public Map<String, Object> getFeedOfVendors( int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+    public Map<String, Object> getFeedOfVendors( int page, int size, Long currentUserId) {
+//        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+
         Pageable pageable1 = PageRequest.of(0, 10);
         Page<VendorEntity> followPage = vendorRepo.findAll(pageable);
 
@@ -488,7 +533,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
             vendorInfo.put("profilePic", vendor.getProfilePic());
             vendorInfo.put("email", vendor.getPrimary_email());
             vendorInfo.put("followerCount", followRepo.countByVendorId(vendorId));
-            vendorInfo.put("isFollowing", true);
+            vendorInfo.put("isFollowing", currentUserId != null && followRepo.existsByUserIdAndVendorId(currentUserId, vendorId));
 
             Page<GetGameResponseDTO> games = gameService.getAllGames("ACTIVE", vendorId, pageable1, null);
             vendorInfo.put("games", games.getContent() != null ? games.getContent() : Collections.emptyList());
@@ -496,7 +541,9 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
             Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(pageable1, vendorId);
             vendorInfo.put("leagues", leaguesPage.getContent() != null ? leaguesPage.getContent() : Collections.emptyList());
 
-            Page<Tournament> gamesPage = tournamentService.getAllActiveTournamentsByVendor(pageable1,vendorId);
+            List<TournamentStatus> statuses = Arrays.asList(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
+            Page<Tournament> gamesPage = tournamentService.getAllTournaments(pageable, statuses, vendorId, null);
+//            Page<Tournament> gamesPage = tournamentService.getAllActiveTournamentsByVendor(pageable1,vendorId);
             vendorInfo.put("tournaments", gamesPage.getContent() != null ? gamesPage.getContent() : Collections.emptyList());
 
             return vendorInfo;

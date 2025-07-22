@@ -35,6 +35,9 @@ public interface KycRepository extends JpaRepository<KycEntity, Long> , JpaSpeci
 
     @Query("SELECT CASE WHEN COUNT(k) > 0 THEN true ELSE false END FROM KycEntity k WHERE k.userOrVendorId = :userOrVendorId AND k.role = :role")
     boolean existsByUserOrVendorIdAndRole(@Param("userOrVendorId") Long userOrVendorId, @Param("role") String role);
+
+    long countByKycStatus(KycStatus status);
+
 }
 /*
 public interface KycRepository extends JpaRepository<KycEntity, Long> {

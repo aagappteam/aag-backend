@@ -22,7 +22,9 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -57,7 +59,7 @@ public class InvoiceServiceAdmin {
     @Autowired
     private KycRepository kycRepository;
 
-    public void createInvoiceForVendor(Double paymentAmount, Long vendorId) {
+    public void createInvoiceForVendor(Double paymentAmount, Long vendorId, String paymentId) {
         try {
             VendorEntity existingVendor = entityManager.find(VendorEntity.class, vendorId);
 
@@ -132,7 +134,7 @@ public class InvoiceServiceAdmin {
             }
 
             invoice.setInvoiceNo(generateInvoiceNumber());
-
+            invoice.setPaymentId(paymentId);
             invoiceAdminRepository.save(invoice);
 
         } catch (Exception e) {
@@ -303,6 +305,10 @@ public class InvoiceServiceAdmin {
             String serviceType,
             Pageable pageable
     ) {
+        // Ensure sorting by id if not specified
+        if (pageable.getSort().isUnsorted()) {
+            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("id").descending());
+        }
         Specification<InvoiceAdmin> spec = Specification
                 .where(InvoiceAdminSpecification.hasId(id))
                 .and(InvoiceAdminSpecification.hasName(name))
@@ -657,6 +663,161 @@ public class InvoiceServiceAdmin {
             default:
                 return "";
         }
+    }
+
+
+    public byte[] generateInvoicePdfForVendorRecharge(String invoiceNo) throws Exception {
+        Optional<InvoiceAdmin> optionalInvoice = invoiceAdminRepository.findByPaymentId(invoiceNo);
+        if (optionalInvoice.isEmpty()) {
+            throw new Exception("Invoice not found with ID: " + invoiceNo);
+        }
+
+        InvoiceAdmin invoice = optionalInvoice.get();
+
+        Document document = new Document(PageSize.A4, 36, 36, 36, 36);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PdfWriter.getInstance(document, out);
+        document.open();
+
+        try {
+            // Fonts and colors
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, Color.decode("#662C90"));
+            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
+            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
+            Font tableHeaderFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, Color.WHITE);
+            Font labelFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
+            Font valueFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
+            Font totalValueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+
+
+            // Header table
+            PdfPTable headerTable = new PdfPTable(2);
+            headerTable.setWidthPercentage(100);
+            headerTable.setWidths(new float[]{6, 1});
+
+            PdfPCell titleCell = new PdfPCell(new Phrase("TAX INVOICE", titleFont));
+            titleCell.setBorder(Rectangle.NO_BORDER);
+            titleCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            titleCell.setPaddingBottom(10);
+            headerTable.addCell(titleCell);
+
+//            Image logo = Image.getInstance("https://aag-data.s3.ap-south-1.amazonaws.com/default-data/final+logo+of+AAG.png");
+            Image logo = loadLogo();
+            logo.scaleToFit(60, 60);
+
+//            logo.scaleToFit(80, 80);
+            PdfPCell logoCell = new PdfPCell(logo, false);
+            logoCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            logoCell.setBorder(Rectangle.NO_BORDER);
+            headerTable.addCell(logoCell);
+
+            document.add(headerTable);
+            document.add(new LineSeparator());
+            document.add(Chunk.NEWLINE);
+
+            // Invoice Info
+            PdfPTable invoiceInfo = new PdfPTable(2);
+            invoiceInfo.setWidthPercentage(100);
+            invoiceInfo.setSpacingAfter(10);
+            invoiceInfo.setWidths(new float[]{1, 2});
+            document.add(new Paragraph("Invoice Details", headerFont));
+            invoiceInfo.addCell(getLabelCell("Invoice No", normalFont));
+            invoiceInfo.addCell(getValueCell(invoice.getInvoiceNo(), normalFont));
+            invoiceInfo.addCell(getLabelCell("Place of Supply", normalFont));
+            invoiceInfo.addCell(getValueCell(invoice.getPlaceOfSupply(), normalFont));
+//            invoiceInfo.addCell(getLabelCell("Service Type:", headerFont));
+//            invoiceInfo.addCell(getValueCell(invoice.getServiceType(), normalFont));
+            invoiceInfo.addCell(getLabelCell("Reverse Charge", normalFont));
+            invoiceInfo.addCell(getValueCell("No", normalFont));
+            document.add(invoiceInfo);
+
+            // Company Info
+            document.add(new Paragraph("Company Details", headerFont));
+            document.add(getCompanyInfoTable(labelFont, valueFont));
+            document.add(Chunk.NEWLINE);
+
+            // Customer Info (can be static for now or updated later)
+            document.add(new Paragraph("Customer Details", headerFont));
+            PdfPTable customerInfo = new PdfPTable(2);
+            customerInfo.setWidthPercentage(100);
+            customerInfo.setWidths(new float[]{1, 2});
+            customerInfo.setSpacingAfter(10);
+            customerInfo.addCell(getLabelCell("Name", normalFont));
+            customerInfo.addCell(getValueCell(invoice.getName(), normalFont));
+            customerInfo.addCell(getLabelCell("Email", normalFont));
+            customerInfo.addCell(getValueCell(invoice.getEmail(), normalFont));
+            customerInfo.addCell(getLabelCell("Mobile No", normalFont));
+            customerInfo.addCell(getValueCell(invoice.getMobile(), normalFont));
+            customerInfo.addCell(getLabelCell("GSTIN", normalFont));
+            customerInfo.addCell(getValueCell(invoice.getGstn(), normalFont));
+            document.add(customerInfo);
+
+            // Details of Supply
+            PdfPTable table = new PdfPTable(8);
+            table.setWidthPercentage(100);
+            table.setSpacingBefore(10f);
+            table.setSpacingAfter(10f);
+            String[] headers = {"S.No.", "Descri\nption", "HSN/SAC", "Unit\nPrice", "CGST", "SGST","IGST", "Total\nAmount"};
+
+            for (String h : headers) {
+                PdfPCell cell = new PdfPCell(new Phrase(h, tableHeaderFont));
+                cell.setBackgroundColor(Color.decode("#662C90"));
+                cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cell.setPadding(1);
+                table.addCell(cell);
+            }
+
+            // Data row
+            table.addCell("1");
+            table.addCell(invoice.getServiceType());
+            table.addCell("998361");
+            table.addCell(invoice.getTaxableValue().toString());
+            table.addCell(invoice.getCgst().toString());
+            table.addCell(invoice.getSgst().toString());
+            table.addCell(invoice.getIgst().toString());
+            table.addCell(invoice.getTotalInvoiceValue().toString());
+            document.add(table);
+
+
+            //total summary
+            document.add(new Paragraph("Total Summary", headerFont));
+
+            PdfPTable summaryTable = new PdfPTable(2);
+            summaryTable.setWidthPercentage(100);
+            summaryTable.setSpacingBefore(5f);
+            summaryTable.setSpacingAfter(10f);
+            summaryTable.setWidths(new float[]{2, 3});
+
+            summaryTable.addCell(createCell("Taxable Value (Rs.):", labelFont));
+            summaryTable.addCell(createCell(invoice.getTaxableValue().toPlainString(), valueFont));
+
+            summaryTable.addCell(createCell("CGST (Rs.):", labelFont));
+            summaryTable.addCell(createCell(invoice.getCgst().toPlainString(), valueFont));
+
+            summaryTable.addCell(createCell("SGST (Rs.):", labelFont));
+            summaryTable.addCell(createCell(invoice.getSgst().toPlainString(), valueFont));
+
+            summaryTable.addCell(createCell("IGST (Rs.):", labelFont));
+            summaryTable.addCell(createCell(invoice.getIgst().toPlainString(), valueFont));
+
+            summaryTable.addCell(createCell("Total Invoice Amount (Rs.):", labelFont));
+            summaryTable.addCell(createCell(invoice.getTotalInvoiceValue().toPlainString(), totalValueFont));
+
+            document.add(summaryTable);
+
+
+            // --- Payment Info
+            document.add(new Paragraph("Payment Details", headerFont));
+            document.add(new Paragraph("Payment Mode: UPI / Credit Card / Wallet", normalFont));
+//            document.add(new Paragraph("Transaction ID: " + dto.getTransactionId(), normalFont));
+
+            document.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception("Error generating invoice PDF");
+        }
+
+        return out.toByteArray();
     }
 
 }
