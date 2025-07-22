@@ -937,7 +937,7 @@ public class LeagueService {
         return responseService.generateSuccessResponse("Team selected successfully", "player selected team" + team.getTeamName(), HttpStatus.OK);
     }
 
-    public static LeagueResultRecord createDefaultRecord(Player player, League league, LeagueTeam team, Long roomId, LocalDateTime playedAt) {
+    public void createDefaultRecord(Player player, League league, LeagueTeam team, Long roomId, LocalDateTime playedAt) {
         LeagueResultRecord record = new LeagueResultRecord();
         record.setPlayer(player);
         record.setLeague(league);
@@ -947,7 +947,8 @@ public class LeagueService {
         record.setTotalScore(0);
         record.setIsWinner(false);
         record.setUpdatedDate(ZonedDateTime.now());
-        return record;
+        leagueResultRecordRepository.save(record);
+        System.out.println("Record created: " + record);
     }
 
 
