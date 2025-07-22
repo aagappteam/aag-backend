@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 public interface AdminLogsInterface  extends JpaRepository<AdminLogs, Long> {
 
 
+/*
     @Query("SELECT al FROM AdminLogs al " +
             "WHERE (:roleName IS NULL OR al.role = :roleName) " +
             "AND (:performedBy IS NULL OR al.performedBy = :performedBy) " +
@@ -29,6 +30,14 @@ public interface AdminLogsInterface  extends JpaRepository<AdminLogs, Long> {
             @Param("search") String search,
             Pageable pageable
     );
+*/
+
+
+    @Query("SELECT n FROM AdminLogs n WHERE " +
+            "n.receiverId = :userId OR " +
+            "n.assignedUserId = :userId OR " +
+            "n.assignedRole = :userRole")
+    Page<AdminLogs> findAllVisibleToUser(Long userId, String userRole, Pageable pageable);
 
 }
 

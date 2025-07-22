@@ -27,13 +27,17 @@ public class AdminLogService {
                           Long targetId,
                           String targetType) {
         AdminLogs log = new AdminLogs();
-        log.setActivity(activity);
-        log.setRole(role);
+        log.setMessage(activity);
+        log.setTargetRole(role);
         log.setPerformedBy(performedBy);
         log.setTargetId(targetId);
         log.setTargetType(targetType);
         log.setCreatedDate(ZonedDateTime.now());
         adminLogsRepository.save(log);
+    }
+
+    public Page<AdminLogs> getMyNotifications(Long userId, String role, Pageable pageable) {
+        return adminLogsRepository.findAllVisibleToUser(userId, role, pageable);
     }
 
     @Transactional

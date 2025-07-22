@@ -343,19 +343,26 @@ public class TournamentService {
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             if (tournamentRequest.getScheduledAt() != null) {
 
-                ZonedDateTime scheduledInKolkata = tournamentRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+              ZonedDateTime scheduledInKolkata = tournamentRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+
                 if (scheduledInKolkata.isBefore(nowInKolkata.plusHours(1))) {
                     throw new BusinessException("The game must be scheduled at least 1 hours in advance." , HttpStatus.BAD_REQUEST);
                 }
-                tournament.setStatus(TournamentStatus.SCHEDULED);
-                tournament.setScheduledAt(scheduledInKolkata);
+                ZonedDateTime scheduledInKolkata15 = tournamentRequest.getScheduledAt()
+                        .withZoneSameInstant(ZoneId.of("Asia/Kolkata"))
+                        .plusMinutes(15);
 
-            } else {
+                tournament.setStatus(TournamentStatus.PENDING);
+                tournament.setScheduledAt(scheduledInKolkata15);
+
+            }
+
+           /* else {
                 tournament.setStatus(TournamentStatus.SCHEDULED);
                 tournament.setScheduledAt(nowInKolkata.plusHours(1));
 //              tournament.setScheduledAt(nowInKolkata.plusMinutes(4));
 
-            }
+            }*/
 
             // Set created and updated timestamps
             tournament.setCreatedDate(nowInKolkata);
@@ -368,13 +375,13 @@ public class TournamentService {
             // Generate a shareable link for the game
             String shareableLink = generateShareableLink(tournament.getId(),vendorId);
             tournament.setShareableLink(shareableLink);
-            vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
-            vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);
+          /*  vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
+            vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);*/
 
             // Send notification asynchronously (non-blocking)
-            CompletableFuture.runAsync(() ->
+            /*CompletableFuture.runAsync(() ->
                     followerNotificationService.notifyFollowersInParallel("tournament", savedTournament.getName(), vendorEntity)
-            );
+            );*/
 
             return savedTournament;
 
@@ -386,6 +393,10 @@ public class TournamentService {
             throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
         }
     }
+
+
+//    approve/reject tournament status  on the assis of id
+
 
 
     @Transactional
@@ -2683,4 +2694,12 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         }
     }
 
+    public Tournament getTournamentById(Long id) {
+        return tournamentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tournament not found with id: " + id));
+    }
+
+    public Tournament saveTournament(Tournament tournament) {
+        return tournamentRepository.save(tournament);
+    }
 }
