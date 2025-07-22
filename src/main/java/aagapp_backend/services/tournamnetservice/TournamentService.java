@@ -361,12 +361,6 @@ public class TournamentService {
                throw new BusinessException("Scheduled date is required" , HttpStatus.BAD_REQUEST);
             }
 
-           /* else {
-                tournament.setStatus(TournamentStatus.SCHEDULED);
-                tournament.setScheduledAt(nowInKolkata.plusHours(1));
-//              tournament.setScheduledAt(nowInKolkata.plusMinutes(4));
-
-            }*/
 
             // Set created and updated timestamps
             tournament.setCreatedDate(nowInKolkata);
@@ -386,6 +380,7 @@ public class TournamentService {
             /*CompletableFuture.runAsync(() ->
                     followerNotificationService.notifyFollowersInParallel("tournament", savedTournament.getName(), vendorEntity)
             );*/
+            commonService.notifyAdminsByRole(Constant.ADMIN_ROLE, "tournament", savedTournament.getName(), Double.valueOf(savedTournament.getEntryFee()), savedTournament.getId(), savedTournament.getCreatedDate());
 
             return savedTournament;
 

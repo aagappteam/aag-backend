@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .container {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f6f6f6;
+    }
+    .content {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 20px;
+        color: #333333;
+    }
+    .header {
+        font-size: 20px;
+        font-weight: bold;
+        color: #2e6da4;
+    }
+    .label {
+        font-weight: bold;
+    }
+    .footer {
+        margin-top: 30px;
+        font-size: 13px;
+        color: #999999;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="content">
+    <div class="header">New {{type}} Published</div>
+    <p>Hello <strong>{{adminName}}</strong>,</p>
+
+    <p>A new {{type}} has just been published on the platform. Please find the details below:</p>
+
+    <p>
+      <span class="label">{{type}} Name:</span> {{name}}<br>
+      <span class="label">Description:</span> {{description}}<br>
+      <span class="label">{{type}} ID:</span> {{id}}<br>
+      <span class="label">Created At:</span> {{createdAt}}<br>
+    </p>
+
+    <p>Please take appropriate action if required.</p>
+
+    <p>Regards,<br><strong>AAG Application Team</strong></p>
+  </div>
+  <div class="footer">
+    This is an automated message. Please do not reply directly to this email.
+  </div>
+</div>
+</body>
+</html>

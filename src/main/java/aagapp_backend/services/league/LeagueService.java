@@ -7,6 +7,7 @@ import aagapp_backend.dto.*;
 
 import aagapp_backend.dto.admin.league.AdminLeagueUpdateRequest;
 import aagapp_backend.entity.*;
+import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.league.*;
@@ -24,6 +25,7 @@ import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.admin.AdminLogsInterface;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
@@ -44,6 +46,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
@@ -61,6 +64,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.naming.LimitExceededException;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.CacheRequest;
@@ -80,6 +84,9 @@ public class LeagueService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private AdminLogsInterface adminLogsInterface;
     @Autowired
     private FollowerNotificationService followerNotificationService;
 
@@ -545,7 +552,7 @@ public class LeagueService {
 //                    notificationFirebase.sendMessageToToken(notificationRequest);
 
                     String title = "Challenge Accepted!";
-                    String body = vendorEntity.getFirst_name() + " is ready. Your league is now live!";
+                    String body = vendorEntity.getFirst_name() + " is ready. Your league waiting for admin confirmation!";
 
                     notificationFirebase.sendNotification(fcmToken, title, body);
                 } catch (Exception e) {
@@ -554,9 +561,10 @@ public class LeagueService {
             }
 
 
-            CompletableFuture.runAsync(() -> {
-                followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), vendorEntity);
-            });
+//            CompletableFuture.runAsync(() -> {
+//                followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), vendorEntity);
+//            });
+            commonService.notifyAdminsByRole(Constant.ADMIN_ROLE, "league", savedLeague.getGameName(), savedLeague.getFee(), savedLeague.getId(), savedLeague.getCreatedDate());
             return savedLeague;
 
         } catch (Exception e) {
@@ -564,6 +572,32 @@ public class LeagueService {
             throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
         }
     }
+
+    /*public void notifyAdminsByRole(int role, String type, String name, Double fee, Long id, ZonedDateTime createdAtHtml) throws MessagingException, IOException {
+        List<CustomAdmin> admins = em.createQuery(
+                        "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
+                .setParameter("role", role)
+                .getResultList();
+
+        AdminLogs adminLogs = new AdminLogs();
+        adminLogs.setMessage("New " + type + " created");
+        adminLogs.setTargetRole("Admin");
+        adminLogs.setPerformedBy("System");
+        adminLogs.setTargetId(id);
+        adminLogs.setTargetType(type);
+        adminLogs.setCreatedDate(createdAtHtml);
+        adminLogsInterface.save(adminLogs);
+
+        for (CustomAdmin admin : admins) {
+            String email = admin.getEmail();
+            if (email != null && !email.isEmpty()) {
+
+                emailService.sendEmailLeague(admin, type, name, fee, id, createdAtHtml);
+            }
+        }
+    }*/
+
+
 
     // Create a new empty room for a game
     private LeagueRoom createNewEmptyRoom(League league) {

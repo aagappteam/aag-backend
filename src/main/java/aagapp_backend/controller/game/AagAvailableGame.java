@@ -29,7 +29,7 @@ public class AagAvailableGame {
 
     // Create a new game
     @PostMapping("/create")
-    @CacheEvict(value = "gamesCache", allEntries = true) // Clears the cache when a new game is created
+//    @CacheEvict(value = "gamesCache", allEntries = true) // Clears the cache when a new game is created
 
     public ResponseEntity<?> createGame(@RequestBody GameRequestDTO gameRequestDTO) {
         try {
@@ -94,7 +94,7 @@ public class AagAvailableGame {
 
     // Update a game
     @PutMapping("/update-game/{gameId}")
-    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
+//    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
     public ResponseEntity<?> updateGame(@PathVariable Long gameId, @RequestBody GameRequestDTO gameRequestDTO) {
         try {
             GameResponseDTO updatedGame = gameService.updateGame(gameId, gameRequestDTO);
@@ -111,7 +111,7 @@ public class AagAvailableGame {
 
     // Delete a game
     @DeleteMapping("/delete-aag-game/{gameId}")
-    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
+//    @CacheEvict(value = {"gamesCache", "gameCache"}, key = "#gameId") // Evict both caches for the updated game
     public ResponseEntity<?> deleteGame(@PathVariable Long gameId) {
         try {
             gameService.deleteGame(gameId);

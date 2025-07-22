@@ -192,6 +192,7 @@ public class RoleController {
             String userName = request.get("userName").toString();
             String password = request.get("password").toString();
             String countryCode = request.getOrDefault("countryCode", "+91").toString();
+            String email = request.get("email").toString();
 
             Integer roleId = Integer.valueOf(request.get("roleId").toString());
 
@@ -214,6 +215,7 @@ public class RoleController {
             //  Save CustomAdmin (User)
             CustomAdmin user = new CustomAdmin();
             user.setMobileNumber(mobile);
+            user.setEmail(email!=null?email:"");
             user.setUser_name(userName);
             user.setPassword(passwordEncoder.encode(password));
             user.setCountry_code(countryCode);

@@ -1,5 +1,6 @@
 package aagapp_backend.services;
 import aagapp_backend.components.Constant;
+import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorSubmissionEntity;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 import jakarta.mail.MessagingException;
@@ -181,6 +184,9 @@ public class EmailService {
         }
     }
 
+
+
+
     public String loadTemplate(String templateName) throws IOException {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(templateName)) {
             if (inputStream == null) {
@@ -234,6 +240,25 @@ public class EmailService {
             throw new RuntimeException("Error sending profile verification email: " + e.getMessage(), e);
         }
     }
+
+    public void sendEmailLeague(CustomAdmin admin, String type, String name, Double fee, Long id, ZonedDateTime createdAt)
+            throws IOException, MessagingException {
+
+        String template = loadTemplate("email-templates/league-tournament.html");
+        ZonedDateTime indiaTime = createdAt.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+        String formattedDate = indiaTime.format(DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a z"));
+        String messageBody = template
+                .replace("{type}", type)
+                .replace("{adminName}", admin.getUser_name())
+                .replace("{name}", name)
+                .replace("{Fee}", String.format("%.2f", fee))
+                .replace("{id}", String.valueOf(id))
+                .replace("{createdAt}", formattedDate);
+
+        sendEmail(admin.getEmail(), "New " + type + " Published", messageBody, true);
+    }
+
+
 
 
     public void sendLeagueEmail(

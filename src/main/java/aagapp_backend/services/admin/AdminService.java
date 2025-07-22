@@ -133,6 +133,14 @@ public class AdminService
                 .orElse(null);
     }
 
+    public List<CustomAdmin> findAdminsByRole(int role) {
+        return entityManager.createQuery(
+                        "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
+                .setParameter("role", role)
+                .getResultList();
+    }
+
+
     public ResponseEntity<?> sendOtpForAdmin(String mobileNumber, String countryCode, HttpSession session) throws UnsupportedEncodingException {
         try {
             mobileNumber = mobileNumber.startsWith("0")

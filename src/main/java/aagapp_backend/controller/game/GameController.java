@@ -254,6 +254,21 @@ public class GameController {
 
             Game publishedGame = gameService.publishLudoGame(gameRequest, vendorId, existinggameId);
 
+            Notification notification = new Notification();
+            notification.setVendorId(vendorId);
+            notification.setRole("Vendor");
+            if (gameRequest.getScheduledAt() != null) {
+                notification.setDescription("Game has been scheduled");
+                notification.setDetails("Your game has been scheduled and will go live at the specified time.");
+
+            }else{
+                notification.setDescription("Game has been Published");
+                notification.setDetails("Your game has been published and is now live.");
+
+            }
+
+            notificationRepository.save(notification);
+
             if (gameRequest.getScheduledAt() != null) {
                 return responseService.generateSuccessResponse("Game scheduled successfully", publishedGame, HttpStatus.CREATED);
             } else {
