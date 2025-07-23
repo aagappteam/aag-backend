@@ -2534,14 +2534,11 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             League league = leagueRepository.findById(request.getLeagueId())
                     .orElseThrow(() -> new NoSuchElementException("League not found with ID: " + request.getLeagueId()));
 
-            VendorEntity vendorEntity = vendorRepository.findById(request.getVendorId())
-                    .orElseThrow(() -> new NoSuchElementException("Vendor not found with ID: " + request.getVendorId()));
+            VendorEntity vendorEntity = vendorRepository.findById(league.getOpponentVendorId())
+                    .orElseThrow(() -> new NoSuchElementException("Vendor not found with ID: " + league.getOpponentVendorId()));
 
-            Challenge challenge = challangeRepository.findById(request.getChallengerId())
-                    .orElseThrow(() -> new NoSuchElementException("This Challenge is not found"));
-
-            VendorEntity opponentVendor = vendorRepository.findById(challenge.getVendorId())
-                    .orElseThrow(() -> new NoSuchElementException("Opponent vendor not found with ID: " + challenge.getVendorId()));
+            VendorEntity opponentVendor = vendorRepository.findById(league.getChallengingVendorId())
+                    .orElseThrow(() -> new NoSuchElementException("Opponent vendor not found with ID: " + league.getChallengingVendorId()));
 
             String title;
             String body;
