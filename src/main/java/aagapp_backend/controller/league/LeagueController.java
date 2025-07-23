@@ -398,6 +398,7 @@ public class LeagueController {
             Notification notification = new Notification();
             notification.setVendorId(vendorId);
             notification.setRole("Vendor");
+//            notification.setAmount(publishedLeague.getFee());
             notification.setDescription("League Submitted for Review");
             notification.setDetails("Your league has been submitted and is pending admin approval before going live at the scheduled time.");
 

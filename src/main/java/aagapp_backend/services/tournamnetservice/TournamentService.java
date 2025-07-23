@@ -2557,6 +2557,14 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             tournament.setExistinggameId(request.getExistinggameId());
             tournament.setParticipants(request.getParticipants());
 
+            if (request.getTotalPrizePool() != null) {
+                tournament.setTotalPrizePool(request.getTotalPrizePool());
+            }
+
+            if (request.getRoomprize() != null) {
+                tournament.setRoomprize(request.getRoomprize());
+            }
+
             if (request.getThemeId() != null) {
                 ThemeEntity theme = themeRepository.findById(request.getThemeId())
                         .orElseThrow(() -> new BusinessException("Theme ID: " + request.getThemeId() + " not found", HttpStatus.BAD_REQUEST));

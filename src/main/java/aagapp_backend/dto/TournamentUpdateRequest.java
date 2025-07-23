@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 
 @Data
@@ -17,8 +18,11 @@ public class TournamentUpdateRequest {
 
     private int participants;
 
-    @NotNull
+
     private int entryFee;
+
+    private BigDecimal roomprize;
+    private Double totalPrizePool;
 
     private Integer move;
 

@@ -260,6 +260,7 @@ public class OtpEndpoint {
                     existingCustomer.setReferralCode(referralCode);
                     em.persist(existingCustomer);
                 }
+//             @todo:-   it will be on add cash
                 if (referredCode != null && existingCustomer.getProfileStatus() == ProfileStatus.PENDING) {
                     referralService.updateReferrerEarnings(referredCode);
 

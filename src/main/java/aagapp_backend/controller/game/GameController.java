@@ -259,9 +259,12 @@ public class GameController {
             notification.setRole("Vendor");
             if (gameRequest.getScheduledAt() != null) {
                 notification.setDescription("Game has been scheduled");
+//                notification.setAmount(publishedGame.getFee());
                 notification.setDetails("Your game has been scheduled and will go live at the specified time.");
 
             }else{
+//                notification.setAmount(publishedGame.getFee());
+
                 notification.setDescription("Game has been Published");
                 notification.setDetails("Your game has been published and is now live.");
 

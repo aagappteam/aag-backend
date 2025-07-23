@@ -63,8 +63,7 @@ public class FollowerNotificationService {
 
                             notificationFirebase.sendNotification(user.getFcmToken(), title, body);
 
-                            System.out.printf("✅ Notification sent | UserID: %d | Name: %s | Type: %s%n",
-                                    user.getId(), user.getName(), contentType);
+
 
                         } catch (Exception e) {
                             System.err.println("❌ FCM error for userId " + user.getId() + ": " + e.getMessage());
