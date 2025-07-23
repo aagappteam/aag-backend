@@ -20,4 +20,7 @@ public class AddBalanceRequest {
 
     @NotNull(message = "Is True must not be null")
     private Boolean isTest;
+
+    private String couponCode; // Optional
+
 }
