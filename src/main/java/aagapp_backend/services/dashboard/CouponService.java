@@ -1,8 +1,12 @@
 package aagapp_backend.services.dashboard;
 
+import aagapp_backend.entity.coupon.Coupon;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 @Service
 public class CouponService {
-    @Autowired
+/*    @Autowired
     private CouponRepository couponRepository;
 
     public float applyCouponIfValid(String couponCode, float rechargeAmount) {
@@ -20,6 +24,6 @@ public class CouponService {
         }
 
         return coupon.getBonusAmount(); // Return applicable bonus
-    }
+    }*/
 }
 
