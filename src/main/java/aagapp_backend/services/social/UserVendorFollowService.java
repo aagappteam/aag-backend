@@ -4,6 +4,7 @@ import aagapp_backend.dto.GetGameResponseDTO;
 import aagapp_backend.dto.TopHostWeekDto;
 import aagapp_backend.dto.TopVendorDto;
 import aagapp_backend.dto.TopVendorWeekDto;
+import aagapp_backend.dto.tournament.TournamentGetallDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
@@ -543,7 +544,12 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
             vendorInfo.put("leagues", leaguesPage.getContent() != null ? leaguesPage.getContent() : Collections.emptyList());
 
             Page<Tournament> gamesPage = tournamentService.getAllActiveTournamentsByVendor(pageable,vendorId);
-            vendorInfo.put("tournaments", gamesPage.getContent() != null ? gamesPage.getContent() : Collections.emptyList());
+
+            List<TournamentGetallDTO> gameList = gamesPage.getContent().stream()
+                    .map(this::mapToDTO)  // use your mapping logic
+                    .collect(Collectors.toList());
+            vendorInfo.put("tournaments", gameList);
+//            vendorInfo.put("tournaments", gamesPage.getContent() != null ? gamesPage.getContent() : Collections.emptyList());
 
             return vendorInfo;
         }).collect(Collectors.toList());
@@ -595,7 +601,10 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
             List<TournamentStatus> statuses = Arrays.asList(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
             Page<Tournament> tournaments = tournamentService.getAllTournaments(pageable, statuses, null, null);
 
-            vendorInfo.put("tournaments", tournaments.hasContent() ? tournaments.getContent() : Collections.emptyList());
+            List<TournamentGetallDTO> gameList = tournaments.getContent().stream()
+                    .map(this::mapToDTO)  // use your mapping logic
+                    .collect(Collectors.toList());
+            vendorInfo.put("tournaments", gameList);
 
             return vendorInfo;
         }).collect(Collectors.toList());
@@ -614,6 +623,47 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         return response;
     }
 
+
+    public TournamentGetallDTO mapToDTO(Tournament tournament) {
+        TournamentGetallDTO dto = new TournamentGetallDTO();
+
+        dto.setId(tournament.getId());
+        dto.setVendorId(tournament.getVendorId());
+
+        // Set vendorProfilePic from vendorEntity (can be null-safe)
+        if (tournament.getVendorEntity() != null) {
+            dto.setVendorProfilePic(tournament.getVendorEntity().getProfilePic());
+            dto.setVendorName(tournament.getVendorEntity().getName());
+
+        } else {
+            dto.setVendorProfilePic(""); // or default image URL
+            dto.setVendorName("");
+
+        }
+
+        dto.setName(tournament.getName());
+        dto.setTotalPrizePool(tournament.getTotalPrizePool());
+        dto.setRound(tournament.getRound());
+        dto.setTotalrounds(tournament.getTotalrounds());
+        dto.setRoomprize(tournament.getRoomprize());
+        dto.setTheme(tournament.getTheme());
+        dto.setExistinggameId(tournament.getExistinggameId());
+        dto.setGameUrl(tournament.getGameUrl());
+        dto.setParticipants(tournament.getParticipants());
+        dto.setCurrentJoinedPlayers(tournament.getCurrentJoinedPlayers());
+        dto.setEntryFee(tournament.getEntryFee());
+        dto.setMove(tournament.getMove());
+        dto.setStatus(tournament.getStatus());
+        dto.setShareableLink(tournament.getShareableLink());
+        dto.setCreatedDate(tournament.getCreatedDate());
+        dto.setScheduledAt(tournament.getScheduledAt());
+        dto.setUpdatedDate(tournament.getUpdatedDate());
+        dto.setEndDate(tournament.getEndDate());
+        dto.setStatusUpdatedAt(tournament.getStatusUpdatedAt());
+
+        return dto;
+
+    }
 
 
     //following vendors
@@ -719,7 +769,11 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
 
         // Tournaments - paginated
         Page<Tournament> tournamentsPage = tournamentService.getAllActiveScheduledTournamentsByVendor(pageable, spId);
-        vendorInfo.put("tournaments", tournamentsPage.getContent() != null ? tournamentsPage.getContent() : Collections.emptyList());
+        List<TournamentGetallDTO> gameList = tournamentsPage.getContent().stream()
+                .map(this::mapToDTO)  // use your mapping logic
+                .collect(Collectors.toList());
+        vendorInfo.put("tournaments", gameList);
+//        vendorInfo.put("tournaments", tournamentsPage.getContent() != null ? tournamentsPage.getContent() : Collections.emptyList());
         vendorInfo.put("tournamentsPage", Map.of(
                 "pageNumber", tournamentsPage.getNumber(),
                 "pageSize", tournamentsPage.getSize(),
