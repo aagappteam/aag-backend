@@ -395,7 +395,7 @@ public class TournamentController {
 
            if (request.getStatus() == TournamentStatus.APPROVED) {
                title = "Tournament Approved";
-               body = "Your tournament has been approved and will go live in 1 hour.";
+               body = "Your tournament has been approved and will go live according to the scheduled time.";
                tournament.setStatus(TournamentStatus.SCHEDULED);
                tournamentService.saveTournament(tournament);
 

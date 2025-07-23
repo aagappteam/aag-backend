@@ -485,7 +485,7 @@ public class LeagueService {
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             } else {
                 league.setStatus(LeagueStatus.PENDING);
-                league.setScheduledAt(nowInKolkata);
+//                league.setScheduledAt(nowInKolkata);
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             }
             league.setMinPlayersPerTeam(1);
@@ -2548,9 +2548,20 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
             if (request.getStatus() == LeagueStatus.APPROVED) {
                 title = "League Approved";
-                body = "Your league has been approved and will go live in 1 hour.";
 
-                league.setStatus(LeagueStatus.SCHEDULED);
+                if(league.getScheduledAt()!=null){
+                    body = "Your league has been approved and will go live according to the scheduled time.";
+                    league.setStatus(LeagueStatus.SCHEDULED);
+
+
+                }else{
+                    league.setStatus(LeagueStatus.ACTIVE);
+
+                    body = "Your league has been approved and has been published.";
+
+                }
+
+
 
                 vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
                 vendorEntity.setTotal_league_published(vendorEntity.getTotal_league_published() == null ? 0 : vendorEntity.getTotal_league_published() + 1);
