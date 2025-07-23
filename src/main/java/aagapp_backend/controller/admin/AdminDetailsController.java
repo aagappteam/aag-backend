@@ -312,12 +312,14 @@ public class AdminDetailsController {
             @RequestParam(required = false) String details,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String transaction,
+            @RequestParam(required = false) String activity
     ) {
         try {
             Page<Transaction> notifications = dashboardAdmin.getFilteredNotificationsDto(
                     role, vendorId, customerId, amount, minAmount, maxAmount,
-                    startDate, endDate, description, details, page, size, search
+                    startDate, endDate, description, details, page, size, search,transaction,activity
             );
             return responseService.generateSuccessResponseWithCount(
                     "Notifications retrieved successfully.",

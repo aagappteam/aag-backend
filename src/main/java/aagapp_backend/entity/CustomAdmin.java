@@ -36,7 +36,8 @@ public class CustomAdmin
     private Long adminId;
 
 
-    private int role;
+    private Integer role;
+
     private String password;
     private String user_name;
 
@@ -52,6 +53,11 @@ public class CustomAdmin
     private String token;
     private int active=0;
 
+    @Column(name = "created_by")
+    private String createdBy; // store admin's username, email, or any identifier
+
+
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -62,16 +68,4 @@ public class CustomAdmin
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private String updated_at;
 
-   /* public CustomAdmin(Long admin_id, int role, String password, String user_name, String mobileNumber, String country_code, int active, Date created_at, String created_by) {
-        this.admin_id = admin_id;
-        this.role = role;
-        this.password = password;
-        this.user_name=user_name;
-        this.mobileNumber = mobileNumber;
-        this.country_code = country_code;
-        this.active = active;
-        this.created_at = created_at;
-        this.updated_at = updated_at;
-
-    }*/
 }

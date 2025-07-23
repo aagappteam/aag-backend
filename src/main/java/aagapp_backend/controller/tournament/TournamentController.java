@@ -328,8 +328,7 @@ public class TournamentController {
 
             notification.setVendorId(vendorId);
             if (tournamentRequest.getScheduledAt() != null) {
-
-
+//                notification.setAmount((double) tournamentRequest.getEntryFee());
                 notification.setDescription("Tournament Submitted for Review");
                 notification.setDetails("Your Tournament has been submitted and is pending admin approval before going live at the scheduled time.");
             }else{
@@ -420,6 +419,7 @@ public class TournamentController {
                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid tournament status");
            }
 
+//           notification.setAmount((double) tournament.getEntryFee());
            notification.setDescription(title);
            notification.setDetails(body);
            notificationRepository.save(notification);

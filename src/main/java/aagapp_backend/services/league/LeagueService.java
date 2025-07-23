@@ -288,7 +288,7 @@ public class LeagueService {
 
                 notification.setVendorId(opponentVendor.getService_provider_id());
                 notification.setName(opponentVendor.getFirst_name()!= null ? opponentVendor.getFirst_name(): "N/A" + " " + opponentVendor.getLast_name()!= null ? opponentVendor.getLast_name(): "N/A");
-
+                notification.setAmount(challenge.getFee());
                 notification.setDescription("League challenge");
                 notification.setDetails(vendor.getFirst_name() + " has challenged for a League");
                 notificationRepository.save(notification);
@@ -2586,12 +2586,14 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             vendorNotification.setVendorId(vendorEntity.getService_provider_id());
             vendorNotification.setDescription(title);
             vendorNotification.setDetails(body);
+//            vendorNotification.setAmount(league.getFee());
             notificationRepository.save(vendorNotification);
 
             Notification opponentNotification = new Notification();
             opponentNotification.setRole("Vendor");
             opponentNotification.setVendorId(opponentVendor.getService_provider_id());
             opponentNotification.setDescription(title);
+//            opponentNotification.setAmount(league.getFee());
             opponentNotification.setDetails(body);
             notificationRepository.save(opponentNotification);
 
@@ -2605,10 +2607,10 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
             // Push FCM to both vendors' followers
             CompletableFuture.runAsync(() ->
-                    followerNotificationService.notifyFollowersInParallel("league", league.getName(), vendorEntity)
+                    followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), vendorEntity)
             );
             CompletableFuture.runAsync(() ->
-                    followerNotificationService.notifyFollowersInParallel("league", league.getName(), opponentVendor)
+                    followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), opponentVendor)
             );
 
             return league;

@@ -201,9 +201,19 @@ public class RoleController {
             String userName = request.get("userName").toString();
             String password = request.get("password").toString();
             String countryCode = request.getOrDefault("countryCode", "+91").toString();
-            String email = request.get("email").toString();
+            String email = request.getOrDefault("email", "").toString();
 
-            Integer roleId = Integer.valueOf(request.get("roleId").toString());
+            // Optional role handling
+            Role role = null;
+            if (request.containsKey("roleId") && request.get("roleId") != null) {
+                Integer roleId = Integer.valueOf(request.get("roleId").toString());
+                role = roleRepo.findById(roleId)
+                        .orElseThrow(() -> new RuntimeException("Role not found with ID: " + roleId));
+
+                if (role.getRoleName().equalsIgnoreCase("VENDOR") || role.getRoleName().equalsIgnoreCase("CUSTOMER")) {
+                    return ResponseEntity.badRequest().body(Map.of("message", "Cannot create VENDOR or CUSTOMER from this API"));
+                }
+            }
 
             // Check if mobile exists
             Optional<CustomAdmin> existingUser = adminRepo.findByMobileNumber(mobile);
@@ -211,37 +221,35 @@ public class RoleController {
                 return responseService.generateErrorResponse("Mobile number already exists", HttpStatus.BAD_REQUEST);
             }
 
-
-            //  Fetch Role
-            Role role = roleRepo.findById(roleId)
-                    .orElseThrow(() -> new RuntimeException("Role not found with ID: " + roleId));
-
-            //  Check if role is vendor or customer
-            if (role.getRoleName().equalsIgnoreCase("VENDOR") || role.getRoleName().equalsIgnoreCase("CUSTOMER")) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Cannot create VENDOR or CUSTOMER from this API"));
-            }
-
-            //  Save CustomAdmin (User)
+            // Save CustomAdmin (User)
             CustomAdmin user = new CustomAdmin();
             user.setMobileNumber(mobile);
-            user.setEmail(email!=null?email:"");
+            Long id = jwtUtil.extractId(token); // hypothetical method
+
+            String adminName = roleService.findRoleName(Math.toIntExact(id));
+
+
+            user.setCreatedBy(adminName);
+
+            user.setEmail(email);
             user.setUser_name(userName);
             user.setPassword(passwordEncoder.encode(password));
             user.setCountry_code(countryCode);
-            user.setRole(role.getRoleId());
             user.setActive(1);
             user.setCreated_at(new Date());
 
-            adminRepo.save(user);
-            return responseService.generateSuccessResponse("User created successfully",user, HttpStatus.OK);
+            if (role != null) {
+                user.setRole(role.getRoleId());
+            }
 
+            adminRepo.save(user);
+            return responseService.generateSuccessResponse("User created successfully", user, HttpStatus.OK);
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "error", e.getMessage()
-            ));
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
+
 
 
 /*    @PostMapping("/add-user")

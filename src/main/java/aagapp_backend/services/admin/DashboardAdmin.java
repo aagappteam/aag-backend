@@ -669,7 +669,9 @@ public class DashboardAdmin {
             String details,
             int page,
             int size,
-            String search
+            String search,
+            String transaction,
+            String activity
     ) {
         Specification<Notification> spec = Specification
                 .where(NotificationSpecifications.hasRole(role))
@@ -681,6 +683,12 @@ public class DashboardAdmin {
                 .and(NotificationSpecifications.createdBetween(startDate, endDate))
                 .and(NotificationSpecifications.descriptionContains(description))
                 .and(NotificationSpecifications.detailsContains(details));
+
+        if (activity != null && !activity.isBlank()) {
+            spec = spec.and((root, query, cb) -> cb.isNull(root.get("amount"))); // activity
+        } else {
+            spec = spec.and((root, query, cb) -> cb.isNotNull(root.get("amount"))); // transaction
+        }
 
         // Fetch all matching records from DB (not paginated yet)
         List<Notification> fullList = notificationRepository.findAll(spec, Sort.by("createdDate").descending());
