@@ -380,7 +380,7 @@ public class TournamentService {
             /*CompletableFuture.runAsync(() ->
                     followerNotificationService.notifyFollowersInParallel("tournament", savedTournament.getName(), vendorEntity)
             );*/
-            commonService.notifyAdminsByRole(Constant.ADMIN_ROLE, "tournament", savedTournament.getName(), Double.valueOf(savedTournament.getEntryFee()), savedTournament.getId(), savedTournament.getCreatedDate());
+            commonService.notifyAdminsByRoleGeneric(Constant.ADMIN_ROLE, savedTournament);
 
             return savedTournament;
 
@@ -2671,6 +2671,9 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
                 request.setName(gameName);
                 request.setExistinggameId(gameId);
+                ZonedDateTime nowInIndia = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+                ZonedDateTime scheduledAt = nowInIndia.plusHours(Constant.TOURNAMENT_START_TIME);
+                request.setScheduledAt(scheduledAt);
 //                request.setTotalPrizePool(totalCollection.doubleValue());
                 request.setThemeId(themeId);
                 request.setParticipants(512); // or use dynamic value

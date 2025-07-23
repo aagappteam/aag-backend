@@ -117,4 +117,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
     List<Tournament> findByVendorId(@Param("vendorId") Long vendorId);
 
     boolean existsByVendorIdAndStatus(Long vendorId, TournamentStatus tournamentStatus);
+
+
+    List<Tournament> findAllByStatusAndCreatedDateBefore(TournamentStatus tournamentStatus, ZonedDateTime fifteenMinutesAgo);
 }

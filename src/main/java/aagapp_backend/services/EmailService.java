@@ -241,22 +241,27 @@ public class EmailService {
         }
     }
 
-    public void sendEmailLeague(CustomAdmin admin, String type, String name, Double fee, Long id, ZonedDateTime createdAt)
+//    Send Email  to admin if new tournament or league is published
+    public void sendEmailLeague(CustomAdmin admin, String type, String name, Double fee, Long id, ZonedDateTime createdAt, String gameIcon)
             throws IOException, MessagingException {
 
         String template = loadTemplate("email-templates/league-tournament.html");
+
         ZonedDateTime indiaTime = createdAt.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
         String formattedDate = indiaTime.format(DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a z"));
+
         String messageBody = template
                 .replace("{type}", type)
                 .replace("{adminName}", admin.getUser_name())
                 .replace("{name}", name)
                 .replace("{Fee}", String.format("%.2f", fee))
                 .replace("{id}", String.valueOf(id))
-                .replace("{createdAt}", formattedDate);
+                .replace("{createdAt}", formattedDate)
+                .replace("{gameIcon}", gameIcon != null ? gameIcon : "https://yourdomain.com/default-icon.png"); // fallback if needed
 
         sendEmail(admin.getEmail(), "New " + type + " Published", messageBody, true);
     }
+
 
 
 
@@ -308,5 +313,6 @@ public class EmailService {
             throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
         }
     }
+
 
 }

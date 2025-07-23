@@ -4,6 +4,7 @@ import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminLogService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,10 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 
@@ -40,13 +38,28 @@ public class ActivityController {
             @RequestParam(required = false) String search
     ) {
        try {
-           Pageable pageable = PageRequest.of(page, size);
+           Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
            Page<AdminLogs> adminLogs = adminLogsService.getAllLogs(pageable, roleName, performedBy, targetType, search);
            return responseService.generateSuccessResponseWithCount("Activities fetched successfully", adminLogs.getContent(), adminLogs.getTotalElements(), HttpStatus.OK);
        }catch (Exception e){
            exceptionHandling.handleException(e);
            return responseService.generateErrorResponse("Error processing request: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
        }
+    }
+
+//    update read true
+    @PostMapping("/read")
+    public ResponseEntity<?> updateRead(@RequestParam(required = false) Long id) {
+        try {
+            adminLogsService.updateRead(id);
+            return responseService.generateResponse(HttpStatus.OK, "Notification updated", null);
+        }catch (EntityNotFoundException e){
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+        catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error processing request: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 /*    @GetMapping

@@ -21,6 +21,11 @@
     .label {
         font-weight: bold;
     }
+    .game-icon {
+        margin-top: 15px;
+        max-width: 120px;
+        border-radius: 8px;
+    }
     .footer {
         margin-top: 30px;
         font-size: 13px;
@@ -31,17 +36,20 @@
 <body>
 <div class="container">
   <div class="content">
-    <div class="header">New {{type}} Published</div>
-    <p>Hello <strong>{{adminName}}</strong>,</p>
+    <div class="header">New {type} Published</div>
+    <p>Hello <strong>{adminName}</strong>,</p>
 
-    <p>A new {{type}} has just been published on the platform. Please find the details below:</p>
+    <p>A new {type} has just been published on the platform. Please find the details below:</p>
 
     <p>
-      <span class="label">{{type}} Name:</span> {{name}}<br>
-      <span class="label">Description:</span> {{description}}<br>
-      <span class="label">{{type}} ID:</span> {{id}}<br>
-      <span class="label">Created At:</span> {{createdAt}}<br>
+      <span class="label">{type} Name:</span> {name}<br>
+      <span class="label">Fee:</span> {Fee}<br>
+      <span class="label">{type} ID:</span> {id}<br>
+      <span class="label">Created At:</span> {createdAt}<br>
     </p>
+
+    <p><strong>Game Icon:</strong></p>
+    <img class="game-icon" src="{gameIcon}" alt="Game Icon">
 
     <p>Please take appropriate action if required.</p>
 

@@ -50,7 +50,9 @@ public class AdminLogs {
 
     @CreationTimestamp
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "created_date", updatable = false)
     private ZonedDateTime createdDate;
+
 
 
     @Column(name = "updated_date")

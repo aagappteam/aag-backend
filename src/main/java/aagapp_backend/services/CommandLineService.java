@@ -1,5 +1,6 @@
 package aagapp_backend.services;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.entity.*;
 import aagapp_backend.entity.admin.Privilege;
 import aagapp_backend.entity.admin.PrivilegeMapping;
@@ -397,8 +398,22 @@ public class CommandLineService implements CommandLineRunner {
 //        String alterQuery = "ALTER TABLE vendor_table ADD COLUMN plan_name VARCHAR(255) DEFAULT 'Standard'";
 //        Query query = entityManager.createNativeQuery(alterQuery);
 //        query.executeUpdate();
+        if (entityManager.createQuery("SELECT COUNT(p) FROM CustomAdmin p", Long.class).getSingleResult() == 0) {
+            CustomAdmin admin = new CustomAdmin();
+            admin.setRole(Constant.ADMIN_ROLE);
+            admin.setPassword("1234");
+            admin.setUser_name("Rajendra Gupta");
+            admin.setEmail("rajendra@celestialitverse.com");
+            admin.setOtp("0000");
+            admin.setMobileNumber(Constant.MOBILE_6306470701);
+            admin.setCountry_code("+91");
+            admin.setToken(null);
+            admin.setActive(1);
+            admin.setCreated_at(new Date());
+            admin.setUpdated_at(null);
 
-
+            entityManager.persist(admin);
+        }
 
 
         // ✅ Insert Privileges if empty
