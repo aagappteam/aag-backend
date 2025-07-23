@@ -543,7 +543,8 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
             Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(pageable, vendorId);
             vendorInfo.put("leagues", leaguesPage.getContent() != null ? leaguesPage.getContent() : Collections.emptyList());
 
-            Page<Tournament> gamesPage = tournamentService.getAllActiveTournamentsByVendor(pageable,vendorId);
+
+            Page<Tournament> gamesPage = tournamentService.getAllActiveScheduledTournamentsByVendor(pageable,vendorId);
 
             List<TournamentGetallDTO> gameList = gamesPage.getContent().stream()
                     .map(this::mapToDTO)  // use your mapping logic
