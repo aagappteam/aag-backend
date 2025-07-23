@@ -86,7 +86,7 @@ public class WalletController {
     private CustomerWithdrawalRequestRepository customerWithdrawalRequestRepository;
 
     // Endpoint to add balance to the wallet
-  /*  @PostMapping("/addBalance")
+    @PostMapping("/addBalance")
     public ResponseEntity<?> addBalance(@RequestBody AddBalanceRequest addBalanceRequest, @RequestHeader(value = "Authorization") String authorization) {
         try {
             // Validate Authorization header
@@ -140,9 +140,8 @@ public class WalletController {
                 CustomCustomer customer = customCustomerService.getCustomerById(userId);
                 notification.setCustomerId(customer.getId());
             }
-*//*
-            notification.setType(NotificationType.WALLET_CREDIT);  // Example NotificationType for a successful payment
-*//*
+
+
             notification.setDescription("Wallet balance added"); // Example NotificationType for a successful
             notification.setAmount((double) amount);
 //            notification.setDetails("Rs. " +amount + " added to Wallet"); // Example NotificationType for a successful
@@ -164,9 +163,8 @@ public class WalletController {
             return responseService.generateErrorResponse("Error adding balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-*/
 
-    @PostMapping("/addBalance")
+/*    @PostMapping("/addBalance")
     public ResponseEntity<?> addBalance(@RequestBody AddBalanceRequest addBalanceRequest,
                                         @RequestHeader(value = "Authorization") String authorization) {
         try {
@@ -275,7 +273,7 @@ public class WalletController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error adding balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
 
     // Method to handle the POST request to get balance
