@@ -564,7 +564,7 @@ public class LeagueService {
 //            CompletableFuture.runAsync(() -> {
 //                followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), vendorEntity);
 //            });
-            commonService.notifyAdminsByRole(Constant.ADMIN_ROLE, "league", savedLeague.getGameName(), savedLeague.getFee(), savedLeague.getId(), savedLeague.getCreatedDate());
+            commonService.notifyAdminsByRoleGeneric(Constant.ADMIN_ROLE, savedLeague);
             return savedLeague;
 
         } catch (Exception e) {

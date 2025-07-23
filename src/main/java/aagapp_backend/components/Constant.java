@@ -12,6 +12,11 @@ public class Constant {
     public static final double AAG_WIN_PERCENT = 0.33;
     public static final double VENDOR_WIN_PERCENT = 0.05;
 
+    public static final Double MAX_FEE = 100.0;
+    public static final long LEAGUE_SESSION_TIME = 4;
+    public static final long LEAGUE_SESSION_TIME_2 = 4;
+    public static final long TOURNAMENT_START_TIME = 1;
+
 
 
     public static final Double LEAGUE_PASSES_FEE = 7.0;
@@ -35,9 +40,7 @@ public class Constant {
     public static final Integer TENMOVES =10;
     public static final Integer SIXTEENMOVES =16;
     public static final BigDecimal USER_PERCENTAGE = new BigDecimal("0.62");
-    public static final Double MAX_FEE = 100.0;
-    public static final long LEAGUE_SESSION_TIME = 4;
-    public static final long LEAGUE_SESSION_TIME_2 = 4;
+
 
     public static String COUNTRY_CODE = "+91";
     public static String PHONE_QUERY = "SELECT c FROM CustomCustomer c WHERE c.mobileNumber = :mobileNumber AND c.countryCode = :countryCode";

@@ -57,9 +57,18 @@ public class RoleController {
     @PostMapping("/create")
     public ResponseEntity<?> createRole(@RequestBody Map<String, Object> request, HttpServletRequest req) {
         String roleName = request.get("roleName").toString();
+        if (roleName == null || roleName.isEmpty()) {
+            return responseService.generateErrorResponse("Role name is required", HttpStatus.BAD_REQUEST);
+        }
         String token = jwtUtil.resolveToken(req);
         Long adminId = jwtUtil.extractAdminId(token);
         String adminName = roleService.findRoleName(Math.toIntExact(adminId));
+
+
+        if (!roleRepo.findAllByRoleNameIgnoreCase(roleName).isEmpty()) {
+            return responseService.generateErrorResponse("Role with name '" + roleName + "' already exists.", HttpStatus.BAD_REQUEST);
+        }
+
 
         List<Integer> privilegeIds = (List<Integer>) request.get("privilegeIds");
 
@@ -391,21 +400,22 @@ public class RoleController {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "adminId"));
 
             Integer roleId = null;
-            if (roleName != null && !roleName.isBlank()) {
-                // Convert roleName to Integer roleId
-                Optional<Role> roleOptional = roleRepository.findByRoleNameIgnoreCase(roleName);
-                if (roleOptional.isPresent()) {
-                    roleId = roleOptional.get().getRoleId();
-                } else {
-                    // Return empty list if roleName is invalid
-                    return responseService.generateSuccessResponseWithCount(
-                            "No admins found for the given role name",
-                            Collections.emptyList(),
-                            0L,
-                            HttpStatus.OK
-                    );
-                }
+            List<Role> matchingRoles = roleRepository.findAllByRoleNameIgnoreCase(roleName);
+            if (matchingRoles.isEmpty()) {
+                return responseService.generateSuccessResponseWithCount(
+                        "No admins found for the given role name",
+                        Collections.emptyList(),
+                        0L,
+                        HttpStatus.OK
+                );
+            } else if (matchingRoles.size() > 1) {
+                return responseService.generateErrorResponse(
+                        "Multiple roles found for the role name '" + roleName + "'. Please resolve duplicates.",
+                        HttpStatus.BAD_REQUEST
+                );
             }
+            roleId = matchingRoles.get(0).getRoleId();
+
 
             // Apply filtering
             Specification<CustomAdmin> spec = Specification

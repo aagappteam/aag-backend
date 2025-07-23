@@ -11,6 +11,7 @@ import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.services.vendor.VenderService;
 import com.amazonaws.services.ec2.model.CreateNatGatewayRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,16 +29,25 @@ import java.util.List;
 @Service
 public class NotificationService {
 
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
+    private final JwtUtil jwtUtil;
+    private final VenderService vendorService;
+    private final ResponseService responseService;
+    private final CustomCustomerService customCustomerService;
 
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private VenderService vendorService;
-    private ResponseService responseService;
-    private CustomCustomerService customCustomerService;
+    public NotificationService(
+            NotificationRepository notificationRepository,
+            JwtUtil jwtUtil,
+            @Lazy VenderService vendorService,
+            ResponseService responseService,
+            CustomCustomerService customCustomerService
+    ) {
+        this.notificationRepository = notificationRepository;
+        this.jwtUtil = jwtUtil;
+        this.vendorService = vendorService;
+        this.responseService = responseService;
+        this.customCustomerService = customCustomerService;
+    }
 
     // Create a new notification
 
@@ -118,4 +128,16 @@ public class NotificationService {
     }
 
 
+    public void sendRejectionNotificationToVendor(VendorEntity vendorEntity, String tournament, String name) {
+        String title = tournament + " Rejected";
+        String body = "Your " + tournament + " " + name + " has been rejected.";
+        Notification notification = new Notification();
+        notification.setVendorId(vendorEntity.getService_provider_id());
+        notification.setRole("Vendor");
+        notification.setDescription(title);
+        notification.setAmount(null);
+        notification.setDetails(body);
+        notification.setCreatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+        notificationRepository.save(notification);
+    }
 }

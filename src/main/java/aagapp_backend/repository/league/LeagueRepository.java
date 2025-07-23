@@ -108,4 +108,7 @@ public interface LeagueRepository extends JpaRepository<League, Long>, JpaSpecif
 
     @Query("SELECT g FROM League g WHERE g.vendorEntity.id = :vendorId")
     List<League> findByVendorId(@Param("vendorId") Long vendorId);
+
+
+    List<League> findAllByStatusAndCreatedDateBefore(LeagueStatus status, ZonedDateTime dateTime);
 }

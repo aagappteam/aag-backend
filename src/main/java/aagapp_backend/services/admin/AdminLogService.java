@@ -3,6 +3,7 @@ package aagapp_backend.services.admin;
 import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.repository.admin.AdminLogsInterface;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AdminLogService {
@@ -128,6 +130,21 @@ public class AdminLogService {
             return new PageImpl<>(logs, pageable, total);
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving admin logs", e);
+        }
+    }
+
+
+    public void updateRead(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Log ID cannot be null");
+        }
+
+        AdminLogs log = adminLogsRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Admin log not found with ID: " + id));
+
+        if (!log.isRead()) {
+            log.setRead(true);
+            adminLogsRepository.save(log);
         }
     }
 
