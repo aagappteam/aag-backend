@@ -27,6 +27,7 @@ public class Constant {
     public static final String MOBILE_9628577197 = "9628577197";
     public static final List<String> TEST_MOBILE_NUMBERS = List.of(MOBILE_6306470701, MOBILE_9628577197);
     public static final BigDecimal KYC_VERIFICATION_BONUS = BigDecimal.valueOf(50);
+    public static final float DOWNLOAD_BONUS =100.0f; ;
 
     public static String ludobaseurl = "https://gamebackend.aagapp.com/game-api/ludo";
     public static String snakebaseUrl = "https://gamebackend.aagapp.com/game-api/snake";

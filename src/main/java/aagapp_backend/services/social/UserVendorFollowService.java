@@ -566,7 +566,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         return response;
 
     }
-/*    public Map<String, Object> getFeedOfVendors(int page, int size, Long currentUserId) {
+    public Map<String, Object> getFeedOfVendors(int page, int size, Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
         Pageable subPageable = PageRequest.of(0, 10);
 
@@ -612,12 +612,12 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         response.put("vendors", vendors);
 
         return response;
-    }*/
+    }
 
 
 
     //following vendors
-    public Map<String, Object> getFeedOfVendors( int page, int size, Long currentUserId) {
+/*    public Map<String, Object> getFeedOfVendors( int page, int size, Long currentUserId) {
 //        Pageable pageable = PageRequest.of(page, size);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
@@ -668,7 +668,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
 
         return response;
 
-    }
+    }*/
 
     public Map<String, Object> getFeedOfVendorId(Long vendorId, int page, int size) {
         Optional<VendorEntity> optionalVendor = vendorRepo.findById(vendorId);

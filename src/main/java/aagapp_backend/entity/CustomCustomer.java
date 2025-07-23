@@ -169,6 +169,10 @@ public class CustomCustomer {
     @JsonIgnore
     private Player player;
 
+    @Column(name = "last_coupon_code")
+    private String couponCode; // Record which coupon was used last
+
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
