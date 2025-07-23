@@ -388,7 +388,7 @@ public class RoleController {
     }*/
 
 
-    @GetMapping("/custom-admins")
+/*    @GetMapping("/custom-admins")
     public ResponseEntity<?> getCustomAdminsWithPagination(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -400,19 +400,20 @@ public class RoleController {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "adminId"));
 
             Integer roleId = null;
-            List<Role> matchingRoles = roleRepository.findAllByRoleNameIgnoreCase(roleName);
-            if (matchingRoles.isEmpty()) {
-                return responseService.generateSuccessResponseWithCount(
-                        "No admins found for the given role name",
-                        Collections.emptyList(),
-                        0L,
-                        HttpStatus.OK
-                );
-            } else if (matchingRoles.size() > 1) {
-                return responseService.generateErrorResponse(
-                        "Multiple roles found for the role name '" + roleName + "'. Please resolve duplicates.",
-                        HttpStatus.BAD_REQUEST
-                );
+            if (roleName != null && !roleName.isBlank()) {
+                // Convert roleName to Integer roleId
+                Optional<Role> roleOptional = roleRepository.findByRoleNameIgnoreCase(roleName);
+                if (roleOptional.isPresent()) {
+                    roleId = roleOptional.get().getRoleId();
+                } else {
+                    // Return empty list if roleName is invalid
+                    return responseService.generateSuccessResponseWithCount(
+                            "No admins found for the given role name",
+                            Collections.emptyList(),
+                            0L,
+                            HttpStatus.OK
+                    );
+                }
             }
             roleId = matchingRoles.get(0).getRoleId();
 
@@ -444,9 +445,65 @@ public class RoleController {
             exceptionHandlingImplement.handleException(e);
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }*/
+
+
+
+    @GetMapping("/custom-admins")
+    public ResponseEntity<?> getCustomAdminsWithPagination(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String roleName,
+            @RequestParam(required = false) String mobileNumber,
+            @RequestParam(required = false) String userName
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "adminId"));
+
+            Integer roleId = null;
+            if (roleName != null && !roleName.isBlank()) {
+                // Convert roleName to Integer roleId
+                Optional<Role> roleOptional = roleRepository.findByRoleNameIgnoreCase(roleName);
+                if (roleOptional.isPresent()) {
+                    roleId = roleOptional.get().getRoleId();
+                } else {
+                    // Return empty list if roleName is invalid
+                    return responseService.generateSuccessResponseWithCount(
+                            "No admins found for the given role name",
+                            Collections.emptyList(),
+                            0L,
+                            HttpStatus.OK
+                    );
+                }
+            }
+
+            // Apply filtering
+            Specification<CustomAdmin> spec = Specification
+                    .where(CustomAdminSpecification.hasRole(roleId))
+                    .and(CustomAdminSpecification.hasMobileNumber(mobileNumber))
+                    .and(CustomAdminSpecification.hasUserName(userName));
+
+            Page<CustomAdmin> customAdminPage = adminRepo.findAll(spec, pageable);
+
+            // Map entities to DTOs with resolved roleName
+            List<CustomAdminDTO> dtoList = customAdminPage.getContent().stream().map(admin -> {
+                String resolvedRoleName = roleRepository.findById(admin.getRole())
+                        .map(Role::getRoleName)
+                        .orElse("Unknown");
+                return new CustomAdminDTO(admin, resolvedRoleName);
+            }).toList();
+
+            return responseService.generateSuccessResponseWithCount(
+                    "Custom Admins fetched successfully",
+                    dtoList,
+                    customAdminPage.getTotalElements(),
+                    HttpStatus.OK
+            );
+
+        } catch (Exception e) {
+            exceptionHandlingImplement.handleException(e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
-
-
-
 
 }
