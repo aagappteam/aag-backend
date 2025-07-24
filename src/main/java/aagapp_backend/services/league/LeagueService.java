@@ -487,7 +487,7 @@ public class LeagueService {
             } else {
                 league.setStatus(LeagueStatus.PENDING);
 //                league.setScheduledAt(nowInKolkata);
-                league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
+                league.setEndDate(nowInKolkata.plusHours(Constant.LEAGUE_SESSION_TIME));
             }
             league.setMinPlayersPerTeam(1);
             league.setMaxPlayersPerTeam(2);
