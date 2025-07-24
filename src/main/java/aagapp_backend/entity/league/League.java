@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,7 +71,7 @@ public class League {
     @Column(name = "move", nullable = false)
     private Integer move;
 
-    private Integer prizePool=0;
+    private BigDecimal prizePool=BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     private LeagueStatus status;

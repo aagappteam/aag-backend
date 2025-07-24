@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 
 @Getter
@@ -18,7 +19,7 @@ public class LeagueUpdateRequest {
 
     private Integer move;
 
-    private Integer prizePool;
+    private BigDecimal prizePool;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private ZonedDateTime scheduledAt;

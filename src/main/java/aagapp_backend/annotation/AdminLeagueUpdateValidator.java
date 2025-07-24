@@ -14,7 +14,7 @@ public class AdminLeagueUpdateValidator implements ConstraintValidator<ValidAdmi
         if (request.getStatus() == LeagueStatus.APPROVED) {
             if (request.getPrizePool() == null) {
                 context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Prize pool is required when you APPROVED league")
+                context.buildConstraintViolationWithTemplate(" is required when you APPROVED league")
                         .addPropertyNode("prizePool")
                         .addConstraintViolation();
                 return false;

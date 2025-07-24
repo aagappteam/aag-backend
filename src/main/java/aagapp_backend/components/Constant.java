@@ -13,8 +13,7 @@ public class Constant {
     public static final String DOWNLOAD_BONUS_DESCRIPTION = "You received Rs. " + (int) DOWNLOAD_BONUS + " bonus on your first add cash!";
 
     //  League & Tournament
-    public static final Double LEAGUE_PASSES_FEE = 7.0;
-    public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(1000.00);
+//    public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(1000.00);
     public static final int MULTIPLIER = 4;
     public static final int LEAGUE_PASS_COUNT = 3;
     public static final long LEAGUE_SESSION_TIME = 4;

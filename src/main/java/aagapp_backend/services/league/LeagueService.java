@@ -1901,7 +1901,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             }
 
             int totalTeamScore = winningTeam.getTotalScore();
-            BigDecimal prizePool = Constant.LEAGUE_PRIZE_POOL;
+//            BigDecimal prizePool = Constant.LEAGUE_PRIZE_POOL;
 
             // Sort players by score
             List<Map.Entry<Long, Integer>> sorted = playerScores.entrySet().stream()
@@ -1920,13 +1920,13 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                         .multiply(BigDecimal.valueOf(100))
                         .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
 
-                BigDecimal prize = prizePool.multiply(percent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                BigDecimal prize = league.getPrizePool().multiply(percent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
                 prizeMap.put(entry.getKey(), prize);
                 distributed = distributed.add(prize);
             }
 
             if (!rest.isEmpty()) {
-                BigDecimal remaining = prizePool.subtract(distributed).setScale(2, RoundingMode.HALF_UP);
+                BigDecimal remaining = league.getPrizePool().subtract(distributed).setScale(2, RoundingMode.HALF_UP);
                 BigDecimal equalShare = remaining.divide(BigDecimal.valueOf(rest.size()), 2, RoundingMode.HALF_UP);
                 for (Map.Entry<Long, Integer> entry : rest) {
                     prizeMap.put(entry.getKey(), equalShare);
@@ -2056,9 +2056,9 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             }).collect(Collectors.toList());
 
             int totalScore = winner.getTotalScore();
-            BigDecimal prizePool = Constant.LEAGUE_PRIZE_POOL;
+//            BigDecimal prizePool = Constant.LEAGUE_PRIZE_POOL;
 
-            List<PlayerPrizeDTO> prizeDistribution = calculatePrizeDistribution(players, totalScore, prizePool);
+            List<PlayerPrizeDTO> prizeDistribution = calculatePrizeDistribution(players, totalScore, league.getPrizePool());
 
             return responseService.generateSuccessResponse(
                     "Prize pool distributed successfully.",
@@ -2230,7 +2230,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             }
 
             int totalTeamScore = winner.getTotalScore();
-            BigDecimal totalPrizePool = Constant.LEAGUE_PRIZE_POOL;
+//            BigDecimal totalPrizePool = Constant.LEAGUE_PRIZE_POOL;
             BigDecimal distributedPrize = BigDecimal.ZERO;
 
             // Sort players by score descending
@@ -2251,7 +2251,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                         .multiply(BigDecimal.valueOf(100))
                         .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
 
-                BigDecimal prize = totalPrizePool
+                BigDecimal prize = league.getPrizePool()
                         .multiply(contributionPercent)
                         .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
@@ -2273,7 +2273,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             }
 
             // Remaining prize equal distribution
-            BigDecimal remainingPrize = totalPrizePool.subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal remainingPrize = league.getPrizePool().subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
 
             if (!remainingPlayers.isEmpty() && remainingPrize.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal equalShare = remainingPrize
