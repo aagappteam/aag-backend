@@ -110,5 +110,17 @@ public interface LeagueRepository extends JpaRepository<League, Long>, JpaSpecif
     List<League> findByVendorId(@Param("vendorId") Long vendorId);
 
 
+    @Query("SELECT l FROM League l " +
+            "WHERE l.vendorEntity = :vendorEntity " +
+            "AND l.scheduledAt BETWEEN :startTime AND :endTime " +
+            "AND l.status IN :statuses")
+    List<League> findByVendorEntityAndScheduledAtBetweenAndStatusIn(
+            @Param("vendorEntity") VendorEntity vendorEntity,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime,
+            @Param("statuses") List<LeagueStatus> statuses
+    );
+
+
     List<League> findAllByStatusAndCreatedDateBefore(LeagueStatus status, ZonedDateTime dateTime);
 }
