@@ -90,7 +90,7 @@ public class ReferralService {
                 referralNotification.setCustomerId(referrer.getId());
                 referralNotification.setDescription("Referral Bonus Earned");
                 referralNotification.setAmount((double) Constant.USER_REFERAL_BALANCE);
-                referralNotification.setDetails("You earned ₹" + Constant.USER_REFERAL_BALANCE + " for a successful referral!");
+                referralNotification.setDetails("You earned Rs." + (int) Constant.USER_REFERAL_BALANCE + " for a successful referral!");
                 notificationRepository.save(referralNotification);
             }
 

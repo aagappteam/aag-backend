@@ -10,7 +10,7 @@ public class Constant {
     public static final float DOWNLOAD_BONUS = 100.0f;
     public static final float USER_REFERAL_BALANCE = 50.0f;
     public static final BigDecimal KYC_VERIFICATION_BONUS = BigDecimal.valueOf(50);
-    public static final String DOWNLOAD_BONUS_DESCRIPTION = "You've received ₹" + (int) DOWNLOAD_BONUS + " Download Bonus on your first add cash!";
+    public static final String DOWNLOAD_BONUS_DESCRIPTION = "You received Rs. " + (int) DOWNLOAD_BONUS + " bonus on your first add cash!";
 
     //  League & Tournament
     public static final Double LEAGUE_PASSES_FEE = 7.0;

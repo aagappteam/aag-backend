@@ -253,7 +253,7 @@ public class WalletController {
                 bonusNotification.setDescription("Bonus Added!");
                 bonusNotification.setAmount((double) bonusAmount);
                 BigDecimal formattedBonus = BigDecimal.valueOf(bonusAmount).stripTrailingZeros();
-                bonusNotification.setDetails("You received ₹" + formattedBonus.toPlainString() + " using coupon: " + couponCode);
+                bonusNotification.setDetails("You received Rs. " + formattedBonus.toPlainString() + " as bonus");
                 notificationRepository.save(bonusNotification);
             }
 

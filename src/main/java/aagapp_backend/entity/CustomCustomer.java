@@ -31,9 +31,13 @@ import java.util.Set;
                 @Index(name = "idx_email", columnList = "email"),
                 @Index(name = "idx_profile_status_CUSTOM_USER", columnList = "profile_status"),
                 @Index(name = "idx_kyc_status", columnList = "kyc_status"),
-                @Index(name = "idx_created_date_CUSTOM_USER", columnList = "created_date")
+                @Index(name = "idx_created_date_CUSTOM_USER", columnList = "created_date"),
+                @Index(name = "idx_referral_code_CUSTOM_USER", columnList = "referral_code"),
+                @Index(name = "idx_referred_by_CUSTOM_USER", columnList = "referred_by")
+//                @Index(name = "idx_coupon_code_CUSTOM_USER", columnList = "coupon_code")
         }
 )
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
