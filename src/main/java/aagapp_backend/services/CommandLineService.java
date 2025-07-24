@@ -488,6 +488,8 @@ public class CommandLineService implements CommandLineRunner {
             entityManager.merge(support);
             entityManager.merge(vendor);
         }
+
+
     }
 
 

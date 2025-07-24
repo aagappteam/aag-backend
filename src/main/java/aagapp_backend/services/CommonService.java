@@ -330,11 +330,13 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         Long id;
         ZonedDateTime createdDate;
         String gameIcon;
+        String vendorname;
 
         if (entity instanceof League) {
             League league = (League) entity;
             type = "League";
             name = league.getName();
+            vendorname = league.getVendorEntity().getName();
             fee = league.getFee();
             id = league.getId();
             createdDate = league.getCreatedDate();
@@ -343,6 +345,9 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
             Tournament tournament = (Tournament) entity;
             type = "Tournament";
             name = tournament.getName();
+
+            vendorname = tournament.getVendorEntity().getName();
+
             fee = Double.valueOf(tournament.getEntryFee());
             id = tournament.getId();
             createdDate = tournament.getCreatedDate();
@@ -353,7 +358,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
         // Log admin notification
         AdminLogs adminLogs = new AdminLogs();
-        adminLogs.setMessage("New " + type + " created");
+        adminLogs.setMessage("New Request for" + type + " created by" + vendorname);
         adminLogs.setTargetRole(Constant.ROLE_ADMIN);
         adminLogs.setPerformedBy("System");
         adminLogs.setAssignedRole(Constant.ROLE_ADMIN);
@@ -366,7 +371,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         // Send email to all admins
         for (CustomAdmin admin : admins) {
             if (admin.getEmail() != null && !admin.getEmail().isEmpty()) {
-                emailService.sendEmailLeague(admin, type, name, fee, id, createdDate, gameIcon);
+                emailService.sendEmailLeague(admin, type, name, fee, id, createdDate, gameIcon,vendorname);
             }
         }
     }

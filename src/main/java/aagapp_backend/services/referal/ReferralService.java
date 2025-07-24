@@ -3,11 +3,14 @@ package aagapp_backend.services.referal;
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +22,9 @@ public class ReferralService {
 
     @Autowired
     private CustomCustomerRepository customCustomerRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     private CustomCustomerService customCustomerService;
@@ -69,16 +75,25 @@ public class ReferralService {
             CustomCustomer referrer = customCustomerService.findCustomCustomerByReferralCode(referredCode);
             if (referrer != null) {
 
-                // Check if referrer's wallet exists
                 Wallet referrerWallet = walletRepository.findByCustomCustomer(referrer);
 
                 // Update referral count and bonus balance
                 referrer.setReferralCount(referrer.getReferralCount() + 1);
-                referrer.setBonusBalance(referrer.getBonusBalance().add(BigDecimal.valueOf(Constant.USER_REFERAL_BALANCE)));
+                BigDecimal currentBonus = referrer.getBonusBalance() != null ? referrer.getBonusBalance() : BigDecimal.ZERO;
+                referrer.setBonusBalance(currentBonus.add(BigDecimal.valueOf(Constant.USER_REFERAL_BALANCE)));
 
                 // Save the updated referrer (this will also save the wallet if it's changed)
                 customCustomerRepository.save(referrer);
+
+                Notification referralNotification = new Notification();
+                referralNotification.setRole("Customer");
+                referralNotification.setCustomerId(referrer.getId());
+                referralNotification.setDescription("Referral Bonus Earned");
+                referralNotification.setAmount((double) Constant.USER_REFERAL_BALANCE);
+                referralNotification.setDetails("You earned Rs." + (int) Constant.USER_REFERAL_BALANCE + " for a successful referral!");
+                notificationRepository.save(referralNotification);
             }
+
         } catch (Exception e) {
             exceptionHandling.handleException(e);
         }
