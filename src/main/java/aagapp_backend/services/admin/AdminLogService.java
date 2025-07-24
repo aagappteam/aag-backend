@@ -48,8 +48,9 @@ public class AdminLogService {
             StringBuilder sql = new StringBuilder("SELECT * FROM admin_logs l WHERE 1=1");
 
             if (roleName != null && !roleName.isEmpty()) {
-                sql.append(" AND l.role = :roleName");
+                sql.append(" AND LOWER(l.role) = LOWER(:roleName)");
             }
+
 
             if (performedBy != null && !performedBy.isEmpty()) {
                 sql.append(" AND l.performed_by = :performedBy");
@@ -92,8 +93,9 @@ public class AdminLogService {
             StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM admin_logs l WHERE 1=1");
 
             if (roleName != null && !roleName.isEmpty()) {
-                countSql.append(" AND l.role = :roleName");
+                countSql.append(" AND LOWER(l.role) = LOWER(:roleName)");
             }
+
 
             if (performedBy != null && !performedBy.isEmpty()) {
                 countSql.append(" AND l.performed_by = :performedBy");
