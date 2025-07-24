@@ -19,6 +19,7 @@ import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.players.Player;
 
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.ActivityType;
 import aagapp_backend.enums.LeagueRoomStatus;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.VendorStatus;
@@ -917,6 +918,8 @@ public class LeagueService {
         data.put("playerName", player.getPlayerName());
         data.put("leagueId", league.getId());
         data.put("leagueName", league.getName());
+
+        commonService.addXpPoints(ActivityType.LEAGUE, player);
 
         return responseService.generateSuccessResponse("League entry successful. 3 passes added.", data, HttpStatus.OK);
     }

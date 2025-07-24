@@ -463,8 +463,6 @@ public class GameService {
             Game game = gameRepository.findById(gameId)
                     .orElseThrow(() -> new BusinessException("Game not found with ID: " + gameId, HttpStatus.BAD_REQUEST));
 
-            BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
-
             BigDecimal vendorShareAmount = (PriceConstant.VENDOR_REVENUE_PERCENT);
 
 
@@ -521,6 +519,7 @@ public class GameService {
 
             notificationRepository.save(notification);*/
 
+            commonservice.addXpPoints(ActivityType.GAME, player);
 
             return responseService.generateSuccessResponse("Player joined the Game Room", gameRoom, HttpStatus.OK);
         } catch (BusinessException e) {
