@@ -179,9 +179,19 @@ public class CustomCustomer {
     @Column(name = "referred_by")
     private String referredBy; // Stores referral code of the referrer
 
+    @Column(name = "xp_points", nullable = false)
+    private int xpPoints = 0;
+
+    @Column(name = "weekly_boosters_left", nullable = false)
+    private int weeklyBoostersLeft = 0;
+
+    private Boolean isWeeklyBoosterActive;
 
 
-
+    @JsonIgnore
+    @Column(name = "booster_activated_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date boosterActivatedAt;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
@@ -200,5 +210,12 @@ public class CustomCustomer {
     }
 
 
+
+    public boolean isWeeklyBoosterActive() {
+        if (boosterActivatedAt == null) return false;
+
+        long twoHoursInMillis = 2 * 60 * 60 * 1000L;
+        return (new Date().getTime() - boosterActivatedAt.getTime()) < twoHoursInMillis;
+    }
 
 }

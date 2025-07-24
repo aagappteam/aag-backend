@@ -13,6 +13,7 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.*;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.ActivityType;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
@@ -473,6 +474,7 @@ public class TournamentService {
                 tournamentRepository.save(tournament);
             }
 
+            commonService.addXpPoints(ActivityType.TOURNAMENT, player);
 
             return registration;
 
