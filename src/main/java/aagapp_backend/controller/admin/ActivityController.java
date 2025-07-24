@@ -1,7 +1,9 @@
 package aagapp_backend.controller.admin;
 
+import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.RoleService;
 import aagapp_backend.services.admin.AdminLogService;
 import aagapp_backend.services.exception.ExceptionHandlingService;
 import jakarta.persistence.EntityNotFoundException;
@@ -24,6 +26,12 @@ public class ActivityController {
     private ExceptionHandlingService exceptionHandling;
 
     @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private RoleService roleService;
+
+    @Autowired
     private ResponseService responseService;
 
     @Autowired
@@ -32,12 +40,21 @@ public class ActivityController {
     public ResponseEntity<?> getAllActivities(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String roleName,
+//            @RequestParam(required = false) String roleName,
             @RequestParam(required = false) String performedBy,
             @RequestParam(required = false) String targetType,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            @RequestHeader(value = "Authorization") String authorization
     ) {
        try {
+
+           if (authorization == null || !authorization.startsWith("Bearer ")) {
+               return responseService.generateErrorResponse("Invalid or missing Authorization header", HttpStatus.BAD_REQUEST);
+           }
+
+           String token = authorization.substring(7);
+           Integer role = jwtUtil.extractRoleId(token);
+           String roleName = roleService.findRoleName(role);
            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
            Page<AdminLogs> adminLogs = adminLogsService.getAllLogs(pageable, roleName, performedBy, targetType, search);
            return responseService.generateSuccessResponseWithCount("Activities fetched successfully", adminLogs.getContent(), adminLogs.getTotalElements(), HttpStatus.OK);

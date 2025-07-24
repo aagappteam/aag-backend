@@ -27,10 +27,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.FilterChain;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -300,10 +297,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 //                return false;
                  cusomAdmin=entityManager.find(CustomAdmin.class,id);
                 if (cusomAdmin != null) {
+/*                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            cusomAdmin.getAdminId(), null, new ArrayList<>());*/
+                    AbstractMap.SimpleEntry<Long, String> principal =
+                            new AbstractMap.SimpleEntry<>(cusomAdmin.getAdminId(), cusomAdmin.getEmail());
+
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            cusomAdmin.getAdminId(), null, new ArrayList<>());
+                            principal, null, new ArrayList<>());
+
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+
+
                     return false;
                 } else {
                     respondWithUnauthorized(response, "Invalid data provided for this user");

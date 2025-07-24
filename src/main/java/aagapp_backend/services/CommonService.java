@@ -39,6 +39,7 @@ import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -327,6 +328,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         }
     }
 
+    @Async
     public void notifyAdminsByRoleGeneric(int role, Object entity) throws MessagingException, IOException {
         List<CustomAdmin> admins = entityManager.createQuery(
                         "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
@@ -385,6 +387,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         }
     }
 
+<<<<<<< HEAD
 
     public void addXpPoints(ActivityType activityType, Player player) {
 
@@ -426,4 +429,36 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
     }
 
+=======
+    @Async
+    public void notifyAdminsByRole(int role, String type,String name,Long targetid,String message) throws MessagingException, IOException {
+        List<CustomAdmin> admins = entityManager.createQuery(
+                        "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
+                .setParameter("role", role)
+                .getResultList();
+
+        ZonedDateTime createdDate = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+
+        // Log admin notification
+        AdminLogs adminLogs = new AdminLogs();
+        adminLogs.setMessage("New Request for" + type + " created by" + name);
+        adminLogs.setTargetRole(Constant.ROLE_ADMIN);
+        adminLogs.setPerformedBy("System");
+        adminLogs.setAssignedRole(Constant.ROLE_ADMIN);
+        adminLogs.setTargetId(targetid);
+        adminLogs.setTargetType(type);
+        adminLogs.setRead(false);
+        adminLogs.setCreatedDate(createdDate);
+        adminLogsInterface.save(adminLogs);
+
+        // Send email to all admins
+        for (CustomAdmin admin : admins) {
+            if (admin.getEmail() != null && !admin.getEmail().isEmpty()) {
+                emailService.sendAdminCommonmail(admin, type, name, message);
+            }
+        }
+    }
+
+
+>>>>>>> 8e775ba (Worked on requts)
 }

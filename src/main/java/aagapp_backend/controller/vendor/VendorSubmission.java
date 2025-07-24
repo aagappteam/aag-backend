@@ -1,15 +1,19 @@
 package aagapp_backend.controller.vendor;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.VendorSubmissionEntity;
 import aagapp_backend.enums.ProfileStatus;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.ResponseService;
+import aagapp_backend.services.admin.AdminLogService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.exception.VendorSubmissionException;
 import aagapp_backend.services.url.UrlVerificationService;
 import aagapp_backend.services.vendor.VenderServiceImpl;
 import aagapp_backend.services.vendor.VendorSubmissionService;
 import jakarta.validation.Valid;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,9 +22,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.AbstractMap;
 import java.util.List;
 
 @RestController
@@ -31,7 +37,13 @@ public class VendorSubmission {
     private UrlVerificationService urlVerificationService;
 
     @Autowired
+    private CommonService commonservice;
+
+    @Autowired
     private VendorSubmissionService submissionService;
+
+    @Autowired
+    private AdminLogService adminLogsService;
 
     @Autowired
     private VenderServiceImpl venderService;
@@ -70,6 +82,10 @@ public class VendorSubmission {
                 return ResponseService.generateErrorResponse("No Data not found for this vendor ", HttpStatus.NOT_FOUND);
             }
             VendorSubmissionEntity submittedEntity = submissionService.submitDetails(vendorSubmissionEntity, vendorEntity);
+
+            String notificationMessage = "A new vendor request has come. Please review vendor " + vendorEntity.getName() + ".";
+
+            commonservice.notifyAdminsByRole(Constant.ADMIN_ROLE,"Vendor Submission",submittedEntity.getFirstName(),submittedEntity.getId(),notificationMessage);
 
             return ResponseService.generateSuccessResponse(
                     "Submission successful. Awaiting admin verification.",
