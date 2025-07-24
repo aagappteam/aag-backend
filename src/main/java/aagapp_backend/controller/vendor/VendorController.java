@@ -10,6 +10,7 @@ import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
 import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.gameservice.GameService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -50,6 +51,9 @@ public class VendorController {
 
     @Autowired
     private InfluencerMonthlyEarningRepository earningRepo;
+
+    @Autowired
+    private CommonService commonService;
 
     @Autowired
     private WithdrawalRequestRepository withdrawalRepo;
@@ -1341,6 +1345,20 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             }
 
             withdrawalRepo.save(req);
+
+            String submittedByName = vendor.getFirst_name() + " " + vendor.getLast_name();
+            String notificationTitle = "Withdrawal Request";
+            String notificationMessage = "A new withdrawal request of ₹" + dto.getAmount() +
+                    " has been submitted by vendor: " + submittedByName + " (ID: " + vendor.getService_provider_id() + ").";
+
+            commonService.notifyAdminsByRole(
+                    Constant.ADMIN_ROLE,
+                    notificationTitle,
+                    submittedByName,
+                    vendor.getService_provider_id(),
+                    notificationMessage
+            );
+
 
             return responseService.generateSuccessResponse(
                     "Withdraw request submitted",

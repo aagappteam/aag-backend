@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -222,9 +223,26 @@ public class KycService {
         kycRepository.save(kyc);
 
         // Log admin action
-        String performedBy = SecurityContextHolder.getContext().getAuthentication().getName();
-        String activity = "KYC status updated to " + isVerified + " for " + role + " ID " + userOrVendorId;
-        adminLogsService.logAction(activity, role, performedBy, userOrVendorId, "KYC Verification");
+
+        Object principalObj = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String emailperformedby = null;
+
+        if (principalObj instanceof AbstractMap.SimpleEntry<?, ?> entry) {
+            Long adminId = (Long) entry.getKey();
+            emailperformedby = (String) entry.getValue();
+
+            // ✅ Corrected variable name here
+            System.out.println("Logged-in Admin ID: " + adminId);
+            System.out.println("Logged-in Admin Email: " + emailperformedby);
+        }
+
+        // Optional, if you still want this
+        String performedBy = SecurityContextHolder.getContext().getAuthentication().getName(); // will print "1=admin@example.com"
+
+        String activity = "KYC status updated to " + isVerified + " for " + role + " which has ID " + userOrVendorId;
+
+        adminLogsService.logAction(activity, role, emailperformedby, userOrVendorId, "KYC Verification");
+
 
         return kyc;
     }
