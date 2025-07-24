@@ -15,12 +15,14 @@ import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.ActivityType;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.NotificationShareRepository;
 import aagapp_backend.repository.admin.AdminLogsInterface;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.game.PlayerRepository;
 import aagapp_backend.repository.league.LeagueRepository;
@@ -70,6 +72,8 @@ public class CommonService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
     private CustomCustomerService customCustomerService;
     private PlayerRepository playerRepository;
     private PaymentService paymentService;
@@ -408,4 +412,44 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
     }
 
 
+
+    public void addXpPoints(ActivityType activityType, Player player) {
+
+        CustomCustomer customer = playerRepository.findById(player.getPlayerId()).map(Player::getCustomer).orElse(null);
+
+        int xpToAdd = 0;
+
+        switch (activityType) {
+            case GAME:
+                xpToAdd = customer.getIsWeeklyBoosterActive() ? 4 : 2;
+                break;
+            case LEAGUE:
+                xpToAdd = customer.getIsWeeklyBoosterActive() ? 10 : 5;
+                break;
+            case TOURNAMENT:
+                xpToAdd = customer.getIsWeeklyBoosterActive() ? 10 : 5;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported activity type: " + activityType);
+        }
+
+        customer.setXpPoints(customer.getXpPoints() + xpToAdd);
+        customCustomerRepository.save(customer);
+    }
+
+
+
+    // Every Monday at 00:00 AM
+    @Scheduled(cron = "0 0 0 * * MON")
+    public void resetWeeklyBoosters() {
+        List<CustomCustomer> customers = customCustomerRepository.findAll();
+
+        for (CustomCustomer customer : customers) {
+            customer.setWeeklyBoostersLeft(2);
+            customer.setBoosterActivatedAt(null);
+        }
+
+        customCustomerRepository.saveAll(customers);
+
+    }
 }
