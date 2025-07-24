@@ -428,7 +428,6 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
     }
 
-<<<<<<< HEAD
     @Async
     public void notifyAdminsByRole(int role, String type,String name,Long targetid,String message) throws MessagingException, IOException {
         List<CustomAdmin> admins = entityManager.createQuery(
@@ -457,7 +456,5 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
             }
         }
     }
-=======
->>>>>>> 51135b0 (resolved conflicts)
 
 }
