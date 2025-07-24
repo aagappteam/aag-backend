@@ -456,5 +456,4 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
             }
         }
     }
-
 }
