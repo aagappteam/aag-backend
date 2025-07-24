@@ -70,6 +70,8 @@ public class League {
     @Column(name = "move", nullable = false)
     private Integer move;
 
+    private Integer prizePool=0;
+
     @Enumerated(EnumType.STRING)
     private LeagueStatus status;
 

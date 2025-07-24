@@ -2317,7 +2317,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
 
     @Transactional
-    public League updateLeagueByAdmin(Long leagueId, GameRequest gameRequest) {
+    public League updateLeagueByAdmin(Long leagueId, LeagueUpdateRequest gameRequest) {
         try {
             League league = leagueRepository.findById(leagueId)
                     .orElseThrow(() -> new BusinessException("League ID: " + leagueId + " not found", HttpStatus.NOT_FOUND));
@@ -2330,15 +2330,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
             // Apply updates from GameRequest
             league.setFee(gameRequest.getFee());
-
-            if (gameRequest.getFee() > 10) {
-                league.setMove(Constant.TENMOVES);
-            } else {
-                league.setMove(Constant.SIXTEENMOVES);
-            }
-
-            league.setMinPlayersPerTeam(gameRequest.getMinPlayersPerTeam());
-            league.setMaxPlayersPerTeam(gameRequest.getMaxPlayersPerTeam());
+            league.setPrizePool(gameRequest.getPrizePool());
 
             if (gameRequest.getScheduledAt() != null) {
                 ZonedDateTime scheduledInKolkata = gameRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
