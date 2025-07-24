@@ -1188,6 +1188,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
                         Map<String, Object> vendorData = new HashMap<>();
                         vendorData.put("service_provider_id", vendor.getService_provider_id());
+                        vendorData.put("isAccountPrivate", vendor.getIsPrivate());
                         vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
                         vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
                                 .map(firstName -> firstName + " " + vendor.getLast_name())
@@ -1207,6 +1208,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             leaderboard = allVendors.stream().map(vendor -> {
                 Map<String, Object> vendorData = new HashMap<>();
                 vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("isAccountPrivate", vendor.getIsPrivate());
                 vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
                 vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
                         .map(firstName -> firstName + " " + vendor.getLast_name())
