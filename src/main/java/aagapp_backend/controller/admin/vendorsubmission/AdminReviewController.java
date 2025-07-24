@@ -1,10 +1,7 @@
 package aagapp_backend.controller.admin.vendorsubmission;
 
 import aagapp_backend.components.ZonedDateTimeAdapter;
-import aagapp_backend.dto.GameRequest;
-import aagapp_backend.dto.NotificationRequest;
-import aagapp_backend.dto.TournamentUpdateRequest;
-import aagapp_backend.dto.WithdrawalRequestResponseDTO;
+import aagapp_backend.dto.*;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.faqs.FAQs;
@@ -690,7 +687,7 @@ public class AdminReviewController {
     }
 
     @PutMapping("/league/update/{leagueId}")
-    public ResponseEntity<?> updateLeagueByAdmin(@PathVariable Long leagueId, @RequestBody GameRequest gameRequest) {
+    public ResponseEntity<?> updateLeagueByAdmin(@PathVariable Long leagueId, @RequestBody LeagueUpdateRequest gameRequest) {
         try {
             League updatedLeague = leagueService.updateLeagueByAdmin(leagueId, gameRequest);
 

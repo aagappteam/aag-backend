@@ -34,7 +34,9 @@ import aagapp_backend.services.pricedistribute.MatchService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import jakarta.persistence.EntityManager;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -435,7 +437,7 @@ public class LeagueController {
 
 
     @PostMapping("/update-leagues-by-admin")
-    public ResponseEntity<?> updateLeagueStatusByAdmin(@RequestBody AdminLeagueUpdateRequest request) {
+    public ResponseEntity<?> updateLeagueStatusByAdmin(@Valid @RequestBody AdminLeagueUpdateRequest request) {
         try {
             League updatedLeague = leagueService.updateLeagueStatusByAdmin(request);
             return responseService.generateSuccessResponse("League status updated", updatedLeague, HttpStatus.OK);
