@@ -39,7 +39,6 @@ import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -328,7 +327,6 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         }
     }
 
-    @Async
     public void notifyAdminsByRoleGeneric(int role, Object entity) throws MessagingException, IOException {
         List<CustomAdmin> admins = entityManager.createQuery(
                         "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
@@ -387,6 +385,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         }
     }
 
+<<<<<<< HEAD
     @Async
     public void notifyAdminsByRole(int role, String type,String name,Long targetid,String message) throws MessagingException, IOException {
         List<CustomAdmin> admins = entityManager.createQuery(
@@ -460,4 +459,6 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
     }
 
+=======
+>>>>>>> 68e394b (ab conflicts resolved ho ja)
 }
