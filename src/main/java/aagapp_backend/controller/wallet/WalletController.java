@@ -15,6 +15,7 @@ import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.enums.WithdrawalStatus;
 import aagapp_backend.enums.WithdrawalType;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.withdrawrequest.CustomerWithdrawalRequestRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
@@ -50,6 +51,9 @@ public class WalletController {
 
     @Autowired
     private ReferralService referralService;
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
 
     @Autowired
     private WalletService walletService;
@@ -209,6 +213,12 @@ public class WalletController {
             if (customCustomerService.isFirstRecharge(customerId)) {
                 float downloadBonus = Constant.DOWNLOAD_BONUS;
                 customCustomerService.addBonusAndUpdateCoupon(customerId, downloadBonus, "AAG_DOWNLOAD");
+
+
+                customer.setFirstRechargeDone(true);
+
+                // Save updated user
+                customCustomerRepository.save(customer);
 
                 Notification downloadBonusNotification = new Notification();
                 downloadBonusNotification.setRole("Customer");
