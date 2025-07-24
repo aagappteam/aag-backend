@@ -242,7 +242,7 @@ public class EmailService {
     }
 
 //    Send Email  to admin if new tournament or league is published
-    public void sendEmailLeague(CustomAdmin admin, String type, String name, Double fee, Long id, ZonedDateTime createdAt, String gameIcon)
+    public void sendEmailLeague(CustomAdmin admin, String type, String name, Double fee, Long id, ZonedDateTime createdAt, String gameIcon,String vendorname)
             throws IOException, MessagingException {
 
         String template = loadTemplate("email-templates/league-tournament.html");
@@ -252,6 +252,7 @@ public class EmailService {
 
         String messageBody = template
                 .replace("{type}", type)
+                .replace("{vendorname}", vendorname)
                 .replace("{adminName}", admin.getUser_name())
                 .replace("{name}", name)
                 .replace("{Fee}", String.format("%.2f", fee))

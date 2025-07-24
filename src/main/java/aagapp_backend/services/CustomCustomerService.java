@@ -387,8 +387,10 @@ public class CustomCustomerService {
     }
 
     public boolean isFirstRecharge(Long customerId) {
-        Wallet wallet = walletRepository.findByCustomCustomer_Id(customerId);
-        return wallet != null && wallet.getUnplayedBalance() == 0.0;
+        CustomCustomer customer = customCustomerRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+        return !customer.isFirstRechargeDone();
     }
 
 

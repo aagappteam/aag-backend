@@ -488,6 +488,17 @@ public class CommandLineService implements CommandLineRunner {
             entityManager.merge(support);
             entityManager.merge(vendor);
         }
+
+        // Step 1: Add column
+        String addColumnQuery = "ALTER TABLE CUSTOM_USER ADD COLUMN is_first_recharge_done BOOLEAN DEFAULT false NOT NULL";
+        Query addColumn = entityManager.createNativeQuery(addColumnQuery);
+        addColumn.executeUpdate();
+
+// Step 2: Set true for existing users (all existing assumed to have recharged at least once)
+        String updateExistingQuery = "UPDATE CUSTOM_USER SET is_first_recharge_done = true";
+        Query updateExisting = entityManager.createNativeQuery(updateExistingQuery);
+        updateExisting.executeUpdate();
+
     }
 
 

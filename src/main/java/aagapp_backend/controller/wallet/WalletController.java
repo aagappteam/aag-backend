@@ -24,6 +24,7 @@ import aagapp_backend.services.bonus.BonusOfferService;
 import aagapp_backend.services.dashboard.CouponService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import aagapp_backend.services.referal.ReferralService;
 import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.services.wallet.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/wallet")
 public class WalletController {
+
+
+    @Autowired
+    private ReferralService referralService;
 
     @Autowired
     private WalletService walletService;
@@ -86,7 +91,7 @@ public class WalletController {
     private CustomerWithdrawalRequestRepository customerWithdrawalRequestRepository;
 
     // Endpoint to add balance to the wallet
-    @PostMapping("/addBalance")
+/*    @PostMapping("/addBalance")
     public ResponseEntity<?> addBalance(@RequestBody AddBalanceRequest addBalanceRequest, @RequestHeader(value = "Authorization") String authorization) {
         try {
             // Validate Authorization header
@@ -162,9 +167,9 @@ public class WalletController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error adding balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
-/*    @PostMapping("/addBalance")
+    @PostMapping("/addBalance")
     public ResponseEntity<?> addBalance(@RequestBody AddBalanceRequest addBalanceRequest,
                                         @RequestHeader(value = "Authorization") String authorization) {
         try {
@@ -210,22 +215,32 @@ public class WalletController {
                 downloadBonusNotification.setCustomerId(customerId);
                 downloadBonusNotification.setDescription("Welcome Bonus!");
                 downloadBonusNotification.setAmount((double) downloadBonus);
-                downloadBonusNotification.setDetails("You've received ₹100 Download Bonus on your first add cash!");
+                downloadBonusNotification.setDetails(Constant.DOWNLOAD_BONUS_DESCRIPTION);
                 notificationRepository.save(downloadBonusNotification);
+
+
+                String referredBy = customer.getReferredBy();
+                if (referredBy != null && !referredBy.trim().isEmpty()) {
+                    referralService.updateReferrerEarnings(referredBy);
+                }
             }
 
 
             Wallet updatedWallet = walletService.addBalanceToWallet(customerId, amount, isTest);
 
-            // Apply coupon if provided
             float bonusAmount = 0f;
-            if (couponCode != null && !couponCode.trim().isEmpty()) {
-                try {
-                    bonusAmount = couponService.applyCouponIfValid(couponCode, amount);
-                } catch (BusinessException e) {
-                    return responseService.generateErrorResponse("Coupon error: " + e.getMessage(), HttpStatus.BAD_REQUEST);
-                }
+            if (amount == 200) {
+                bonusAmount = 100;
+//                appliedCoupon = "AUTO_50PERCENT_200";
+            } else if (amount == 500) {
+                bonusAmount = 500;
+//                appliedCoupon = "AUTO_100PERCENT_500";
+            } else if (amount == 1000) {
+                bonusAmount = 500;
+//                appliedCoupon = "AUTO_FLAT500_1000";
             }
+
+
 
             // Add bonus and save coupon code
             if (bonusAmount > 0) {
@@ -273,7 +288,7 @@ public class WalletController {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error adding balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }*/
+    }
 
 
     // Method to handle the POST request to get balance

@@ -77,7 +77,6 @@ public class CustomCustomer {
     @Column(name = "referral_code", unique = true)
     private String referralCode;
 
-
     @Nullable
     @Column(name = "referred_count")
     private int referralCount;
@@ -108,6 +107,8 @@ public class CustomCustomer {
     @Nullable
     @Column(name = "otp")
     private String otp;
+
+
 
     /*@Nullable
     @Column(name = "father_name")
@@ -143,13 +144,7 @@ public class CustomCustomer {
     @Column(name = "last_active_at")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastActiveAt;
-   /* @Nullable
-    @Column(name = "district")
-    private String district;
 
-    @Nullable
-    @Column(name = "city")
-    private String city;*/
 
     @Column(name = "fcm_token")
     private String fcmToken;
@@ -171,6 +166,17 @@ public class CustomCustomer {
 
     @Column(name = "last_coupon_code")
     private String couponCode; // Record which coupon was used last
+
+
+    @Column(name = "is_first_recharge_done", nullable = false)
+    private boolean isFirstRechargeDone = false;
+
+    @Nullable
+    @Column(name = "referred_by")
+    private String referredBy; // Stores referral code of the referrer
+
+
+
 
 
     @CreationTimestamp
