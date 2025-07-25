@@ -1881,12 +1881,13 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             LeagueTeam winningTeam = teams.get(0).getTotalScore() >= teams.get(1).getTotalScore()
                     ? teams.get(0) : teams.get(1);
 
-            /*if (!leagueResultRecordRepository.existsByLeagueIdAndLeagueTeamIdAndPlayerId(leagueId, winningTeam.getId(), playerId)) {
-                return BigDecimal.ZERO;
-            }
-*/
             List<LeagueResultRecord> records = leagueResultRecordRepository
                     .findByLeagueIdAndLeagueTeamId(leagueId, winningTeam.getId());
+
+            // 🔧 CHANGED: Guard for empty records (avoid further unnecessary logic)
+            if (records.isEmpty()) {
+                return BigDecimal.ZERO;
+            }
 
             // Calculate total scores per player
             Map<Long, Integer> playerScores = new HashMap<>();
@@ -1896,7 +1897,11 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             }
 
             int totalTeamScore = winningTeam.getTotalScore();
-//            BigDecimal prizePool = Constant.LEAGUE_PRIZE_POOL;
+
+            // 🔧 CHANGED: Guard against division by zero
+            if (totalTeamScore == 0) {
+                return BigDecimal.ZERO;
+            }
 
             // Sort players by score
             List<Map.Entry<Long, Integer>> sorted = playerScores.entrySet().stream()
@@ -1915,26 +1920,36 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                         .multiply(BigDecimal.valueOf(100))
                         .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
 
-                BigDecimal prize = league.getPrizePool().multiply(percent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                BigDecimal prize = league.getPrizePool()
+                        .multiply(percent)
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
                 prizeMap.put(entry.getKey(), prize);
                 distributed = distributed.add(prize);
             }
 
+            // 🔧 CHANGED: Guard against rest.size() == 0 to avoid divide-by-zero
             if (!rest.isEmpty()) {
                 BigDecimal remaining = league.getPrizePool().subtract(distributed).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal equalShare = remaining.divide(BigDecimal.valueOf(rest.size()), 2, RoundingMode.HALF_UP);
-                for (Map.Entry<Long, Integer> entry : rest) {
-                    prizeMap.put(entry.getKey(), equalShare);
+
+                // 🔧 CHANGED: Added condition check to prevent divide-by-zero
+                if (rest.size() > 0) {
+                    BigDecimal equalShare = remaining.divide(BigDecimal.valueOf(rest.size()), 2, RoundingMode.HALF_UP);
+                    for (Map.Entry<Long, Integer> entry : rest) {
+                        prizeMap.put(entry.getKey(), equalShare);
+                    }
                 }
             }
 
             return prizeMap.getOrDefault(playerId, BigDecimal.ZERO);
 
         } catch (Exception e) {
+            // 🔧 CHANGED: Consider logging more context here for debugging
             exceptionHandlingService.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return BigDecimal.ZERO;
         }
     }
+
 
 
     public ResponseEntity<?> getLeagueTeamDetails(Long leagueId, Long currentUserId, int page, int size){
