@@ -334,6 +334,8 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         String name;
         Double fee;
         Long id;
+        Long senderid;
+        String senderrole;
         ZonedDateTime createdDate;
         String gameIcon;
         String vendorname;
@@ -342,6 +344,9 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
             League league = (League) entity;
             type = "League Approval";
             name = league.getName();
+            senderid= league.getVendorEntity().getService_provider_id();
+            senderrole= Constant.ROLE_VENDOR;
+
             vendorname = league.getVendorEntity().getName();
             fee = league.getFee();
             id = league.getId();
@@ -351,7 +356,8 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
             Tournament tournament = (Tournament) entity;
             type = "Tournament Approval";
             name = tournament.getName();
-
+            senderid= tournament.getVendorEntity().getService_provider_id();
+            senderrole= Constant.ROLE_VENDOR;
             vendorname = tournament.getVendorEntity().getName();
 
             fee = Double.valueOf(tournament.getEntryFee());
@@ -364,9 +370,11 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
         // Log admin notification
         AdminLogs adminLogs = new AdminLogs();
-        adminLogs.setMessage("New Request for" + type + " created by" + vendorname);
+        adminLogs.setMessage("New Request for " + type + " created by" + vendorname);
         adminLogs.setTargetRole(Constant.ROLE_ADMIN);
         adminLogs.setPerformedBy("System");
+        adminLogs.setSenderid(senderid);
+        adminLogs.setSenderrole(senderrole);
         adminLogs.setAssignedRole(Constant.ROLE_ADMIN);
         adminLogs.setTargetId(id);
         adminLogs.setTargetType(type);
@@ -383,7 +391,8 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
     }
 
     @Async
-    public void notifyAdminsByRole(int role, String type,String name,Long targetid,String message) throws MessagingException, IOException {
+    public void notifyAdminsByRole(int role, String type,String name,Long targetid,String message, Long senderId,
+                                   String senderRole) throws MessagingException, IOException {
         List<CustomAdmin> admins = entityManager.createQuery(
                         "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
                 .setParameter("role", role)
@@ -393,10 +402,12 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
         // Log admin notification
         AdminLogs adminLogs = new AdminLogs();
-        adminLogs.setMessage("New Request for" + type + " created by" + name);
+        adminLogs.setMessage("New Request for " + type + " created by" + name);
         adminLogs.setTargetRole(Constant.ROLE_ADMIN);
         adminLogs.setPerformedBy("System");
         adminLogs.setAssignedRole(Constant.ROLE_ADMIN);
+        adminLogs.setSenderid(senderId);
+        adminLogs.setSenderrole(senderRole);
         adminLogs.setTargetId(targetid);
         adminLogs.setTargetType(type);
         adminLogs.setRead(false);

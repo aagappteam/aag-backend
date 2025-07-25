@@ -135,6 +135,8 @@ public class KycController {
             String notificationMessage = "A new " + role.toLowerCase() + " KYC request has been submitted. Please review the KYC for +" + role.toLowerCase() + " ID: " + userOrVendorId + ".";
 
             String submittedByName = "";
+            Long senderId = userOrVendorId;
+            String senderRole = role.equalsIgnoreCase("vendor") ? Constant.ROLE_VENDOR : Constant.ROLE_CUSTOMER;
             if (role.equalsIgnoreCase("vendor")) {
                 VendorEntity vendorEntity = vendorRepository.findById(userOrVendorId).orElse(null);
                 submittedByName = vendorEntity != null ? vendorEntity.getName() : "";
@@ -143,12 +145,16 @@ public class KycController {
                 submittedByName = user != null ? user.getName() : "";
             }
 
+
             commonService.notifyAdminsByRole(
+
                     Constant.ADMIN_ROLE,
                     notificationTitle,
                     submittedByName,
                     userOrVendorId,
-                    notificationMessage
+                    notificationMessage,
+                     senderId,
+                     senderRole
             );
 
 

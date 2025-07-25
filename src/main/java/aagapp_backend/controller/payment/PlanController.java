@@ -264,7 +264,9 @@ public class PlanController {
                     notificationTitle,
                     submittedByName,
                     vendorId,
-                    notificationMessage
+                    notificationMessage,
+                    vendorId,
+                    Constant.ROLE_VENDOR
             );
 
 

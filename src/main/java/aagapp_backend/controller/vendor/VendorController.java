@@ -1356,7 +1356,9 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
                     notificationTitle,
                     submittedByName,
                     vendor.getService_provider_id(),
-                    notificationMessage
+                    notificationMessage,
+                    vendor.getService_provider_id(),
+                    Constant.VENDOR
             );
 
 

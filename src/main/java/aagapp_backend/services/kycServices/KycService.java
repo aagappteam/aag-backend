@@ -196,9 +196,7 @@ public class KycService {
 
                 if (customer.getBonusBalance() != null) {
                     BigDecimal bonusToAdd = Constant.KYC_VERIFICATION_BONUS;
-
                     customer.setBonusBalance(customer.getBonusBalance().add(bonusToAdd));
-
                     customCustomerRepository.save(customer);
                 }
             }
