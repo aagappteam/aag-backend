@@ -402,8 +402,8 @@ public class CommandLineService implements CommandLineRunner {
                     .getSingleResult();
 
             CustomAdmin admin = new CustomAdmin();
-            admin.setRoles(Collections.singleton(role)); // ✅ Set<Role>
-
+//            admin.setRoles(Collections.singleton(role)); // ✅ Set<Role>
+            admin.setRole(role.getRoleId());
             admin.setPassword("1234");
             admin.setUser_name("Rajendra Gupta");
             admin.setEmail("rajendra@celestialitverse.com");
