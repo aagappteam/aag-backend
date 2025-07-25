@@ -25,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.Optional;
 
 @RestController
@@ -224,6 +225,7 @@ public class CustomerGame {
         }
 
         user.setIsWeeklyBoosterActive(true);
+        user.setBoosterActivatedAt(new Date());
         user.setWeeklyBoostersLeft(user.getWeeklyBoostersLeft() - 1);
         customCustomerRepository.save(user);
 
