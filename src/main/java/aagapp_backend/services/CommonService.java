@@ -340,7 +340,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
         if (entity instanceof League) {
             League league = (League) entity;
-            type = "League";
+            type = "League Approval";
             name = league.getName();
             vendorname = league.getVendorEntity().getName();
             fee = league.getFee();
@@ -349,7 +349,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
             gameIcon = league.getTheme().getGameimageUrl(); // Assumes getter
         } else if (entity instanceof Tournament) {
             Tournament tournament = (Tournament) entity;
-            type = "Tournament";
+            type = "Tournament Approval";
             name = tournament.getName();
 
             vendorname = tournament.getVendorEntity().getName();

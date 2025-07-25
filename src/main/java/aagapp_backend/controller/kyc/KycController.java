@@ -131,7 +131,7 @@ public class KycController {
                     panImage
             );
 
-            String notificationTitle = role.equalsIgnoreCase("vendor") ? "Vendor KYC Submission" : "User KYC Submission";
+            String notificationTitle = role.equalsIgnoreCase("vendor") ? "Vendor KYC Request" : "User KYC Request";
             String notificationMessage = "A new " + role.toLowerCase() + " KYC request has been submitted. Please review the KYC for +" + role.toLowerCase() + " ID: " + userOrVendorId + ".";
 
             String submittedByName = "";
