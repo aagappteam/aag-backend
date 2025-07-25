@@ -69,6 +69,8 @@ public class PaymentFeatures {
 
             int dailyUsage = gameService.countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
 
+            System.out.println("Daily Usage: " + dailyUsage);
+            System.out.println("Daily Limit: " + activePlan.getDailyLimit());
 
             if (dailyUsage >= activePlan.getDailyLimit()) {
                 return ResponseService.generateErrorResponse(
