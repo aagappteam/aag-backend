@@ -81,13 +81,22 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
     Optional<Tournament> lockTournamentForProcessing(@Param("id") Long id);
 
 
-    @Query("SELECT t FROM Tournament t WHERE t.status = :status " +
+/*    @Query("SELECT t FROM Tournament t WHERE t.status = :status " +
             "AND t.scheduledAt BETWEEN :start AND :end")
     List<Tournament> findTournamentsToStart(
             @Param("status") TournamentStatus status,
             @Param("start") ZonedDateTime start,
             @Param("end") ZonedDateTime end
+    );*/
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM Tournament t WHERE t.status = :status AND t.scheduledAt BETWEEN :windowStart AND :windowEnd")
+    List<Tournament> findTournamentsToStart(
+            @Param("status") TournamentStatus status,
+            @Param("windowStart") ZonedDateTime windowStart,
+            @Param("windowEnd") ZonedDateTime windowEnd
     );
+
 
 
     Page<Tournament> findByStatusIn(List<TournamentStatus> statuses, Pageable pageable);
