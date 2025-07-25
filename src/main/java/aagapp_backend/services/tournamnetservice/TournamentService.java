@@ -87,7 +87,6 @@ public class TournamentService {
     private EntityManager em;
     private NotificationRepository notificationRepository;
     private AagGameRepository aagGameRepository;
-    private TaskScheduler taskScheduler;
     private NotoficationFirebase notoficationFirebase;
     private ExceptionHandlingImplement exceptionHandling;
     private TournamentRoomRepository roomRepository;
@@ -118,10 +117,6 @@ public class TournamentService {
         this.aagGameRepository = aagGameRepository;
     }
 
-    @Autowired
-    public void setTaskScheduler(TaskScheduler taskScheduler) {
-        this.taskScheduler = taskScheduler;
-    }
 
     @Autowired
     public void setNotoficationFirebase(NotoficationFirebase notoficationFirebase) {
