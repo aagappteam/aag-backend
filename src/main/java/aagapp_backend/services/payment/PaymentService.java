@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -921,7 +922,7 @@ public class PaymentService {
 
     // Updated to include transactionReference as an additional parameter
     public List<PaymentEntity> getTransactionsByVendorId(Long vendorId, int page, int size, String transactionReference) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return paymentRepository.findAllTransactionsByVendorId(vendorId, transactionReference, pageable);
     }/*
     public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorIdOld(Long vendorId, Integer dailyPercentage,Integer PublishedLimit,Integer dailyLimit) {
