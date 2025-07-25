@@ -89,7 +89,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
             @Param("end") ZonedDateTime end
     );*/
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+
     @Query("SELECT t FROM Tournament t WHERE t.status = :status AND t.scheduledAt BETWEEN :windowStart AND :windowEnd")
     List<Tournament> findTournamentsToStart(
             @Param("status") TournamentStatus status,

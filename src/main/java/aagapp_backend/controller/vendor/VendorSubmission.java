@@ -85,7 +85,7 @@ public class VendorSubmission {
 
             String notificationMessage = "A new vendor request has come. Please review vendor " + vendorEntity.getName() + ".";
 
-            commonservice.notifyAdminsByRole(Constant.ADMIN_ROLE,"Vendor Submission",submittedEntity.getFirstName(),submittedEntity.getId(),notificationMessage);
+            commonservice.notifyAdminsByRole(Constant.ADMIN_ROLE,"Vendor Submission",submittedEntity.getFirstName(),submittedEntity.getId(),notificationMessage,submittedEntity.getVendorEntity().getService_provider_id(),Constant.ROLE_VENDOR);
 
             return ResponseService.generateSuccessResponse(
                     "Submission successful. Awaiting admin verification.",

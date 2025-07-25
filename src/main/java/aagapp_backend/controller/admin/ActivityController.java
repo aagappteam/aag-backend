@@ -1,6 +1,7 @@
 package aagapp_backend.controller.admin;
 
 import aagapp_backend.components.JwtUtil;
+import aagapp_backend.dto.admin.AdminLogResponseDTO;
 import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.RoleService;
@@ -18,6 +19,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/activity")
@@ -58,7 +61,13 @@ public class ActivityController {
 
            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
            Page<AdminLogs> adminLogs = adminLogsService.getAllLogs(pageable, roleName, performedBy, targetType, search);
-           return responseService.generateSuccessResponseWithCount("Activities fetched successfully", adminLogs.getContent(), adminLogs.getTotalElements(), HttpStatus.OK);
+           List<AdminLogResponseDTO> dtoList = adminLogs.getContent().stream()
+                   .map(adminLogsService::mapToDto) // mapToDto method should be public in service
+                   .collect(Collectors.toList());
+
+           return responseService.generateSuccessResponseWithCount("Activities fetched successfully", dtoList, adminLogs.getTotalElements(), HttpStatus.OK);
+
+//           return responseService.generateSuccessResponseWithCount("Activities fetched successfully", adminLogs.getContent(), adminLogs.getTotalElements(), HttpStatus.OK);
        }catch (Exception e){
            exceptionHandling.handleException(e);
            return responseService.generateErrorResponse("Error processing request: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

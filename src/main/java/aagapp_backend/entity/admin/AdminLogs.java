@@ -28,6 +28,9 @@ public class AdminLogs {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long senderid;
+    private String senderrole;
+
     @Column(length = 1000)
     private String message;
 
