@@ -165,17 +165,13 @@ public class LeagueService {
                 throw new BusinessException("You already have a pending league. Please wait for admin approval before creating a new one.", HttpStatus.BAD_REQUEST);
             }
 
-
-
             AagAvailableGames game = aagGameRepository.findById(leagueRequest.getExistinggameId()).orElse(null);
             if (leagueRequest.getFee() <= 0)
                 throw new BusinessException("Fee must be positive.", HttpStatus.BAD_REQUEST);
             if (leagueRequest.getFee() > Constant.MAX_FEE)
                 throw new BusinessException("Fee exceeds maximum allowed limit.", HttpStatus.BAD_REQUEST);
 
-/*            if (leagueRequest.getMinPlayersPerTeam() > leagueRequest.getMaxPlayersPerTeam()) {
-                throw new BusinessException("Min players per team cannot be more than max players.", HttpStatus.BAD_REQUEST);
-            }*/
+
             if (leagueRequest.getScheduledAt() != null &&
                     leagueRequest.getScheduledAt().isBefore(ZonedDateTime.now().plusHours(4))) {
                 throw new BusinessException("Scheduled time must be at least 4 hours in the future.", HttpStatus.BAD_REQUEST);
@@ -262,11 +258,11 @@ public class LeagueService {
 
                 String challengeJson = gson.toJson(challenge); // Convert Challenge to JSON string
 
-                NotificationRequest notificationRequest = new NotificationRequest();
+/*                NotificationRequest notificationRequest = new NotificationRequest();
                 notificationRequest.setToken(fcmToken);
                 notificationRequest.setTitle("League Challenge Received from " + vendor.getFirst_name() + "! ");
                 notificationRequest.setBody(challengeJson);
-                notificationRequest.setTopic("League Challenge"); // Optional, just for tagging
+                notificationRequest.setTopic("League Challenge"); // Optional, just for tagging*/
 
 
                 try {
@@ -561,10 +557,6 @@ public class LeagueService {
                 }
             }
 
-
-//            CompletableFuture.runAsync(() -> {
-//                followerNotificationService.notifyFollowersInParallel("league", league.getGameName(), vendorEntity);
-//            });
             commonService.notifyAdminsByRoleGeneric(Constant.ADMIN_ROLE, savedLeague);
             return savedLeague;
 
