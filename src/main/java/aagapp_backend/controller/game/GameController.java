@@ -260,7 +260,7 @@ public class GameController {
             if (gameRequest.getScheduledAt() != null) {
                 notification.setDescription("Game has been scheduled");
 //                notification.setAmount(publishedGame.getFee());
-                notification.setDetails("Your game has been scheduled and will go live at the specified time.");
+                notification.setDetails("Your game has been scheduled and will go live at the scheduled time.");
 
             }else{
 //                notification.setAmount(publishedGame.getFee());
@@ -273,9 +273,9 @@ public class GameController {
             notificationRepository.save(notification);
 
             if (gameRequest.getScheduledAt() != null) {
-                return responseService.generateSuccessResponse("Game scheduled successfully", publishedGame, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("Your game has been scheduled and will go live at the scheduled time", publishedGame, HttpStatus.CREATED);
             } else {
-                return responseService.generateSuccessResponse("Game published successfully", publishedGame, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("Your game has been published and is now live on the platform", publishedGame, HttpStatus.CREATED);
             }
         }catch (BusinessException e){
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
