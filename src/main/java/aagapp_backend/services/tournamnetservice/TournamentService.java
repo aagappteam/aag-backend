@@ -166,15 +166,6 @@ public class TournamentService {
     }
 
 
-    private static final double TAX_PERCENT = 0.28;
-
-    private static final double VENDOR_PERCENT = 0.05;
-
-    private static final double PLATFORM_PERCENT = 0.04;
-
-    private static final double USER_WIN_PERCENT = 0.63;
-
-    private static final double BONUS_PERCENT = 0.20;
 
 
     @Scheduled(cron = "0 * * * * *")
@@ -217,7 +208,7 @@ public class TournamentService {
         }
     }
 
-    @Scheduled(cron = "*/5 * * * * *")
+    @Scheduled(cron = "*/2 * * * * *")
     public void autoStartScheduledTournaments() {
 
         try{
@@ -845,8 +836,8 @@ public class TournamentService {
         BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
         BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
 
-        tournament.setRoomprize(roomPrizePool);
-        tournament.setTotalPrizePool(totalCollection.doubleValue());
+/*        tournament.setRoomprize(roomPrizePool);
+        tournament.setTotalPrizePool(totalCollection.doubleValue());*/
         tournament.setStatus(TournamentStatus.ACTIVE);
         tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
@@ -2553,31 +2544,44 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 throw new BusinessException("Tournament is already active. Update not allowed.", HttpStatus.BAD_REQUEST);
             }
 
-            tournament.setEntryFee(request.getEntryFee());
-            tournament.setMove(request.getMove());
-
-            tournament.setExistinggameId(request.getExistinggameId());
-            tournament.setParticipants(request.getParticipants());
-
-            if (request.getTotalPrizePool() != null) {
-                tournament.setTotalPrizePool(request.getTotalPrizePool());
+            if (request.getEntryFee() != null) {
+                tournament.setEntryFee(request.getEntryFee());
             }
 
+            if (request.getMove() != null) {
+                tournament.setMove(request.getMove());
+            }
+
+            if (request.getExistinggameId() != null) {
+                tournament.setExistinggameId(request.getExistinggameId());
+            }
+
+            if (request.getParticipants() != null) {
+                tournament.setParticipants(request.getParticipants());
+            }
+
+            if (request.getTotalPrizePool() != null) {
+                Double totalPrizePool = request.getTotalPrizePool();
+                tournament.setTotalPrizePool(totalPrizePool);
+
+                BigDecimal calculatedRoomPrize = BigDecimal.valueOf(totalPrizePool)
+                        .multiply(PriceConstant.USER_PRIZE_PERCENT)
+                        .setScale(2, RoundingMode.HALF_UP);
+                tournament.setRoomprize(calculatedRoomPrize);
+            }
+
+
+            // Allow override of auto-calculated roomprize if explicitly provided
             if (request.getRoomprize() != null) {
                 tournament.setRoomprize(request.getRoomprize());
             }
 
-            if (request.getThemeId() != null) {
-                ThemeEntity theme = themeRepository.findById(request.getThemeId())
-                        .orElseThrow(() -> new BusinessException("Theme ID: " + request.getThemeId() + " not found", HttpStatus.BAD_REQUEST));
-                tournament.setTheme(theme);
-            }
 
-            if (request.getScheduledAt() != null) {
+          /*  if (request.getScheduledAt() != null) {
                 ZonedDateTime scheduledAtInKolkata = request.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
                 tournament.setScheduledAt(scheduledAtInKolkata);
-                tournament.setEndDate(scheduledAtInKolkata.plusHours(4));
-            }
+                tournament.setEndDate(scheduledAtInKolkata);
+            }*/
 
             tournament.setUpdatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
@@ -2590,7 +2594,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             throw new BusinessException("Error updating tournament: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
 
     public Long getScheduledCount() {
@@ -2628,7 +2631,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         VendorEntity vendor = vendorOpt.get();
         Long vendorId = vendor.getService_provider_id();
-        System.out.println(" Vendor found: " + vendorId);
 
         List<AagAvailableGames> availableGames = aagGameRepository.findAll();
 
@@ -2664,12 +2666,12 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 TournamentRequest request = new TournamentRequest();
                 List<Integer> entryFees = List.of(10, 25, 50);
                 Integer entryfee = entryFees.get(new Random().nextInt(entryFees.size()));
-//                Integer entryfee = 25;
-                Integer particpant  = 512;
+//                Integer particpant  = 512;
+                List<Integer> participants = List.of(512, 1024, 256);
+                Integer particpant = participants.get(new Random().nextInt(participants.size()));
 
                 Double totalPrize = (double) entryfee * particpant;
 
-                BigDecimal revenueAmmountforuser = BigDecimal.valueOf(totalPrize).multiply(PriceConstant.USER_PRIZE_PERCENT);
                 int totalPlayers = particpant;
 
                 int totalRounds = (int) Math.ceil(Math.log(totalPlayers) / Math.log(2));
@@ -2684,12 +2686,10 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 ZonedDateTime nowInIndia = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
                 ZonedDateTime scheduledAt = nowInIndia.plusHours(Constant.TOURNAMENT_START_TIME);
                 request.setScheduledAt(scheduledAt);
-//                request.setTotalPrizePool(totalCollection.doubleValue());
+               request.setTotalPrizePool(totalCollection.doubleValue());
                 request.setThemeId(themeId);
-                request.setParticipants(512); // or use dynamic value
+                request.setParticipants(512);
                 request.setEntryFee(entryfee);
-
-
 
                 try {
                  Tournament tournament = publishTournament(request, vendorId);
