@@ -1,10 +1,13 @@
 package aagapp_backend.controller.bank;
 
 import aagapp_backend.dto.bank.BankDTO;
+import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.bank.BankService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +18,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BankController {
 
+    @Autowired
+    private ResponseService responseService;
+
     private final BankService bankService;
 
     @PostMapping
@@ -23,13 +29,24 @@ public class BankController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<BankDTO>> getBanks(
+    public ResponseEntity<?> getBanks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long bankId,
             @RequestParam(required = false) String bankName
     ) {
-        return ResponseEntity.ok(bankService.getBanks(page, size, bankId, bankName));
+
+            try{
+                Page<BankDTO> dto =  bankService.getBanks(page, size, bankId, bankName);
+                return   responseService.generateSuccessResponseWithCount(
+                        "Banks retrieved successfully.",
+                        dto.getContent(),
+                        dto.getTotalElements(),
+                        HttpStatus.OK
+                );
+            }catch (Exception e){
+                return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+            }
     }
 
 
