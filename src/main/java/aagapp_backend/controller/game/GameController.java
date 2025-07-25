@@ -266,7 +266,7 @@ public class GameController {
 //                notification.setAmount(publishedGame.getFee());
 
                 notification.setDescription("Game has been Published");
-                notification.setDetails("Your game has been published and is now live.");
+                notification.setDetails("Your game has been published and is now live on the platform.");
 
             }
 

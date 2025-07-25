@@ -55,7 +55,8 @@ public class ActivityController {
            String token = authorization.substring(7);
            Integer role = jwtUtil.extractRoleId(token);
            String roleName = roleService.findRoleName(role);
-           Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+
+           Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
            Page<AdminLogs> adminLogs = adminLogsService.getAllLogs(pageable, roleName, performedBy, targetType, search);
            return responseService.generateSuccessResponseWithCount("Activities fetched successfully", adminLogs.getContent(), adminLogs.getTotalElements(), HttpStatus.OK);
        }catch (Exception e){
