@@ -1,8 +1,13 @@
 package aagapp_backend.services.admin;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.dto.admin.AdminLogResponseDTO;
+import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.repository.admin.AdminLogsInterface;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
+import aagapp_backend.repository.vendor.VendorRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -23,6 +28,12 @@ public class AdminLogService {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private VendorRepository vendorRepository;
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
     @Autowired
     private AdminLogsInterface adminLogsRepository;
     public void logAction(String activity,
@@ -221,6 +232,44 @@ public class AdminLogService {
            return new PageImpl<>(Collections.emptyList(), pageable, 0);
        }
    }
+
+    public AdminLogResponseDTO mapToDto(AdminLogs log) {
+        AdminLogResponseDTO dto = new AdminLogResponseDTO();
+
+        dto.setId(log.getId());
+        dto.setSenderId(log.getSenderid());
+        dto.setSenderRole(log.getSenderrole());
+        dto.setMessage(log.getMessage());
+        dto.setTargetType(log.getTargetType());
+        dto.setTargetId(log.getTargetId());
+        dto.setTargetRole(log.getTargetRole());
+        dto.setReceiverId(log.getReceiverId());
+        dto.setAssignedRole(log.getAssignedRole());
+        dto.setAssignedUserId(log.getAssignedUserId());
+        dto.setAssignedBy(log.getAssignedBy());
+        dto.setRead(log.isRead());
+        dto.setPerformedBy(log.getPerformedBy());
+        dto.setCreatedDate(log.getCreatedDate());
+        dto.setUpdatedDate(log.getUpdatedDate());
+
+        // Fetch sender details
+        if ("VENDOR".equalsIgnoreCase(log.getSenderrole())) {
+            VendorEntity vendor = vendorRepository.findById(log.getSenderid()).orElse(null);
+            if (vendor != null) {
+                dto.setSenderName(vendor.getName()); // adjust field name
+                dto.setSenderImage(vendor.getProfilePic()); // adjust field name
+            }
+        } else if ("USER".equalsIgnoreCase(log.getSenderrole())) {
+            CustomCustomer customer = customCustomerRepository.findById(log.getSenderid()).orElse(null);
+            if (customer != null) {
+                dto.setSenderName(customer.getName()); // adjust field name
+                dto.setSenderImage(customer.getProfilePic()); // adjust field name
+            }
+        }
+
+        return dto;
+    }
+
 
 
 

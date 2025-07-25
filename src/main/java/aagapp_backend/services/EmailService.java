@@ -334,6 +334,25 @@ public class EmailService {
         sendEmail(admin.getEmail(), "New " + type + " has come for approval", messageBody, true);
     }
 
+/*    public void sendAdminWithdrawlapprove(CustomAdmin admin, String Amount, String name,String message)
+            throws IOException, MessagingException {
+
+        String template = loadTemplate("email-templates/Withdrawal-Successful–Funds-Transferred.html");
+
+        ZonedDateTime indiaTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        String formattedDate = indiaTime.format(DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a z"));
+
+        String messageBody = template
+                .replace("{ammount}", Amount)
+                .replace("{VendorName}", admin.getUser_name())
+                .replace("{bank}", bank)
+                .replace("{createdAt}", formattedDate);
+
+        sendEmail(admin.getEmail(), "New " + type + " has come for approval", messageBody, true);
+    }*/
+
+
+
 
 
 }
