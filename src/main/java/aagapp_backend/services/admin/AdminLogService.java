@@ -143,7 +143,6 @@ public class AdminLogService {
        try {
            StringBuilder sql = new StringBuilder("SELECT * FROM admin_logs l WHERE 1=1");
 
-           // Apply role filter only if not ADMIN
            if (roleName != null && !roleName.equalsIgnoreCase(Constant.ADMIN)) {
                sql.append(" AND LOWER(l.assignedRole) = LOWER(:roleName)");
            }
