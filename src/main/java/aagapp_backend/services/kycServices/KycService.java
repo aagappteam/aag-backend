@@ -241,7 +241,7 @@ public class KycService {
 
         String activity = "KYC status updated to " + isVerified + " for " + role + " which has ID " + userOrVendorId;
 
-        adminLogsService.logAction(activity, role, emailperformedby, userOrVendorId, "KYC Verification");
+        adminLogsService.logAction(activity, Constant.ROLE_ADMIN, emailperformedby, userOrVendorId, "KYC Verification");
 
 
         return kyc;

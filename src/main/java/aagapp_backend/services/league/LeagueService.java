@@ -2411,7 +2411,6 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
         VendorEntity opponentVendor = opponentOpt.get();
         Long vendorId = vendor.getService_provider_id();
 
-        System.out.println("✅ League Cron: Vendor " + vendorId + ", Opponent " + opponentVendor.getService_provider_id());
 
         List<AagAvailableGames> games = aagGameRepository.findAll();
 
@@ -2441,13 +2440,14 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     League league = new League();
 
                     league.setName(vendor.getFirst_name() + " v/s " + opponentVendor.getFirst_name());
-                    league.setVendorEntity(vendor); // ✅ Correct vendor set here
+                    league.setVendorEntity(vendor);
                     league.setOpponentVendorId(opponentVendor.getService_provider_id());
-                    league.setChallengingVendorId(vendor.getService_provider_id()); // Vendor is challenging
+                    league.setChallengingVendorId(vendor.getService_provider_id());
                     league.setOpponentVendorName(opponentVendor.getFirst_name());
                     league.setChallengingVendorName(vendor.getFirst_name());
                     league.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
                     league.setChallengingVendorProfilePic(vendor.getProfilePic());
+                    league.setPrizePool(Constant.PRIZE_POOL);
 
                     league.setAagGameId(gameId);
                     league.setTheme(em.find(ThemeEntity.class, themeId));
