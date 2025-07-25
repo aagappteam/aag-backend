@@ -377,7 +377,7 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
     }*/
 
 
-    public List<TopHostWeekDto> getTopHostsThisWeek() {
+/*    public List<TopHostWeekDto> getTopHostsThisWeek() {
         try {
             ZonedDateTime now = ZonedDateTime.now();
             ZonedDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).toLocalDate().atStartOfDay(now.getZone());
@@ -386,7 +386,18 @@ public Map<String, Object> getVendorsWithDetails(Long userId, int page, int size
         } catch (Exception e) {
             throw new RuntimeException("Error occurred while fetching top hosts this week: " + e.getMessage(), e);
         }
+    }*/
+public List<TopHostWeekDto> getTopHostsThisWeek() {
+    try {
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime startOfWeek = now.with(java.time.DayOfWeek.MONDAY).toLocalDate().atStartOfDay(now.getZone());
+        ZonedDateTime endOfWeek = startOfWeek.plusDays(7).minusSeconds(1);
+        Pageable topThree = PageRequest.of(0, 3); // LIMIT 3
+        return vendorRepo.findTopHostsThisWeek(startOfWeek, endOfWeek, topThree);
+    } catch (Exception e) {
+        throw new RuntimeException("Error occurred while fetching top hosts this week: " + e.getMessage(), e);
     }
+}
 
 
     //following vendors

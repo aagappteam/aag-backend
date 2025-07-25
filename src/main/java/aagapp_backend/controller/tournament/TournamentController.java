@@ -466,7 +466,6 @@ public class TournamentController {
         }
     }
 
-
     @GetMapping("/players/{tournamentId}")
     public ResponseEntity<?> getRegisteredPlayers(
             @PathVariable Long tournamentId,
@@ -762,16 +761,6 @@ public class TournamentController {
                 }
             }
 
-//            boolean canStartNextRound = remainingPlayers == 0;
-
-           /* long completedRoomCount = previousRoundRooms.stream()
-                    .filter(room -> "COMPLETED".equalsIgnoreCase(room.getStatus()))
-                    .count();
-
-            long freePassCount = tournamentResultRecordRepository
-                    .countFreePassWinners(tournamentId, roundNumber-1);
-
-            long expectedPlayers = completedRoomCount + freePassCount;*/
 
             long expectedPlayersTournment = tournamentRoomRepository
                     .countByTournamentIdAndRoundAndStatusIn(
