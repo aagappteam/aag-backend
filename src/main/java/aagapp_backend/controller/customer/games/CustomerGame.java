@@ -221,7 +221,7 @@ public class CustomerGame {
         }
 
         if (user.getWeeklyBoostersLeft() <= 0) {
-            return ResponseEntity.badRequest().body("No weekly boosters left");
+            return responseService.generateSuccessResponse("You have used all weekly booster.", user.getWeeklyBoostersLeft(), HttpStatus.OK);
         }
 
         user.setIsWeeklyBoosterActive(true);
