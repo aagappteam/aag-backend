@@ -185,7 +185,7 @@ public class CustomCustomer {
     @Column(name = "weekly_boosters_left", nullable = false)
     private int weeklyBoostersLeft = 0;
 
-    private Boolean isWeeklyBoosterActive;
+    private Boolean isWeeklyBoosterActive= false;
 
 
     @JsonIgnore
