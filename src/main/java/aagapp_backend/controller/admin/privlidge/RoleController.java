@@ -213,7 +213,7 @@ public class RoleController {
         }
     }
 
-    @PostMapping("/assign-roles")
+/*    @PostMapping("/assign-roles")
     public ResponseEntity<?> assignRolesToUser(@RequestBody Map<String, Object> request) {
         try {
             Long userId = Long.valueOf(request.get("userId").toString());
@@ -230,7 +230,7 @@ public class RoleController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
-    }
+    }*/
 
 
 

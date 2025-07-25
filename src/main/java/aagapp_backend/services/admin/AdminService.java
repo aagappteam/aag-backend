@@ -167,7 +167,7 @@ public class AdminService
         }
     }
 
-   @Transactional
+/*   @Transactional
     public ResponseEntity<?> verifyOtpForAdmin(Map<String, Object> adminDetails, HttpSession session, HttpServletRequest request) {
         try {
             String username = (String) adminDetails.get("username");
@@ -193,7 +193,7 @@ public class AdminService
                 {
                     int targetRoleId = 2;
 
-                    boolean hasRole = customAdmin.getRoles().stream()
+                    boolean hasRole = customAdmin.getRole().stream()
                             .anyMatch(r -> r.getRoleId() == targetRoleId);
 
                     if (!hasRole) {
@@ -261,11 +261,11 @@ public class AdminService
                     customAdmin.setToken(newToken);
                     entityManager.persist(customAdmin);
                     Map<String, Object> responseBody = createAuthResponseForAdmin(newToken, customAdmin).getBody();
-/*                    if(customAdmin.getSignedUp()==0) {
+*//*                    if(customAdmin.getSignedUp()==0) {
                         customAdmin.setSignedUp(1);
                         entityManager.merge(customAdmin);
                         responseBody.put("message", "User has been signed up");
-                    }*/
+                    }*//*
                     responseBody.put("message", "User has been signed up");
 
                     return ResponseEntity.ok(responseBody);
@@ -279,7 +279,7 @@ public class AdminService
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Otp verification error" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     private ResponseEntity<Map<String, Object>> createAuthResponseForAdmin(String token, CustomAdmin adminEntity) {
         Map<String, Object> responseBody = new HashMap<>();
