@@ -173,11 +173,10 @@ public class TournamentService {
     public ResponseEntity<?> sendNotificationToUserBefore3Min() {
         try {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-            ZonedDateTime fiveMinutesLater = now.plusMinutes(2);
 
-            ZonedDateTime threeMinutesLater = now.plusMinutes(3);
-            ZonedDateTime windowStart = threeMinutesLater.minusSeconds(30);
-            ZonedDateTime windowEnd = threeMinutesLater.plusSeconds(30);
+            ZonedDateTime twoMinutesLater = now.plusMinutes(2);
+            ZonedDateTime windowStart = twoMinutesLater.minusSeconds(30);
+            ZonedDateTime windowEnd = twoMinutesLater.plusSeconds(30);
             List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAtBetween(
                     TournamentStatus.SCHEDULED, windowStart, windowEnd
             );
@@ -260,7 +259,7 @@ public class TournamentService {
                         notoficationFirebase.sendNotification(
                                 fcmToken,
                                 "Tournament starting soon!",
-                                "Tournament '" + tournament.getName() + "' will start in 3 minutes. Please join now!"
+                                "Tournament '" + tournament.getName() + "' will start in 2 minutes. Please join now!"
                         );
                     }
                 }

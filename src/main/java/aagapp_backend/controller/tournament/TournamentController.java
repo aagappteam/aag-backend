@@ -283,6 +283,7 @@ public class TournamentController {
             return responseService.generateErrorResponse("Error fetching Tournament by vendor : " + e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
     @GetMapping("/get-active-tournament-by-vendor/{vendorId}")
     public ResponseEntity<?> getActiveTournamentsByVendorId(@PathVariable Long vendorId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         try {
@@ -340,9 +341,9 @@ public class TournamentController {
             notificationRepository.save(notification);
 
             if (tournamentRequest.getScheduledAt() != null) {
-                return responseService.generateSuccessResponse("Tournament scheduled successfully", publishedGame, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("Tournament scheduled successfully and submitted for review", publishedGame, HttpStatus.CREATED);
             } else {
-                return responseService.generateSuccessResponse("Tournament published successfully", publishedGame, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("Tournament published successfully and submitted for review", publishedGame, HttpStatus.CREATED);
             }
         }catch (BusinessException e){
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);

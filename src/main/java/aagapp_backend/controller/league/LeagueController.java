@@ -410,9 +410,9 @@ public class LeagueController {
 
 
             if (challenge.getScheduledAt() != null) {
-                return responseService.generateSuccessResponse("League scheduled successfully", publishedLeague, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("League scheduled successfully and submitted for review", publishedLeague, HttpStatus.CREATED);
             } else {
-                return responseService.generateSuccessResponse("League published successfully", publishedLeague, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("League published successfully and submitted for review", publishedLeague, HttpStatus.CREATED);
             }
         }catch (BusinessException e){
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
