@@ -20,7 +20,7 @@ public class Constant {
     public static final long LEAGUE_SESSION_TIME_2 = 4;
     public static final long TOURNAMENT_START_TIME = 1;
     public static final long TOURNAMENT_END_TIME = 4;
-    public static final BigDecimal PRIZE_POOL = BigDecimal.valueOf(1000.00);
+    public static final BigDecimal PRIZE_POOL = BigDecimal.valueOf(100.00);
 
     //  Game URLs
     public static String ludobaseurl = "https://gamebackend.aagapp.com/game-api/ludo";
