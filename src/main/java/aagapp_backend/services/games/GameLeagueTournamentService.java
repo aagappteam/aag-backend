@@ -104,8 +104,9 @@ public class GameLeagueTournamentService {
         this.paymentFeatures = paymentFeatures;
     }
 
+/*
     @Transactional
-    public Page<GetGameResponseDTO> getAllGames(String status, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
+    public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
         try {
             StringBuilder sql = new StringBuilder("SELECT * FROM aag_ludo_game g WHERE 1=1");
 
@@ -115,9 +116,10 @@ public class GameLeagueTournamentService {
             }
 
             // Filter by status
-            if (status != null && !status.isEmpty()) {
-                sql.append(" AND g.status = :status");
+            if (statusList != null && !statusList.isEmpty()) {
+                sql.append(" AND g.status IN (:statusList)");
             }
+
 
             // Handle filtering by scheduled date (start and end of the day)
             if (scheduledDate != null) {
@@ -140,9 +142,15 @@ public class GameLeagueTournamentService {
             if (vendorId != null) {
                 query.setParameter("vendorId", vendorId);
             }
-            if (status != null && !status.isEmpty()) {
+*/
+/*            if (status != null && !status.isEmpty()) {
                 query.setParameter("status", status);
+            }*//*
+
+            if (statusList != null && !statusList.isEmpty()) {
+                query.setParameter("statusList", statusList);
             }
+
             if (scheduledDate != null) {
                 ZonedDateTime startOfDay = scheduledDate.atStartOfDay(ZoneId.systemDefault());
                 ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1); // End of the day
@@ -190,17 +198,21 @@ public class GameLeagueTournamentService {
             if (vendorId != null) {
                 countSql += " AND g.vendor_id = :vendorId";
             }
-            if (status != null && !status.isEmpty()) {
-                countSql += " AND g.status = :status";
+
+
+            if (statusList != null && !statusList.isEmpty()) {
+                countSql += " AND g.status IN (:statusList)";
             }
+
 
             Query countQuery = entityManager.createNativeQuery(countSql);
             if (vendorId != null) {
                 countQuery.setParameter("vendorId", vendorId);
             }
-            if (status != null && !status.isEmpty()) {
-                countQuery.setParameter("status", status);
+            if (statusList != null && !statusList.isEmpty()) {
+                countQuery.setParameter("statusList", statusList);
             }
+
 
             Long count = ((Number) countQuery.getSingleResult()).longValue();
 
@@ -209,10 +221,209 @@ public class GameLeagueTournamentService {
             throw new RuntimeException("Error retrieving games", e);
         }
     }
+*/
+@Transactional
+public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
+    try {
+        StringBuilder sql = new StringBuilder("SELECT * FROM aag_ludo_game g WHERE 1=1");
 
+        if (vendorId != null) {
+            sql.append(" AND g.vendor_id = :vendorId");
+        }
+
+        if (statusList != null && !statusList.isEmpty()) {
+            sql.append(" AND g.status IN (:statusList)");
+        }
+
+        if (scheduledDate != null) {
+            sql.append(" AND g.scheduled_at BETWEEN :scheduledStart AND :scheduledEnd");
+        }
+
+        if (startDate != null && endDate != null) {
+            sql.append(" AND g.created_at BETWEEN :pubStartDate AND :pubEndDate");
+        }
+
+        sql.append(" ORDER BY g.created_date DESC");
+
+        Query query = entityManager.createNativeQuery(sql.toString(), Game.class);
+
+        if (vendorId != null) query.setParameter("vendorId", vendorId);
+        if (statusList != null && !statusList.isEmpty()) query.setParameter("statusList", statusList);
+        if (scheduledDate != null) {
+            query.setParameter("scheduledStart", scheduledDate.atStartOfDay(ZoneId.systemDefault()));
+            query.setParameter("scheduledEnd", scheduledDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+        }
+        if (startDate != null && endDate != null) {
+            query.setParameter("pubStartDate", startDate.atStartOfDay(ZoneId.systemDefault()));
+            query.setParameter("pubEndDate", endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+        }
+
+        query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+        query.setMaxResults(pageable.getPageSize());
+
+        List<Game> games = query.getResultList();
+
+        List<GetGameResponseDTO> gameResponseDTOs = games.stream().map(game -> new GetGameResponseDTO(
+                game.getId(), game.getName(), game.getFee(), game.getMove(), game.getStatus(),
+                game.getShareableLink(), game.getAaggameid(),
+                game.getTheme() != null ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
+                game.getTheme() != null ? game.getTheme().getName() : null,
+                game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                game.getCreatedDate(), game.getScheduledAt(), game.getEndDate(),
+                game.getMinPlayersPerTeam(), game.getMaxPlayersPerTeam(),
+                gameService.calculateTotalPrizeNew(game),
+                game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
+                game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
+        )).collect(Collectors.toList());
+
+        StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM aag_ludo_game g WHERE 1=1");
+        if (vendorId != null) countSql.append(" AND g.vendor_id = :vendorId");
+        if (statusList != null && !statusList.isEmpty()) countSql.append(" AND g.status IN (:statusList)");
+
+        Query countQuery = entityManager.createNativeQuery(countSql.toString());
+        if (vendorId != null) countQuery.setParameter("vendorId", vendorId);
+        if (statusList != null && !statusList.isEmpty()) countQuery.setParameter("statusList", statusList);
+
+        Long count = ((Number) countQuery.getSingleResult()).longValue();
+        return new PageImpl<>(gameResponseDTOs, pageable, count);
+    } catch (Exception e) {
+        throw new RuntimeException("Error retrieving games", e);
+    }
+}
+    @Transactional
+    public Page<LeagueResponseDTO> getAllLeagues(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
+        try {
+            StringBuilder sql = new StringBuilder("SELECT * FROM aag_league l WHERE 1=1");
+
+            if (vendorId != null) {
+                sql.append(" AND l.vendor_id = :vendorId");
+            }
+
+            if (statusList != null && !statusList.isEmpty()) {
+                sql.append(" AND l.status IN (:statusList)");
+            }
+
+            if (startDate != null && endDate != null) {
+                sql.append(" AND l.created_at BETWEEN :pubStartDate AND :pubEndDate");
+            }
+
+            if (scheduledDate != null) {
+                sql.append(" AND l.scheduled_at BETWEEN :scheduledStart AND :scheduledEnd");
+            }
+
+            sql.append(" ORDER BY l.created_date DESC");
+
+            Query query = entityManager.createNativeQuery(sql.toString(), League.class);
+
+            if (vendorId != null) query.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) query.setParameter("statusList", statusList);
+            if (startDate != null && endDate != null) {
+                query.setParameter("pubStartDate", startDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("pubEndDate", endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+            if (scheduledDate != null) {
+                query.setParameter("scheduledStart", scheduledDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("scheduledEnd", scheduledDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+
+            query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<League> leagues = query.getResultList();
+
+            List<LeagueResponseDTO> leagueResponseDTOs = leagues.stream().map(league -> new LeagueResponseDTO(
+                    league.getId(), league.getName(), league.getFee(), league.getMove(), league.getStatus(),
+                    league.getShareableLink(),
+                    league.getTheme() != null ? league.getTheme().getName() : null,
+                    league.getTheme() != null ? league.getTheme().getImageUrl() : null,
+                    league.getCreatedDate(), league.getScheduledAt(), league.getEndDate(),
+                    league.getMinPlayersPerTeam(), league.getMaxPlayersPerTeam(),
+                    league.getVendorEntity() != null ? league.getVendorEntity().getFirst_name() : null,
+                    league.getVendorEntity() != null ? league.getVendorEntity().getProfilePic() : null
+            )).collect(Collectors.toList());
+
+            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM aag_league l WHERE 1=1");
+            if (vendorId != null) countSql.append(" AND l.vendor_id = :vendorId");
+            if (statusList != null && !statusList.isEmpty()) countSql.append(" AND l.status IN (:statusList)");
+
+            Query countQuery = entityManager.createNativeQuery(countSql.toString());
+            if (vendorId != null) countQuery.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) countQuery.setParameter("statusList", statusList);
+
+            Long count = ((Number) countQuery.getSingleResult()).longValue();
+            return new PageImpl<>(leagueResponseDTOs, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving leagues", e);
+        }
+    }
 
     @Transactional
-    public Page<LeagueResponseDTO> getAllLeagues(String status, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
+    public Page<TournamentResponseDTO> getAllTournaments(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
+        try {
+            StringBuilder sql = new StringBuilder("SELECT * FROM tournament t WHERE 1=1");
+
+            if (vendorId != null) {
+                sql.append(" AND t.vendorId = :vendorId");
+            }
+
+            if (statusList != null && !statusList.isEmpty()) {
+                sql.append(" AND t.status IN (:statusList)");
+            }
+
+            if (startDate != null && endDate != null) {
+                sql.append(" AND t.createdDate BETWEEN :pubStartDate AND :pubEndDate");
+            }
+
+            if (scheduledDate != null) {
+                sql.append(" AND t.scheduled_at BETWEEN :scheduledStart AND :scheduledEnd");
+            }
+
+            sql.append(" ORDER BY t.createdDate DESC");
+
+            Query query = entityManager.createNativeQuery(sql.toString(), Tournament.class);
+
+            if (vendorId != null) query.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) query.setParameter("statusList", statusList);
+            if (startDate != null && endDate != null) {
+                query.setParameter("pubStartDate", startDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("pubEndDate", endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+            if (scheduledDate != null) {
+                query.setParameter("scheduledStart", scheduledDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("scheduledEnd", scheduledDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+
+            query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<Tournament> tournaments = query.getResultList();
+
+            List<TournamentResponseDTO> tournamentResponseDTOs = tournaments.stream().map(tournament -> new TournamentResponseDTO(
+                    tournament.getId(), tournament.getName(), tournament.getEntryFee(), tournament.getMove(),
+                    tournament.getStatus(), tournament.getShareableLink(), tournament.getExistinggameId(),
+                    tournament.getTheme() != null ? tournament.getTheme().getName() : null,
+                    tournament.getTheme() != null ? tournament.getTheme().getImageUrl() : null,
+                    tournament.getCreatedDate(), tournament.getScheduledAt()
+            )).collect(Collectors.toList());
+
+            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM tournament t WHERE 1=1");
+            if (vendorId != null) countSql.append(" AND t.vendorId = :vendorId");
+            if (statusList != null && !statusList.isEmpty()) countSql.append(" AND t.status IN (:statusList)");
+
+            Query countQuery = entityManager.createNativeQuery(countSql.toString());
+            if (vendorId != null) countQuery.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) countQuery.setParameter("statusList", statusList);
+
+            Long count = ((Number) countQuery.getSingleResult()).longValue();
+            return new PageImpl<>(tournamentResponseDTOs, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving tournaments", e);
+        }
+    }
+
+
+/*    @Transactional
+    public Page<LeagueResponseDTO> getAllLeagues(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
         try {
             StringBuilder sql = new StringBuilder("SELECT * FROM aag_league l WHERE 1=1");
 
@@ -222,8 +433,8 @@ public class GameLeagueTournamentService {
             }
 
             // Corrected status filter
-            if (status != null && !status.isEmpty()) {
-                sql.append(" AND l.status = :status");
+            if (statusList != null && !statusList.isEmpty()) {
+                sql.append(" AND g.status IN (:statusList)");
             }
 
             // Handle filtering by published date range (startDate and endDate)
@@ -250,6 +461,7 @@ public class GameLeagueTournamentService {
             if (status != null && !status.isEmpty()) {
                 query.setParameter("status", status);
             }
+
             if (startDate != null && endDate != null) {
                 ZonedDateTime startOfDay = startDate.atStartOfDay(ZoneId.systemDefault());
                 ZonedDateTime endOfDay = endDate.atStartOfDay(ZoneId.systemDefault()).plusDays(1).minusSeconds(1); // End of the day
@@ -310,11 +522,11 @@ public class GameLeagueTournamentService {
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving leagues", e);
         }
-    }
+    }*/
 
 
-    @Transactional
-    public Page<TournamentResponseDTO> getAllTournaments(String status, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
+   /* @Transactional
+    public Page<TournamentResponseDTO> getAllTournaments(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
         try {
             StringBuilder sql = new StringBuilder("SELECT * FROM tournament t WHERE 1=1");
 
@@ -324,9 +536,10 @@ public class GameLeagueTournamentService {
             }
 
             // Corrected status filter
-            if (status != null && !status.isEmpty()) {
-                sql.append(" AND t.status = :status");
+            if (statusList != null && !statusList.isEmpty()) {
+                sql.append(" AND g.status IN (:statusList)");
             }
+
 
             // Handle filtering by published date range (startDate and endDate)
             if (startDate != null && endDate != null) {
@@ -409,7 +622,7 @@ public class GameLeagueTournamentService {
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving tournaments", e);
         }
-    }
+    }*/
 
 
 }

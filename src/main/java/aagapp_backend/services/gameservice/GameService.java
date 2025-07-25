@@ -360,10 +360,14 @@ public class GameService {
         String shareableLink = generateShareableLink(savedGame.getId(),vendorId);
         savedGame.setShareableLink(shareableLink);
 
+        if(gameRequest.getScheduledAt() != null) {
+            CompletableFuture.runAsync(() -> {
+                followerNotificationService.notifyFollowersInParallel("game", savedGame.getName(), vendorEntity);
+            });
+        }
 
-        CompletableFuture.runAsync(() -> {
-            followerNotificationService.notifyFollowersInParallel("game", savedGame.getName(), vendorEntity);
-        });
+
+
         return savedGame;
 
 //        return gameRepository.save(savedGame);

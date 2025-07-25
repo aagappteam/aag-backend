@@ -399,7 +399,9 @@ public class GameController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "events", required = false) String events,
-            @RequestParam(value = "status", required = false) String status,
+//            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "status", required = false) List<String> status,
+
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(value = "scheduleddate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate scheduleddate) {
