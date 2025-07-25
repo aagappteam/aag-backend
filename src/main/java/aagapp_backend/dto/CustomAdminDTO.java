@@ -1,3 +1,4 @@
+
 package aagapp_backend.dto;
 
 import aagapp_backend.entity.CustomAdmin;
@@ -10,7 +11,7 @@ import java.util.Date;
 @Setter
 public class CustomAdminDTO {
     private Long adminId;
-    private int role;
+    private Integer role;
     private String roleName;
     private String userName;
     private String mobileNumber;
@@ -32,4 +33,3 @@ public class CustomAdminDTO {
 
     // Getters and Setters (or use Lombok @Getter @Setter)
 }
-

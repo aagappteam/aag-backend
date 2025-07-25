@@ -132,7 +132,7 @@ public class KycController {
             );
 
             String notificationTitle = role.equalsIgnoreCase("vendor") ? "Vendor KYC Submission" : "User KYC Submission";
-            String notificationMessage = "A new " + role.toLowerCase() + " KYC request has been submitted. Please review the KYC for ID: " + userOrVendorId + ".";
+            String notificationMessage = "A new " + role.toLowerCase() + " KYC request has been submitted. Please review the KYC for +" + role.toLowerCase() + " ID: " + userOrVendorId + ".";
 
             String submittedByName = "";
             if (role.equalsIgnoreCase("vendor")) {

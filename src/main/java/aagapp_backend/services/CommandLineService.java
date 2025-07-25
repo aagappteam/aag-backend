@@ -25,10 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;  // Import for LocalDateTime
-import java.util.ArrayList;
-import java.util.Date;          // Import for Date
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -59,11 +56,11 @@ public class CommandLineService implements CommandLineRunner {
 
         if (entityManager.createQuery("SELECT COUNT(r) FROM Role r", Long.class).getSingleResult() == 0) {
             // Use current timestamp (LocalDateTime)
-            entityManager.merge(new Role(1, "SUPPORT", currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
-            entityManager.merge(new Role(2, "ADMIN", currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
-            entityManager.merge(new Role(3, "ADMIN_VENDOR_PROVIDER", currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
-            entityManager.merge(new Role(4, "VENDOR", currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
-            entityManager.merge(new Role(5, "CUSTOMER", currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
+            entityManager.merge(new Role(1, Constant.SUPPORT, currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
+            entityManager.merge(new Role(2, Constant.ADMIN, currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
+            entityManager.merge(new Role(3, Constant.SUPER_ADMIN, currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
+            entityManager.merge(new Role(4, Constant.VENDOR, currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
+            entityManager.merge(new Role(5, Constant.CUSTOMER, currentTimestamp, currentTimestamp, "SUPER_ADMIN"));
         }
 
        /* if (entityManager.createQuery("SELECT COUNT(t) FROM ThemeEntity t", Long.class).getSingleResult() == 0) {
@@ -399,13 +396,19 @@ public class CommandLineService implements CommandLineRunner {
 //        Query query = entityManager.createNativeQuery(alterQuery);
 //        query.executeUpdate();
         if (entityManager.createQuery("SELECT COUNT(p) FROM CustomAdmin p", Long.class).getSingleResult() == 0) {
+            // Fetch role from DB using role name or ID
+            Role role = entityManager.createQuery("SELECT r FROM Role r WHERE r.roleName = :roleName", Role.class)
+                    .setParameter("roleName", "ADMIN") // or Constant.ADMIN_ROLE_NAME
+                    .getSingleResult();
+
             CustomAdmin admin = new CustomAdmin();
-            admin.setRole(Constant.ADMIN_ROLE);
+//            admin.setRoles(Collections.singleton(role)); // ✅ Set<Role>
+            admin.setRole(role.getRoleId());
             admin.setPassword("1234");
             admin.setUser_name("Rajendra Gupta");
             admin.setEmail("rajendra@celestialitverse.com");
             admin.setOtp("0000");
-            admin.setMobileNumber(Constant.MOBILE_6306470701);
+            admin.setMobileNumber("6306470701"); // Avoid constant unless it's used elsewhere
             admin.setCountry_code("+91");
             admin.setToken(null);
             admin.setActive(1);
@@ -414,6 +417,7 @@ public class CommandLineService implements CommandLineRunner {
 
             entityManager.persist(admin);
         }
+
 
 
         // ✅ Insert Privileges if empty

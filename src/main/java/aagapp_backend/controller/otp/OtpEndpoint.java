@@ -323,9 +323,9 @@ public class OtpEndpoint {
                 }
             } else if (roleService.findRoleName(role).equals(Constant.rolevendor)) {
                 return serviceProviderService.verifyOtp(loginDetails, session, request);
-            } else if (roleService.findRoleName(role).equals(Constant.ADMIN) || roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(role).equals(Constant.SUPPORT)) {
+            } /*else if (roleService.findRoleName(role).equals(Constant.ADMIN) || roleService.findRoleName(role).equals(Constant.SUPER_ADMIN) || roleService.findRoleName(role).equals(Constant.SUPPORT)) {
                 return adminService.verifyOtpForAdmin(loginDetails, session, request);
-            } else {
+            }*/ else {
                 return responseService.generateErrorResponse(ApiConstants.INVALID_ROLE, HttpStatus.BAD_REQUEST);
             }
         } catch (Exception e) {
@@ -540,7 +540,7 @@ public class OtpEndpoint {
         }
     }
 
-    @Transactional
+/*    @Transactional
     @PostMapping("/admin-signup")
     public ResponseEntity<?> sendOtpToMobileAdmin(@RequestBody Map<String, Object> signupDetails) {
         try {
@@ -549,9 +549,9 @@ public class OtpEndpoint {
 
 
             mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
-/*            if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
+*//*            if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
                 return responseService.generateErrorResponse(ApiConstants.NUMBER_REGISTERED_AS_CUSTOMER, HttpStatus.BAD_REQUEST);
-            }*/
+            }*//*
 
             if (countryCode == null || countryCode.isEmpty()) {
                 countryCode = Constant.COUNTRY_CODE;
@@ -598,7 +598,7 @@ public class OtpEndpoint {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
-    }
+    }*/
 
 
     public static class ApiResponse {

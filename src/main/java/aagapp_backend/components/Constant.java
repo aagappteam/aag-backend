@@ -62,11 +62,13 @@ public class Constant {
     public static final String ADMIN = "ADMIN";
     public static final String SUPER_ADMIN = "SUPER_ADMIN";
     public static final String SUPPORT = "SUPPORT";
-    public static final String USER = "USER";
+    public static final String VENDOR = "VENDOR";
+    public static final String CUSTOMER = "CUSTOMER";
+    public static final String FINANCE = "FINANCE";
 
     public static int SUPPORT_ROLE = 1;
     public static int ADMIN_ROLE = 2;
-    public static int ADMIN_VENDOR_PROVIDER_ROLE = 3;
+    public static int SUPER_ADMIN_ROLE = 3;
     public static int VENDOR_ROLE = 4;
     public static int CUSTOMER_ROLE = 5;
     public static int FINANCE_ROLE = 6;
