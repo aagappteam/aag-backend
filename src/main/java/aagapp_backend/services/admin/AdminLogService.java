@@ -256,14 +256,14 @@ public class AdminLogService {
         if ("VENDOR".equalsIgnoreCase(log.getSenderrole())) {
             VendorEntity vendor = vendorRepository.findById(log.getSenderid()).orElse(null);
             if (vendor != null) {
-                dto.setSenderName(vendor.getName()); // adjust field name
-                dto.setSenderImage(vendor.getProfilePic()); // adjust field name
+                dto.setName(vendor.getName());
+                dto.setProfilePic(vendor.getProfilePic());
             }
         } else if ("USER".equalsIgnoreCase(log.getSenderrole())) {
             CustomCustomer customer = customCustomerRepository.findById(log.getSenderid()).orElse(null);
             if (customer != null) {
-                dto.setSenderName(customer.getName()); // adjust field name
-                dto.setSenderImage(customer.getProfilePic()); // adjust field name
+                dto.setName(customer.getName());
+                dto.setProfilePic(customer.getProfilePic());
             }
         }
 
