@@ -13,6 +13,8 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(
@@ -35,6 +37,15 @@ public class CustomAdmin
     @Column(name = "admin_id")
     private Long adminId;
 
+/*    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "custom_admin_roles",
+            joinColumns = @JoinColumn(name = "admin_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();*/
+
+
 
     private Integer role;
 
@@ -54,9 +65,7 @@ public class CustomAdmin
     private int active=0;
 
     @Column(name = "created_by")
-    private String createdBy; // store admin's username, email, or any identifier
-
-
+    private String createdBy;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)

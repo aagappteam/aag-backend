@@ -191,24 +191,33 @@ public class AdminService
                 customAdmin = findAdminByPhone(mobileNumber, countryCode);
                 if(roleService.findRoleName(role).equals(Constant.ADMIN))
                 {
-                    if(customAdmin.getRole()!=2)
-                    {
-                        return responseService.generateErrorResponse("Custom Admin with username "+ mobileNumber+" does not have role "+ roleService.findRoleName(role), HttpStatus.BAD_REQUEST);
+                    int targetRoleId = 2;
+
+                    boolean hasRole = customAdmin.getRoles().stream()
+                            .anyMatch(r -> r.getRoleId() == targetRoleId);
+
+                    if (!hasRole) {
+                        return responseService.generateErrorResponse(
+                                "Custom Admin with username " + mobileNumber + " does not have role " + roleService.findRoleName(targetRoleId),
+                                HttpStatus.BAD_REQUEST
+                        );
                     }
+
                 }
-/*                else if(roleService.findRoleName(role).equals(Constant.SUPER_ADMIN))
-                {
-                    if(customAdmin.getRole()!=1)
-                    {
-                        return responseService.generateErrorResponse("Custom Admin with username "+ mobileNumber+" does not have role "+ roleService.findRoleName(role), HttpStatus.BAD_REQUEST);
-                    }
-                }*/
                 else if(roleService.findRoleName(role).equals(Constant.SUPPORT))
                 {
-                    if(customAdmin.getRole()!=1)
-                    {
-                        return responseService.generateErrorResponse(" SUPPORT with username "+ mobileNumber+" does not have role "+ roleService.findRoleName(role), HttpStatus.BAD_REQUEST);
+                    int supportRoleId = 1;
+
+                    boolean hasSupportRole = customAdmin.getRoles().stream()
+                            .anyMatch(r -> r.getRoleId() == supportRoleId);
+
+                    if (!hasSupportRole) {
+                        return responseService.generateErrorResponse(
+                                "Support with username " + mobileNumber + " does not have role " + roleService.findRoleName(role),
+                                HttpStatus.BAD_REQUEST
+                        );
                     }
+
                 }
 
             }
@@ -314,7 +323,6 @@ public class AdminService
                 return responseService.generateErrorResponse("Invalid Password", HttpStatus.BAD_REQUEST);
             }
 
-            // 🎟️ Generate Token
             String token = jwtUtil.generateToken(
                     customAdmin.getAdminId(),
                     customAdmin.getRole(),
@@ -512,16 +520,7 @@ public class AdminService
     }
 */
 
-    public ResponseEntity<?> authenticateByPhone(String mobileNumber, String countryCode, String password, HttpServletRequest request, HttpSession session) {
-        CustomAdmin existingAdmin = findAdminByPhone(mobileNumber, countryCode);
 
-        return validateAdmin(existingAdmin, password, request, session);
-    }
-
-    public ResponseEntity<?> authenticateByUsername(String username, String password, HttpServletRequest request, HttpSession session) {
-        CustomAdmin existingCustomAdmin = findAdminByUsername(username);
-        return validateAdmin(existingCustomAdmin, password, request, session);
-    }
 
     public CustomAdmin findAdminByUsername(String username) {
 
@@ -532,40 +531,6 @@ public class AdminService
                 .orElse(null);
     }
 
-    public ResponseEntity<?> validateAdmin(CustomAdmin customAdmin, String password, HttpServletRequest request, HttpSession session) {
-        if (customAdmin == null) {
-            return responseService.generateErrorResponse("No Records Found", HttpStatus.NOT_FOUND);
-        }
-        if (passwordEncoder.matches(password, customAdmin.getPassword())) {
-            String ipAddress = request.getRemoteAddr();
-            String userAgent = request.getHeader("User-Agent");
-            String tokenKey = "authTokenAdmin_" + customAdmin.getMobileNumber();
-
-
-            String existingToken = customAdmin.getToken();
-
-
-            if(existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
-
-                Map<String, Object> responseBody = createAuthResponseForAdmin(existingToken, customAdmin).getBody();
-
-                return ResponseEntity.ok(responseBody);
-            } else {
-                String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), customAdmin.getRole(), ipAddress, userAgent);
-                session.setAttribute(tokenKey, newToken);
-
-                customAdmin.setToken(newToken);
-                entityManager.persist(customAdmin);
-
-                Map<String, Object> responseBody = createAuthResponseForAdmin(newToken, customAdmin).getBody();
-
-
-                return ResponseEntity.ok(responseBody);
-            }
-        } else {
-            return responseService.generateErrorResponse(ApiConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
-        }
-    }
 
     @Transactional
     public ResponseEntity<?> updateDetails(Long userId, Map<String, Object> adminDetails) {

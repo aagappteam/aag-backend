@@ -1,5 +1,6 @@
 package aagapp_backend.controller.admin.privlidge;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.components.cache.PrivilegeMappingCache;
 import aagapp_backend.dto.CustomAdminDTO;
@@ -91,31 +92,6 @@ public class RoleController {
     }
 
 
-/*    //  Create New Role
-    @PostMapping
-    public ResponseEntity<?> createRole(@RequestBody Map<String, Object> request, HttpServletRequest req) {
-        String token = jwtUtil.resolveToken(req);
-        Long adminId = jwtUtil.extractAdminId(token);
-
-        String roleName = request.get("roleName").toString();
-        List<Integer> privilegeIds = (List<Integer>) request.get("privilegeIds");
-
-        Set<Privilege> privileges = privilegeIds.stream()
-                .map(id -> privilegeRepo.findById(Long.valueOf(id)).orElseThrow())
-                .collect(Collectors.toSet());
-
-        Role role = new Role();
-        role.setRoleName(roleName);
-        role.setPrivileges(privileges);
-        role.setCreatedAt(LocalDateTime.now());
-        role.setUpdatedAt(LocalDateTime.now());
-        role.setCreatedBy("ADMIN_ID_" + adminId);
-
-        roleRepo.save(role);
-
-        return ResponseEntity.ok(Map.of("message", "Role created successfully", "roleId", role.getRoleId()));
-    }*/
-
     //  Get All Roles
     @GetMapping
     public ResponseEntity<?> getAllRoles(
@@ -161,7 +137,11 @@ public class RoleController {
                     ));
 
             // 🔍 All parent menu names
-            Set<String> parentMenuNames = groupedSubmenus.keySet();
+//            Set<String> parentMenuNames = groupedSubmenus.keySet();
+            Set<String> parentMenuNames = groupedSubmenus.keySet().stream()
+                    .map(String::trim)
+                    .collect(Collectors.toSet());
+
 
             // ✅ Fetch actual MENU privileges by name
             List<Privilege> menuPrivileges = privilegeRepo.findAllByNameIn(parentMenuNames);
@@ -195,7 +175,6 @@ public class RoleController {
     public ResponseEntity<?> createUserWithRole(@RequestBody Map<String, Object> request, HttpServletRequest req) {
         try {
             String token = jwtUtil.resolveToken(req);
-            Long adminId = jwtUtil.extractAdminId(token);
 
             String mobile = request.get("mobile").toString();
             String userName = request.get("userName").toString();
@@ -203,17 +182,6 @@ public class RoleController {
             String countryCode = request.getOrDefault("countryCode", "+91").toString();
             String email = request.getOrDefault("email", "").toString();
 
-            // Optional role handling
-            Role role = null;
-            if (request.containsKey("roleId") && request.get("roleId") != null) {
-                Integer roleId = Integer.valueOf(request.get("roleId").toString());
-                role = roleRepo.findById(roleId)
-                        .orElseThrow(() -> new RuntimeException("Role not found with ID: " + roleId));
-
-                if (role.getRoleName().equalsIgnoreCase("VENDOR") || role.getRoleName().equalsIgnoreCase("CUSTOMER")) {
-                    return ResponseEntity.badRequest().body(Map.of("message", "Cannot create VENDOR or CUSTOMER from this API"));
-                }
-            }
 
             // Check if mobile exists
             Optional<CustomAdmin> existingUser = adminRepo.findByMobileNumber(mobile);
@@ -221,10 +189,9 @@ public class RoleController {
                 return responseService.generateErrorResponse("Mobile number already exists", HttpStatus.BAD_REQUEST);
             }
 
-            // Save CustomAdmin (User)
             CustomAdmin user = new CustomAdmin();
             user.setMobileNumber(mobile);
-            Long id = jwtUtil.extractId(token); // hypothetical method
+            Long id = jwtUtil.extractId(token);
 
             String adminName = roleService.findRoleName(Math.toIntExact(id));
 
@@ -234,13 +201,9 @@ public class RoleController {
             user.setEmail(email);
             user.setUser_name(userName);
             user.setPassword(passwordEncoder.encode(password));
-            user.setCountry_code(countryCode);
+            user.setCountry_code(countryCode!=null?countryCode: Constant.COUNTRY_CODE);
             user.setActive(1);
             user.setCreated_at(new Date());
-
-            if (role != null) {
-                user.setRole(role.getRoleId());
-            }
 
             adminRepo.save(user);
             return responseService.generateSuccessResponse("User created successfully", user, HttpStatus.OK);
@@ -250,76 +213,27 @@ public class RoleController {
         }
     }
 
-
-
-/*    @PostMapping("/add-user")
-    public ResponseEntity<?> createUserWithRole(@RequestBody Map<String, Object> request, HttpServletRequest req) {
+    @PostMapping("/assign-roles")
+    public ResponseEntity<?> assignRolesToUser(@RequestBody Map<String, Object> request) {
         try {
-            String token = jwtUtil.resolveToken(req);
-            Long adminId = jwtUtil.extractAdminId(token);
+            Long userId = Long.valueOf(request.get("userId").toString());
+            List<Integer> roleIds = (List<Integer>) request.get("roleIds");
 
-            String mobile = request.get("mobile").toString();
-            String userName = request.get("userName").toString();
-            String password = request.get("password").toString();
-            String countryCode = request.getOrDefault("countryCode", "+91").toString();
+            CustomAdmin user = adminRepo.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-            String roleName = request.get("roleName").toString();
-            List<Integer> privilegeIds = (List<Integer>) request.get("privilegeIds");
-
-            //  Check if mobile exists
-            Optional<CustomAdmin> existingUser = adminRepo.findByMobileNumber(mobile);
-            if (existingUser.isPresent()) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Mobile number already exists"));
-            }
-
-            //  Check if roleName is vendor or customer → throw error
-            if (roleName.equalsIgnoreCase("VENDOR") || roleName.equalsIgnoreCase("CUSTOMER")) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Cannot create VENDOR or CUSTOMER from this API"));
-            }
-
-            //  Create Role (or find if exists)
-            Role role = roleRepo.findByRoleName(roleName)
-                    .orElseGet(() -> {
-                        Role newRole = new Role();
-                        newRole.setRoleName(roleName);
-                        newRole.setCreatedAt(LocalDateTime.now());
-                        newRole.setUpdatedAt(LocalDateTime.now());
-                        newRole.setCreatedBy("ADMIN_ID_" + adminId);
-                        return newRole;
-                    });
-
-            //Attach Privileges
-            Set<Privilege> privileges = privilegeIds.stream()
-                    .map(id -> privilegeRepo.findById(Long.valueOf(id))
-                            .orElseThrow(() -> new RuntimeException("Privilege ID not found: " + id)))
-                    .collect(Collectors.toSet());
-
-            role.setPrivileges(privileges);
-            roleRepo.save(role);
-
-            // 🔥 Save CustomAdmin (User)
-            CustomAdmin user = new CustomAdmin();
-            user.setMobileNumber(mobile);
-            user.setUser_name(userName);
-            user.setPassword(passwordEncoder.encode(password));
-            user.setCountry_code(countryCode);
-            user.setRole(role.getRoleId());
-            user.setActive(1);
-            user.setCreated_at(new Date());
+            List<Role> roles = roleRepository.findAllById(roleIds);
+            user.setRoles(new HashSet<>(roles)); // Replace existing roles
 
             adminRepo.save(user);
-
-            return ResponseEntity.ok(Map.of(
-                    "message", "User created successfully",
-                    "userId", user.getAdmin_id(),
-                    "roleId", role.getRoleId()
-            ));
+            return responseService.generateSuccessResponse("Roles assigned successfully", user, HttpStatus.OK);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "error", e.getMessage()
-            ));
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
-    }*/
+    }
+
+
+
 
 //    edit user and add privlidge
 
@@ -470,12 +384,10 @@ public class RoleController {
 
             Integer roleId = null;
             if (roleName != null && !roleName.isBlank()) {
-                // Convert roleName to Integer roleId
                 Optional<Role> roleOptional = roleRepository.findByRoleNameIgnoreCase(roleName);
                 if (roleOptional.isPresent()) {
                     roleId = roleOptional.get().getRoleId();
                 } else {
-                    // Return empty list if roleName is invalid
                     return responseService.generateSuccessResponseWithCount(
                             "No admins found for the given role name",
                             Collections.emptyList(),
@@ -485,7 +397,6 @@ public class RoleController {
                 }
             }
 
-            // Apply filtering
             Specification<CustomAdmin> spec = Specification
                     .where(CustomAdminSpecification.hasRole(roleId))
                     .and(CustomAdminSpecification.hasMobileNumber(mobileNumber))
@@ -493,13 +404,9 @@ public class RoleController {
 
             Page<CustomAdmin> customAdminPage = adminRepo.findAll(spec, pageable);
 
-            // Map entities to DTOs with resolved roleName
-            List<CustomAdminDTO> dtoList = customAdminPage.getContent().stream().map(admin -> {
-                String resolvedRoleName = roleRepository.findById(admin.getRole())
-                        .map(Role::getRoleName)
-                        .orElse("Unknown");
-                return new CustomAdminDTO(admin, resolvedRoleName);
-            }).toList();
+            List<CustomAdminDTO> dtoList = customAdminPage.getContent().stream()
+                    .map(CustomAdminDTO::new) // Use the DTO constructor directly
+                    .toList();
 
             return responseService.generateSuccessResponseWithCount(
                     "Custom Admins fetched successfully",

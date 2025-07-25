@@ -540,7 +540,7 @@ public class OtpEndpoint {
         }
     }
 
-    @Transactional
+/*    @Transactional
     @PostMapping("/admin-signup")
     public ResponseEntity<?> sendOtpToMobileAdmin(@RequestBody Map<String, Object> signupDetails) {
         try {
@@ -549,9 +549,9 @@ public class OtpEndpoint {
 
 
             mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
-/*            if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
+*//*            if (customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode) != null) {
                 return responseService.generateErrorResponse(ApiConstants.NUMBER_REGISTERED_AS_CUSTOMER, HttpStatus.BAD_REQUEST);
-            }*/
+            }*//*
 
             if (countryCode == null || countryCode.isEmpty()) {
                 countryCode = Constant.COUNTRY_CODE;
@@ -598,7 +598,7 @@ public class OtpEndpoint {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
-    }
+    }*/
 
 
     public static class ApiResponse {
