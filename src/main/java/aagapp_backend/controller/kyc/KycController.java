@@ -145,9 +145,7 @@ public class KycController {
                 submittedByName = user != null ? user.getName() : "";
             }
 
-
             commonService.notifyAdminsByRole(
-
                     Constant.ADMIN_ROLE,
                     notificationTitle,
                     submittedByName,
