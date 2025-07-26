@@ -10,7 +10,7 @@ import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
 import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
-import aagapp_backend.services.CommonService;
+import aagapp_backend.services.*;
 import aagapp_backend.services.gameservice.GameService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,9 +18,6 @@ import org.springframework.data.domain.Pageable;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.withdrawrequest.WithdrawalRequestRepository;
-import aagapp_backend.services.ApiConstants;
-import aagapp_backend.services.CustomCustomerService;
-import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.social.UserVendorFollowService;
 import aagapp_backend.services.vendor.VenderService;
@@ -51,6 +48,9 @@ public class VendorController {
 
     @Autowired
     private InfluencerMonthlyEarningRepository earningRepo;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private CommonService commonService;
@@ -1347,9 +1347,18 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             withdrawalRepo.save(req);
 
             String submittedByName = vendor.getFirst_name() + " " + vendor.getLast_name();
-            String notificationTitle = "Withdrawal Request";
+            String notificationTitle = "Withdrawal Request has been submitted";
             String notificationMessage = "A new withdrawal request of ₹" + dto.getAmount() +
                     " has been submitted by vendor: " + submittedByName + " (ID: " + vendor.getService_provider_id() + ").";
+
+            if(vendor.getPrimary_email()!=null){
+                emailService.sendwithdrawlreciveEmail(
+                        vendor,
+                        req,
+                        "Withdrawal Request has been submitted"
+                );
+            }
+
 
             commonService.notifyAdminsByRole(
                     Constant.ADMIN_ROLE,
