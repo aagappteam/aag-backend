@@ -426,7 +426,22 @@ public class TournamentController {
            notificationRepository.save(notification);
 
            if (email != null) {
-               emailService.sendTournamentEmail( vendor,title, body);
+
+               if (request.getStatus() == TournamentStatus.APPROVED) {
+
+                   emailService.sendTournamentApprovalEmail( vendor,"Tournament has been approved", body,tournament);
+
+               }else if (request.getStatus() == TournamentStatus.REJECTED) {
+                   body = "Your tournament has been rejected by the admin.";
+                   if (request.getMessage() != null && !request.getMessage().isEmpty()) {
+                       body += " Reason: " + request.getMessage();
+                   }
+
+                   emailService.sendTournamentRejectionEmail( vendor,"Tournament has been rejected", body,tournament);
+
+               }
+
+//               emailService.sendTournamentEmail( vendor,title, body);
            }
 
            return responseService.generateSuccessResponse("Tournament status updated", tournament, HttpStatus.OK);

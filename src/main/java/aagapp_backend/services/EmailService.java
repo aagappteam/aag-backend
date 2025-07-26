@@ -2,11 +2,13 @@ package aagapp_backend.services;
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
-import aagapp_backend.entity.VendorSubmissionEntity;
+import aagapp_backend.entity.tournament.Tournament;
+import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -316,6 +318,77 @@ public class EmailService {
     }
 
 
+    public void sendTournamentRejectionEmail(
+            VendorEntity vendorEntity, String title, String body, Tournament tournament
+    ) throws IOException {
+
+        // Load HTML template (same for approval/rejection, use placeholders inside)
+        String template = loadTemplate("email-templates/vendor-tournament-rejected.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+        // Replace placeholders with dynamic content
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{tournamentName}", tournament.getName())
+                .replace("{themeName}",tournament.getTheme().getName())
+                .replace("{totalparticipants}",String.valueOf(tournament.getParticipants()))
+                .replace("{gameicon}",tournament.getTheme().getGameimageUrl())
+                .replace("{profilepic}",tournament.getVendorEntity().getProfilePic())
+                .replace("{title}", title)
+                .replace("{reason}", body)
+                .replace("{fee}",String.valueOf(tournament.getEntryFee()))
+                .replace("{body}", body);
+
+        try {
+            sendEmail(to, title, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendTournamentApprovalEmail(
+            VendorEntity vendorEntity, String title, String body, Tournament tournament
+    ) throws IOException {
+
+        // Load HTML template (same for approval/rejection, use placeholders inside)
+        String template = loadTemplate("email-templates/vendor-tournament-approved.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+
+        ZonedDateTime renewalDate = tournament.getScheduledAt();
+        ZonedDateTime createdate = tournament.getCreatedDate();
+
+        String formattedDatescheduledate = renewalDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        String formattedDatecreatedate = createdate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+
+        // Replace placeholders with dynamic content
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{prizepool}",String.valueOf(tournament.getTotalPrizePool()))
+                .replace("{tournamentName}", tournament.getName())
+                .replace("{themeName}",tournament.getTheme().getName())
+                .replace("{Date}",formattedDatecreatedate)
+                .replace("{scheduledate}",formattedDatescheduledate)
+
+                .replace("{totalparticipants}",String.valueOf(tournament.getParticipants()))
+                .replace("{gameicon}",tournament.getTheme().getGameimageUrl())
+                .replace("{profilepic}",tournament.getVendorEntity().getProfilePic())
+                .replace("{title}", title)
+                .replace("{reason}", body)
+                .replace("{fee}",String.valueOf(tournament.getEntryFee()))
+                .replace("{body}", body);
+
+        try {
+            sendEmail(to, title, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
+        }
+    }
+
     public void sendAdminCommonmail(CustomAdmin admin, String type, String name,String message)
             throws IOException, MessagingException {
 
@@ -333,6 +406,36 @@ public class EmailService {
 
         sendEmail(admin.getEmail(), "New " + type + " has come for approval", messageBody, true);
     }
+
+    public void sendwithdrawlreciveEmail(VendorEntity vendorEntity, WithdrawalRequest withdrawalRequest,String title) throws IOException {
+
+        String template = loadTemplate("email-templates/Withdrawal-Request-Received.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+
+        LocalDateTime renewalDate = withdrawalRequest.getRequestedAt();
+
+        String formattedDatescheduledate = renewalDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+
+        // Replace placeholders with dynamic content
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{ammount}",String.valueOf(withdrawalRequest.getAmount()))
+
+                .replace("{Date}",formattedDatescheduledate);
+
+        try {
+            sendEmail(to, title, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
+        }
+
+    }
+
+
+
 
 /*    public void sendAdminWithdrawlapprove(CustomAdmin admin, String Amount, String name,String message)
             throws IOException, MessagingException {
