@@ -202,6 +202,77 @@ public class OtpEndpoint {
     }
 
     @Transactional
+    @PostMapping("/vendor-signup")
+    public ResponseEntity<?> sendOtpToMobile(@RequestBody Map<String, Object> signupDetails) {
+        try {
+            String mobileNumber = (String) signupDetails.get("mobileNumber");
+            String countryCode = (String) signupDetails.get("countryCode");
+            String State = (String) signupDetails.get("state");
+
+
+            mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
+            if (!CommonData.isValidMobileNumber(mobileNumber)) {
+                return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
+            }
+            if (countryCode == null || countryCode.isEmpty()) {
+                countryCode = Constant.COUNTRY_CODE;
+            }
+
+
+            String otp = twilioService.generateOTP();
+
+
+            VendorEntity existingServiceProvider = serviceProviderService.findActiveServiceProviderByPhone(mobileNumber, countryCode);
+            if(existingServiceProvider!=null){
+                return responseService.generateErrorResponse(ApiConstants.MOBILE_NUMBER_REGISTERED, HttpStatus.BAD_REQUEST);
+            }
+            Bucket bucket = rateLimiterService.resolveBucket(mobileNumber, "/otp/vendor-signup");
+            if (bucket.tryConsume(1)) {
+
+                otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
+                VendorEntity existingServiceProviderwithoutsigneup = serviceProviderService.findServiceProviderByPhone(mobileNumber, countryCode);
+                if(existingServiceProviderwithoutsigneup==null){
+                    VendorEntity vendorEntity = new VendorEntity();
+                    vendorEntity.setCountry_code(countryCode);
+                    vendorEntity.setMobileNumber(mobileNumber);
+
+                    if(State!=null) {
+                        vendorEntity.setState(State);
+                    }
+                    vendorEntity.setOtp(otp);
+                    vendorEntity.setRole(4);
+                    em.persist(vendorEntity);
+                }else{
+                    existingServiceProviderwithoutsigneup.setOtp(otp);
+                    em.merge(existingServiceProviderwithoutsigneup);
+                }
+
+                Map<String, Object> details = new HashMap<>();
+                String maskedNumber = twilioService.genereateMaskednumber(mobileNumber);
+                details.put("otp", otp);
+                return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + " on " + maskedNumber, otp, HttpStatus.OK);
+            } else {
+                return responseService.generateErrorResponse(ApiConstants.RATE_LIMIT_EXCEEDED, HttpStatus.BANDWIDTH_LIMIT_EXCEEDED);
+            }
+
+
+
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                return responseService.generateErrorResponse(ApiConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
+            } else {
+                exceptionHandling.handleHttpClientErrorException(e);
+                return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        } catch (ApiException e) {
+            exceptionHandling.handleApiException(e);
+            return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+    @Transactional
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOTP(@RequestBody Map<String, Object> loginDetails, jakarta.servlet.http.HttpSession session, HttpServletRequest request) {
         try {
@@ -468,77 +539,7 @@ public class OtpEndpoint {
 
     }
 
-    @Transactional
-    @PostMapping("/vendor-signup")
-    public ResponseEntity<?> sendOtpToMobile(@RequestBody Map<String, Object> signupDetails) {
-        try {
-            String mobileNumber = (String) signupDetails.get("mobileNumber");
-            String countryCode = (String) signupDetails.get("countryCode");
-            String State = (String) signupDetails.get("state");
 
-
-            mobileNumber = mobileNumber.startsWith("0") ? mobileNumber.substring(1) : mobileNumber;
-            if (!CommonData.isValidMobileNumber(mobileNumber)) {
-                return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
-            }
-            if (countryCode == null || countryCode.isEmpty()) {
-                countryCode = Constant.COUNTRY_CODE;
-            }
-
-
-            String otp = twilioService.generateOTP();
-
-
-            VendorEntity existingServiceProvider = serviceProviderService.findActiveServiceProviderByPhone(mobileNumber, countryCode);
-            if(existingServiceProvider!=null){
-                return responseService.generateErrorResponse(ApiConstants.MOBILE_NUMBER_REGISTERED, HttpStatus.BAD_REQUEST);
-            }
-            Bucket bucket = rateLimiterService.resolveBucket(mobileNumber, "/otp/vendor-signup");
-            if (bucket.tryConsume(1)) {
-
-              otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
-                VendorEntity existingServiceProviderwithoutsigneup = serviceProviderService.findActiveServiceProviderByPhone(mobileNumber, countryCode);
-                if(existingServiceProviderwithoutsigneup==null){
-                    VendorEntity vendorEntity = new VendorEntity();
-                    vendorEntity.setCountry_code(countryCode);
-                    vendorEntity.setMobileNumber(mobileNumber);
-
-                    if(State!=null) {
-                        vendorEntity.setState(State);
-                    }
-                    vendorEntity.setOtp(otp);
-                    vendorEntity.setRole(4);
-                    em.persist(vendorEntity);
-                }else{
-                    existingServiceProviderwithoutsigneup.setOtp(otp);
-                    em.merge(existingServiceProviderwithoutsigneup);
-                }
-
-                Map<String, Object> details = new HashMap<>();
-                String maskedNumber = twilioService.genereateMaskednumber(mobileNumber);
-                details.put("otp", otp);
-                return responseService.generateSuccessResponse(ApiConstants.OTP_SENT_SUCCESSFULLY + " on " + maskedNumber, otp, HttpStatus.OK);
-            } else {
-                return responseService.generateErrorResponse(ApiConstants.RATE_LIMIT_EXCEEDED, HttpStatus.BANDWIDTH_LIMIT_EXCEEDED);
-            }
-
-
-
-        } catch (HttpClientErrorException e) {
-            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                return responseService.generateErrorResponse(ApiConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
-            } else {
-                exceptionHandling.handleHttpClientErrorException(e);
-                return responseService.generateErrorResponse(ApiConstants.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-        } catch (ApiException e) {
-            exceptionHandling.handleApiException(e);
-            return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse(ApiConstants.ERROR_SENDING_OTP + e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
 
 /*    @Transactional
     @PostMapping("/admin-signup")

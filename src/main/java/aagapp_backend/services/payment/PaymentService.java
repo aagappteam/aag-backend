@@ -144,7 +144,6 @@ public class PaymentService {
         for (PaymentEntity payment : expiredPayments) {
             try {
 
-                System.out.println("Expiring subscription ID: " + payment.getId() + " at " + LocalDateTime.now());
                 payment.setStatus(PaymentStatus.EXPIRED);
                 payment.setExpiredAt(LocalDateTime.now());
                 paymentRepository.save(payment);
