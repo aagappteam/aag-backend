@@ -80,9 +80,16 @@ public class SocialUserController {
 
             // Check if a SocialUser already exists
             SocialUser existing = socialUserRepository.findByCustomer(customer);
-            if (existing != null && existing.getStatus() == SocialStatus.APPROVED || existing.getStatus() == SocialStatus.REJECTED) {
-                return ResponseService.generateSuccessResponse("Social links already processed, you can not re-submit", existing, HttpStatus.OK);
+            if (existing != null &&
+                    (existing.getStatus() == SocialStatus.APPROVED || existing.getStatus() == SocialStatus.REJECTED)) {
+
+                return ResponseService.generateSuccessResponse(
+                        "Social links already processed, you cannot re-submit",
+                        existing,
+                        HttpStatus.OK
+                );
             }
+
             if (existing != null) {
                 existing.setSocialMediaUrls(socialMediaUrls);
                 existing.setStatus(SocialStatus.PENDING); // Move back to pending on re-submit
