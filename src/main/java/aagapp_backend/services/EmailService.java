@@ -434,11 +434,8 @@ public class EmailService {
 
     }
 
+    public void sendwithdrawalapproveEmail(String email, String subject, WithdrawalRequest request,String name) throws IOException {
 
-
-
-/*    public void sendAdminWithdrawlapprove(CustomAdmin admin, String Amount, String name,String message)
-            throws IOException, MessagingException {
 
         String template = loadTemplate("email-templates/Withdrawal-Successful–Funds-Transferred.html");
 
@@ -446,14 +443,41 @@ public class EmailService {
         String formattedDate = indiaTime.format(DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a z"));
 
         String messageBody = template
-                .replace("{ammount}", Amount)
-                .replace("{VendorName}", admin.getUser_name())
-                .replace("{bank}", bank)
+                .replace("{ammount}",String.valueOf(request.getAmount()))
+                .replace("{BankName}",request.getBankName())
+                .replace("{VendorName}", name)
                 .replace("{createdAt}", formattedDate);
 
-        sendEmail(admin.getEmail(), "New " + type + " has come for approval", messageBody, true);
-    }*/
+        try {
+            sendEmail(email, subject, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
+        }
 
+
+    }
+    public void sendwithdrawalrejectEmail(String email, String subject, WithdrawalRequest request,String name) throws IOException {
+
+
+        String template = loadTemplate("email-templates/Withdrawal-reject–aagveer.html");
+
+        ZonedDateTime indiaTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        String formattedDate = indiaTime.format(DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a z"));
+
+        String messageBody = template
+                .replace("{ammount}",String.valueOf(request.getAmount()))
+                .replace("{BankName}",request.getBankName())
+                .replace("{VendorName}", name)
+                .replace("{createdAt}", formattedDate);
+
+        try {
+            sendEmail(email, subject, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
+        }
+
+
+    }
 
 
 

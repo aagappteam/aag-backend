@@ -1336,6 +1336,8 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             WithdrawalRequest req = new WithdrawalRequest();
             req.setInfluencerId(dto.getInfluencerId());
             req.setAmount(dto.getAmount());
+            req.setBankName(dto.getBankName());
+            req.setMonthYear(dto.getMonthYear());
             req.setMonthYear(month);
             req.setStatus("PENDING");
             req.setRequestedAt(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
