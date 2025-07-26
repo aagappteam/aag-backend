@@ -13,4 +13,6 @@ public interface SocialUserRepository extends JpaRepository<SocialUser, Long>, J
         SocialUser findByCustomer(CustomCustomer customer);
 
     List<SocialUser> findAllByStatus(SocialStatus status);
+
+    long countByStatus(SocialStatus socialStatus);
 }

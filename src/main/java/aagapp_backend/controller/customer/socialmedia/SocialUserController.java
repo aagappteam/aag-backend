@@ -1,15 +1,18 @@
 package aagapp_backend.controller.customer.socialmedia;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.social.SocialUser;
 import aagapp_backend.enums.SocialStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.social.SocialUserRepository;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.url.UrlVerificationService;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +30,9 @@ public class SocialUserController {
     private final UrlVerificationService urlVerificationService;
     private final ExceptionHandlingImplement exceptionHandlingImplement;
     private final EntityManager entityManager;
+
+    @Autowired
+    private CommonService commonService;
 
     public SocialUserController(
             SocialUserRepository socialUserRepository,
@@ -105,6 +111,22 @@ public class SocialUserController {
             socialUser.setStatus(SocialStatus.PENDING);
             socialUserRepository.save(socialUser);
 
+            String notificationTitle = "New Social Link Submission";
+            String submittedByName = customer.getName() != null ? customer.getName() : "Unknown User";
+            Long userOrVendorId = customer.getId();
+            String notificationMessage = "User " + submittedByName + " has submitted their social media links for verification.";
+            Long senderId = customer.getId();
+            String senderRole = "CUSTOMER";
+
+            commonService.notifyAdminsByRole(
+                    Constant.ADMIN_ROLE,
+                    notificationTitle,
+                    submittedByName,
+                    userOrVendorId,
+                    notificationMessage,
+                    senderId,
+                    senderRole
+            );
 
 
             return ResponseService.generateSuccessResponse("Social links submitted", socialUser, HttpStatus.CREATED);

@@ -1259,7 +1259,12 @@ public class AdminReviewController {
                         .build();
             }).toList();
 
-            return ResponseService.generateSuccessResponseWithCount("Social requests fetched successfully", dtoList, pageResult.getTotalElements(), HttpStatus.OK);
+            long pendingCount = socialUserRepository.countByStatus(SocialStatus.PENDING);
+            long approvedCount = socialUserRepository.countByStatus(SocialStatus.APPROVED);
+            long rejectedCount = socialUserRepository.countByStatus(SocialStatus.REJECTED);
+
+
+            return ResponseService.generateSuccessResponseForVendorUpgrade("Social requests fetched successfully", dtoList, pageResult.getTotalElements(),approvedCount,rejectedCount,pendingCount, HttpStatus.OK);
 
         } catch (Exception e) {
             exceptionHandling.handleException(e);
