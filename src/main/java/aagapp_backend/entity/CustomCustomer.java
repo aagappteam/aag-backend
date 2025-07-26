@@ -2,6 +2,7 @@ package aagapp_backend.entity;
 
 import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.social.SocialUser;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.KycStatus;
 import aagapp_backend.enums.ProfileStatus;
@@ -187,6 +188,8 @@ public class CustomCustomer {
 
     private Boolean isWeeklyBoosterActive= false;
 
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SocialUser> socials = new ArrayList<>();
 
     @JsonIgnore
     @Column(name = "booster_activated_at")

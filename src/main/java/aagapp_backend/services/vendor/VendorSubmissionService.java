@@ -57,7 +57,6 @@ public class VendorSubmissionService {
             if (existingSubmission != null) {
                 throw new VendorSubmissionException("Data already exists for the given vendor.");
             }
-            System.out.println("efdfdc");
 
             // Check for invalid URLs
             for (Map.Entry<String, String> entry : submissionEntity.getSocialMediaUrls().entrySet()) {

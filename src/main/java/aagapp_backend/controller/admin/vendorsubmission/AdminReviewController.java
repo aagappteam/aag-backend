@@ -10,6 +10,7 @@ import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.payment.PlanUpgradeRequest;
+import aagapp_backend.entity.social.SocialUser;
 import aagapp_backend.entity.ticket.Ticket;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
@@ -18,6 +19,7 @@ import aagapp_backend.enums.*;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.payment.PaymentPlanUpgradeRepository;
+import aagapp_backend.repository.social.SocialUserRepository;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
@@ -34,10 +36,12 @@ import aagapp_backend.services.gameservice.GameService;
 import aagapp_backend.services.league.LeagueService;
 import aagapp_backend.services.ticket.TicketService;
 import aagapp_backend.services.tournamnetservice.TournamentService;
+import aagapp_backend.spec.SocialUserSpecifications;
 import aagapp_backend.spec.WithdrawalRequestSpecification;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import jakarta.persistence.criteria.Expression;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -105,6 +109,12 @@ public class AdminReviewController {
 
     @Autowired
     private TicketService ticketService;
+
+    @Autowired
+    private  SocialUserRepository socialUserRepository;
+
+    @Autowired
+    private  CustomCustomerRepository customerRepository;
 
     private AdminReviewService reviewService;
     private ExceptionHandlingImplement exceptionHandling;
@@ -1142,6 +1152,122 @@ public class AdminReviewController {
 
         }
     }*/
+
+
+    @Transactional
+    @PutMapping("/verify/{socialUserId}")
+    public ResponseEntity<?> approveOrRejectSocialLinks(@PathVariable Long socialUserId,
+                                                        @RequestBody Map<String, String> request) {
+        try {
+            String statusStr = request.get("status");
+
+            if (statusStr == null || (!statusStr.equals("APPROVED") && !statusStr.equals("REJECTED"))) {
+                return ResponseService.generateErrorResponse("Invalid status. Use APPROVED or REJECTED.", HttpStatus.BAD_REQUEST);
+            }
+
+            SocialStatus newStatus = SocialStatus.valueOf(statusStr);
+
+            Optional<SocialUser> optionalSocialUser = socialUserRepository.findById(socialUserId);
+            if (optionalSocialUser.isEmpty()) {
+                return ResponseService.generateErrorResponse("SocialUser not found", HttpStatus.NOT_FOUND);
+            }
+
+            SocialUser socialUser = optionalSocialUser.get();
+
+            // Prevent re-processing
+            if (socialUser.getStatus() == SocialStatus.APPROVED || socialUser.getStatus() == SocialStatus.REJECTED) {
+                return ResponseService.generateErrorResponse("Social links already processed", HttpStatus.BAD_REQUEST);
+            }
+
+            socialUser.setStatus(newStatus);
+            socialUser.setUpdatedAt(new Date());
+
+            // Handle bonus on approval
+            if (newStatus == SocialStatus.APPROVED) {
+                BigDecimal bonus = socialUser.getCustomer().getBonusBalance();
+                BigDecimal updatedBonus = bonus.add(BigDecimal.valueOf(20));
+                socialUser.getCustomer().setBonusBalance(updatedBonus);
+                customerRepository.save(socialUser.getCustomer());
+            }
+
+            socialUserRepository.save(socialUser);
+
+            return ResponseService.generateSuccessResponse(
+                    "Social link status updated to " + newStatus.name(),
+                    socialUser,
+                    HttpStatus.OK
+            );
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Server error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/social-requests")
+    public ResponseEntity<?> getAllSocialRequests(
+            @RequestParam(value = "status", required = false) String statusStr,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "mobile", required = false) String mobile,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            Specification<SocialUser> spec = Specification.where(null);
+
+            if (statusStr != null) {
+                try {
+                    SocialStatus status = SocialStatus.valueOf(statusStr.toUpperCase());
+                    spec = spec.and(SocialUserSpecifications.hasStatus(status));
+                } catch (IllegalArgumentException e) {
+                    return ResponseService.generateErrorResponse("Invalid status filter", HttpStatus.BAD_REQUEST);
+                }
+            }
+
+            if (search != null) {
+                spec = spec.and(SocialUserSpecifications.searchAcrossFields(search));
+            } else {
+                if (name != null) spec = spec.and(SocialUserSpecifications.hasNameLike(name));
+                if (email != null) spec = spec.and(SocialUserSpecifications.hasEmailLike(email));
+                if (mobile != null) spec = spec.and(SocialUserSpecifications.hasMobileLike(mobile));
+            }
+
+            if (startDate != null && endDate != null) {
+                spec = spec.and(SocialUserSpecifications.createdBetween(startDate, endDate));
+            }
+
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            Page<SocialUser> pageResult = socialUserRepository.findAll(spec, pageable);
+
+            List<SocialUserResponseDto> dtoList = pageResult.getContent().stream().map(social -> {
+                return SocialUserResponseDto.builder()
+                        .id(social.getId())
+                        .status(social.getStatus())
+                        .createdAt(social.getCreatedAt())
+                        .updatedAt(social.getUpdatedAt())
+                        .socialMediaUrls(social.getSocialMediaUrls())
+                        .customerId(social.getCustomer().getId())
+                        .customerName(social.getCustomer().getName())
+                        .customerEmail(social.getCustomer().getEmail())
+                        .customerMobileNumber(social.getCustomer().getMobileNumber())
+                        .build();
+            }).toList();
+
+            return ResponseService.generateSuccessResponseWithCount("Social requests fetched successfully", dtoList, pageResult.getTotalElements(), HttpStatus.OK);
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return ResponseService.generateErrorResponse("Failed to fetch social requests", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 
 }
 
