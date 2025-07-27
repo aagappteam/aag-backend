@@ -1170,7 +1170,7 @@ public class GameService {
             for (League league : leagues) {
                 // Ensure we have an end date for the league (e.g., league could have an "endDate" property)
                 if (league.getEndDate() != null && league.getEndDate().isBefore(nowInKolkata)) {
-                    league.setStatus(LeagueStatus.EXPIRED); // Change the status to EXPIRED
+                    league.setStatus(LeagueStatus.EXPIRED);
                     league.setUpdatedDate(nowInKolkata);
                     leagueService.distributePrizePoolSilently(league.getId());
                     leagueRepository.save(league);

@@ -2283,7 +2283,16 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             }
 
             // Remaining prize equal distribution
-            BigDecimal remainingPrize = league.getPrizePool().subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
+//            BigDecimal remainingPrize = league.getPrizePool().subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
+
+
+            BigDecimal prizePool = league.getPrizePool();
+            if (prizePool == null) {
+                prizePool = BigDecimal.ZERO;
+            }
+
+            BigDecimal remainingPrize = prizePool.subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
+
 
             if (!remainingPlayers.isEmpty() && remainingPrize.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal equalShare = remainingPrize
