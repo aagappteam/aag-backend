@@ -402,6 +402,7 @@ public class TournamentController {
                vendor.setPublishedLimit((vendor.getPublishedLimit() == null ? 0 : vendor.getPublishedLimit()) + 1);
                vendor.setTotal_tournament_published(vendor.getTotal_tournament_published() == null ? 0 : vendor.getTotal_tournament_published() + 1);
                // Send notification asynchronously (non-blocking)
+               vendorRepository.save(vendor);
                 CompletableFuture.runAsync(() ->
                         followerNotificationService.notifyFollowersInParallel("tournament", tournament.getName(), vendor)
                 );

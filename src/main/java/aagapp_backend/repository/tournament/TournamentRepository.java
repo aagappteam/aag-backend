@@ -161,6 +161,17 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
             @Param("statuses") List<TournamentStatus> statuses
     );
 
+    @Query("SELECT t FROM Tournament t WHERE t.vendorId = :vendorId AND t.createdDate BETWEEN :startTime AND :endTime AND t.status IN :statuses")
+    List<Tournament> findTournamentsByVendorAndCreatedDateAndStatusIn(
+            @Param("vendorId") Long vendorId,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime,
+            @Param("statuses") List<TournamentStatus> statuses
+    );
+
+
+
+
 
     List<Tournament> findAllByStatusAndCreatedDateBefore(TournamentStatus tournamentStatus, ZonedDateTime fifteenMinutesAgo);
 }
