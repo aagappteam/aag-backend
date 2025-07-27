@@ -1817,9 +1817,9 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             List<Object[]> results = leagueResultRecordRepository.getTeamTotalScoresByLeague(leagueId);
             Map<String, Long> scoreMap = new HashMap<>();
             for (Object[] row : results) {
-                String teamName = (String) row[0];
+                Long teamIdFromQuery = (Long) row[0];
                 Long totalScore = row[1] != null ? (Long) row[1] : 0L;
-                scoreMap.put(teamName, totalScore);
+                scoreMap.put(String.valueOf(teamIdFromQuery), totalScore);
             }
 
             // Step 3: Build teamScores list including default scores for teams without scores
@@ -1827,7 +1827,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             for (LeagueTeam team : allTeams) {
                 Long teamId = team.getId();
                 String teamName = team.getTeamName();
-                Long totalScore = scoreMap.getOrDefault(teamName, 0L);
+                Long totalScore = scoreMap.getOrDefault(String.valueOf(team.getId()), 0L);
 
                 Map<String, Object> teamData = new HashMap<>();
                 teamData.put("teamId", teamId);
