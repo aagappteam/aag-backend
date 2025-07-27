@@ -292,11 +292,15 @@ public class TournamentService {
                 if (player != null && player.getCustomer() != null) {
                     String fcmToken = player.getCustomer().getFcmToken();
                     if (fcmToken != null) {
-                        notoficationFirebase.sendNotification(
-                                fcmToken,
-                                "Tournament starting soon!",
-                                "Tournament '" + tournament.getName() + "' is going to start soon. Please join now!"
-                        );
+                        try {
+                            notoficationFirebase.sendNotification(
+                                    fcmToken,
+                                    "Tournament starting soon!",
+                                    "Tournament '" + tournament.getName() + "' is going to start soon. Please join now!"
+                            );
+                        } catch (Exception e) {
+                                System.out.println("Error sending notification: " + e.getMessage());
+                            }
                     }
                 }
             }
@@ -791,12 +795,17 @@ public class TournamentService {
         if (status == TournamentStatus.REJECTED || status == TournamentStatus.CANCELLED) {
             String fcmToken = tournament.getVendorEntity().getFcmToken();
             if (fcmToken != null) {
-                notoficationFirebase.sendNotification(
-                        fcmToken,
-                        "⚠️ Tournament " + tournament.getName() + " was rejected",
-                        "Reason: " + reason
-                );
+                try {
+                    notoficationFirebase.sendNotification(
+                            fcmToken,
+                            "⚠️ Tournament " + tournament.getName() + " was rejected",
+                            "Reason: " + reason
+                    );
+                } catch (Exception e) {
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
             }
+
         }
     }
 
@@ -860,11 +869,15 @@ public class TournamentService {
 
             String fcmToken = tournament.getVendorEntity().getFcmToken();
             if (fcmToken != null) {
-                notoficationFirebase.sendNotification(
-                        fcmToken,
-                        "⚠️ Tournament " + tournament.getName() + " was concluded",
-                        "⚠️ Tournament " + tournament.getName() + " was concluded. " +
-                                "User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
+                try{
+                    notoficationFirebase.sendNotification(
+                            fcmToken,
+                            "⚠️ Tournament " + tournament.getName() + " was concluded",
+                            "⚠️ Tournament " + tournament.getName() + " was concluded. " +
+                                    "User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
+                }catch (Exception e){
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
             }
 
             return tournament;
@@ -1364,11 +1377,15 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
-            notoficationFirebase.sendNotification(
-                    fcmToken,
-                    "🏆 Tournament " + tournament.getName() + " has been Completed now",
-                    "The tournament has successfully concluded. Check final results and prize distribution!"
-            );
+            try{
+                notoficationFirebase.sendNotification(
+                        fcmToken,
+                        "🏆 Tournament " + tournament.getName() + " has been Completed now",
+                        "The tournament has successfully concluded. Check final results and prize distribution!"
+                );
+            }catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
         }
 
     }
