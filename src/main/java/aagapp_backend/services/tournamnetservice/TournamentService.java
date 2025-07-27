@@ -202,47 +202,77 @@ public class TournamentService {
         }
     }
 
-    @Scheduled(cron = "*/2 * * * * *")
+    @Scheduled(cron = "*/10 * * * * *") // Runs every 10 seconds
     public void autoStartScheduledTournaments() {
-
-        try{
-
+        try {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
-/*            ZonedDateTime earlyWindowStart = now.plusSeconds(10);
-            ZonedDateTime earlyWindowEnd = now.plusSeconds(20);*/
 
-
-            ZonedDateTime targetScheduledAt = now.plusSeconds(10);
-
-            // Allow a small 1-second window around the target to handle scheduler delay
-            ZonedDateTime windowStart = targetScheduledAt.minusSeconds(1);
-            ZonedDateTime windowEnd = targetScheduledAt.plusSeconds(1);
-
-/*            List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
-                    TournamentStatus.SCHEDULED,
-                    windowStart,
-                    windowEnd,
-                    now
-            );*/
+            // Window for tournaments scheduled to start 15 to 20 seconds from now
+            ZonedDateTime windowStart = now.plusSeconds(15);
+            ZonedDateTime windowEnd = now.plusSeconds(20);
 
             List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
                     TournamentStatus.SCHEDULED,
                     windowStart,
                     windowEnd
             );
+
             for (Tournament tournament : tournamentsToStart) {
-                if (tournament.getStatus() == TournamentStatus.SCHEDULED) {
-
-                    startTournament(tournament.getId());
-
+                try {
+                    startTournament(tournament.getId()); // Safe to call, will start only once
+                } catch (Exception e) {
+                    exceptionHandling.handleException(e);
                 }
             }
-        }
-        catch (Exception e) {
-            exceptionHandling.handleException(e);
 
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
         }
     }
+
+
+
+//    @Scheduled(cron = "*/2 * * * * *")
+//    public void autoStartScheduledTournaments() {
+//
+//        try{
+//
+//            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
+///*            ZonedDateTime earlyWindowStart = now.plusSeconds(10);
+//            ZonedDateTime earlyWindowEnd = now.plusSeconds(20);*/
+//
+//
+//            ZonedDateTime targetScheduledAt = now.plusSeconds(10);
+//
+//            // Allow a small 1-second window around the target to handle scheduler delay
+//            ZonedDateTime windowStart = targetScheduledAt.minusSeconds(1);
+//            ZonedDateTime windowEnd = targetScheduledAt.plusSeconds(1);
+//
+///*            List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
+//                    TournamentStatus.SCHEDULED,
+//                    windowStart,
+//                    windowEnd,
+//                    now
+//            );*/
+//
+//            List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
+//                    TournamentStatus.SCHEDULED,
+//                    windowStart,
+//                    windowEnd
+//            );
+//            for (Tournament tournament : tournamentsToStart) {
+//                if (tournament.getStatus() == TournamentStatus.SCHEDULED) {
+//
+//                    startTournament(tournament.getId());
+//
+//                }
+//            }
+//        }
+//        catch (Exception e) {
+//            exceptionHandling.handleException(e);
+//
+//        }
+//    }
 
     private void notifyRegisteredPlayers(Tournament tournament) {
         int page = 0;
@@ -312,8 +342,6 @@ public class TournamentService {
             int totalRounds = (int) Math.ceil(Math.log(totalPlayers) / Math.log(2));
 
 
-
-
 //           BigDecimal roomprize = revenueAmmountforuser.divide(BigDecimal.valueOf(totalRounds));
             BigDecimal roomprize = revenueAmmountforuser.divide(
                     BigDecimal.valueOf(totalRounds), 2, RoundingMode.HALF_UP
@@ -341,6 +369,31 @@ public class TournamentService {
 
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+
+            if (tournamentRequest.getScheduledAt() != null) {
+                ZonedDateTime requestedTime = tournamentRequest.getScheduledAt()
+                        .withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+
+                int minutes = requestedTime.getMinute();
+                int remainder = minutes % 15;
+                if (remainder != 0 || requestedTime.getSecond() > 0 || requestedTime.getNano() > 0) {
+                    requestedTime = requestedTime
+                            .plusMinutes(15 - remainder)
+                            .withSecond(0)
+                            .withNano(0);
+                }
+
+                if (requestedTime.isBefore(nowInKolkata.plusHours(1))) {
+                    throw new BusinessException("The game must be scheduled at least 1 hour in advance.", HttpStatus.BAD_REQUEST);
+                }
+
+                tournament.setStatus(TournamentStatus.PENDING);
+                tournament.setScheduledAt(requestedTime);
+            } else {
+                throw new BusinessException("Scheduled date is required", HttpStatus.BAD_REQUEST);
+            }
+
+            /*ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             if (tournamentRequest.getScheduledAt() != null) {
 
               ZonedDateTime scheduledInKolkata = tournamentRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
@@ -357,7 +410,7 @@ public class TournamentService {
 
             }else {
                throw new BusinessException("Scheduled date is required" , HttpStatus.BAD_REQUEST);
-            }
+            }*/
 
 
             // Set created and updated timestamps
@@ -1074,8 +1127,7 @@ public class TournamentService {
 
     @Transactional
     public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
+
 
         TournamentRoom room = roomRepository.findRoomByPlayerIdAndTournamentId(playerId, tournamentId);
 

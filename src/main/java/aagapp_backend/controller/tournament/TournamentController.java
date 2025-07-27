@@ -321,7 +321,6 @@ public class TournamentController {
 
             Tournament publishedGame = tournamentService.publishTournament(tournamentRequest, vendorId);
 
-            // Now create a single notification for the vendor
             Notification notification = new Notification();
             notification.setRole("Vendor");
             
@@ -329,7 +328,6 @@ public class TournamentController {
 
             notification.setVendorId(vendorId);
             if (tournamentRequest.getScheduledAt() != null) {
-//                notification.setAmount((double) tournamentRequest.getEntryFee());
                 notification.setDescription("Tournament Submitted for Review");
                 notification.setDetails("Your Tournament has been submitted and is pending admin approval before going live at the scheduled time.");
             }else{
@@ -442,7 +440,6 @@ public class TournamentController {
 
                }
 
-//               emailService.sendTournamentEmail( vendor,title, body);
            }
 
            return responseService.generateSuccessResponse("Tournament status updated", tournament, HttpStatus.OK);
