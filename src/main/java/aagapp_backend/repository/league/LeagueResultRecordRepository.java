@@ -25,12 +25,12 @@ public interface LeagueResultRecordRepository extends JpaRepository<LeagueResult
             "GROUP BY rr.leagueTeam.teamName")
     Object[] getPlayerTeamAndScoreInLeague(@Param("leagueId") Long leagueId, @Param("playerId") Long playerId);
 
-    // Goal 2: All teams’ total score in a league
-    @Query("SELECT rr.leagueTeam.teamName, SUM(rr.totalScore) " +
+    @Query("SELECT rr.leagueTeam.id, SUM(rr.totalScore) " +
             "FROM LeagueResultRecord rr " +
             "WHERE rr.league.id = :leagueId AND rr.leagueTeam IS NOT NULL " +
-            "GROUP BY rr.leagueTeam.teamName")
+            "GROUP BY rr.leagueTeam.id")
     List<Object[]> getTeamTotalScoresByLeague(@Param("leagueId") Long leagueId);
+
 
 
     @Query("SELECT SUM(rr.totalScore) FROM LeagueResultRecord rr " +
