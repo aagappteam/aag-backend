@@ -2444,13 +2444,17 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                     // Create teams
                     LeagueTeam team1 = new LeagueTeam();
-                    team1.setTeamName("Team " + vendor.getFirst_name());
+//                    team1.setTeamName("Team " + vendor.getFirst_name());
+                    team1.setTeamName("Team " + vendor.getFirst_name() + " - L" + savedLeague.getId());
+
                     team1.setVendor(vendor);
                     team1.setProfilePic(vendor.getProfilePic());
                     team1.setLeague(savedLeague);
 
                     LeagueTeam team2 = new LeagueTeam();
-                    team2.setTeamName("Team " + opponentVendor.getFirst_name());
+//                    team2.setTeamName("Team " + opponentVendor.getFirst_name());
+                    team2.setTeamName("Team " + opponentVendor.getFirst_name() + " - L" + savedLeague.getId());
+
                     team2.setVendor(opponentVendor);
                     team2.setProfilePic(opponentVendor.getProfilePic());
                     team2.setLeague(savedLeague);

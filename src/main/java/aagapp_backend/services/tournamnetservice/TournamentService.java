@@ -449,6 +449,89 @@ public class TournamentService {
 
 
     @Transactional
+    public Tournament createTournamentWithFixedFee(TournamentRequest request, Long vendorId) {
+        VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
+        AagAvailableGames game = em.find(AagAvailableGames.class, request.getExistinggameId());
+        ThemeEntity theme = em.find(ThemeEntity.class, request.getThemeId());
+
+        if (vendorEntity == null || game == null || theme == null) {
+            throw new BusinessException("Vendor, Game, or Theme not found.", HttpStatus.NOT_FOUND);
+        }
+
+        int entryFee = request.getEntryFee();
+        int participants = request.getParticipants();
+        int totalRounds = (int) Math.ceil(Math.log(participants) / Math.log(2));
+
+        BigDecimal totalPrize = Constant.TOURNAMENT_PRIZE_POOL;
+        BigDecimal userPrizePool = totalPrize.multiply(PriceConstant.USER_PRIZE_PERCENT);
+        BigDecimal roomPrize = userPrizePool.divide(BigDecimal.valueOf(totalRounds), 2, RoundingMode.HALF_UP);
+
+        ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        ZonedDateTime scheduledAt = request.getScheduledAt();
+
+        if (scheduledAt == null) {
+            scheduledAt = nowInKolkata.plusHours(Constant.TOURNAMENT_START_TIME);
+        }
+
+        // Align time to next 15 min slot
+        int minutes = scheduledAt.getMinute();
+        int remainder = minutes % 15;
+        if (remainder != 0 || scheduledAt.getSecond() > 0 || scheduledAt.getNano() > 0) {
+            scheduledAt = scheduledAt
+                    .plusMinutes(15 - remainder)
+                    .withSecond(0)
+                    .withNano(0);
+        }
+
+        if (scheduledAt.isBefore(nowInKolkata.plusHours(1))) {
+            throw new BusinessException("The game must be scheduled at least 1 hour in advance.", HttpStatus.BAD_REQUEST);
+        }
+
+
+        Tournament tournament = new Tournament();
+        tournament.setName(game.getGameName());
+        tournament.setVendorId(vendorId);
+        tournament.setVendorEntity(vendorEntity);
+        tournament.setTheme(theme);
+        tournament.setExistinggameId(game.getId());
+        tournament.setParticipants(participants);
+        tournament.setEntryFee(entryFee);
+        tournament.setTotalPrizePool(totalPrize.doubleValue());
+        tournament.setRoomprize(roomPrize);
+        tournament.setTotalrounds(totalRounds);
+        tournament.setGameUrl(commonService.resolveGameImageUrl(game, theme.getId()));
+        tournament.setScheduledAt(scheduledAt);
+        tournament.setStatus(TournamentStatus.SCHEDULED);
+        tournament.setCreatedDate(nowInKolkata);
+
+        if (entryFee > 10) {
+            tournament.setMove(Constant.TENMOVES);
+        } else {
+            tournament.setMove(Constant.SIXTEENMOVES);
+        }
+
+        Tournament saved = tournamentRepository.save(tournament);
+
+        // Generate shareable link
+        String shareableLink = generateShareableLink(saved.getId(), vendorId);
+        saved.setShareableLink(shareableLink);
+        tournamentRepository.save(saved);
+
+        vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
+        vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);
+        // Send notification asynchronously (non-blocking)
+        vendorRepository.save(vendorEntity);
+        CompletableFuture.runAsync(() ->
+                followerNotificationService.notifyFollowersInParallel("tournament", tournament.getName(), vendorEntity)
+        );
+
+
+        return saved;
+    }
+
+
+
+    @Transactional
     public TournamentPlayerRegistration registerPlayer(Long tournamentId, Long playerId) {
         try {
             Tournament tournament = tournamentRepository.findById(tournamentId)
@@ -2393,7 +2476,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 List<Integer> participants = List.of(512, 1024, 256);
                 Integer particpant = participants.get(new Random().nextInt(participants.size()));
 
-                Double totalPrize = (double) entryfee * particpant;
 
                 int totalPlayers = particpant;
 
@@ -2415,7 +2497,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 request.setEntryFee(entryfee);
 
                 try {
-                 Tournament tournament = publishTournament(request, vendorId);
+                 Tournament tournament = createTournamentWithFixedFee(request, vendorId);
                     System.out.println("✅ Published TOURNAMENT " + gameName + " with theme " + themeId + " for vendor " + vendorId);
                     return;
                 } catch (Exception e) {
