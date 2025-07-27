@@ -447,9 +447,11 @@ public class GameController {
                     Page<LeagueResponseDTO> allLeagues = gameleaguetournamentservice.getAllLeagues(status,vendorId, pageable, startDate, endDate, scheduleddate);
                     Page<TournamentResponseDTO> allTournaments = gameleaguetournamentservice.getAllTournaments(status,vendorId, pageable, startDate, endDate, scheduleddate);
 
-                    leagueAndTournament.put("leagues", allLeagues.getContent());
-                    leagueAndTournament.put("tournaments", allTournaments.getContent());
-                    response.put("league_tournament", leagueAndTournament);
+//                    leagueAndTournament.put("leagues", allLeagues.getContent());
+//                    leagueAndTournament.put("tournaments", allTournaments.getContent());
+                    response.put("leagues", allLeagues.getContent());
+                    response.put("tournaments", allTournaments.getContent());
+//                    response.put("league_tournament", leagueAndTournament);
                     totalCount = allLeagues.getTotalElements() + allTournaments.getTotalElements();
 
                     break;
