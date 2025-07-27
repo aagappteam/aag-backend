@@ -501,7 +501,7 @@ public class TournamentService {
         tournament.setTotalrounds(totalRounds);
         tournament.setGameUrl(commonService.resolveGameImageUrl(game, theme.getId()));
         tournament.setScheduledAt(scheduledAt);
-        tournament.setStatus(TournamentStatus.PENDING);
+        tournament.setStatus(TournamentStatus.SCHEDULED);
         tournament.setCreatedDate(nowInKolkata);
 
         if (entryFee > 10) {
