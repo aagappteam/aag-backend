@@ -7,9 +7,7 @@ import aagapp_backend.dto.*;
 
 import aagapp_backend.dto.admin.league.AdminLeagueUpdateRequest;
 import aagapp_backend.entity.*;
-import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.entity.game.AagAvailableGames;
-import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.league.*;
 
 
@@ -47,7 +45,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
@@ -60,16 +57,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.naming.LimitExceededException;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.CacheRequest;
-import java.sql.SQLOutput;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -418,21 +411,6 @@ public class LeagueService {
                 throw new BusinessException("game is not available" + leagueRequest.getExistinggameId(), HttpStatus.BAD_REQUEST);
             }
             Optional<AagAvailableGames> gameAvailable = aagGameRepository.findById(leagueRequest.getExistinggameId());
-/*
-            league.setLeagueUrl(gameAvailable.get().getGameImage());
-*/
-
-/*
- AagAvailableGames game = gameAvailable.get();
-        // Try to get gameimageUrl from any of the themes
-                    String themeImageUrl = game.getThemes().stream()
-                            .map(ThemeEntity::getGameimageUrl)
-                            .filter(Objects::nonNull)
-                            .findFirst()
-                            .orElse(null);
-
-        // Fallback to gameImage if no theme image URL
-                    String leagueUrl = (themeImageUrl != null) ? themeImageUrl : game.getGameImage();*/
 
 
             AagAvailableGames gameEntity = gameAvailable.orElseThrow(() ->
@@ -482,7 +460,7 @@ public class LeagueService {
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             } else {
                 league.setStatus(LeagueStatus.PENDING);
-//                league.setScheduledAt(nowInKolkata);
+               league.setScheduledAt(nowInKolkata);
                 league.setEndDate(nowInKolkata.plusHours(Constant.LEAGUE_SESSION_TIME));
             }
             league.setMinPlayersPerTeam(1);
@@ -537,7 +515,6 @@ public class LeagueService {
             opponentVendor.setTotal_league_published(opponentVendor.getTotal_league_published() == null ? 0 : opponentVendor.getTotal_league_published() + 1);*/
 
 
-            // Return the saved game with the shareable link
 
             String fcmToken = opponentVendor.getFcmToken(); // or whatever field name is used
 
@@ -565,32 +542,6 @@ public class LeagueService {
             throw new RuntimeException("Error occurred while publishing the game: " + e.getMessage(), e);
         }
     }
-
-    /*public void notifyAdminsByRole(int role, String type, String name, Double fee, Long id, ZonedDateTime createdAtHtml) throws MessagingException, IOException {
-        List<CustomAdmin> admins = em.createQuery(
-                        "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
-                .setParameter("role", role)
-                .getResultList();
-
-        AdminLogs adminLogs = new AdminLogs();
-        adminLogs.setMessage("New " + type + " created");
-        adminLogs.setTargetRole("Admin");
-        adminLogs.setPerformedBy("System");
-        adminLogs.setTargetId(id);
-        adminLogs.setTargetType(type);
-        adminLogs.setCreatedDate(createdAtHtml);
-        adminLogsInterface.save(adminLogs);
-
-        for (CustomAdmin admin : admins) {
-            String email = admin.getEmail();
-            if (email != null && !email.isEmpty()) {
-
-                emailService.sendEmailLeague(admin, type, name, fee, id, createdAtHtml);
-            }
-        }
-    }*/
-
-
 
     // Create a new empty room for a game
     private LeagueRoom createNewEmptyRoom(League league) {
@@ -2463,7 +2414,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     league.setChallengingVendorName(vendor.getFirst_name());
                     league.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
                     league.setChallengingVendorProfilePic(vendor.getProfilePic());
-                    league.setPrizePool(Constant.PRIZE_POOL);
+                    league.setPrizePool(Constant.LEAGUE_PRIZE_POOL);
 
                     league.setAagGameId(gameId);
                     league.setTheme(em.find(ThemeEntity.class, themeId));
@@ -2491,7 +2442,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                     League savedLeague = leagueRepository.save(league);
 
-                    // ✅ Create teams
+                    // Create teams
                     LeagueTeam team1 = new LeagueTeam();
                     team1.setTeamName("Team " + vendor.getFirst_name());
                     team1.setVendor(vendor);
@@ -2506,28 +2457,29 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                     leagueTeamRepository.saveAll(List.of(team1, team2));
 
-                    // ✅ Create room
+                    //  Create room
                     LeagueRoom room = createNewEmptyRoom(savedLeague);
                     leagueRoomRepository.save(room);
 
-                    // ✅ Generate shareable link
+                    // Generate shareable link
                     String shareLink = generateShareableLink(savedLeague.getId(), vendorId);
                     savedLeague.setShareableLink(shareLink);
                     leagueRepository.save(savedLeague);
 
-                    // ✅ Update stats
+
                     vendor.setPublishedLimit((vendor.getPublishedLimit() == null ? 0 : vendor.getPublishedLimit()) + 1);
                     opponentVendor.setPublishedLimit((opponentVendor.getPublishedLimit() == null ? 0 : opponentVendor.getPublishedLimit()) + 1);
                     vendor.setTotal_league_published((vendor.getTotal_league_published() == null ? 0 : vendor.getTotal_league_published()) + 1);
                     opponentVendor.setTotal_league_published((opponentVendor.getTotal_league_published() == null ? 0 : opponentVendor.getTotal_league_published()) + 1);
+                    vendorRepository.save(vendor);
+                    vendorRepository.save(opponentVendor);
 
-                    System.out.println("✅ League published with theme " + themeId + " for game " + gameName);
                     return; // Exit after one publish
                 } catch (Exception e) {
                     System.err.println("❌ Failed to publish league: " + e.getMessage());
                 }
 
-                break; // prevent multiple leagues in one run
+                break;
             }
 
             System.out.println("🔁 No unpublished themes left for game: " + gameName);
@@ -2540,6 +2492,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
     }
 
 
+    @Transactional
     public League updateLeagueStatusByAdmin(AdminLeagueUpdateRequest request) {
         try {
             League league = leagueRepository.findById(request.getLeagueId())

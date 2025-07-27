@@ -31,6 +31,14 @@ public interface GameRepository extends JpaRepository<Game, Long>, JpaSpecificat
             @Param("endTime") ZonedDateTime endTime
     );
 
+    @Query("SELECT g FROM Game g WHERE g.vendorEntity = :vendorEntity AND g.createdDate BETWEEN :startTime AND :endTime")
+    List<Game> findByVendorEntityAndCreatedDateBetween(
+            @Param("vendorEntity") VendorEntity vendorEntity,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime
+    );
+
+
     @Query("SELECT g FROM Game g WHERE g.vendorEntity = :vendorEntity AND  g.status = :status  ORDER BY g.createdDate DESC")
     List<Game> findActiveGames(
             @Param("vendorEntity") VendorEntity vendorEntity,

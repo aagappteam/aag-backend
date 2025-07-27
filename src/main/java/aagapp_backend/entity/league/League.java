@@ -1,11 +1,10 @@
 package aagapp_backend.entity.league;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.team.LeagueTeam;
-import aagapp_backend.enums.ChallengeStatus;
 import aagapp_backend.enums.LeagueStatus;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -19,7 +18,6 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -71,7 +69,11 @@ public class League {
     @Column(name = "move", nullable = false)
     private Integer move;
 
-    private BigDecimal prizePool=BigDecimal.ZERO;
+//    private BigDecimal prizePool=BigDecimal.ZERO;
+
+    @Column(nullable = false)
+    private BigDecimal prizePool = Constant.LEAGUE_PRIZE_POOL;
+
 
     @Enumerated(EnumType.STRING)
     private LeagueStatus status;

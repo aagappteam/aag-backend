@@ -143,7 +143,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         String body = "Your tournament has been automatically rejected by the admin.";
 
         notificationService.sendRejectionNotificationToVendor(t.getVendorEntity(), "Tournament", t.getName());
-        emailService.sendTournamentEmail(t.getVendorEntity(), title, body);
+        emailService.sendTournamentRejectionEmail(t.getVendorEntity(), title, body,t);
     }
 
     // Reject stale leagues
@@ -157,6 +157,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         String body = "Your league has been automatically rejected by the admin.";
 
         notificationService.sendRejectionNotificationToVendor(l.getVendorEntity(), "League", l.getGameName());
+//       @todo:- need to send rejection mail template
         emailService.sendTournamentEmail(l.getVendorEntity(), title, body);
     }
 }

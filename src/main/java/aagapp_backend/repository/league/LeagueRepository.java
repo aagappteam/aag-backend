@@ -122,5 +122,22 @@ public interface LeagueRepository extends JpaRepository<League, Long>, JpaSpecif
     );
 
 
+
     List<League> findAllByStatusAndCreatedDateBefore(LeagueStatus status, ZonedDateTime dateTime);
+
+    @Query("""
+    SELECT l FROM League l
+    WHERE 
+        (l.challengingVendorId = :vendorId OR l.opponentVendorId = :vendorId)
+        AND l.createdDate BETWEEN :startTime AND :endTime
+        AND l.status IN :statuses
+""")
+    List<League> findLeaguesByVendorIdInChallengingOrOpponentAndCreatedDateAndStatusIn(
+            @Param("vendorId") Long vendorId,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime,
+            @Param("statuses") List<LeagueStatus> statuses
+    );
+
+
 }

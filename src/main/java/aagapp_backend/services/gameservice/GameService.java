@@ -606,18 +606,19 @@ public class GameService {
             ZonedDateTime startTimeUTC = startOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
             ZonedDateTime endTimeUTC = endOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
 
-            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
+            List<Game> games = gameRepository.findByVendorEntityAndCreatedDateBetween(vendorEntity, startTimeUTC, endTimeUTC);
 /*            List<League> leagues = leagueRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
             List<Tournament> tournaments = tournamentRepository.findByVendorEntityAndScheduledAtBetween(vendorId, startTimeUTC, endTimeUTC);*/
 
-            List<LeagueStatus> leagueStatuses = List.of(LeagueStatus.ACTIVE, LeagueStatus.SCHEDULED);
-            List<TournamentStatus> tournamentStatuses = List.of(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
+            List<LeagueStatus> leagueStatuses = List.of(LeagueStatus.ACTIVE, LeagueStatus.SCHEDULED,LeagueStatus.EXPIRED);
+            List<TournamentStatus> tournamentStatuses = List.of(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED,TournamentStatus.COMPLETED,TournamentStatus.REJECTED);
 
-            List<League> leagues = leagueRepository.findByVendorEntityAndScheduledAtBetweenAndStatusIn(
-                    vendorEntity, startTimeUTC, endTimeUTC, leagueStatuses);
 
-            List<Tournament> tournaments = tournamentRepository.findByVendorIdAndScheduledAtBetweenAndStatusIn(
-                    vendorId, startTimeUTC, endTimeUTC, tournamentStatuses);
+            List<League> leagues = leagueRepository.findLeaguesByVendorIdInChallengingOrOpponentAndCreatedDateAndStatusIn(
+                    vendorId, startTimeUTC, endTimeUTC,leagueStatuses);
+
+            List<Tournament> tournaments = tournamentRepository.findTournamentsByVendorAndCreatedDateAndStatusIn(
+                    vendorId, startTimeUTC, endTimeUTC,tournamentStatuses);
             List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll();
 
             VendorGameResponse response = new VendorGameResponse();
@@ -633,6 +634,7 @@ public class GameService {
                         Map<String, String> gameMap = new HashMap<>();
                         gameMap.put("imageUrl",(game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl()
                         );
+                        gameMap.put("id", game.getId().toString());
                         gameMap.put("event", "Game");
                         gameMap.put("name", game.getName() != null ? game.getName() : "n/a");
                         gameMap.put("themename", game.getTheme().getName());
@@ -645,6 +647,8 @@ public class GameService {
                         Map<String, String> gameMap = new HashMap<>();
                         gameMap.put("imageUrl",             (league.getTheme() != null && league.getTheme().getGameimageUrl() != null) ? league.getTheme().getGameimageUrl() : league.getTheme().getImageUrl()
                         );
+                        gameMap.put("id", league.getId().toString());
+
                         gameMap.put("event", "league");
 
                         gameMap.put("name", league.getName() != null ? league.getName() : "n/a");
@@ -657,6 +661,8 @@ public class GameService {
             publishedContent.addAll(tournaments.stream()
                     .map(tournament -> {
                         Map<String, String> gameMap = new HashMap<>();
+                        gameMap.put("id", tournament.getId().toString());
+
                         gameMap.put("imageUrl",(tournament.getTheme() != null && tournament.getTheme().getGameimageUrl() != null) ? tournament.getTheme().getGameimageUrl() : tournament.getTheme().getImageUrl());
                         gameMap.put("name", tournament.getName() != null ? tournament.getName() : "n/a");
                         gameMap.put("event", "tournament");
