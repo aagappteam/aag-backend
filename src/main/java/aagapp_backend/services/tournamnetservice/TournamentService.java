@@ -207,7 +207,6 @@ public class TournamentService {
         try {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
 
-            // Window for tournaments scheduled to start 15 to 20 seconds from now
             ZonedDateTime windowStart = now.plusSeconds(15);
             ZonedDateTime windowEnd = now.plusSeconds(20);
 
@@ -293,11 +292,15 @@ public class TournamentService {
                 if (player != null && player.getCustomer() != null) {
                     String fcmToken = player.getCustomer().getFcmToken();
                     if (fcmToken != null) {
-                        notoficationFirebase.sendNotification(
-                                fcmToken,
-                                "Tournament starting soon!",
-                                "Tournament '" + tournament.getName() + "' is going to start soon. Please join now!"
-                        );
+                        try {
+                            notoficationFirebase.sendNotification(
+                                    fcmToken,
+                                    "Tournament starting soon!",
+                                    "Tournament '" + tournament.getName() + "' is going to start soon. Please join now!"
+                            );
+                        } catch (Exception e) {
+                                System.out.println("Error sending notification: " + e.getMessage());
+                            }
                     }
                 }
             }
@@ -792,12 +795,17 @@ public class TournamentService {
         if (status == TournamentStatus.REJECTED || status == TournamentStatus.CANCELLED) {
             String fcmToken = tournament.getVendorEntity().getFcmToken();
             if (fcmToken != null) {
-                notoficationFirebase.sendNotification(
-                        fcmToken,
-                        "⚠️ Tournament " + tournament.getName() + " was rejected",
-                        "Reason: " + reason
-                );
+                try {
+                    notoficationFirebase.sendNotification(
+                            fcmToken,
+                            "⚠️ Tournament " + tournament.getName() + " was rejected",
+                            "Reason: " + reason
+                    );
+                } catch (Exception e) {
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
             }
+
         }
     }
 
@@ -805,7 +813,7 @@ public class TournamentService {
     public Tournament startTournament(Long tournamentId) {
 
 
-        Tournament tournament = tournamentRepository.lockTournamentForProcessing(tournamentId)
+        Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
 
 
@@ -861,11 +869,15 @@ public class TournamentService {
 
             String fcmToken = tournament.getVendorEntity().getFcmToken();
             if (fcmToken != null) {
-                notoficationFirebase.sendNotification(
-                        fcmToken,
-                        "⚠️ Tournament " + tournament.getName() + " was concluded",
-                        "⚠️ Tournament " + tournament.getName() + " was concluded. " +
-                                "User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
+                try{
+                    notoficationFirebase.sendNotification(
+                            fcmToken,
+                            "⚠️ Tournament " + tournament.getName() + " was concluded",
+                            "⚠️ Tournament " + tournament.getName() + " was concluded. " +
+                                    "User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
+                }catch (Exception e){
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
             }
 
             return tournament;
@@ -877,24 +889,16 @@ public class TournamentService {
 
         Collections.shuffle(activePlayers);
 
-//        int totalPlayers = tournament.getCurrentJoinedPlayers();
         int totalPlayers = activePlayers.size();
 
         int freePassCount = activePlayers.size() % 2;
         int totalRounds = (int) Math.ceil(Math.log(totalPlayers + freePassCount) / Math.log(2));
         tournament.setTotalrounds(totalRounds);
 
-       /* BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
-        BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers));
-
-        BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
-        BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
-*/
         tournament.setStatus(TournamentStatus.ACTIVE);
         tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
         tournamentRepository.save(tournament);
-        int freePassAssigned = 0;
         for (int i = 0; i < activePlayers.size(); i += 2) {
             if (i + 1 < activePlayers.size()) {
                 TournamentRoom room = new TournamentRoom();
@@ -930,32 +934,33 @@ public class TournamentService {
 
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
+            try {
+                String message = String.format(
+                        "🎉 Tournament '%s' is now live!\n" +
+                                "👥 Active Players: %d\n" +
+                                "🎟️ Free Pass Given: %d\n" +
+                                "🔁 Total Rounds: %d\n" +
+                                "💰 Total Prize Pool: ₹%.2f\n" +
+                                "🏆 Round Prize: ₹%.2f\n" +
+                                "Monitor the progress and enjoy the event!",
+                        tournament.getName(),
+                        activePlayers.size(),
+                        freePassCount,
+                        totalRounds,
+                        tournament.getTotalPrizePool()
+                );
 
-
-            String message = String.format(
-                    "🎉 Tournament '%s' is now live!\n" +
-                            "👥 Active Players: %d\n" +
-                            "🎟️ Free Pass Given: %d\n" +
-                            "🔁 Total Rounds: %d\n" +
-                            "💰 Total Prize Pool: ₹%.2f\n" +
-                            "🏆 Round Prize: ₹%.2f\n" +
-                            "Monitor the progress and enjoy the event!",
-                    tournament.getName(),
-                    activePlayers.size(),
-                    freePassCount,
-                    totalRounds,
-                    tournament.getTotalPrizePool()
-            );
-
-
-
-            notoficationFirebase.sendNotification(
-                    fcmToken,
-                    "🎉 Your Tournament Has Begun!",
-                    message
-            );
-
+                notoficationFirebase.sendNotification(
+                        fcmToken,
+                        "🎉 Your Tournament Has Begun!",
+                        message
+                );
+            } catch (Exception e) {
+                // Skip error silently or log for debugging (optional)
+                System.out.println("Error sending notification: " + e.getMessage());
+            }
         }
+
 
         return tournament;
     }
@@ -1372,11 +1377,15 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
-            notoficationFirebase.sendNotification(
-                    fcmToken,
-                    "🏆 Tournament " + tournament.getName() + " has been Completed now",
-                    "The tournament has successfully concluded. Check final results and prize distribution!"
-            );
+            try{
+                notoficationFirebase.sendNotification(
+                        fcmToken,
+                        "🏆 Tournament " + tournament.getName() + " has been Completed now",
+                        "The tournament has successfully concluded. Check final results and prize distribution!"
+                );
+            }catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
         }
 
     }
