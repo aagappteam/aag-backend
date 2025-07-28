@@ -1940,7 +1940,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                                     isCurrentUser,
                                     totalScore,
                                     passCount,
-                                    team.equals(winner)
+                                    false
                             );
                         }).sorted(Comparator.comparingInt(PlayerLeagueScoreDTO::getScore).reversed()) // sort descending
                         .collect(Collectors.toList());
