@@ -218,7 +218,7 @@ public class TournamentService {
 
             for (Tournament tournament : tournamentsToStart) {
                 try {
-                    startTournament(tournament.getId()); // Safe to call, will start only once
+                    startTournament(tournament.getId());
                 } catch (Exception e) {
                     exceptionHandling.handleException(e);
                 }
@@ -627,6 +627,29 @@ public class TournamentService {
 
             List<Player> players = registrations.stream()
                     .map(TournamentPlayerRegistration::getPlayer)
+                    .filter(Objects::nonNull)
+                    .distinct() // optional: removes duplicates based on equals/hashCode
+                    .collect(Collectors.toList());
+
+
+            return players;
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            throw new RuntimeException("Error fetching registered players for tournament " + tournamentId + ": " + e.getMessage(), e);
+        }
+    }
+
+    /*
+    @Transactional
+    public List<Player> getActivePlayers(Long tournamentId) {
+        try {
+            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
+                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
+
+            List<Player> players = registrations.stream()
+                    .map(TournamentPlayerRegistration::getPlayer)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
             return players;
@@ -638,7 +661,7 @@ public class TournamentService {
 
 
         }
-    }
+    }*/
     public Page<Player> getRegisteredPlayers(Long tournamentId, int page, int size) {
         try{
             Pageable pageable = PageRequest.of(page, size);
@@ -894,8 +917,6 @@ public class TournamentService {
 
     @Transactional
     public Tournament startTournament(Long tournamentId) {
-
-
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
 
@@ -1008,8 +1029,18 @@ public class TournamentService {
                 room.setGamepassword(gamePassword);
                 roomRepository.save(room);
 
-                assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
-                assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);
+                try {
+                    assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
+                    assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);
+                } catch (Exception e) {
+                    System.out.println("❌ Failed to assign players to room. Player IDs: " +
+                            activePlayers.get(i).getPlayerId() + ", " +
+                            activePlayers.get(i + 1).getPlayerId() + ". Error: " + e.getMessage());
+                }
+
+
+/*                assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
+                assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);*/
             } else {
                 assignFreePassToPlayer(activePlayers.get(i), tournamentId, 1);
             }
@@ -2097,7 +2128,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
                         assignFreePassToPlayer(freePassPlayer, tournamentId, roundNumber);
 
-                        // Mark player as passed to next round
                         freePassParticipant.setStatus("FREE_PASS");
                         tournamentResultRecordRepository.save(freePassParticipant);
                     }

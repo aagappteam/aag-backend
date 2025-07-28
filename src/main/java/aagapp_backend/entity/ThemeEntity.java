@@ -51,9 +51,10 @@ public class ThemeEntity {
     private Date createdDate;
 
 
-    public ThemeEntity(String aDefault, String url, LocalDateTime currentTimestamp) {
+    public ThemeEntity(String aDefault, String url,String gameIconUrl, LocalDateTime currentTimestamp) {
         this.name = aDefault;
         this.imageUrl = url;
+        this.gameimageUrl = gameIconUrl;
         this.createdDate = Date.from(currentTimestamp.atZone(ZoneId.of("Asia/Kolkata")).toInstant());
         this.games = new ArrayList<>();
     }

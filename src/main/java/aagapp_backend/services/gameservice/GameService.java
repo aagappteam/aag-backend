@@ -199,7 +199,7 @@ public class GameService {
     }
 
     /// at 12 am cron should run daily
-    @Scheduled(cron = "0 0 0 * * *")  // Every day at midnight
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Kolkata")  // 12 AM IST
     @Transactional
     public void updateDailylimit() {
         int page = 0;
@@ -208,7 +208,9 @@ public class GameService {
 
         while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
             try {
-                vendorRepository.updateDailyLimitForVendors(vendorIds);
+
+                System.out.println("vendorIds: " + vendorIds);
+               vendorRepository.updateDailyLimitForVendors(vendorIds);
             } catch (Exception e) {
                 logger.error("Failed to update daily limits for batch page {} with vendorIds: {}", page, vendorIds, e);
             }

@@ -75,9 +75,74 @@ public class UrlValidationController {
         }
     }
 
-
-
     @Transactional
+    @PostMapping("/validate-and-save/{serviceProviderId}")
+    public ResponseEntity<?> validateAndSave(
+            @PathVariable Long serviceProviderId,
+            @RequestBody VendorSubmissionEntity request
+    ) {
+        try {
+            Map<String, String> newUrls = request.getSocialMediaUrls();
+
+            // Validate all incoming URLs
+            for (Map.Entry<String, String> entry : newUrls.entrySet()) {
+                try {
+                    boolean isValid = urlVerificationService.isUrlValid(entry.getValue(), entry.getKey());
+                    if (!isValid) {
+                        return ResponseService.generateErrorResponse(
+                                "Invalid URL format for: " + entry.getKey(),
+                                HttpStatus.BAD_REQUEST
+                        );
+                    }
+                } catch (IllegalArgumentException e) {
+                    return ResponseService.generateErrorResponse(
+                            "Unsupported platform: " + entry.getKey(),
+                            HttpStatus.BAD_REQUEST
+                    );
+                } catch (Exception e) {
+                    exceptionHandlingImplement.handleException(e);
+                    return ResponseService.generateErrorResponse(
+                            "Error validating URL for: " + entry.getKey(),
+                            HttpStatus.INTERNAL_SERVER_ERROR
+                    );
+                }
+            }
+
+            // Fetch existing submission
+            VendorSubmissionEntity existingSubmission = submissionService.getVendorSubmissionByServiceProviderId(serviceProviderId);
+
+            if (existingSubmission != null) {
+                Map<String, String> existingUrls = existingSubmission.getSocialMediaUrls();
+
+                if (existingUrls == null) {
+                    existingUrls = new HashMap<>();
+                }
+
+                existingUrls.putAll(newUrls);
+                existingSubmission.setSocialMediaUrls(existingUrls);
+
+                entityManager.merge(existingSubmission);
+                return ResponseService.generateSuccessResponse(
+                        "Submission updated successfully!",
+                        existingSubmission,
+                        HttpStatus.OK
+                );
+            } else {
+                VendorSubmissionEntity newEntity = new VendorSubmissionEntity();
+                newEntity.setSocialMediaUrls(request.getSocialMediaUrls());
+                entityManager.persist(newEntity);
+                return ResponseService.generateSuccessResponse("Submission saved successfully!", newEntity, HttpStatus.OK);
+
+            }
+
+        } catch (Exception e) {
+            exceptionHandlingImplement.handleException(e);
+            return ResponseService.generateErrorResponse("Error processing request", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+/*    @Transactional
     @PostMapping("/validate-and-save/{serviceProviderId}")
     public ResponseEntity<?> validateAndSave(@PathVariable Long serviceProviderId, @RequestBody VendorSubmissionEntity request) {
         try {
@@ -125,6 +190,6 @@ public class UrlValidationController {
             exceptionHandlingImplement.handleException(e);
             return ResponseService.generateErrorResponse("Error processing request", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
 }
