@@ -123,7 +123,7 @@ public class TournamentController {
 
         try {
 
-//            Pageable pageable = PageRequest.of(page, size);
+
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
             Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId,gamename);
@@ -202,7 +202,7 @@ public class TournamentController {
         // Set vendorProfilePic from vendorEntity (can be null-safe)
         if (tournament.getVendorEntity() != null) {
             dto.setVendorProfilePic(tournament.getVendorEntity().getProfilePic());
-            dto.setVendorName(tournament.getVendorEntity().getName());
+            dto.setVendorName(tournament.getVendorEntity().getUser_name()!=null? tournament.getVendorEntity().getUser_name():"Aagveer");
 
         } else {
             dto.setVendorProfilePic(""); // or default image URL
