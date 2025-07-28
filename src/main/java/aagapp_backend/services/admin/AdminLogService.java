@@ -288,4 +288,13 @@ public class AdminLogService {
     }
 
 
+    public long countUnreadLogs(String roleName) {
+        return adminLogsRepository.countUnreadLogsForRole(roleName);
+    }
+
+    public long countReadLogs(String roleName) {
+        return adminLogsRepository.countReadLogsForRole(roleName);
+    }
+
+
 }

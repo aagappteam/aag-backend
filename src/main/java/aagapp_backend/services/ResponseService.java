@@ -61,6 +61,17 @@ public class ResponseService {
         response.put("status_code", status.value());
         return new ResponseEntity<>(response, status);
     }
+    public static ResponseEntity<?> generateSuccessResponseWithCountForadmin(String message, List<?> data, Long count,Long unreadcount, Long readcount, HttpStatus status) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", message);
+        response.put("data", data);
+        response.put("unreadcount", unreadcount);
+        response.put("readcount", readcount);
+        response.put("totalCount", count);
+        response.put("status", status);
+        response.put("status_code", status.value());
+        return new ResponseEntity<>(response, status);
+    }
 
     public static ResponseEntity<?> generateSuccessResponseWithCountAndStatus(
             String message,

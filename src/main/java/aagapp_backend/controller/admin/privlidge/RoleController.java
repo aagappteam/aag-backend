@@ -160,7 +160,7 @@ public class RoleController {
         }).toList();
 
         Map<String, Object> response = new HashMap<>();
-        response.put("roles", rolesList);
+        response.put("data", rolesList);
         response.put("currentPage", rolesPage.getNumber());
         response.put("totalItems", rolesPage.getTotalElements());
         response.put("totalPages", rolesPage.getTotalPages());
