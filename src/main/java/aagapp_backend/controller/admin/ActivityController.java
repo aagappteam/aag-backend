@@ -64,8 +64,10 @@ public class ActivityController {
            List<AdminLogResponseDTO> dtoList = adminLogs.getContent().stream()
                    .map(adminLogsService::mapToDto) // mapToDto method should be public in service
                    .collect(Collectors.toList());
+           long unreadCount = adminLogsService.countUnreadLogs(roleName); // 🟡 Add this method in service
+           long readCount = adminLogsService.countReadLogs(roleName);
 
-           return responseService.generateSuccessResponseWithCount("Activities fetched successfully", dtoList, adminLogs.getTotalElements(), HttpStatus.OK);
+           return responseService.generateSuccessResponseWithCountForadmin("Activities fetched successfully", dtoList, adminLogs.getTotalElements(),unreadCount,readCount, HttpStatus.OK);
 
 //           return responseService.generateSuccessResponseWithCount("Activities fetched successfully", adminLogs.getContent(), adminLogs.getTotalElements(), HttpStatus.OK);
        }catch (Exception e){

@@ -3,6 +3,8 @@ package aagapp_backend.services.games;
 import aagapp_backend.dto.GetGameResponseDTO;
 import aagapp_backend.dto.LeagueResponseDTO;
 import aagapp_backend.dto.TournamentResponseDTO;
+import aagapp_backend.dto.league.LeagueResponseDTOCommon;
+import aagapp_backend.dto.tournament.TournamentResponseDTOCommon;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.tournament.Tournament;
@@ -290,6 +292,77 @@ public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendor
         throw new RuntimeException("Error retrieving games", e);
     }
 }
+
+
+    @Transactional
+    public Page<LeagueResponseDTOCommon> getAllLeaguesCommon(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
+        try {
+            StringBuilder sql = new StringBuilder("SELECT * FROM aag_league l WHERE 1=1");
+
+            if (vendorId != null) {
+                sql.append(" AND l.vendor_id = :vendorId");
+            }
+
+            if (statusList != null && !statusList.isEmpty()) {
+                sql.append(" AND l.status IN (:statusList)");
+            }
+
+            if (startDate != null && endDate != null) {
+                sql.append(" AND l.created_at BETWEEN :pubStartDate AND :pubEndDate");
+            }
+
+            if (scheduledDate != null) {
+                sql.append(" AND l.scheduled_at BETWEEN :scheduledStart AND :scheduledEnd");
+            }
+
+            sql.append(" ORDER BY l.created_date DESC");
+
+            Query query = entityManager.createNativeQuery(sql.toString(), League.class);
+
+            if (vendorId != null) query.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) query.setParameter("statusList", statusList);
+            if (startDate != null && endDate != null) {
+                query.setParameter("pubStartDate", startDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("pubEndDate", endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+            if (scheduledDate != null) {
+                query.setParameter("scheduledStart", scheduledDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("scheduledEnd", scheduledDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+
+            query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<League> leagues = query.getResultList();
+
+            List<LeagueResponseDTOCommon> leagueResponseDTOs = leagues.stream().map(league -> new LeagueResponseDTOCommon(
+                    league.getId(), league.getName(), league.getFee(), league.getMove(), league.getStatus(),
+                    league.getShareableLink(),
+                    league.getTheme().getGameimageUrl()!=null ? league.getTheme().getGameimageUrl() : league.getTheme().getImageUrl(),
+                    league.getPrizePool().toString(),
+
+                    league.getTheme() != null ? league.getTheme().getName() : null,
+                    league.getTheme() != null ? league.getTheme().getImageUrl() : null,
+                    league.getCreatedDate(), league.getScheduledAt(), league.getEndDate(),
+                    league.getMinPlayersPerTeam(), league.getMaxPlayersPerTeam(),
+                    league.getVendorEntity() != null ? league.getVendorEntity().getFirst_name() : null,
+                    league.getVendorEntity() != null ? league.getVendorEntity().getProfilePic() : null
+            )).collect(Collectors.toList());
+
+            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM aag_league l WHERE 1=1");
+            if (vendorId != null) countSql.append(" AND l.vendor_id = :vendorId");
+            if (statusList != null && !statusList.isEmpty()) countSql.append(" AND l.status IN (:statusList)");
+
+            Query countQuery = entityManager.createNativeQuery(countSql.toString());
+            if (vendorId != null) countQuery.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) countQuery.setParameter("statusList", statusList);
+
+            Long count = ((Number) countQuery.getSingleResult()).longValue();
+            return new PageImpl<>(leagueResponseDTOs, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving leagues", e);
+        }
+    }
     @Transactional
     public Page<LeagueResponseDTO> getAllLeagues(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
         try {
@@ -354,6 +427,70 @@ public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendor
             return new PageImpl<>(leagueResponseDTOs, pageable, count);
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving leagues", e);
+        }
+    }
+
+    @Transactional
+    public Page<TournamentResponseDTOCommon> getAllTournamentscommon(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
+        try {
+            StringBuilder sql = new StringBuilder("SELECT * FROM tournament t WHERE 1=1");
+
+            if (vendorId != null) {
+                sql.append(" AND t.vendorId = :vendorId");
+            }
+
+            if (statusList != null && !statusList.isEmpty()) {
+                sql.append(" AND t.status IN (:statusList)");
+            }
+
+            if (startDate != null && endDate != null) {
+                sql.append(" AND t.createdDate BETWEEN :pubStartDate AND :pubEndDate");
+            }
+
+            if (scheduledDate != null) {
+                sql.append(" AND t.scheduled_at BETWEEN :scheduledStart AND :scheduledEnd");
+            }
+
+            sql.append(" ORDER BY t.createdDate DESC");
+
+            Query query = entityManager.createNativeQuery(sql.toString(), Tournament.class);
+
+            if (vendorId != null) query.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) query.setParameter("statusList", statusList);
+            if (startDate != null && endDate != null) {
+                query.setParameter("pubStartDate", startDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("pubEndDate", endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+            if (scheduledDate != null) {
+                query.setParameter("scheduledStart", scheduledDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("scheduledEnd", scheduledDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+
+            query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<Tournament> tournaments = query.getResultList();
+
+            List<TournamentResponseDTOCommon> tournamentResponseDTOs = tournaments.stream().map(tournament -> new TournamentResponseDTOCommon(
+                    tournament.getId(), tournament.getName(),tournament.getVendorEntity().getName(),tournament.getTotalPrizePool().toString(),tournament.getRoomprize().toString(),tournament.getTheme().getGameimageUrl()!=null?tournament.getTheme().getGameimageUrl():tournament.getTheme().getImageUrl(), tournament.getEntryFee(), tournament.getMove(),
+                    tournament.getStatus(), tournament.getShareableLink(), tournament.getExistinggameId(),
+                    tournament.getTheme() != null ? tournament.getTheme().getName() : null,
+                    tournament.getTheme() != null ? tournament.getTheme().getImageUrl() : null,
+                    tournament.getCreatedDate(), tournament.getScheduledAt()
+            )).collect(Collectors.toList());
+
+            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM tournament t WHERE 1=1");
+            if (vendorId != null) countSql.append(" AND t.vendorId = :vendorId");
+            if (statusList != null && !statusList.isEmpty()) countSql.append(" AND t.status IN (:statusList)");
+
+            Query countQuery = entityManager.createNativeQuery(countSql.toString());
+            if (vendorId != null) countQuery.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) countQuery.setParameter("statusList", statusList);
+
+            Long count = ((Number) countQuery.getSingleResult()).longValue();
+            return new PageImpl<>(tournamentResponseDTOs, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving tournaments", e);
         }
     }
 

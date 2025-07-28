@@ -39,5 +39,11 @@ public interface AdminLogsInterface  extends JpaRepository<AdminLogs, Long> {
             "n.assignedRole = :userRole")
     Page<AdminLogs> findAllVisibleToUser(Long userId, String userRole, Pageable pageable);
 
+    @Query("SELECT COUNT(l) FROM AdminLogs l WHERE (l.assignedRole = :role OR l.assignedRole IS NULL) AND l.read = false")
+    long countUnreadLogsForRole(@Param("role") String role);
+
+    @Query("SELECT COUNT(l) FROM AdminLogs l WHERE (l.assignedRole = :role OR l.assignedRole IS NULL) AND l.read = true")
+    long countReadLogsForRole(@Param("role") String role);
+
 }
 
