@@ -149,7 +149,10 @@ public class DashboardService {
                 game.getMinPlayersPerTeam(),
                 game.getMaxPlayersPerTeam(),
                 gameService.calculateTotalPrizeNew(game),
-                game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
+                game.getVendorEntity() != null && game.getVendorEntity().getUser_name() != null
+                        ? game.getVendorEntity().getUser_name()
+                        : "Aagveer",
+
                 game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
         );
     }
