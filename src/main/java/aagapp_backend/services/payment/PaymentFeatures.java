@@ -45,12 +45,12 @@ public class PaymentFeatures {
     public ResponseEntity<?> canPublishGame(Long vendorId) throws LimitExceededException {
         try {
 
-            Optional<VendorEntity> vendorOpt = vendorRepository.findByMobileNumber(Constant.MOBILE_6306470701);
-
 
             PaymentStatus status = PaymentStatus.ACTIVE;
             List<PaymentEntity> activePlanOptional = paymentRepository.findActivePlanByVendorId(vendorId, LocalDateTime.now(), status);
 
+
+            VendorEntity vendor = vendorRepository.findById(vendorId).orElse(null);
             if (activePlanOptional.isEmpty()) {
                 return ResponseService.generateErrorResponse(
                         "No active plan found for the vendor.",
@@ -59,7 +59,13 @@ public class PaymentFeatures {
             }
 
             PaymentEntity activePlan = activePlanOptional.get(0);
-            if (vendorId == 35L || vendorId == 39L) {
+
+            Optional<VendorEntity> vendorOpt1 = vendorRepository.findByMobileNumber(Constant.MOBILE_6306470701);
+            Optional<VendorEntity> vendorOpt2 = vendorRepository.findByMobileNumber(Constant.MOBILE_9628577197);
+
+            if ((vendorOpt1.isPresent() && vendorId.equals(vendorOpt1.get().getService_provider_id())) ||
+                    (vendorOpt2.isPresent() && vendorId.equals(vendorOpt2.get().getService_provider_id()))) {
+
                 return ResponseService.generateSuccessResponse(
                         "You can publish the game (bypass limit).",
                         activePlan,
@@ -67,12 +73,15 @@ public class PaymentFeatures {
                 );
             }
 
-            int dailyUsage = gameService.countGamesByVendorIdAndScheduledDate(vendorId, LocalDate.now());
 
-            System.out.println("Daily Usage: " + dailyUsage);
+            int dailyLimit = vendor.getPublishedLimit() != null ? vendor.getPublishedLimit() : 0;
+            System.out.println("Daily Usage: " + dailyLimit);
+
+            System.out.println("Daily Usage: " + vendor.getDailyLimit() );
+
             System.out.println("Daily Limit: " + activePlan.getDailyLimit());
 
-            if (dailyUsage >= activePlan.getDailyLimit()) {
+            if (dailyLimit >= activePlan.getDailyLimit()) {
                 return ResponseService.generateErrorResponse(
                         "Daily limit reached. You can't publish more games today.",
                         HttpStatus.FORBIDDEN

@@ -515,7 +515,6 @@ public class TournamentController {
             return ResponseEntity.ok(response);
         }
 
-
     @PostMapping("/startTournament/{tournamentId}")
     public ResponseEntity<?> startTournament(@PathVariable Long tournamentId) {
         try {
