@@ -18,7 +18,6 @@ public class WithdrawalRequestDTO {
     private BigDecimal amount;
     private String monthYear;
     private String status;
-    private String bankName;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Kolkata")
     private LocalDateTime requestedAt;
     // Constructor used by Hibernate in JPQL
@@ -34,14 +33,13 @@ public class WithdrawalRequestDTO {
     }
 
     // Constructors, Getters, Setters
-    public WithdrawalRequestDTO(WithdrawalRequest request, String influencerName,String bankName) {
+    public WithdrawalRequestDTO(WithdrawalRequest request, String influencerName) {
         this.id = request.getId();
         this.influencerId = request.getInfluencerId();
         this.influencerName = influencerName;
         this.amount = request.getAmount();
         this.monthYear = request.getMonthYear();
         this.status = request.getStatus();
-        this.bankName = bankName;
         this.requestedAt = request.getRequestedAt();
     }
 }

@@ -1416,7 +1416,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             // Convert to DTOs
             List<WithdrawalRequestDTO> dtoList = requestsPage.getContent()
                     .stream()
-                    .map(request -> new WithdrawalRequestDTO(request, influencerName,request.getBankName()))
+                    .map(request -> new WithdrawalRequestDTO(request, influencerName))
                     .collect(Collectors.toList());
 
             return responseService.generateSuccessResponseWithCount(
