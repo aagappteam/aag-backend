@@ -430,8 +430,7 @@ public class LeagueService {
             league.setName(opponentVendor.getFirst_name() + " v/s " + vendorEntity.getFirst_name());
             league.setVendorEntity(opponentVendor);
             league.setChallengingVendorId(opponentVendor.getService_provider_id());
-//            league.setTeamChallengingVendorName("Team " + opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
-//            league.setTeamOpponentVendorName("Team " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
+
             league.setChallengingVendorName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
             league.setChallengingVendorProfilePic(opponentVendor.getProfilePic());
             league.setOpponentVendorName(vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
@@ -478,12 +477,12 @@ public class LeagueService {
             // 👇 Add LeagueTeam creation here
 
             LeagueTeam challengingTeam = new LeagueTeam();
-            challengingTeam.setTeamName("Team " + opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
+            challengingTeam.setTeamName("Team " + opponentVendor.getUser_name()!=null ? opponentVendor.getUser_name() : "Aagveer");
             challengingTeam.setVendor(opponentVendor);
             challengingTeam.setProfilePic(opponentVendor.getProfilePic());
             challengingTeam.setLeague(savedLeague);
             LeagueTeam opponentTeam = new LeagueTeam();
-            opponentTeam.setTeamName("Team " + vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
+            opponentTeam.setTeamName("Team " + vendorEntity.getUser_name()!=null ? vendorEntity.getUser_name() : "Aagveer");
             opponentTeam.setVendor(vendorEntity);
             opponentTeam.setProfilePic(vendorEntity.getProfilePic());
             opponentTeam.setLeague(savedLeague);
@@ -2413,6 +2412,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     continue;
                 }
 
+
                 try {
                     League league = new League();
 
@@ -2455,7 +2455,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     // Create teams
                     LeagueTeam team1 = new LeagueTeam();
 //                    team1.setTeamName("Team " + vendor.getFirst_name());
-                    team1.setTeamName("Team " + vendor.getFirst_name() + " - L" + savedLeague.getId());
+                    team1.setTeamName("Team " + vendor.getUser_name()!=null?vendor.getUser_name():"Aagveer" );
 
                     team1.setVendor(vendor);
                     team1.setProfilePic(vendor.getProfilePic());
@@ -2463,7 +2463,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                     LeagueTeam team2 = new LeagueTeam();
 //                    team2.setTeamName("Team " + opponentVendor.getFirst_name());
-                    team2.setTeamName("Team " + opponentVendor.getFirst_name() + " - L" + savedLeague.getId());
+                    team1.setTeamName("Team " + opponentVendor.getUser_name()!=null?opponentVendor.getUser_name():"Aagveer" );
 
                     team2.setVendor(opponentVendor);
                     team2.setProfilePic(opponentVendor.getProfilePic());

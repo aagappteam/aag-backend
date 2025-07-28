@@ -1,5 +1,6 @@
 package aagapp_backend.services;
 
+import aagapp_backend.dto.game.LeaderboardResponseDTOTournamentAdmin;
 import aagapp_backend.entity.ErrorResponse;
 import aagapp_backend.entity.SuccessResponse;
 import org.springframework.http.HttpStatus;
@@ -196,4 +197,21 @@ public class ResponseService {
         return new ResponseEntity<>(response, status);
     }
 
+    public ResponseEntity<?> generateResponsewithCount(HttpStatus httpStatus, String leaderboardFetchedSuccessfully, LeaderboardResponseDTOTournamentAdmin leaderboard, long totalItems) {
+        Map<String, Object> map = new HashMap<>();
+        try {
+            map.put("message", leaderboardFetchedSuccessfully);
+            map.put("data", leaderboard);
+            map.put("totalCount", totalItems);
+            map.put("status", httpStatus);
+            map.put("status_code", httpStatus.value());
+            return new ResponseEntity<>(map, httpStatus);
+        } catch (Exception exception) {
+            map.put("status", HttpStatus.INTERNAL_SERVER_ERROR);
+            map.put("isSuccess", false);
+            map.put("message", exception.getMessage());
+            map.put("data", null);
+            return new ResponseEntity<>(map, httpStatus);
+        }
+    }
 }

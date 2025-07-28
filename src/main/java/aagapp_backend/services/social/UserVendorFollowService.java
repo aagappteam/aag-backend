@@ -541,7 +541,7 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
             Map<String, Object> vendorInfo = new HashMap<>();
             Long vendorId = vendor.getService_provider_id();
 
-            vendorInfo.put("name", vendor.getName());
+            vendorInfo.put("name", vendor.getUser_name()!=null ? vendor.getUser_name() : "Aagveer");
             vendorInfo.put("id", vendorId);
             vendorInfo.put("profilePic", vendor.getProfilePic());
             vendorInfo.put("email", vendor.getPrimary_email());
@@ -595,7 +595,7 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
             Long vendorId = vendor.getService_provider_id();
 
             vendorInfo.put("id", vendorId);
-            vendorInfo.put("name", vendor.getName() != null ? vendor.getName() : "null null");
+            vendorInfo.put("name", vendor.getUser_name()!=null ? vendor.getUser_name() : "Aagveer");
             vendorInfo.put("email", vendor.getPrimary_email());
             vendorInfo.put("profilePic", vendor.getProfilePic());
             vendorInfo.put("followerCount", followRepo.countByVendorId(vendorId));

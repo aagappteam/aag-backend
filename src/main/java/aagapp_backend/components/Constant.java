@@ -23,6 +23,8 @@ public class Constant {
     public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(100.00);
     public static final BigDecimal TOURNAMENT_PRIZE_POOL = BigDecimal.valueOf(100.00);
 
+    public static final Double TOURNAMENT_PRIZE_POOL_new = 100.00;
+
     //  Game URLs
     public static String ludobaseurl = "https://gamebackend.aagapp.com/game-api/ludo";
     public static String snakebaseUrl = "https://gamebackend.aagapp.com/game-api/snake";

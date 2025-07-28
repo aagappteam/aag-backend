@@ -932,7 +932,8 @@ public class GameService {
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
                             calculateTotalPrizeNew(game),
-                            game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
+
+                            game.getVendorEntity() != null ? game.getVendorEntity().getUser_name() : "Aagveer",
                             game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
                     ))
                     .collect(Collectors.toList());

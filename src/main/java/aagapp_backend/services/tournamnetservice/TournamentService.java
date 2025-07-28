@@ -160,12 +160,45 @@ public class TournamentService {
         this.tournamentPlayerRegistrationRepository = tournamentPlayerRegistrationRepository;
     }
 
-
-
-
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 * * * * *") // Runs every minute, on 0th second
     @Transactional
-    public ResponseEntity<?> sendNotificationToUserBefore3Min() {
+    public ResponseEntity<?> sendNotificationToUserBefore2Min() {
+        try {
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+
+            // Get the target time: exactly 2 minutes from now, truncate to minute
+            ZonedDateTime targetTime = now.plusMinutes(2).withSecond(0).withNano(0);
+
+            List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAt(
+                    TournamentStatus.SCHEDULED,
+                    targetTime
+            );
+
+            if (upcomingTournaments.isEmpty()) {
+                return responseService.generateResponse(HttpStatus.OK, "No upcoming tournaments found.", null);
+            }
+
+            for (Tournament tournament : upcomingTournaments) {
+                notifyRegisteredPlayers(tournament);
+            }
+
+            return responseService.generateResponse(HttpStatus.OK, "Notifications sent successfully.", null);
+
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+
+/*    @Scheduled(cron = "0 * * * * *")
+    @Transactional
+    public ResponseEntity<?> sendNotificationToUserBefore2Min() {
         try {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
@@ -175,12 +208,6 @@ public class TournamentService {
             List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAtBetween(
                     TournamentStatus.SCHEDULED, windowStart, windowEnd
             );
-
-/*
-            List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAtBetween(
-                    TournamentStatus.SCHEDULED, now, fiveMinutesLater
-            );
-*/
 
 
             if (upcomingTournaments.isEmpty()) {
@@ -200,14 +227,14 @@ public class TournamentService {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     @Scheduled(cron = "*/10 * * * * *") // Runs every 10 seconds
     public void autoStartScheduledTournaments() {
         try {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
 
-            ZonedDateTime windowStart = now.plusSeconds(15);
+            ZonedDateTime windowStart = now.minusSeconds(10);
             ZonedDateTime windowEnd = now.plusSeconds(20);
 
             List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
@@ -463,7 +490,7 @@ public class TournamentService {
         int totalRounds = (int) Math.ceil(Math.log(participants) / Math.log(2));
 
         BigDecimal totalPrize = Constant.TOURNAMENT_PRIZE_POOL;
-        BigDecimal userPrizePool = totalPrize.multiply(PriceConstant.USER_PRIZE_PERCENT);
+        BigDecimal userPrizePool = totalPrize.multiply(PriceConstant.USER_PRIZE_PERCENT_FULL);
         BigDecimal roomPrize = userPrizePool.divide(BigDecimal.valueOf(totalRounds), 2, RoundingMode.HALF_UP);
 
         ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
@@ -890,6 +917,7 @@ public class TournamentService {
         return game.isPresent(); // Return true if the game is found, false otherwise
     }
 
+
     private String generateShareableLink(Long gameId,Long vendorId) {
         return "https://backend.aagapp.com/vendor/"+  vendorId  +"/tournament/" + gameId ;
     }
@@ -920,7 +948,6 @@ public class TournamentService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
 
-
         if (tournament.getStatus() != TournamentStatus.SCHEDULED) {
             throw new IllegalStateException("Tournament is not in SCHEDULED status");
         }
@@ -936,11 +963,16 @@ public class TournamentService {
             Player winner = activePlayers.get(0);
 
             BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
-            BigDecimal totalCollection = entryFeePerUser;
-            BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
-            tournament.setRoomprize(userPrizePool);
-            tournament.setTotalPrizePool(totalCollection.doubleValue());
+            Double totalCollection = tournament.getTotalPrizePool();
+            BigDecimal userPrizePool = BigDecimal.valueOf(totalCollection)
+                    .multiply(PriceConstant.USER_PRIZE_PERCENT_FULL);
+            BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(1), RoundingMode.HALF_UP);
             tournament.setTotalrounds(1);
+            tournament.setRoomprize(roomPrizePool);
+
+
+//            tournament.setRoomprize(userPrizePool);
+            tournament.setTotalPrizePool(totalCollection.doubleValue());
             tournament.setStatus(TournamentStatus.COMPLETED);
             tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
             tournamentRepository.save(tournament);
@@ -997,7 +1029,15 @@ public class TournamentService {
 
         int freePassCount = activePlayers.size() % 2;
         int totalRounds = (int) Math.ceil(Math.log(totalPlayers + freePassCount) / Math.log(2));
+
+        Double totalCollection = tournament.getTotalPrizePool();
+        BigDecimal userPrizePool = BigDecimal.valueOf(totalCollection)
+                .multiply(PriceConstant.USER_PRIZE_PERCENT_FULL);
+
+        BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
+
         tournament.setTotalrounds(totalRounds);
+        tournament.setRoomprize(roomPrizePool);
 
         tournament.setStatus(TournamentStatus.ACTIVE);
         tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
@@ -1039,8 +1079,6 @@ public class TournamentService {
                 }
 
 
-/*                assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
-                assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);*/
             } else {
                 assignFreePassToPlayer(activePlayers.get(i), tournamentId, 1);
             }
@@ -1051,11 +1089,6 @@ public class TournamentService {
             try {
                 String message = String.format(
                         "🎉 Tournament '%s' is now live!\n" +
-                                "👥 Active Players: %d\n" +
-                                "🎟️ Free Pass Given: %d\n" +
-                                "🔁 Total Rounds: %d\n" +
-                                "💰 Total Prize Pool: ₹%.2f\n" +
-                                "🏆 Round Prize: ₹%.2f\n" +
                                 "Monitor the progress and enjoy the event!",
                         tournament.getName(),
                         activePlayers.size(),
@@ -1118,7 +1151,7 @@ public class TournamentService {
     }*/
 
 
-    public boolean assignPlayerToSpecificRoom(Player player, Long tournamentId, TournamentRoom room) {
+/*    public boolean assignPlayerToSpecificRoom(Player player, Long tournamentId, TournamentRoom room) {
 
         if (player.getTournamentRoom() != null){
             return false;
@@ -1129,7 +1162,35 @@ public class TournamentService {
         playerRepository.save(player);
         roomRepository.save(room);
         return true;
+    }*/
+
+    public boolean assignPlayerToSpecificRoom(Player player, Long tournamentId, TournamentRoom room) {
+        TournamentRoom assignedRoom = player.getTournamentRoom();
+
+        if (assignedRoom != null) {
+            Long assignedTournamentId = assignedRoom.getTournament().getId();
+            if (assignedTournamentId.equals(tournamentId)) {
+                System.out.println("⚠️ Player " + player.getPlayerId() + " is already in a room for this tournament: " + assignedRoom.getId());
+                return false;
+            } else {
+                System.out.println("ℹ️ Player " + player.getPlayerId() + " is in tournament " + assignedTournamentId +
+                        ", assigning to different tournament " + tournamentId);
+            }
+        }
+
+        player.setTournamentRoom(room);
+        room.getCurrentPlayers().add(player);
+        room.setCurrentParticipants(room.getCurrentParticipants() + 1);
+
+        if (room.getCurrentParticipants() >= room.getMaxParticipants()) {
+            room.setStatus("PLAYING");
+        }
+
+        playerRepository.save(player);
+        roomRepository.save(room);
+        return true;
     }
+
 
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long tournamentId) {
@@ -2400,10 +2461,22 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 Double totalPrizePool = request.getTotalPrizePool();
                 tournament.setTotalPrizePool(totalPrizePool);
 
-                BigDecimal calculatedRoomPrize = BigDecimal.valueOf(totalPrizePool)
-                        .multiply(PriceConstant.USER_PRIZE_PERCENT)
-                        .setScale(2, RoundingMode.HALF_UP);
-                tournament.setRoomprize(calculatedRoomPrize);
+//                BigDecimal calculatedRoomPrize = BigDecimal.valueOf(totalPrizePool)
+//                        .multiply(PriceConstant.USER_PRIZE_PERCENT_FULL)
+//                        .setScale(2, RoundingMode.HALF_UP);
+
+                BigDecimal userPrizePool = BigDecimal.valueOf(totalPrizePool)
+                        .multiply(PriceConstant.USER_PRIZE_PERCENT_FULL);
+
+                BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(tournament.getTotalrounds()), RoundingMode.HALF_UP);
+
+                tournament.setTotalrounds(tournament.getTotalrounds());
+                tournament.setRoomprize(roomPrizePool);
+
+//                tournament.setRoomprize(calculatedRoomPrize);
+
+
+
             }
 
 
@@ -2514,14 +2587,13 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
                 BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers));
 
-                BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
-                BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
+
                 request.setName(gameName);
                 request.setExistinggameId(gameId);
                 ZonedDateTime nowInIndia = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
                 ZonedDateTime scheduledAt = nowInIndia.plusHours(Constant.TOURNAMENT_START_TIME);
                 request.setScheduledAt(scheduledAt);
-               request.setTotalPrizePool(totalCollection.doubleValue());
+               request.setTotalPrizePool(Constant.TOURNAMENT_PRIZE_POOL_new);
                 request.setThemeId(themeId);
                 request.setParticipants(512);
                 request.setEntryFee(entryfee);

@@ -21,10 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,8 +44,119 @@ public class LeaderBoardTournament {
 
     @Autowired
     private TournamentResultRecordRepository tournamentResultRecordRepository;
-
     public LeaderboardResponseDTOTournamentAdmin getLeaderboardforvendor(Long tournamentId, Pageable pageable) {
+        try {
+            // 1. Fetch the game details
+            Optional<Tournament> gameOpt = tournamentRepository.findById(tournamentId);
+            if (gameOpt.isEmpty()) {
+                throw new BusinessException("Game not found with ID: " + tournamentId, HttpStatus.BAD_REQUEST);
+            }
+            Tournament game = gameOpt.get();
+
+            // 2. Fetch the theme associated with the game
+            Optional<ThemeEntity> themeOpt = themeRepository.findById(game.getTheme().getId());
+            if (themeOpt.isEmpty()) {
+                throw new BusinessException("Theme not found for game with ID: " + tournamentId, HttpStatus.BAD_REQUEST);
+            }
+            ThemeEntity theme = themeOpt.get();
+
+            // 3. Fetch all tournament results (only winners)
+            Page<TournamentResultRecord> resultPage = tournamentResultRecordRepository
+                    .findByTournamentIdAndIsWinnerTrue(tournamentId, Pageable.unpaged()); // fetch all for aggregation
+
+            List<TournamentResultRecord> results = resultPage.getContent();
+
+            // 4. Fetch total players in game rooms
+            long totalPlayers = tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId);
+
+            // 5. Aggregate players
+            Map<Long, GameLeaderboardResponseDTOTornamentAdmin> playerMap = new HashMap<>();
+
+            for (TournamentResultRecord result : results) {
+                Player player = result.getPlayer();
+                Long playerId = player.getPlayerId();
+
+                // Fetch player details
+                Optional<CustomCustomer> playerDetailsOpt = customCustomerRepository.findById(playerId);
+                if (playerDetailsOpt.isEmpty()) {
+                    throw new BusinessException("Player details not found for player ID: " + playerId, HttpStatus.BAD_REQUEST);
+                }
+                CustomCustomer playerDetails = playerDetailsOpt.get();
+
+                double winningAmount = result.getAmmount() != null ? result.getAmmount().doubleValue() : 0.0;
+
+                GameLeaderboardResponseDTOTornamentAdmin existing = playerMap.get(playerId);
+
+                if (existing == null) {
+                    GameLeaderboardResponseDTOTornamentAdmin dto = new GameLeaderboardResponseDTOTornamentAdmin();
+                    dto.setPlayerId(playerId);
+                    dto.setMobileNumber(playerDetails.getMobileNumber());
+                    dto.setState(playerDetails.getState());
+                    dto.setPlayerName(playerDetails.getName());
+                    dto.setProfilePicture(playerDetails.getProfilePic());
+                    dto.setRound(result.getRound());
+                    dto.setScore(result.getScore());
+                    dto.setWinningammount(winningAmount);
+                    playerMap.put(playerId, dto);
+                } else {
+                    // Sum the winning amount
+                    existing.setWinningammount(existing.getWinningammount() + winningAmount);
+
+                    // Update round and score if this is a higher round
+                    if (result.getRound() > existing.getRound()) {
+                        existing.setRound(result.getRound());
+                        existing.setScore(result.getScore());
+                    }
+                }
+            }
+
+            // Convert to list
+            List<GameLeaderboardResponseDTOTornamentAdmin> playerList = new ArrayList<>(playerMap.values());
+
+            // ✅ Sort: Highest round first, then by score descending
+            playerList.sort((a, b) -> {
+                int cmp = Integer.compare(b.getRound(), a.getRound());
+                if (cmp != 0) return cmp;
+                return Integer.compare(b.getScore(), a.getScore());
+            });
+
+
+            // 6. Apply manual paging (if required)
+            int pageSize = pageable.getPageSize();
+            int currentPage = pageable.getPageNumber();
+            int totalItems = playerList.size();
+            int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+
+            int start = Math.min(currentPage * pageSize, totalItems);
+            int end = Math.min(start + pageSize, totalItems);
+
+            List<GameLeaderboardResponseDTOTornamentAdmin> pagedPlayers = playerList.subList(start, end);
+
+            // 7. Build response
+            LeaderboardResponseDTOTournamentAdmin response = new LeaderboardResponseDTOTournamentAdmin();
+            response.setGameName(game.getName());
+            response.setGameFee((double) game.getEntryFee());
+            response.setGameIcon(game.getGameUrl());
+            response.setThemeName(theme.getName());
+            response.setTotalPlayers((int) totalPlayers);
+            response.setPlayers(pagedPlayers);
+            response.setTotalPages(totalPages);
+            response.setTotalItems(totalItems);
+            response.setCurrentPage(currentPage);
+
+            return response;
+
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return null;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error fetching leaderboard: " + e.getMessage(), e);
+        }
+    }
+
+
+    public LeaderboardResponseDTOTournamentAdmin getLeaderboardforvendorold(Long tournamentId, Pageable pageable) {
         try{
             // 1. Fetch the game details
             Optional<Tournament> gameOpt = tournamentRepository.findById(tournamentId);
