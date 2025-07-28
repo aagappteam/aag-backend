@@ -23,6 +23,14 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     List<VendorEntity> findByLeagueStatusAndStatus(LeagueStatus leagueStatus, VendorStatus status);
 
 
+    @Query("SELECT v FROM VendorEntity v WHERE v.leagueStatus = :leagueStatus AND v.status = :status AND v.lastActiveAt >= :lastActiveCutoff")
+    List<VendorEntity> findActiveAvailableVendorsWithRecentActivity(
+            @Param("leagueStatus") LeagueStatus leagueStatus,
+            @Param("status") VendorStatus status,
+            @Param("lastActiveCutoff") Date lastActiveCutoff
+    );
+
+
     List<VendorEntity> findTop3ByOrderByRefferalbalanceDesc();
 
     List<VendorEntity> findTop3ByOrderByTotalWalletBalanceDesc();

@@ -613,7 +613,7 @@ public class GameService {
             List<Tournament> tournaments = tournamentRepository.findByVendorEntityAndScheduledAtBetween(vendorId, startTimeUTC, endTimeUTC);*/
 
             List<LeagueStatus> leagueStatuses = List.of(LeagueStatus.ACTIVE, LeagueStatus.SCHEDULED,LeagueStatus.EXPIRED);
-            List<TournamentStatus> tournamentStatuses = List.of(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED,TournamentStatus.COMPLETED,TournamentStatus.REJECTED);
+            List<TournamentStatus> tournamentStatuses = List.of(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED,TournamentStatus.COMPLETED);
 
 
             List<League> leagues = leagueRepository.findLeaguesByVendorIdInChallengingOrOpponentAndCreatedDateAndStatusIn(
