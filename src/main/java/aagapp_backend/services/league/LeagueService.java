@@ -1968,11 +1968,10 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 ));
             }
 
-
-
             LeagueTeamDetailsResponse leagueTeamDetailsResponse = new LeagueTeamDetailsResponse(
                     league.getName(),
                     winner.getTeamName(),
+                    league.getPrizePool().toString(),
                     teamDetails
             );
 

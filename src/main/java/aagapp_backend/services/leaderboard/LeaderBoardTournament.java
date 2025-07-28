@@ -44,7 +44,7 @@ public class LeaderBoardTournament {
 
     @Autowired
     private TournamentResultRecordRepository tournamentResultRecordRepository;
-    public LeaderboardResponseDTOTournamentAdmin getLeaderboardforvendor(Long tournamentId, Pageable pageable) {
+    public LeaderboardResponseDTOTournamentAdmin getLeaderboardforvendor(Long tournamentId, Pageable pageable, boolean winnersOnly){
         try {
             // 1. Fetch the game details
             Optional<Tournament> gameOpt = tournamentRepository.findById(tournamentId);
@@ -60,9 +60,17 @@ public class LeaderBoardTournament {
             }
             ThemeEntity theme = themeOpt.get();
 
-            // 3. Fetch all tournament results (only winners)
-            Page<TournamentResultRecord> resultPage = tournamentResultRecordRepository
-                    .findByTournamentIdAndIsWinnerTrue(tournamentId, Pageable.unpaged()); // fetch all for aggregation
+//            // 3. Fetch all tournament results (only winners)
+//            Page<TournamentResultRecord> resultPage = tournamentResultRecordRepository
+//                    .findByTournamentIdAndIsWinnerTrue(tournamentId, Pageable.unpaged()); // fetch all for aggregation
+
+            Page<TournamentResultRecord> resultPage;
+            if (winnersOnly) {
+                resultPage = tournamentResultRecordRepository.findByTournamentIdAndIsWinnerTrue(tournamentId, Pageable.unpaged());
+            } else {
+                resultPage = tournamentResultRecordRepository.findByTournamentIdAndIsWinnerFalse(tournamentId, Pageable.unpaged());
+            }
+
 
             List<TournamentResultRecord> results = resultPage.getContent();
 
@@ -136,6 +144,8 @@ public class LeaderBoardTournament {
             LeaderboardResponseDTOTournamentAdmin response = new LeaderboardResponseDTOTournamentAdmin();
             response.setGameName(game.getName());
             response.setGameFee((double) game.getEntryFee());
+            response.setTotalprizepool(game.getTotalPrizePool().toString());
+            response.setRoundprize(game.getRoomprize().toString());
             response.setGameIcon(game.getGameUrl());
             response.setThemeName(theme.getName());
             response.setTotalPlayers((int) totalPlayers);
