@@ -628,14 +628,24 @@ public class LeagueService {
     private VendorEntity getRandomAvailableVendor(Long excludeVendorId) {
         // Fetch available vendors excluding the vendor calling the method
         // Fetch vendors that are both AVAILABLE and ACTIVE
-        List<VendorEntity> availableVendors = vendorRepository.findByLeagueStatusAndStatus(
+//        List<VendorEntity> availableVendors = vendorRepository.findByLeagueStatusAndStatus(
+//                LeagueStatus.AVAILABLE,
+//                VendorStatus.ACTIVE
+//        );
+
+        Date tenMinutesAgo = new Date(System.currentTimeMillis() - 10 * 60 * 1000L);
+
+        List<VendorEntity> availableVendors = vendorRepository.findActiveAvailableVendorsWithRecentActivity(
                 LeagueStatus.AVAILABLE,
-                VendorStatus.ACTIVE
+                VendorStatus.ACTIVE,
+                tenMinutesAgo
         );
+
+
         availableVendors.removeIf(vendor -> vendor.getService_provider_id().equals(excludeVendorId));
 
         if (availableVendors.isEmpty()) {
-            throw new BusinessException("No available vendors found Right Now.", HttpStatus.NOT_FOUND);
+            throw new BusinessException("No available vendors found Right Now you can select another vendor from Available Vendors.", HttpStatus.NOT_FOUND);
         }
 
         // Return a random vendor from the remaining list

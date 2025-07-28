@@ -898,13 +898,13 @@ public class TournamentService {
         tournament.setStatus(status);
         tournamentRepository.save(tournament);
 
-        if (status == TournamentStatus.REJECTED || status == TournamentStatus.CANCELLED) {
+        if (status == TournamentStatus.REJECTED || status == TournamentStatus.CANCELLED || status == TournamentStatus.COMPLETED) {
             String fcmToken = tournament.getVendorEntity().getFcmToken();
             if (fcmToken != null) {
                 try {
                     notoficationFirebase.sendNotification(
                             fcmToken,
-                            "⚠️ Tournament " + tournament.getName() + " was rejected",
+                            "⚠️ Tournament " + tournament.getName() + " was concluded",
                             "Reason: " + reason
                     );
                 } catch (Exception e) {
