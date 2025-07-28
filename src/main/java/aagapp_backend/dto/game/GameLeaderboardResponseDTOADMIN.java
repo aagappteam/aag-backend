@@ -17,6 +17,7 @@ public class GameLeaderboardResponseDTOADMIN {
     private Double gameFee;
     private String gameIcon;
     private String themeName;
+    private String vendorname;
     private Integer totalPlayers;
     private List<LeaderboardResponseDTOAdmin> players;
     private int currentPage;

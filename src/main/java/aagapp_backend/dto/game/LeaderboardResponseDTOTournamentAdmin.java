@@ -20,6 +20,9 @@ public class LeaderboardResponseDTOTournamentAdmin {
     private String gameIcon;
     private String themeName;
     private Integer totalPlayers;
+    private String totalprizepool;
+    private String roundprize;
+
     private List<GameLeaderboardResponseDTOTornamentAdmin> players;
     private int currentPage;
     private int totalPages;

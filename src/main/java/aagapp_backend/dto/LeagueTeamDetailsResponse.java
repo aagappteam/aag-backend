@@ -15,5 +15,6 @@ public class LeagueTeamDetailsResponse {
 
     private String leagueName;
     private String winningTeamName;
+    private String totalprizepool;
     private List<TeamDetailsDTO> teams;
 }
