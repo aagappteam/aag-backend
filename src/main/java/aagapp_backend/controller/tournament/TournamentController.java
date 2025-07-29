@@ -803,6 +803,7 @@ public class TournamentController {
             // 7. Prepare response
             Map<String, Object> response = new HashMap<>();
             response.put("tournament_status", tournament.getStatus());
+            response.put("totalRounds", tournament.getTotalrounds());
             response.put("waitingCount", waitingCount);
             response.put("round", roundNumber);
             response.put("remainingUsers", remainingPlayers);
