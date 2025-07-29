@@ -568,20 +568,20 @@ public class AdminService
         }
     }
 
-    public boolean terminateAdmin(Long adminId, String terminatedBy) {
+    public boolean setAdminActiveStatus(Long adminId, int activeStatus, String modifiedBy) {
         Optional<CustomAdmin> optionalAdmin = customAdminRepository.findByAdminId(adminId);
 
         if (optionalAdmin.isPresent()) {
             CustomAdmin admin = optionalAdmin.get();
 
-            // Already terminated
-            if (admin.getActive() == 0) {
+            // If already in desired status, return false
+            if (admin.getActive() == activeStatus) {
                 return false;
             }
 
-            admin.setActive(0); // mark as terminated
-            admin.setUpdated_at(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-            admin.setCreatedBy(terminatedBy); // optionally update who terminated
+            admin.setActive(activeStatus); // 1 = active, 0 = terminated
+            admin.setUpdated_at(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            admin.setCreatedBy(modifiedBy); // Can be used to track who did the action
 
             customAdminRepository.save(admin);
             return true;
@@ -589,6 +589,7 @@ public class AdminService
 
         return false;
     }
+
 
 
 
