@@ -342,9 +342,8 @@ public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendor
                     game.getId(), game.getName(), game.getFee(), game.getMove(), game.getStatus(),
                     game.getShareableLink(), game.getAaggameid(),
                     game.getTheme() != null ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
-                    gameService.calculateTotalPrizeNew(game)
-                            .stripTrailingZeros()
-                            .toPlainString(),
+                    gameService.calculateTotalPrizeNewdouble(game)
+                            ,
                     game.getTheme() != null ? game.getTheme().getName() : null,
                     game.getTheme() != null ? game.getTheme().getImageUrl() : null,
                     game.getCreatedDate(), game.getScheduledAt(), game.getEndDate(),
@@ -357,6 +356,7 @@ public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendor
             StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM aag_ludo_game g WHERE 1=1");
             if (vendorId != null) countSql.append(" AND g.vendor_id = :vendorId");
             if (statusList != null && !statusList.isEmpty()) countSql.append(" AND g.status IN (:statusList)");
+
 
             Query countQuery = entityManager.createNativeQuery(countSql.toString());
             if (vendorId != null) countQuery.setParameter("vendorId", vendorId);
