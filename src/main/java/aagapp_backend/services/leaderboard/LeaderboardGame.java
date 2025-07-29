@@ -9,6 +9,8 @@ import aagapp_backend.entity.game.GameResultRecord;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.*;
+import aagapp_backend.services.gameservice.GameService;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,7 +22,8 @@ import java.util.*;
 public class LeaderboardGame {
 
 
-
+    @Autowired
+    private GameService gameService;
     @Autowired
     private GameRoomRepository gameRoomRepository;
 
@@ -50,8 +53,8 @@ public class LeaderboardGame {
 
         // 3. Filter type: winner / loser / all
         Boolean isWinner = null;
-        if ("winner".equalsIgnoreCase(type)) isWinner = true;
-        else if ("loser".equalsIgnoreCase(type)) isWinner = false;
+        if ("winners".equalsIgnoreCase(type)) isWinner = true;
+        else if ("losers".equalsIgnoreCase(type)) isWinner = false;
 
         // 4. Fetch all GameResultRecords (filtered)
         List<GameResultRecord> results = (isWinner == null)
@@ -81,6 +84,7 @@ public class LeaderboardGame {
                 dto.setScore(result.getScore() != null ? result.getScore() : 0);
                 dto.setTotalPrizePool(result.getWinningammount() != null ? result.getWinningammount().doubleValue() : 0.0);
                 dto.setGamesPlayed(1);
+                dto.setWinningAmmount(result.getWinningammount() != null ? result.getWinningammount().doubleValue() : 0.0);
                 playerMap.put(playerId, dto);
             } else {
                 int newScore = result.getScore() != null ? result.getScore().intValue() : 0;
@@ -89,6 +93,7 @@ public class LeaderboardGame {
                 dto.setGamesPlayed(dto.getGamesPlayed() + 1);
 //                dto.setScore(dto.getScore() + newScore.intValue());
                 dto.setTotalPrizePool(dto.getTotalPrizePool() + winAmt);
+                dto.setWinningAmmount(dto.getWinningAmmount() + winAmt);
 
             }
         }
@@ -116,7 +121,12 @@ public class LeaderboardGame {
         response.setGameFee(game.getFee());
         response.setGameIcon(game.getImageUrl());
         response.setThemeName(theme.getName());
+
         response.setTotalPlayers((int) totalPlayers);
+
+        response.setTotalPrizePool(gameService.calculateTotalPrizeNew(game)
+                .stripTrailingZeros()
+                .toPlainString());
         response.setVendorname(vendorName);
         response.setPlayers(pagedList);
         response.setCurrentPage(pageable.getPageNumber());

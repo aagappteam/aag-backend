@@ -66,7 +66,7 @@ private GameRoomRepository gameRoomRepository;
     public ResponseEntity<?> getLeaderboard(
             @PathVariable Long gameId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(required = false, defaultValue = "winner") String type, // WINNER, LOSER, ALL
+            @RequestParam(required = false, defaultValue = "winners") String type, // WINNER, LOSER, ALL
 
             @RequestParam(defaultValue = "10") int size) {
         try {
