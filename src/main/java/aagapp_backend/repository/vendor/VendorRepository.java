@@ -6,6 +6,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.VendorStatus;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -140,4 +141,6 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     Optional<Object> findByReferralCode(String referralCode);
 
     Optional<VendorEntity> findByMobileNumber(String mobileNumber);
+
+    Page<VendorEntity> findByIsPaid(boolean b, Pageable pageable);
 }
