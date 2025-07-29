@@ -342,7 +342,7 @@ public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendor
                     game.getId(), game.getName(), game.getFee(), game.getMove(), game.getStatus(),
                     game.getShareableLink(), game.getAaggameid(),
                     game.getTheme() != null ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
-                    gameService.calculateTotalPrizeNew(game)
+                    gameService.calculateTotalPrizeNewdouble(game)
                             ,
                     game.getTheme() != null ? game.getTheme().getName() : null,
                     game.getTheme() != null ? game.getTheme().getImageUrl() : null,
