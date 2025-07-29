@@ -180,12 +180,14 @@ public class TournamentController {
             Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
             Page<Tournament> tournamentPage = tournamentService.getFilteredTournaments(page, size, sort, id, vendorId, name, totalPrizePool, status, vendorName, vendorEmail, vendorMobile,search);
 
-
+            List<TournamentGetallDTO> gameList = tournamentPage.getContent().stream()
+                    .map(this::mapToDTO)  // use your mapping logic
+                    .collect(Collectors.toList());
             Long scheduledCount = tournamentService.getScheduledCount();
             Long activeCount = tournamentService.getActiveCount();
             Long ExpiredCount = tournamentService.getExpiredCount();
 
-            return responseService.generateResponseForGame("Tournaments fetched successfully", tournamentPage.getContent(), tournamentPage.getTotalElements(), scheduledCount, activeCount, ExpiredCount, HttpStatus.OK);
+            return responseService.generateResponseForGame("Tournaments fetched successfully", gameList, tournamentPage.getTotalElements(), scheduledCount, activeCount, ExpiredCount, HttpStatus.OK);
 
         } catch (Exception e) {
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

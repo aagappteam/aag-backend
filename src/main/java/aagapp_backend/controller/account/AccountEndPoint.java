@@ -448,6 +448,10 @@ public class AccountEndPoint {
                return responseService.generateErrorResponse("Admin not found with mobile: " + mobileNumber, HttpStatus.NOT_FOUND);
            }
 
+           if (customAdmin.getActive() == 0) {
+               return responseService.generateErrorResponse("Admin account is inactive. Access denied.", HttpStatus.FORBIDDEN);
+           }
+
            // 🔍 Check role validity
           /* String roleName = roleService.findRoleName(role);
            if (roleName == null) {
@@ -466,6 +470,9 @@ public class AccountEndPoint {
            if (!passwordEncoder.matches(password, customAdmin.getPassword())) {
                return responseService.generateErrorResponse("Invalid password", HttpStatus.BAD_REQUEST);
            }
+
+           System.out.println("Login details: " + loginDetails);
+           System.out.println(!passwordEncoder.matches(password, customAdmin.getPassword()));
 
            //  Generate Token & Login Response
            return adminService.loginWithPasswordForAdmin(loginDetails, request, session);
