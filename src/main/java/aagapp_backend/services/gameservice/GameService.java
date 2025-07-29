@@ -8,10 +8,8 @@ import aagapp_backend.entity.*;
 import aagapp_backend.entity.game.*;
 
 import aagapp_backend.entity.league.League;
-import aagapp_backend.entity.notification.Notification;
-import aagapp_backend.entity.notification.NotificationShare;
+
 import aagapp_backend.entity.players.Player;
-import aagapp_backend.entity.social.UserVendorFollow;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.*;
@@ -509,8 +507,13 @@ public class GameService {
 
 //            commonservice.deductFromWallet(playerId, game.getFee(),"Rs. " + game.getFee() + " deducted for playing " + game.getName() + " game");
 
-            commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
-
+//            commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount, " Game: " + game.getName());
+            commonservice.addVendorEarningForPayment(
+                    game.getVendorEntity().getService_provider_id(),
+                    BigDecimal.valueOf(game.getFee()),
+                    vendorShareAmount,
+                    "Game|" + game.getName() + "|" + game.getId()
+            );
             boolean playerJoined = addPlayerToRoom(gameRoom, player);
 
             if (!playerJoined) {

@@ -583,8 +583,14 @@ public class TournamentService {
 
 
             BigDecimal vendorShareAmount = PriceConstant.VENDOR_REVENUE_PERCENT;
-            commonService.addVendorEarningForPayment(tournament.getVendorId(), BigDecimal.valueOf(tournament.getEntryFee()), vendorShareAmount);
+//            commonService.addVendorEarningForPayment(tournament.getVendorId(), BigDecimal.valueOf(tournament.getEntryFee()), vendorShareAmount);
 
+            commonService.addVendorEarningForPayment(
+                    tournament.getVendorId(),
+                    BigDecimal.valueOf(tournament.getEntryFee()),
+                    vendorShareAmount,
+                    "Tournament|" + tournament.getName() + "|" + tournament.getId()
+            );
 
 
             // Check if the tournament has reached the maximum participant limit
@@ -1928,9 +1934,8 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
     }
 
     @Transactional
-    public void distributeRoundPrize(Tournament tournament, int round) {
-        BigDecimal totalPrize = tournament.getRoomprize();
-        BigDecimal roundPrize = totalPrize;
+    public void distributeRoundPrizeOld(Tournament tournament, int round) {
+        BigDecimal roundPrize = tournament.getRoomprize();
 
         List<TournamentResultRecord> winners = tournamentResultRecordRepository
                 .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
@@ -2001,6 +2006,71 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         }
     }
+    @Transactional
+    public void distributeRoundPrize(Tournament tournament, int round) {
+        BigDecimal roundPrize = tournament.getRoomprize();
+
+        List<TournamentResultRecord> winners = tournamentResultRecordRepository
+                .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
+
+        Map<Long, TournamentResultRecord> uniqueWinnersMap = winners.stream()
+                .collect(Collectors.toMap(
+                        w -> w.getPlayer().getPlayerId(),
+                        w -> w,
+                        (existing, duplicate) -> existing
+                ));
+
+        List<TournamentResultRecord> uniqueWinners = new ArrayList<>(uniqueWinnersMap.values());
+
+        int winnersCount = uniqueWinners.size();
+
+        if (winnersCount == 0) return;
+
+
+
+        BigDecimal totalCash = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_TO_USER);
+        BigDecimal totalBonus = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_AS_BONUS);
+
+
+
+
+
+        BigDecimal cashPerWinner = totalCash.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
+        BigDecimal bonusPerWinner = totalBonus.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
+        BigDecimal prizePerWinner = cashPerWinner.add(bonusPerWinner);
+
+        for (TournamentResultRecord winner : uniqueWinners) {
+            // Create notification
+            Notification notification = new Notification();
+            notification.setAmount(prizePerWinner.doubleValue());
+            notification.setDetails("You won Rs. " + prizePerWinner.stripTrailingZeros().toPlainString() + " in Round " + round);
+            notification.setDescription("Round Prize");
+            notification.setRole("Customer");
+            notification.setCustomerId(winner.getPlayer().getCustomer().getId());
+            notification.setName(Optional.ofNullable(winner.getPlayer().getCustomer().getName()).orElse("N/A"));
+            notificationRepository.save(notification);
+
+            // Update winning wallet
+            Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
+            if (wallet.getWinningAmount() == null) {
+                wallet.setWinningAmount(BigDecimal.ZERO);
+            }
+            wallet.setWinningAmount(wallet.getWinningAmount().add(cashPerWinner));
+            walletRepository.save(wallet);
+
+            // Update result amount
+            winner.setAmmount(Optional.ofNullable(winner.getAmmount()).orElse(BigDecimal.ZERO).add(cashPerWinner));
+
+            // Update bonus balance
+            CustomCustomer customCustomer = winner.getPlayer().getCustomer();
+            BigDecimal currentBonus = Optional.ofNullable(customCustomer.getBonusBalance()).orElse(BigDecimal.ZERO);
+            customCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
+            customCustomerRepository.save(customCustomer);
+
+            tournamentResultRecordRepository.save(winner);
+        }
+    }
+
 
 
     @Transactional

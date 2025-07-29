@@ -917,8 +917,13 @@ public class LeagueService {
 
         BigDecimal entryFee = BigDecimal.valueOf(league.getFee());
         BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
-        commonService.addVendorEarningForPayment(team.getVendor().getService_provider_id(), BigDecimal.valueOf(league.getFee()), vendorShareAmount);
-
+//        commonService.addVendorEarningForPayment(team.getVendor().getService_provider_id(), BigDecimal.valueOf(league.getFee()), vendorShareAmount,"League name"+league.getName() + " league id " + league.getId());
+        commonService.addVendorEarningForPayment(
+                team.getVendor().getService_provider_id(),
+                BigDecimal.valueOf(league.getFee()),
+                vendorShareAmount,
+                "League|" + league.getName() + "|" + league.getId()
+        );
         existingPass.setSelectedTeamId(teamId);
         team.setTeamPlayersCount(team.getTeamPlayersCount() + 1);
         player.setTeam(team);
@@ -983,7 +988,7 @@ public class LeagueService {
 
         BigDecimal entryFee = BigDecimal.valueOf(league.getFee());
         BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
-        commonService.addVendorEarningForPayment(player.getTeam().getVendor().getService_provider_id(), BigDecimal.valueOf(league.getFee()), vendorShareAmount);
+        commonService.addVendorEarningForPayment(player.getTeam().getVendor().getService_provider_id(), BigDecimal.valueOf(league.getFee()), vendorShareAmount,"League Free pass|" + league.getName() + "|" + league.getId());
 
         // Step 5: Add 3 more passes
         pass.setPassCount(pass.getPassCount() + 3);
