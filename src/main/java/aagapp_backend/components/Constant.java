@@ -23,6 +23,9 @@ public class Constant {
     public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(100.00);
     public static final BigDecimal TOURNAMENT_PRIZE_POOL = BigDecimal.valueOf(100.00);
 
+    public static final BigDecimal TOURNAMENT_PRIZE_POOL_SENT_TO_USER = BigDecimal.valueOf(0.80);
+    public static final BigDecimal TOURNAMENT_PRIZE_POOL_SENT_AS_BONUS= BigDecimal.valueOf(0.20);
+
     public static final Double TOURNAMENT_PRIZE_POOL_new = 100.00;
 
     //  Game URLs

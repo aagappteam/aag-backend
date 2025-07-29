@@ -242,7 +242,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
 
     @Transactional
-    public void addVendorEarningForPayment(Long vendorId, BigDecimal paymentAmount, BigDecimal vendorSharePercent) {
+    public void addVendorEarningForPayment(Long vendorId, BigDecimal paymentAmount, BigDecimal vendorSharePercent,String addon) {
         String monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
         List<PaymentEntity> activePlanOptional = paymentService.getActivePlanByVendorId(vendorId);
@@ -273,12 +273,24 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         earning.setEarnedAmount(earning.getEarnedAmount().add(shareAmount));
         earningRepository.save(earning);
 
+        // Step 5: Parse addon & log notification
+        String[] parts = addon.split("\\|");
+        String type = parts.length > 0 ? parts[0] : "Unknown";
+        String name = parts.length > 1 ? parts[1] : "Unnamed";
+        String id = parts.length > 2 ? parts[2] : "N/A";
+
+        String details = String.format(
+                "You earned ₹%s from a %s (Name: %s, ID: %s) played by a user.",
+                shareAmount.stripTrailingZeros().toPlainString(),
+                type, name, id
+        );
+
         // Step 5: Log notification
         NotificationShare notification = new NotificationShare();
         notification.setVendorId(vendorId);
         notification.setDescription("Vendor Earning for Payment");
         notification.setAmount(shareAmount.doubleValue());
-        notification.setDetails("You earned Rs. " + shareAmount.stripTrailingZeros().toPlainString() + " from a recent game played by a user.");
+        notification.setDetails(details);
 
 //        notification.setDetails("You earned Rs. " + shareAmount.doubleValue() + " from a recent game played by a user.");
         notificationShareRepository.save(notification);

@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -104,11 +105,17 @@ public class LeaderBoardTournament {
                     dto.setProfilePicture(playerDetails.getProfilePic());
                     dto.setRound(result.getRound());
                     dto.setScore(result.getScore());
-                    dto.setWinningammount(winningAmount);
+//                    dto.setWinningammount(winningAmount);
+                    dto.setWinningammount(BigDecimal.valueOf(winningAmount).setScale(2, RoundingMode.HALF_UP).doubleValue());
+
                     playerMap.put(playerId, dto);
                 } else {
                     // Sum the winning amount
-                    existing.setWinningammount(existing.getWinningammount() + winningAmount);
+//                    existing.setWinningammount(existing.getWinningammount() + winningAmount);
+                    double updatedAmount = BigDecimal.valueOf(existing.getWinningammount() + winningAmount)
+                            .setScale(2, RoundingMode.HALF_UP)
+                            .doubleValue();
+                    existing.setWinningammount(updatedAmount);
 
                     // Update round and score if this is a higher round
                     if (result.getRound() > existing.getRound()) {
