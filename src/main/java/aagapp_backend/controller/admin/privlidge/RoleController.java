@@ -4,6 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.components.cache.PrivilegeMappingCache;
 import aagapp_backend.dto.CustomAdminDTO;
+import aagapp_backend.dto.admin.Role.RoleDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.Role;
 import aagapp_backend.entity.admin.Privilege;
@@ -96,6 +97,17 @@ public class RoleController {
 
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllRoles() {
+        List<Role> roles = roleRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        List<RoleDTO> roleDTOs = roles.stream()
+                .map(role -> new RoleDTO(role.getRoleId(), role.getRoleName()))
+                .collect(Collectors.toList());
+
+        return responseService.generateSuccessResponse("Roles fetched successfully", roleDTOs, HttpStatus.OK);
+
+    }
 
     //  Get All Roles
     @GetMapping

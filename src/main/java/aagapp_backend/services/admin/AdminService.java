@@ -131,7 +131,6 @@ public class AdminService
 
         return entityManager.createQuery(Constant.PHONE_QUERY_ADMIN, CustomAdmin.class)
                 .setParameter("mobileNumber", mobile_number)
-                .setParameter("country_code", countryCode)
                 .getResultStream()
                 .findFirst()
                 .orElse(null);
