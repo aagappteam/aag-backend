@@ -471,7 +471,10 @@ public class GameController {
             return responseService.generateErrorResponse("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
+    @GetMapping("/{vendorId}/today-count")
+    public ResponseEntity<Map<String, Object>> getTodayCreatedCount(@PathVariable Long vendorId) {
+        Map<String, Object> countMap = gameService.getTodayCreatedCount(vendorId);
+        return ResponseEntity.ok(countMap);
+    }
 
 }

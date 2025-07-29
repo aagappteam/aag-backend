@@ -1850,6 +1850,42 @@ public class GameService {
     }
 
 
+    @Transactional
+    public Map<String, Object> getTodayCreatedCount(Long vendorId) {
+        try {
+            VendorEntity vendor = em.find(VendorEntity.class, vendorId);
+            if (vendor == null) {
+                throw new BusinessException("Vendor not found with ID: " + vendorId, HttpStatus.BAD_REQUEST);
+            }
+
+            // Set today's start and end in Asia/Kolkata
+            ZonedDateTime nowKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime startOfDay = nowKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
+
+            // Convert to UTC (because @CreationTimestamp uses UTC)
+            ZonedDateTime startUTC = startOfDay.withZoneSameInstant(ZoneId.of("UTC"));
+            ZonedDateTime endUTC = endOfDay.withZoneSameInstant(ZoneId.of("UTC"));
+
+            int gameCount = gameRepository.countByVendorEntityAndCreatedDateBetween(vendor, startUTC, endUTC);
+            int leagueCount = leagueRepository.countByVendorEntityAndCreatedDateBetween(vendor, startUTC, endUTC);
+            int tournamentCount = tournamentRepository.countByVendorIdAndCreatedDateBetween(vendorId, startUTC, endUTC);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("games", gameCount);
+            result.put("leagues", leagueCount);
+            result.put("tournaments", tournamentCount);
+            result.put("total", gameCount + leagueCount + tournamentCount);
+
+            return result;
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error fetching today's created content count", e);
+        }
+    }
 
 
 

@@ -6,6 +6,7 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.Role;
 import aagapp_backend.entity.admin.Privilege;
+import aagapp_backend.repository.admin.CustomAdminRepository;
 import aagapp_backend.repository.admin.PrivilegeRepository;
 import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.services.*;
@@ -47,6 +48,9 @@ public class AdminService
 
     @Autowired
     private PrivilegeRepository privilegeRepo;
+
+    @Autowired
+    private CustomAdminRepository customAdminRepository;
 
     private RoleRepository roleRepo;
     private EntityManager entityManager;
@@ -563,6 +567,28 @@ public class AdminService
         } catch (Exception e) {
             return ResponseService.generateErrorResponse("Error updating admin details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    public boolean terminateAdmin(Long adminId, String terminatedBy) {
+        Optional<CustomAdmin> optionalAdmin = customAdminRepository.findByAdminId(adminId);
+
+        if (optionalAdmin.isPresent()) {
+            CustomAdmin admin = optionalAdmin.get();
+
+            // Already terminated
+            if (admin.getActive() == 0) {
+                return false;
+            }
+
+            admin.setActive(0); // mark as terminated
+            admin.setUpdated_at(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            admin.setCreatedBy(terminatedBy); // optionally update who terminated
+
+            customAdminRepository.save(admin);
+            return true;
+        }
+
+        return false;
     }
 
 

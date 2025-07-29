@@ -176,4 +176,6 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
     List<Tournament> findAllByStatusAndCreatedDateBefore(TournamentStatus tournamentStatus, ZonedDateTime fifteenMinutesAgo);
 
     List<Tournament> findByStatusAndScheduledAt(TournamentStatus tournamentStatus, ZonedDateTime targetTime);
+
+    int countByVendorIdAndCreatedDateBetween(Long vendorId, ZonedDateTime startUTC, ZonedDateTime endUTC);
 }
