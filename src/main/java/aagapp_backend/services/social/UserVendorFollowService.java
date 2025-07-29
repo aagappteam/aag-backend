@@ -699,6 +699,10 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
                     List<TournamentStatus> statuses = Arrays.asList(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
                     Page<Tournament> gamesPage = tournamentService.getAllTournaments(pageable1, statuses, vendorId, null);
 
+                    List<TournamentGetallDTO> gameList = gamesPage.getContent().stream()
+                            .map(this::mapToDTO)  // use your mapping logic
+                            .collect(Collectors.toList());
+
                     // Skip only if all three are empty
                     if (games.isEmpty() && leaguesPage.isEmpty() && gamesPage.isEmpty()) {
                         return null; // skip vendor
@@ -713,7 +717,9 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
                     vendorInfo.put("isFollowing", currentUserId != null && followRepo.existsByUserIdAndVendorId(currentUserId, vendorId));
                     vendorInfo.put("games", games.getContent());
                     vendorInfo.put("leagues", leaguesPage.getContent());
-                    vendorInfo.put("tournaments", gamesPage.getContent());
+//                    vendorInfo.put("tournaments", gamesPage.getContent());
+                    vendorInfo.put("tournaments", gameList);
+
 
                     return vendorInfo;
                 })
