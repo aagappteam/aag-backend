@@ -649,15 +649,40 @@ public class TournamentService {
         }
     }
 
-
     @Transactional
     public List<Player> getActivePlayers(Long tournamentId) {
         try {
-//            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
-//                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
+            List<TournamentPlayerRegistration.RegistrationStatus> statuses = Arrays.asList(
+                    TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                    TournamentPlayerRegistration.RegistrationStatus.ACTIVE
+            );
+
+            List<TournamentPlayerRegistration> registrations =
+                    tournamentPlayerRegistrationRepository.findByTournamentIdAndStatusIn(tournamentId, statuses);
+
+            return registrations.stream()
+                    .map(TournamentPlayerRegistration::getPlayer)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            throw new RuntimeException("Error fetching registered/active players for tournament " + tournamentId + ": " + e.getMessage(), e);
+        }
+    }
+
+
+/*    @Transactional
+    public List<Player> getActivePlayers(Long tournamentId) {
+        try {
+            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
+                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
 
             List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
                     .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.REGISTERED);
+
+
             List<Player> players = registrations.stream()
                     .map(TournamentPlayerRegistration::getPlayer)
                     .filter(Objects::nonNull)
@@ -671,7 +696,7 @@ public class TournamentService {
             exceptionHandling.handleException(e);
             throw new RuntimeException("Error fetching registered players for tournament " + tournamentId + ": " + e.getMessage(), e);
         }
-    }
+    }*/
 
     /*
     @Transactional
