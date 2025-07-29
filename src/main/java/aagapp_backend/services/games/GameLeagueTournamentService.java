@@ -357,6 +357,7 @@ public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendor
             if (vendorId != null) countSql.append(" AND g.vendor_id = :vendorId");
             if (statusList != null && !statusList.isEmpty()) countSql.append(" AND g.status IN (:statusList)");
 
+
             Query countQuery = entityManager.createNativeQuery(countSql.toString());
             if (vendorId != null) countQuery.setParameter("vendorId", vendorId);
             if (statusList != null && !statusList.isEmpty()) countQuery.setParameter("statusList", statusList);
