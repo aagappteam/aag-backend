@@ -243,9 +243,11 @@ public class RoleController {
             boolean success = adminService.terminateAdmin(adminId, terminatedBy);
 
             if (success) {
-                return ResponseEntity.ok("Admin terminated successfully.");
+                return responseService.generateSuccessResponse("Admin terminated successfully.", success, HttpStatus.OK);
+
             } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Admin not found or already terminated.");
+                return responseService.generateSuccessResponse("Admin not found or already terminated.", success, HttpStatus.OK);
+
             }
         }catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
