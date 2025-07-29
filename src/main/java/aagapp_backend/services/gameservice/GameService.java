@@ -489,6 +489,9 @@ public class GameService {
 
             BigDecimal vendorShareAmount = (PriceConstant.VENDOR_REVENUE_PERCENT);
 
+            if(game.getStatus()==GameStatus.EXPIRED) {
+                throw new BusinessException("Game ID: " + game.getId() + " has already expired. No update allowed.", HttpStatus.BAD_REQUEST);
+            }
 
             if (isPlayerInRoom(player)) {
                 leaveRoom(playerId, player.getGameRoom().getGame().getId());

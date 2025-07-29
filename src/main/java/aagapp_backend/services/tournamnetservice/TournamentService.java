@@ -572,6 +572,10 @@ public class TournamentService {
                 throw new BusinessException("Tournament is already active" , HttpStatus.BAD_REQUEST);
 
             }
+
+            if(tournament.getStatus() == TournamentStatus.COMPLETED) {
+                throw new BusinessException("Tournament is already finished", HttpStatus.BAD_REQUEST);
+            }
             BigDecimal entryFeetosent = BigDecimal.valueOf(tournament.getEntryFee()).stripTrailingZeros();
             String feeString = entryFeetosent.toPlainString();
 

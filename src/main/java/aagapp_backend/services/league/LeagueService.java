@@ -887,9 +887,13 @@ public class LeagueService {
                 .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
 
 
+        if(league.getStatus() != LeagueStatus.ACTIVE) {
+            throw new BusinessException("League is not active", HttpStatus.BAD_REQUEST);
+        }
         if (player.getCustomer().getStatus() != VendorStatus.ACTIVE) {
             throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
         }
+
 
         Wallet wallet = player.getCustomer().getWallet();
         /*Double unplayedBalance = wallet.getUnplayedBalance();
@@ -1014,6 +1018,10 @@ public class LeagueService {
 
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new BusinessException("League not found with ID: " + leagueId, HttpStatus.BAD_REQUEST));
+
+        if(league.getStatus() != LeagueStatus.ACTIVE) {
+            throw new BusinessException("League is not active", HttpStatus.BAD_REQUEST);
+        }
 
         if (player.getCustomer().getStatus() != VendorStatus.ACTIVE) {
             throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
