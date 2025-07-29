@@ -24,7 +24,9 @@ public class TicketDTOCustomer {
     private Long customerOrVendorId;
     private List<TicketMessage> messages;
     private String role;
+
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
+
 }
 
