@@ -3,6 +3,7 @@ package aagapp_backend.services.games;
 import aagapp_backend.dto.GetGameResponseDTO;
 import aagapp_backend.dto.LeagueResponseDTO;
 import aagapp_backend.dto.TournamentResponseDTO;
+import aagapp_backend.dto.game.GetGameResponseDTOCommon;
 import aagapp_backend.dto.league.LeagueResponseDTOCommon;
 import aagapp_backend.dto.tournament.TournamentResponseDTOCommon;
 import aagapp_backend.entity.game.Game;
@@ -293,7 +294,78 @@ public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendor
     }
 }
 
+    @Transactional
+    public Page<GetGameResponseDTOCommon> getAllGamesCommon(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
+        try {
+            StringBuilder sql = new StringBuilder("SELECT * FROM aag_ludo_game g WHERE 1=1");
 
+            if (vendorId != null) {
+                sql.append(" AND g.vendor_id = :vendorId");
+            }
+
+            if (statusList != null && !statusList.isEmpty()) {
+                sql.append(" AND g.status IN (:statusList)");
+            }
+
+            if (scheduledDate != null) {
+                sql.append(" AND g.scheduled_at BETWEEN :scheduledStart AND :scheduledEnd");
+            }
+
+            if (startDate != null && endDate != null) {
+                sql.append(" AND g.created_at BETWEEN :pubStartDate AND :pubEndDate");
+            }
+
+            sql.append(" ORDER BY g.created_date DESC");
+
+            Query query = entityManager.createNativeQuery(sql.toString(), Game.class);
+
+            if (vendorId != null) query.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) query.setParameter("statusList", statusList);
+            if (scheduledDate != null) {
+                query.setParameter("scheduledStart", scheduledDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("scheduledEnd", scheduledDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+            if (startDate != null && endDate != null) {
+                query.setParameter("pubStartDate", startDate.atStartOfDay(ZoneId.systemDefault()));
+                query.setParameter("pubEndDate", endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
+            }
+
+            query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
+
+            List<Game> games = query.getResultList();
+
+
+
+
+            List<GetGameResponseDTOCommon> gameResponseDTOs = games.stream().map(game -> new GetGameResponseDTOCommon(
+                    game.getId(), game.getName(), game.getFee(), game.getMove(), game.getStatus(),
+                    game.getShareableLink(), game.getAaggameid(),
+                    game.getTheme() != null ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
+                    gameService.calculateTotalPrizeNew(game).toString(),
+                    game.getTheme() != null ? game.getTheme().getName() : null,
+                    game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                    game.getCreatedDate(), game.getScheduledAt(), game.getEndDate(),
+                    game.getMinPlayersPerTeam(), game.getMaxPlayersPerTeam(),
+                    gameService.calculateTotalPrizeNew(game),
+                    game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
+                    game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
+            )).collect(Collectors.toList());
+
+            StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM aag_ludo_game g WHERE 1=1");
+            if (vendorId != null) countSql.append(" AND g.vendor_id = :vendorId");
+            if (statusList != null && !statusList.isEmpty()) countSql.append(" AND g.status IN (:statusList)");
+
+            Query countQuery = entityManager.createNativeQuery(countSql.toString());
+            if (vendorId != null) countQuery.setParameter("vendorId", vendorId);
+            if (statusList != null && !statusList.isEmpty()) countQuery.setParameter("statusList", statusList);
+
+            Long count = ((Number) countQuery.getSingleResult()).longValue();
+            return new PageImpl<>(gameResponseDTOs, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving games", e);
+        }
+    }
     @Transactional
     public Page<LeagueResponseDTOCommon> getAllLeaguesCommon(List<String> statusList, Long vendorId, Pageable pageable, LocalDate startDate, LocalDate endDate, LocalDate scheduledDate) {
         try {
@@ -472,7 +544,7 @@ public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendor
             List<Tournament> tournaments = query.getResultList();
 
             List<TournamentResponseDTOCommon> tournamentResponseDTOs = tournaments.stream().map(tournament -> new TournamentResponseDTOCommon(
-                    tournament.getId(), tournament.getName(),tournament.getVendorEntity().getName(),tournament.getTotalPrizePool().toString(),tournament.getRoomprize().toString(),tournament.getTheme().getGameimageUrl()!=null?tournament.getTheme().getGameimageUrl():tournament.getTheme().getImageUrl(), tournament.getEntryFee(), tournament.getMove(),
+                    tournament.getId(), tournament.getName(),tournament.getVendorEntity().getName(),tournament.getTotalPrizePool().toString(),tournament.getTotalPrizePool().toString(),tournament.getRoomprize().toString(),tournament.getTheme().getGameimageUrl()!=null?tournament.getTheme().getGameimageUrl():tournament.getTheme().getImageUrl(), tournament.getEntryFee(), tournament.getMove(),
                     tournament.getStatus(), tournament.getShareableLink(), tournament.getExistinggameId(),
                     tournament.getTheme() != null ? tournament.getTheme().getName() : null,
                     tournament.getTheme() != null ? tournament.getTheme().getImageUrl() : null,
@@ -557,6 +629,9 @@ public Page<GetGameResponseDTO> getAllGames(List<String> statusList, Long vendor
             throw new RuntimeException("Error retrieving tournaments", e);
         }
     }
+
+
+
 
 
 /*    @Transactional

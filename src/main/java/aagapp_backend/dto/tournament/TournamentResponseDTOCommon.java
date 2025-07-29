@@ -17,8 +17,10 @@ public class TournamentResponseDTOCommon {
     private Long id;
     private String name;
     private String vendorname;
-    private String totalprizepool;
-    private String roundprize;
+    private String totalPrizePool;
+    private String prizePool;
+
+    private String roundPrize;
     private String gameIcon;
     private Integer fee;
     private Integer move;

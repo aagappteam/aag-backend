@@ -1,6 +1,5 @@
 package aagapp_backend.dto.league;
 
-import aagapp_backend.enums.GameStatus;
 import aagapp_backend.enums.LeagueStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
@@ -22,7 +21,7 @@ public class LeagueResponseDTOCommon {
     private String shareableLink;
 
     private String gameIcon;
-    private String totalprizepool;
+    private String totalPrizePool;
 
 
     private String themeName;
