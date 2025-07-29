@@ -10,11 +10,9 @@ import aagapp_backend.entity.players.Player;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 
@@ -81,7 +79,7 @@ public class LeaderboardGame {
                 dto.setState(customer.getState());
                 dto.setProfilePicture(customer.getProfilePic());
                 dto.setScore(result.getScore() != null ? result.getScore() : 0);
-                dto.setWinningammount(result.getWinningammount() != null ? result.getWinningammount().doubleValue() : 0.0);
+                dto.setTotalPrizePool(result.getWinningammount() != null ? result.getWinningammount().doubleValue() : 0.0);
                 dto.setGamesPlayed(1);
                 playerMap.put(playerId, dto);
             } else {
@@ -90,7 +88,7 @@ public class LeaderboardGame {
                 double winAmt = result.getWinningammount() != null ? result.getWinningammount().doubleValue() : 0.0;
                 dto.setGamesPlayed(dto.getGamesPlayed() + 1);
 //                dto.setScore(dto.getScore() + newScore.intValue());
-                dto.setWinningammount(dto.getWinningammount() + winAmt);
+                dto.setTotalPrizePool(dto.getTotalPrizePool() + winAmt);
 
             }
         }
