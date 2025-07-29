@@ -124,9 +124,7 @@ public class LeaderboardGame {
 
         response.setTotalPlayers((int) totalPlayers);
 
-        response.setTotalPrizePool(gameService.calculateTotalPrizeNew(game)
-                .stripTrailingZeros()
-                .toPlainString());
+        response.setTotalPrizePool(gameService.calculateTotalPrizeNewdouble(game));
         response.setVendorname(vendorName);
         response.setPlayers(pagedList);
         response.setCurrentPage(pageable.getPageNumber());

@@ -442,6 +442,22 @@ public class GameService {
 
     }
 
+    public Double calculateTotalPrizeNewdouble(Game game) {
+        BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
+
+        BigDecimal singleBonus = entryFee.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT));
+        BigDecimal totalBonusCollected = singleBonus.multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
+
+        BigDecimal totalCollection = entryFee.multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
+        BigDecimal totalPrize = totalCollection.multiply(Constant.USER_PERCENTAGE);
+
+        BigDecimal finalWinnerAmount = totalPrize.add(totalBonusCollected.multiply(BigDecimal.valueOf(2)));
+
+        // Strip trailing zeros and return as double
+        return finalWinnerAmount.stripTrailingZeros().doubleValue();
+    }
+
+
     public BigDecimal calculateTotalPrizeNew(Game game) {
         BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
 

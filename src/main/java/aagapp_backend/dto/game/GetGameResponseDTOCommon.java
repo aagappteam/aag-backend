@@ -23,7 +23,7 @@ public class GetGameResponseDTOCommon {
     private String shareableLink;
     private Long aaggameid;
     private String gameIcon;
-    private String totalPrizePool;
+    private Double totalPrizePool;
 
 
     private String themeName;

@@ -19,7 +19,7 @@ public class GameLeaderboardResponseDTOADMIN {
     private String themeName;
     private String vendorname;
     private Integer totalPlayers;
-    private String totalPrizePool;
+    private Double totalPrizePool;
     private List<LeaderboardResponseDTOAdmin> players;
     private int currentPage;
     private int totalPages;

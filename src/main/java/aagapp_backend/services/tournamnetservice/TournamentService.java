@@ -649,9 +649,11 @@ public class TournamentService {
     @Transactional
     public List<Player> getActivePlayers(Long tournamentId) {
         try {
-            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
-                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
+//            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
+//                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
 
+            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
+                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.REGISTERED);
             List<Player> players = registrations.stream()
                     .map(TournamentPlayerRegistration::getPlayer)
                     .filter(Objects::nonNull)
