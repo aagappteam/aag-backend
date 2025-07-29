@@ -2534,7 +2534,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                     LeagueTeam team2 = new LeagueTeam();
 //                    team2.setTeamName("Team " + opponentVendor.getFirst_name());
-                    team1.setTeamName("Team " + opponentVendor.getUser_name()!=null?opponentVendor.getUser_name():"Aagveer" );
+                    team2.setTeamName("Team " + opponentVendor.getUser_name()!=null?opponentVendor.getUser_name():"Aagveer" );
 
                     team2.setVendor(opponentVendor);
                     team2.setProfilePic(opponentVendor.getProfilePic());

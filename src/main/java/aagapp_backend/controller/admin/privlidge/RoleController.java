@@ -12,9 +12,11 @@ import aagapp_backend.repository.admin.PrivilegeRepository;
 import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.RoleService;
+import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.admin.CustomAdminSpecification;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.servlet.http.HttpServletRequest;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -34,6 +36,9 @@ public class RoleController {
     private ExceptionHandlingImplement exceptionHandlingImplement;
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AdminService adminService;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -98,7 +103,7 @@ public class RoleController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "roleId") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) Integer roleId
     ) {
         Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
@@ -230,6 +235,25 @@ public class RoleController {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/terminate/{id}")
+    public ResponseEntity<?> terminateAdmin(@PathVariable("id") Long adminId,
+                                            @RequestParam(defaultValue = "system") String terminatedBy) {
+        try{
+            boolean success = adminService.terminateAdmin(adminId, terminatedBy);
+
+            if (success) {
+                return ResponseEntity.ok("Admin terminated successfully.");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Admin not found or already terminated.");
+            }
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "ERROR", "message", e.getMessage()));
+        }
+    }
+
+
 
 /*    @PostMapping("/assign-roles")
     public ResponseEntity<?> assignRolesToUser(@RequestBody Map<String, Object> request) {

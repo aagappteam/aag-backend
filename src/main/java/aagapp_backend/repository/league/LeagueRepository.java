@@ -140,4 +140,5 @@ public interface LeagueRepository extends JpaRepository<League, Long>, JpaSpecif
     );
 
 
+    int countByVendorEntityAndCreatedDateBetween(VendorEntity vendor, ZonedDateTime startUTC, ZonedDateTime endUTC);
 }

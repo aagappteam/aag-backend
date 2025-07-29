@@ -13,4 +13,5 @@ import java.util.Optional;
 public interface CustomAdminRepository extends JpaRepository<CustomAdmin, Long> , JpaSpecificationExecutor<CustomAdmin>{
     Optional<CustomAdmin> findByMobileNumber(String mobile);
 
+    Optional<CustomAdmin> findByAdminId(Long adminId);
 }
