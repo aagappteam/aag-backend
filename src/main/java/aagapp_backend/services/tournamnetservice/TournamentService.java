@@ -37,6 +37,7 @@ import aagapp_backend.services.social.FollowerNotificationService;
 import aagapp_backend.spec.TournamentSpecification;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
@@ -61,6 +62,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class TournamentService {
+
+    private final Dotenv dotenv = Dotenv.load();
+
 
     @Autowired
     private VendorWalletRepository walletRepo;
@@ -920,9 +924,17 @@ public class TournamentService {
     }
 
 
+/*
     private String generateShareableLink(Long gameId,Long vendorId) {
         return "https://backend.aagapp.com/vendor/"+  vendorId  +"/tournament/" + gameId ;
     }
+*/
+
+    private String generateShareableLink(Long gameId, Long vendorId) {
+        String domainUrl = dotenv.get("DOMAIN_URL");
+        return domainUrl + "/vendor/" + vendorId + "/tournament/" + gameId;
+    }
+
 
     private void updateTournamentStatus(Tournament tournament, TournamentStatus status, String reason) {
         tournament.setStatus(status);

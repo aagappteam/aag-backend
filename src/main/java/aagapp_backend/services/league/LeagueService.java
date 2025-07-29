@@ -45,6 +45,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
@@ -75,6 +76,9 @@ public class LeagueService {
 
     @Autowired
     private NotoficationFirebase notificationFirebase;
+
+    private final Dotenv dotenv = Dotenv.load();
+
 
     @Autowired
     private EmailService emailService;
@@ -431,9 +435,9 @@ public class LeagueService {
             league.setVendorEntity(opponentVendor);
             league.setChallengingVendorId(opponentVendor.getService_provider_id());
 
-            league.setChallengingVendorName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
+            league.setChallengingVendorName(opponentVendor.getUser_name()!=null?opponentVendor.getUser_name():"Aagveer");
             league.setChallengingVendorProfilePic(opponentVendor.getProfilePic());
-            league.setOpponentVendorName(vendorEntity.getFirst_name() + " " + vendorEntity.getLast_name());
+            league.setOpponentVendorName(vendorEntity.getUser_name()!=null?vendorEntity.getUser_name():"Aagveer" );
             league.setOpponentVendorProfilePic(vendorEntity.getProfilePic());
             league.setTheme(theme);
             league.setAagGameId(leagueRequest.getExistinggameId());
@@ -656,8 +660,13 @@ public class LeagueService {
         return "https://backend.aagapp.com/leagues/" + gameId;
     }*/
 
-    private String generateShareableLink(Long gameId,Long vendorId) {
+/*    private String generateShareableLink(Long gameId,Long vendorId) {
         return "https://backend.aagapp.com/vendor/"+  vendorId  +"/leagues/" + gameId ;
+    }*/
+
+    private String generateShareableLink(Long gameId, Long vendorId) {
+        String domainUrl = dotenv.get("DOMAIN_URL");
+        return domainUrl + "/vendor/" + vendorId + "/leagues/" + gameId;
     }
 
 
@@ -2419,8 +2428,8 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     league.setVendorEntity(vendor);
                     league.setOpponentVendorId(opponentVendor.getService_provider_id());
                     league.setChallengingVendorId(vendor.getService_provider_id());
-                    league.setOpponentVendorName(opponentVendor.getFirst_name());
-                    league.setChallengingVendorName(vendor.getFirst_name());
+                    league.setOpponentVendorName(opponentVendor.getUser_name()!=null?opponentVendor.getUser_name():"Aagveer");
+                    league.setChallengingVendorName(vendor.getUser_name()!=null?vendor.getUser_name():"Aagveer");
                     league.setOpponentVendorProfilePic(opponentVendor.getProfilePic());
                     league.setChallengingVendorProfilePic(vendor.getProfilePic());
                     league.setPrizePool(Constant.LEAGUE_PRIZE_POOL);
