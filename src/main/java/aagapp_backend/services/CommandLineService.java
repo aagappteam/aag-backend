@@ -74,7 +74,7 @@ public class CommandLineService implements CommandLineRunner {
                     new PredefinedQA(null, "What are reward points and how do I earn them?", "You earn reward points through daily login, referrals, and winning games. These can be redeemed in your wallet.", TicketUserType.CUSTOMER),
                     new PredefinedQA(null, "What should I do if the game crashes in the middle?", "If the game crashes due to a technical issue, contact the support team. If your balance or prize was affected, we will verify and process a refund.", TicketUserType.CUSTOMER),
                     new PredefinedQA(null, "What benefit do I get from referring a friend?", "If you refer a friend, both of you receive a bonus reward when they play a game for the first time.", TicketUserType.CUSTOMER),
-                    new PredefinedQA(null, "What is the minimum withdrawal amount?", "The minimum withdrawal amount is ₹50. Withdrawals below this amount are not allowed.", TicketUserType.CUSTOMER),
+                    new PredefinedQA(null, "What is the minimum withdrawal amount?", "The minimum withdrawal amount is ₹50q. Withdrawals below this amount are not allowed.", TicketUserType.CUSTOMER),
                     new PredefinedQA(null, "Can I play multiple games at the same time?", "No, only one game can be active at a time. Multiple sessions are not supported.", TicketUserType.CUSTOMER),
                     new PredefinedQA(null, "What if I accidentally deposit money into the wrong wallet?", "Please contact the support team immediately. If the transaction is valid and verified, a reversal is possible.", TicketUserType.CUSTOMER),
                     new PredefinedQA(null, "Where can I see the leaderboard and rankings?", "Go to the \"Leaderboard\" tab to see your ranking and other users’ rankings, game-wise or overall.", TicketUserType.CUSTOMER),
@@ -493,110 +493,129 @@ public class CommandLineService implements CommandLineRunner {
 
         if (entityManager.createQuery("SELECT COUNT(f) FROM FAQs f", Long.class).getSingleResult() == 0) {
 
-            entityManager.merge(new FAQs("General", "What is AAG?",
-                    "AAG (Aapka Apna Game) is a real-money gaming platform that allows users to play and earn money by engaging in various games. You can participate in games like Ludo, Snake & Ladders, and more, and earn real cash rewards based on your performance.",
-                    "User"));
+// ---------- Subscription and Plans ----------
+            entityManager.merge(new FAQs("Subscription and Plans", "How can I check my current subscription plan?",
+                    "Visit the \"Subscription Page\" to view your current plan details, including validity, features, and cost.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "What are the KYC requirements?",
-                    "To fully access all features on AAG, you will need to complete your KYC (Know Your Customer) verification. This process includes submitting a government-issued ID (e.g., Aadhaar, Passport, Voter ID) and a selfie for identity confirmation.",
-                    "User"));
+            entityManager.merge(new FAQs("Subscription and Plans", "Can I upgrade my subscription plan?",
+                    "Yes, go to the \"Subscription Page,\" explore other plans, and select the desired plan. Click on the request plan, your subscription request will be sent to the admin, once approved, you can pay and upgrade your subscription.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "How can I withdraw my earnings?",
-                    "You can withdraw your earnings by requesting a withdrawal via the Withdrawal section of the app. Ensure that your KYC is completed before making any withdrawals. Your funds will be transferred to your registered bank account or wallet, depending on the withdrawal method selected.",
-                    "User"));
+            entityManager.merge(new FAQs("Subscription and Plans", "What happens to my plan if I upgrade mid-cycle?",
+                    "The new plan activates immediately, and the remaining balance from your current plan is adjusted against the new plan cost.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "Is AAG secure to use?",
-                    "Yes, AAG uses state-of-the-art security measures to protect your data and transactions. We encrypt all sensitive information and work with trusted payment partners to ensure secure transactions.",
-                    "User"));
+            entityManager.merge(new FAQs("Subscription and Plans", "Can I downgrade or cancel my subscription?",
+                    "Yes, you can manage your plan from the \"Subscription Page.\" Downgrades or cancellations will take effect at the end of your current billing cycle. You need to renew your subscription after each plan cycle.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "What games can I play on AAG?",
-                    "Currently, AAG offers casual games like Ludo, Snake & Ladders, and more. These games are designed for all ages and skill levels. New games may be added to the platform in the future.",
-                    "User"));
+            entityManager.merge(new FAQs("Subscription and Plans", "How are the monthly and annual plan costs different?",
+                    "Monthly plans are billed monthly, while annual plans offer a discounted rate for upfront payment and a year-long validity. Initially only monthly payments will be accepted. You can raise tickets with admin for annual subscription interest.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "Can I play for free?",
-                    "Yes, AAG offers free-to-play games, but to earn real money, you will need to participate in cash-based games. The winnings depend on your performance in the games.",
-                    "User"));
+// ---------- AAG Wallet and Earnings ----------
+            entityManager.merge(new FAQs("AAG Wallet and Earnings", "How is my target revenue determined?",
+                    "Your target revenue is calculated based on your subscription plan, activity, and participation metrics.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "How do I contact support?",
-                    "If you have any issues or questions, you can reach our support team through the following channels:\nEmail: support@aag.com\nPhone: +91 XXXXXXXXXX\nIn-app Support Chat",
-                    "User"));
+            entityManager.merge(new FAQs("AAG Wallet and Earnings", "What is the minimum balance required to request a withdrawal?",
+                    "You must achieve at least 50% of your target revenue of the plan to be eligible for a withdrawal request.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "How do I delete my AAG account?",
-                    "If you wish to delete your AAG account, please contact our support team at support@aag.com. Please note that once your account is deleted, all data, including transaction history and funds, will be permanently removed.",
-                    "User"));
+            entityManager.merge(new FAQs("AAG Wallet and Earnings", "Can I withdraw my earnings in multiple transactions?",
+                    "Yes, but your withdrawals are subject to meeting the minimum balance criteria and cannot exceed the available eligible amount.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "How do I refer friends to AAG?",
-                    "You can refer your friends by using the Referral Code available in the app. When your friends sign up and play on AAG using your code, both you and your friend will receive referral bonuses.",
-                    "User"));
+            entityManager.merge(new FAQs("AAG Wallet and Earnings", "Are there any charges for withdrawing earnings?",
+                    "No, withdrawals are free. However, ensure your AAG Wallet balance meets the eligibility criteria.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "Are there any age restrictions for playing on AAG?",
-                    "Yes, you must be 18 years or older to participate in real-money games on AAG. The platform is strictly for adult users, and all users must comply with age verification during the sign-up process.",
-                    "User"));
+            entityManager.merge(new FAQs("AAG Wallet and Earnings", "How long does it take for a withdrawal request to process?",
+                    "Withdrawal requests are processed within 2-5 business days, depending on your payment method and bank.", "Vendor"));
 
-            entityManager.merge(new FAQs("General", "How do I improve my chances of winning?",
-                    "Winning on AAG depends on skill and luck. To improve your chances:\n1. Practice regularly\n2. Understand the game mechanics\n3. Stay updated on any new game features or changes",
-                    "User"));
+            entityManager.merge(new FAQs("AAG Wallet and Earnings", "What are the required steps for withdrawal?",
+                    "You need to complete your KYC and add your bank account to successfully request for a withdrawal.", "Vendor"));
 
-            // AAGVEER FAQs (Vendor)
-            entityManager.merge(new FAQs("Vendor", "What is AAGVEER?",
-                    "AAGVEER is a platform designed for influencers and content creators to publish and promote games on the AAG platform. As an AAGVEER vendor, you can earn commissions every time users play the games you publish.",
-                    "Vendor"));
+            entityManager.merge(new FAQs("AAG Wallet and Earnings", "What are the required steps for the KYC process?",
+                    "You need to complete your KYC by submitting your ID proof (Aadhaar, Pan card) details from your setting section in the AAGVeer app.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "How do I become an AAGVEER vendor?",
-                    "To become an AAGVEER vendor:\nDownload the AAGVEER app from the Play Store or App Store.\nSign up by providing your basic details and linking your social media accounts.\nSubmit your KYC details for verification.\nOnce verified, you will be eligible to publish your own games and start earning commissions.",
-                    "Vendor"));
+// ---------- Publishing Games and Events ----------
+            entityManager.merge(new FAQs("Publishing Games and Events", "How do I publish a game?",
+                    "Go to the \"Publish Games\" section, select a game from the list, choose the theme and entry fee, and either publish it immediately or schedule it for a later date.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "What are the subscription plans for AAGVEER?",
-                    "AAGVEER offers multiple subscription plans based on your social media following and engagement. You can choose a plan that best suits your needs and get started with game publishing. Contact us to know more about the available plans and pricing.",
-                    "Vendor"));
+            entityManager.merge(new FAQs("Publishing Games and Events", "Can I edit a scheduled game?",
+                    "Yes, you can edit a scheduled game up to one day before publish time. After that, changes are locked.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "How do I publish a game on AAGVEER?",
-                    "Once you are onboarded as a verified vendor, you can use the AAGVEER app to upload and publish your own games. Choose the game type, set your parameters, and follow the easy steps to launch it. After approval, your game will be available to all AAG users.",
-                    "Vendor"));
+            entityManager.merge(new FAQs("Publishing Games and Events", "What is the daily publishing limit for games,leagues and tournaments?",
+                    "The daily limit depends on your subscription plan. Check the \"Subscription Page\" for plan-specific details.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "How do I earn money as an AAGVEER vendor?",
-                    "As an AAGVEER vendor, you earn money based on the number of users who play your published games. Every time a user plays your game, you earn a commission. The more popular your game becomes, the more you earn!",
-                    "Vendor"));
+            entityManager.merge(new FAQs("Publishing Games and Events", "How can I schedule a tournament?",
+                    "In the \"Publish Games\" section, choose \"Tournament,\" set the parameters (e.g., theme, entry fee, schedule), and confirm. Once the prize pool is allotted and confirmed by admin, the tournament is published.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "Can I withdraw my earnings from AAGVEER?",
-                    "Yes, you can withdraw your earnings once they are credited to your account. You can make a withdrawal request through the app, and your funds will be transferred to your registered bank account or wallet.",
-                    "Vendor"));
+            entityManager.merge(new FAQs("Publishing Games and Events", "Where can I view my published games and events?",
+                    "Visit the \"Publish History\" section to see all your past published games and events.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "What is the KYC process for AAGVEER?",
-                    "To become a verified AAGVEER vendor, you need to complete your KYC (Know Your Customer) verification. This includes uploading your ID proof (Aadhaar, Voter ID, Passport) and a selfie for identity verification. Once your documents are verified, you can start publishing games.",
-                    "Vendor"));
+// ---------- Leaderboard and Analytics ----------
+            entityManager.merge(new FAQs("Leaderboard and Analytics", "How is the leaderboard ranking calculated?",
+                    "Rankings are based on popular categories such as revenue, points, and popularity across all subscription tiers.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "How can I upgrade or change my subscription plan?",
-                    "You can upgrade or change your subscription plan by logging into your AAGVEER dashboard and selecting the new plan. If you need assistance, feel free to reach out to our support team for guidance.",
-                    "Vendor"));
+            entityManager.merge(new FAQs("Leaderboard and Analytics", "Can I see my performance compared to other vendors?",
+                    "Yes, the leaderboard provides category-based comparisons of your performance with other vendors.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "How do I track my earnings?",
-                    "You can track your earnings in real-time by going to the Earnings section in your AAGVEER app. You’ll be able to see your total earnings, active games, and user engagement statistics. This helps you to stay updated on your performance.",
-                    "Vendor"));
+            entityManager.merge(new FAQs("Leaderboard and Analytics", "How often is the leaderboard updated?",
+                    "The leaderboard is updated in real-time as new games, tournaments, and events are hosted.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "Can I publish more than one game?",
-                    "Yes, you can publish multiple games on AAGVEER. The more games you have, the more chances you have to earn commissions from users playing those games.",
-                    "Vendor"));
+// ---------- Account and Profile Management ----------
+            entityManager.merge(new FAQs("Account and Profile Management", "How do I update my profile information?",
+                    "Go to the \"Account\" section in the menu to update your details, such as contact information and social media links.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "How do I contact support for AAGVEER?",
-                    "If you face any issues or need help with your vendor account, you can reach our support team through the following channels:\nEmail: support@aag.com\nPhone: +91 XXXXXXXXXX\nIn-app Support Chat",
-                    "Vendor"));
+            entityManager.merge(new FAQs("Account and Profile Management", "What should I do if my account is under verification?",
+                    "Wait for our onboarding team to review and approve your details. If any issues arise, you will be contacted. You can raise a support ticket if you need further help.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "What happens if my KYC is rejected?",
-                    "If your KYC is rejected, you will receive an email detailing the reasons for the rejection. You can resubmit your KYC documents after making the necessary corrections. Once approved, you will be able to proceed with your vendor activities.",
-                    "Vendor"));
+            entityManager.merge(new FAQs("Account and Profile Management", "What happens when I make my account private?",
+                    "When a vendor makes their account private, their points/scores data are hidden from the leaderboard. Other AAGVeers can still see the ranking of the private account AAGVeer", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "Is there any fee to use AAGVEER?",
-                    "Yes, AAGVEER operates on a subscription-based model, where you pay a fee depending on the subscription plan you select. There are also potential charges for game promotions and advanced features. Contact us for more details.",
-                    "Vendor"));
+            entityManager.merge(new FAQs("Account and Profile Management", "Can I Pause my Account?",
+                    "Yes, If you want to take a break from AAGVeer you can pause your account. Pausing an account hides your profile on user app AAG until your account is reactivated.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "Can I withdraw my subscription fee?",
-                    "The subscription fee is non-refundable. However, you can earn back your subscription cost by publishing games and earning commissions through the AAGVEER platform.",
-                    "Vendor"));
+            // ---------- General Queries and Support ----------
+            entityManager.merge(new FAQs("General Queries and Support", "Where can I find the terms and conditions?",
+                    "Terms and conditions are available in the sidebar section of the menu.", "Vendor"));
 
-            entityManager.merge(new FAQs("Vendor", "How long does it take to get verified?",
-                    "KYC verification typically takes 2-3 business days. Once your documents are approved, you will be notified via email, and you can start using AAGVEER.",
-                    "Vendor"));
+            entityManager.merge(new FAQs("General Queries and Support", "How do I contact customer support?",
+                    "Use the \"Support\" option in the app menu to reach out to our customer service team.", "Vendor"));
+
+            entityManager.merge(new FAQs("General Queries and Support", "Are there any tutorials or guides for using the app?",
+                    "Yes, check the \"Help\" section in the menu for tutorials, guides, and FAQs.", "Vendor"));
+
+            entityManager.merge(new FAQs("General Queries and Support", "What should I do if the app is not functioning correctly?",
+                    "Ensure you are using the latest version of the app. If the issue persists, contact support through the \"Support\" section.", "Vendor"));
+
+//            User
+
+
+            entityManager.merge(new FAQs("General Queries and Support", "Is AAG a safe gaming platform?",
+                    "Yes, AAG is a completely safe and trustworthy skill-based gaming platform. All games on the platform are fair and secure. We use advanced fraud detection mechanisms to prevent any unfair gameplay and ensure a transparent and safe gaming experience for all users.", "User"));
+
+            entityManager.merge(new FAQs("General Queries and Support", "Can I play games for free on AAG?",
+                    "AAG does not offer traditional free-to-play games. Games on AAG are played through influencer-hosted challenges, where users can participate in skill-based matches organized by verified content creators.", "User"));
+
+            entityManager.merge(new FAQs("General Queries and Support", "How many games and themes are available on AAG?",
+                    "Currently, AAG offers 2 skill-based games – Ludo and Snakes & Ladders – each available in 7 unique and engaging themes.", "User"));
+
+            entityManager.merge(new FAQs("General Queries and Support", "Who can host games on AAG?",
+                    "Only verified influencers on AAG can publish and host games. Players can join matches that they have initiated.", "User"));
+
+            entityManager.merge(new FAQs("General Queries and Support", "How can I start playing a game?",
+                    "Once you join a game hosted by an influencer or for self-explore, select your preferred game, pay the entry fee, and compete with other players in real time.", "User"));
+
+            entityManager.merge(new FAQs("General Queries and Support", "Is AAG available on both Android and iOS?",
+                    "AAG is currently available only on Android devices. The iOS version is under development and will be released soon.", "User"));
+
+            entityManager.merge(new FAQs("General Queries and Support", "How do I deposit money into my AAG Wallet?",
+                    "Go to the Wallet section in the AAG app, enter the desired amount, and choose from various payment options like UPI, Google Pay, PhonePe, etc.", "User"));
+
+            entityManager.merge(new FAQs("AAG Wallet and Earnings", "How can I withdraw my winnings?",
+                    "To withdraw:\nFirst, add your UPI ID or bank account to your profile.\nThen go to the Wallet → Withdraw section.\nEnter the amount (minimum ₹110) and confirm the withdrawal.", "User"));
+
+            entityManager.merge(new FAQs("AAG Wallet and Earnings", "What should I do if my winnings are not credited?",
+                    "If you haven’t received your withdrawal even after 24 hours, kindly contact AAG Customer Support via the app’s Help section. We’re happy to assist!", "User"));
+
+            entityManager.merge(new FAQs("General Queries and Support", "Is AAG part of any industry body or gaming association?",
+                    "AAG follows industry best practices and legal compliance to offer a safe and responsible gaming experience. We are committed to secure, skill-based gameplay only.", "User"));
+
         }
 
 

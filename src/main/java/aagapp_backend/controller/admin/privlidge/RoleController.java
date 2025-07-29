@@ -39,6 +39,9 @@ public class RoleController {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
+    private CustomAdminRepository customAdminRepository;
+
+    @Autowired
     private AdminService adminService;
 
     @Autowired
@@ -96,6 +99,25 @@ public class RoleController {
 
 
     }
+
+    @GetMapping("/get-user")
+    public ResponseEntity<?> getAdminById(@RequestHeader(value = "Authorization") String authorization) {
+
+        String token = authorization.substring(7);
+        // Validate token & user
+        Long userId = jwtUtil.extractId(token);
+        Optional<CustomAdmin> optionalAdmin = customAdminRepository.findById(userId);
+
+        if (optionalAdmin.isPresent()) {
+            return responseService.generateSuccessResponse("Admin found.", optionalAdmin.get(), HttpStatus.OK);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("status", "ERROR", "message", "Admin not found with ID: " + userId));
+        }
+    }
+
+
+
 
     @GetMapping("/all")
     public ResponseEntity<?> getAllRoles() {
@@ -248,24 +270,26 @@ public class RoleController {
         }
     }
 
-    @PostMapping("/terminate/{id}")
-    public ResponseEntity<?> terminateAdmin(@PathVariable("id") Long adminId,
-                                            @RequestParam(defaultValue = "system") String terminatedBy) {
-        try{
-            boolean success = adminService.terminateAdmin(adminId, terminatedBy);
+    @PostMapping("/status/{id}")
+    public ResponseEntity<?> updateAdminStatus(
+            @PathVariable("id") Long adminId,
+            @RequestParam(name = "status") int status,
+            @RequestParam(defaultValue = "system") String updatedBy) {
+        try {
+            boolean success = adminService.setAdminActiveStatus(adminId, status, updatedBy);
 
-            if (success) {
-                return responseService.generateSuccessResponse("Admin terminated successfully.", success, HttpStatus.OK);
+            String action = (status == 1) ? "re-activated" : "terminated";
+            String message = success
+                    ? "Admin " + action + " successfully."
+                    : "Admin not found or already " + (status == 1 ? "active" : "terminated") + ".";
 
-            } else {
-                return responseService.generateSuccessResponse("Admin not found or already terminated.", success, HttpStatus.OK);
-
-            }
-        }catch (Exception e){
+            return responseService.generateSuccessResponse(message, success, HttpStatus.OK);
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("status", "ERROR", "message", e.getMessage()));
         }
     }
+
 
 
 
