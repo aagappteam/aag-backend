@@ -254,7 +254,7 @@ public class PlanController {
 
 
             // Send notification to all admins about the upgrade request
-            String notificationTitle = "Plan Upgrade Request";
+            String notificationTitle = "Plan Upgrade";
             String notificationMessage = "A new plan upgrade request has been submitted. Please review the request for Vendor ID: " + vendorId + ".";
 
             String submittedByName = vendor.getFirst_name() + " " + vendor.getLast_name();
