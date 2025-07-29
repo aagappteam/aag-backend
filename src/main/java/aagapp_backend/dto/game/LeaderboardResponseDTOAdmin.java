@@ -15,6 +15,7 @@ public class LeaderboardResponseDTOAdmin {
     private String profilePicture;
     private Integer score;
     private Double totalPrizePool;
+    private Double winningAmmount;
 
     private Integer gamesPlayed;
 
