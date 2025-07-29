@@ -555,7 +555,8 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
             vendorInfo.put("leagues", leaguesPage.getContent() != null ? leaguesPage.getContent() : Collections.emptyList());
 
 
-            Page<Tournament> gamesPage = tournamentService.getAllActiveScheduledTournamentsByVendor(pageable,vendorId);
+//            Page<Tournament> gamesPage = tournamentService.getAllActiveScheduledTournamentsByVendor(pageable,vendorId);
+            Page<Tournament> gamesPage = tournamentService.getAllActiveScheduledTournamentsByVendorId(pageable, vendorId);
 
             List<TournamentGetallDTO> gameList = gamesPage.getContent().stream()
                     .map(this::mapToDTO)  // use your mapping logic
@@ -584,7 +585,7 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
         return response;
 
     }
-    public Map<String, Object> getFeedOfVendors(int page, int size, Long currentUserId) {
+/*    public Map<String, Object> getFeedOfVendors(int page, int size, Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
         Pageable subPageable = PageRequest.of(0, 10);
 
@@ -633,7 +634,7 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
         response.put("vendors", vendors);
 
         return response;
-    }
+    }*/
 
 
     public TournamentGetallDTO mapToDTO(Tournament tournament) {
@@ -679,7 +680,7 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
 
 
     //following vendors
-/*    public Map<String, Object> getFeedOfVendors( int page, int size, Long currentUserId) {
+    public Map<String, Object> getFeedOfVendors( int page, int size, Long currentUserId) {
 //        Pageable pageable = PageRequest.of(page, size);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
@@ -694,7 +695,7 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
             Map<String, Object> vendorInfo = new HashMap<>();
             Long vendorId = vendor.getService_provider_id();
 
-            vendorInfo.put("name", vendor.getName());
+            vendorInfo.put("name", vendor.getUser_name()!=null ? vendor.getUser_name() : "Aagveer");
             vendorInfo.put("id", vendorId);
             vendorInfo.put("profilePic", vendor.getProfilePic());
             vendorInfo.put("email", vendor.getPrimary_email());
@@ -730,8 +731,7 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
 
         return response;
 
-    }*/
-
+    }
     public Map<String, Object> getFeedOfVendorId(Long vendorId, int page, int size) {
         Optional<VendorEntity> optionalVendor = vendorRepo.findById(vendorId);
         if (!optionalVendor.isPresent()) {

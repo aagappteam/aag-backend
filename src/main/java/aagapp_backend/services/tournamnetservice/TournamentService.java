@@ -2638,4 +2638,9 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
 
 
+    public Page<Tournament> getAllActiveScheduledTournamentsByVendorId(Pageable pageable, Long vendorId) {
+        List<TournamentStatus> statuses = List.of(TournamentStatus.SCHEDULED, TournamentStatus.ACTIVE);
+        return tournamentRepository.findByStatusInAndVendorId(statuses, vendorId, pageable);
+    }
+
 }

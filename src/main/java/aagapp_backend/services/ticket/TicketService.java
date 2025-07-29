@@ -262,9 +262,17 @@ public class TicketService {
         dto.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
         dto.setRole(ticket.getRole());
         dto.setMessages(ticket.getMessages());
+        dto.setCreatedDate(ticket.getCreatedDate()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime());
 
-        dto.setCreatedDate(ticket.getCreatedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
-        dto.setUpdatedDate(ticket.getUpdatedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+        dto.setUpdatedDate(ticket.getUpdatedDate()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime());
+
+
 
         return dto;
     }
