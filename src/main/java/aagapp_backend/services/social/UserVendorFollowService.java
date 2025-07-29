@@ -32,7 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -680,46 +682,46 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
 
 
     //following vendors
-    public Map<String, Object> getFeedOfVendors( int page, int size, Long currentUserId) {
-//        Pageable pageable = PageRequest.of(page, size);
+    public Map<String, Object> getFeedOfVendors(int page, int size, Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
-
         Pageable pageable1 = PageRequest.of(0, 10);
-        Page<VendorEntity> followPage = vendorRepo.findAll(pageable);
 
-        Stream<VendorEntity> followStream = followPage.getContent().stream();
 
-        List<Map<String, Object>> filteredVendors = followStream.map(follow -> {
-            VendorEntity vendor = follow;
 
-            Map<String, Object> vendorInfo = new HashMap<>();
-            Long vendorId = vendor.getService_provider_id();
+        Page<VendorEntity> followPage = vendorRepo.findByIsPaid(true, pageable);
 
-            vendorInfo.put("name", vendor.getUser_name()!=null ? vendor.getUser_name() : "Aagveer");
-            vendorInfo.put("id", vendorId);
-            vendorInfo.put("profilePic", vendor.getProfilePic());
-            vendorInfo.put("email", vendor.getPrimary_email());
-            vendorInfo.put("followerCount", followRepo.countByVendorId(vendorId));
-            vendorInfo.put("isFollowing", currentUserId != null && followRepo.existsByUserIdAndVendorId(currentUserId, vendorId));
+        List<Map<String, Object>> filteredVendors = followPage.getContent().stream()
+                .map(vendor -> {
+                    Long vendorId = vendor.getService_provider_id();
 
-            Page<GetGameResponseDTO> games = gameService.getAllGames("ACTIVE", vendorId, pageable1, null);
-            vendorInfo.put("games", games.getContent() != null ? games.getContent() : Collections.emptyList());
+                    Page<GetGameResponseDTO> games = gameService.getVisibleGames( vendorId, pageable1);
+                    Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendorFeed(pageable1, vendorId);
+                    List<TournamentStatus> statuses = Arrays.asList(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
+                    Page<Tournament> gamesPage = tournamentService.getAllTournaments(pageable1, statuses, vendorId, null);
 
-            Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendor(pageable1, vendorId);
-            vendorInfo.put("leagues", leaguesPage.getContent() != null ? leaguesPage.getContent() : Collections.emptyList());
+                    // Skip only if all three are empty
+                    if (games.isEmpty() && leaguesPage.isEmpty() && gamesPage.isEmpty()) {
+                        return null; // skip vendor
+                    }
 
-            List<TournamentStatus> statuses = Arrays.asList(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
-            Page<Tournament> gamesPage = tournamentService.getAllTournaments(pageable, statuses, vendorId, null);
-//            Page<Tournament> gamesPage = tournamentService.getAllActiveTournamentsByVendor(pageable1,vendorId);
-            vendorInfo.put("tournaments", gamesPage.getContent() != null ? gamesPage.getContent() : Collections.emptyList());
+                    Map<String, Object> vendorInfo = new HashMap<>();
+                    vendorInfo.put("name", vendor.getUser_name() != null ? vendor.getUser_name() : "Aagveer");
+                    vendorInfo.put("id", vendorId);
+                    vendorInfo.put("profilePic", vendor.getProfilePic());
+                    vendorInfo.put("email", vendor.getPrimary_email());
+                    vendorInfo.put("followerCount", followRepo.countByVendorId(vendorId));
+                    vendorInfo.put("isFollowing", currentUserId != null && followRepo.existsByUserIdAndVendorId(currentUserId, vendorId));
+                    vendorInfo.put("games", games.getContent());
+                    vendorInfo.put("leagues", leaguesPage.getContent());
+                    vendorInfo.put("tournaments", gamesPage.getContent());
 
-            return vendorInfo;
-        }).collect(Collectors.toList());
-
-        List<Map<String, Object>> paginatedList = filteredVendors;
+                    return vendorInfo;
+                })
+                .filter(Objects::nonNull) // remove skipped/null vendors
+                .collect(Collectors.toList());
 
         Map<String, Object> vendorPageMap = new HashMap<>();
-        vendorPageMap.put("content", paginatedList);
+        vendorPageMap.put("content", filteredVendors);
         vendorPageMap.put("pageNumber", page);
         vendorPageMap.put("pageSize", size);
         vendorPageMap.put("totalPages", (int) Math.ceil((double) filteredVendors.size() / size));
@@ -728,10 +730,9 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
 
         Map<String, Object> response = new HashMap<>();
         response.put("vendors", vendorPageMap);
-
         return response;
-
     }
+
     public Map<String, Object> getFeedOfVendorId(Long vendorId, int page, int size) {
         Optional<VendorEntity> optionalVendor = vendorRepo.findById(vendorId);
         if (!optionalVendor.isPresent()) {

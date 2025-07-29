@@ -792,6 +792,56 @@ public class LeagueService {
     }
 
 
+    @Transactional
+    public Page<League> getAllActiveLeaguesByVendorFeed(Pageable pageable, Long vendorId) {
+        try {
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime nowMinus24Hours = now.minusHours(24);
+
+            // Build base query with visibility conditions
+            StringBuilder queryBase = new StringBuilder("FROM aag_league g WHERE (");
+            queryBase.append(" (g.status = 'ACTIVE' AND g.scheduled_at <= :now)");
+            queryBase.append(" OR (g.status = 'EXPIRED' AND g.scheduled_at >= :nowMinus24Hours)");
+            queryBase.append(")");
+
+            // Optional vendor filter
+            if (vendorId != null) {
+                queryBase.append(" AND g.vendor_id = :vendorId");
+            }
+
+            // Create queries
+            Query dataQuery = em.createNativeQuery("SELECT * " + queryBase + " ORDER BY g.created_date DESC", League.class);
+            Query countQuery = em.createNativeQuery("SELECT COUNT(*) " + queryBase);
+
+            // Set parameters
+            dataQuery.setParameter("now", now);
+            dataQuery.setParameter("nowMinus24Hours", nowMinus24Hours);
+            countQuery.setParameter("now", now);
+            countQuery.setParameter("nowMinus24Hours", nowMinus24Hours);
+
+            if (vendorId != null) {
+                dataQuery.setParameter("vendorId", vendorId);
+                countQuery.setParameter("vendorId", vendorId);
+            }
+
+            // Apply pagination
+            dataQuery.setFirstResult((int) pageable.getOffset());
+            dataQuery.setMaxResults(pageable.getPageSize());
+
+            // Execute queries
+            @SuppressWarnings("unchecked")
+            List<League> leagues = dataQuery.getResultList();
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            return new PageImpl<>(leagues, pageable, total);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching active leagues", e);
+        }
+    }
+
+
+
     public Page<League> getAllLeaguesByVendorId(Pageable pageable, Long vendorId) {
         try {
             if (vendorId != null) {

@@ -987,6 +987,77 @@ public class GameService {
         }
     }
 
+
+    @Transactional
+    public Page<GetGameResponseDTO> getVisibleGames(Long vendorId, Pageable pageable) {
+        try {
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime nowMinus24Hours = now.minusHours(24);
+
+            StringBuilder queryBase = new StringBuilder("FROM aag_ludo_game g WHERE (");
+            queryBase.append(" (g.status = 'ACTIVE' AND g.scheduled_at <= :now)");
+            queryBase.append(" OR (g.status = 'EXPIRED' AND g.scheduled_at >= :nowMinus24Hours)");
+            queryBase.append(")");
+
+            if (vendorId != null) {
+                queryBase.append(" AND g.vendor_id = :vendorId");
+            }
+
+            // Final data + count queries
+            Query dataQuery = em.createNativeQuery("SELECT * " + queryBase + " ORDER BY g.created_date DESC", Game.class);
+            Query countQuery = em.createNativeQuery("SELECT COUNT(*) " + queryBase);
+
+            // Set required params
+            dataQuery.setParameter("now", now);
+            dataQuery.setParameter("nowMinus24Hours", nowMinus24Hours);
+            countQuery.setParameter("now", now);
+            countQuery.setParameter("nowMinus24Hours", nowMinus24Hours);
+
+            if (vendorId != null) {
+                dataQuery.setParameter("vendorId", vendorId);
+                countQuery.setParameter("vendorId", vendorId);
+            }
+
+            dataQuery.setFirstResult((int) pageable.getOffset());
+            dataQuery.setMaxResults(pageable.getPageSize());
+
+            List<Game> games = dataQuery.getResultList();
+            Long count = ((Number) countQuery.getSingleResult()).longValue();
+
+            List<GetGameResponseDTO> dtoList = games.stream().map(this::mapToDTO).collect(Collectors.toList());
+
+            return new PageImpl<>(dtoList, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching visible games", e);
+        }
+    }
+
+
+
+    private GetGameResponseDTO mapToDTO(Game game) {
+        return new GetGameResponseDTO(
+                game.getId(),
+                game.getName(),
+                game.getFee(),
+                game.getMove(),
+                game.getStatus(),
+                game.getShareableLink(),
+                game.getAaggameid(),
+                (game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
+                game.getTheme() != null ? game.getTheme().getName() : null,
+                game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                game.getCreatedDate(),
+                game.getScheduledAt(),
+                game.getEndDate(),
+                game.getMinPlayersPerTeam(),
+                game.getMaxPlayersPerTeam(),
+                calculateTotalPrizeNew(game),
+                game.getVendorEntity() != null ? game.getVendorEntity().getUser_name() : "Aagveer",
+                game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
+        );
+    }
+
+
     public Page<GetGameResponseDTO> getAllGamesByAdmin(String status, Long vendorId, String email, String mobileNumber, String gamename, String vendorName,
                                                 ZonedDateTime startDateStr, ZonedDateTime endDateStr, String search, Pageable pageable) {
         try {
