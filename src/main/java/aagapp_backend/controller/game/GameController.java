@@ -2,6 +2,7 @@ package aagapp_backend.controller.game;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.*;
+import aagapp_backend.dto.game.GetGameResponseDTOCommon;
 import aagapp_backend.dto.league.LeagueResponseDTOCommon;
 import aagapp_backend.dto.tournament.TournamentResponseDTOCommon;
 import aagapp_backend.entity.CustomCustomer;
@@ -422,7 +423,7 @@ public class GameController {
             switch (events.toLowerCase()) {
                 case "game":
                     // Filter for 'game' only
-                    Page<GetGameResponseDTO> games = gameleaguetournamentservice.getAllGames(status, vendorId, pageable, startDate, endDate, scheduleddate);
+                    Page<GetGameResponseDTOCommon> games = gameleaguetournamentservice.getAllGamesCommon(status, vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("games", games.getContent());
                     totalCount = games.getTotalElements();
 
