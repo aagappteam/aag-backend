@@ -41,6 +41,7 @@ import aagapp_backend.spec.GameSpecification;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
@@ -87,6 +88,9 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 public class GameService {
+
+    private final Dotenv dotenv = Dotenv.load();
+
 
     @Autowired
     private CommonService commonservice;
@@ -888,8 +892,13 @@ public class GameService {
             return "https://backend.aagapp.com/games/" + gameId;
 
         }*/
-    private String generateShareableLink(Long gameId,Long vendorId) {
+/*    private String generateShareableLink(Long gameId,Long vendorId) {
         return "https://backend.aagapp.com/vendor/"+  vendorId  +"/games/" + gameId ;
+    }*/
+
+    private String generateShareableLink(Long gameId, Long vendorId) {
+        String domainUrl = dotenv.get("DOMAIN_URL");
+        return domainUrl + "/vendor/" + vendorId + "/games/" + gameId;
     }
 
 
