@@ -173,7 +173,8 @@ public class LeagueController {
     ) {
 
         try {
-            Pageable pageable = PageRequest.of(page, size);
+//            Pageable pageable = PageRequest.of(page, size);
+            PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
             Page<League> leagues = leagueService.getLeaguesWithFilters(
                     name, gameName, challengingVendorId, challengingVendorName, fee, move,
