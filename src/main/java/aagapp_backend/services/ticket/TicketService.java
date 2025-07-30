@@ -466,8 +466,8 @@ public class TicketService {
             long pendingCount = ticketRepository.count(baseSpec.and((root, query, cb) -> cb.equal(root.get("status"), TicketEnum.PENDING)));
             long processingCount = ticketRepository.count(baseSpec.and((root, query, cb) -> cb.equal(root.get("status"), TicketEnum.PROCESSING)));
             long resolvedCount = ticketRepository.count(baseSpec.and((root, query, cb) -> cb.equal(root.get("status"), TicketEnum.RESOLVED)));
-
-            return responseService.generateSuccessResponseForTicket("responseList", responseList,responseList.stream().count(),pendingCount,processingCount,resolvedCount ,HttpStatus.OK);
+            long totalCount = ticketRepository.count(baseSpec);
+            return responseService.generateSuccessResponseForTicket("responseList", responseList,totalCount,pendingCount,processingCount,resolvedCount ,HttpStatus.OK);
 
         } catch (Exception e) {
             return responseService.generateErrorResponse("Error filtering tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

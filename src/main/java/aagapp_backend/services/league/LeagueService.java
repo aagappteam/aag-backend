@@ -2036,7 +2036,8 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                         league.getFee(),
                         team.getProfilePic(),
                         team.getTotalScore(),
-                        paginatedPlayers
+                        paginatedPlayers,
+                        allPlayers.size()
                 ));
             }
 
