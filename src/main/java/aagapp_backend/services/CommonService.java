@@ -355,7 +355,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
         if (entity instanceof League) {
             League league = (League) entity;
-            type = "League_Approval";
+            type = "League Approval";
             name = league.getName();
             senderid= league.getVendorEntity().getService_provider_id();
             senderrole= Constant.ROLE_VENDOR;
@@ -367,7 +367,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
             gameIcon = league.getTheme().getGameimageUrl(); // Assumes getter
         } else if (entity instanceof Tournament) {
             Tournament tournament = (Tournament) entity;
-            type = "Tournament_Approval";
+            type = "Tournament Approval";
             name = tournament.getName();
             senderid= tournament.getVendorEntity().getService_provider_id();
             senderrole= Constant.ROLE_VENDOR;
@@ -390,7 +390,9 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         adminLogs.setSenderrole(senderrole);
         adminLogs.setAssignedRole(Constant.ROLE_ADMIN);
         adminLogs.setTargetId(id);
-        adminLogs.setTargetType(type);
+//        adminLogs.setTargetType(type);
+        adminLogs.setTargetType(type.replace(" ", "_"));
+
         adminLogs.setRead(false);
         adminLogs.setCreatedDate(createdDate);
         adminLogsInterface.save(adminLogs);
