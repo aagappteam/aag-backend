@@ -2,6 +2,7 @@ package aagapp_backend.controller.admin;
 
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.dto.admin.AdminLogResponseDTO;
+import aagapp_backend.dto.admin.AdminLogResponseWithCounts;
 import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.RoleService;
@@ -60,14 +61,28 @@ public class ActivityController {
            String roleName = roleService.findRoleName(role);
 
            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-           Page<AdminLogs> adminLogs = adminLogsService.getAllLogs(pageable, roleName, performedBy, targetType, search);
+/*           Page<AdminLogResponseWithCounts> adminLogs = adminLogsService.getAllLogsWithCounts(pageable, roleName, performedBy, targetType, search);
            List<AdminLogResponseDTO> dtoList = adminLogs.getContent().stream()
                    .map(adminLogsService::mapToDto) // mapToDto method should be public in service
                    .collect(Collectors.toList());
            long unreadCount = adminLogsService.countUnreadLogs(roleName); // 🟡 Add this method in service
-           long readCount = adminLogsService.countReadLogs(roleName);
+           long readCount = adminLogsService.countReadLogs(roleName);*/
+           AdminLogResponseWithCounts logData = adminLogsService.getAllLogsWithCounts(pageable, roleName, performedBy, targetType, search);
 
-           return responseService.generateSuccessResponseWithCountForadmin("Activities fetched successfully", dtoList, adminLogs.getTotalElements(),unreadCount,readCount, HttpStatus.OK);
+           List<AdminLogResponseDTO> dtoList = logData.getLogs().getContent().stream()
+                   .map(adminLogsService::mapToDto)
+                   .collect(Collectors.toList());
+
+           return responseService.generateSuccessResponseWithCountForadmin(
+                   "Activities fetched successfully",
+                   dtoList,
+                   logData.getLogs().getTotalElements(),
+                   logData.getUnreadCount(),
+                   logData.getReadCount(),
+                   HttpStatus.OK
+           );
+
+//           return responseService.generateSuccessResponseWithCountForadmin("Activities fetched successfully", dtoList, adminLogs.getTotalElements(),unreadCount,readCount, HttpStatus.OK);
 
 //           return responseService.generateSuccessResponseWithCount("Activities fetched successfully", adminLogs.getContent(), adminLogs.getTotalElements(), HttpStatus.OK);
        }catch (Exception e){
