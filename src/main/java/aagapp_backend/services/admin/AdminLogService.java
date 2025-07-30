@@ -2,6 +2,7 @@ package aagapp_backend.services.admin;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.admin.AdminLogResponseDTO;
+import aagapp_backend.dto.admin.AdminLogResponseWithCounts;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.admin.AdminLogs;
@@ -149,7 +150,7 @@ public class AdminLogService {
             throw new RuntimeException("Error retrieving admin logs", e);
         }
     }*/
-   @Transactional
+/*   @Transactional
    public Page<AdminLogs> getAllLogs(Pageable pageable, String roleName, String performedBy, String targetType, String search) {
        try {
            StringBuilder sql = new StringBuilder("SELECT * FROM admin_logs l WHERE 1=1");
@@ -163,11 +164,11 @@ public class AdminLogService {
            }
 
            if (targetType != null && !targetType.isEmpty()) {
-               sql.append(" AND l.target_type = :targetType");
+               sql.append(" AND l.targettype = :targetType");
            }
 
            if (search != null && !search.isEmpty()) {
-               sql.append(" AND (l.activity ILIKE :search OR l.performed_by ILIKE :search OR l.target_type ILIKE :search)");
+               sql.append(" AND (l.activity ILIKE :search OR l.performed_by ILIKE :search OR l.targettype ILIKE :search)");
            }
 
            sql.append(" ORDER BY l.id DESC");
@@ -203,10 +204,10 @@ public class AdminLogService {
                countSql.append(" AND l.performed_by = :performedBy");
            }
            if (targetType != null && !targetType.isEmpty()) {
-               countSql.append(" AND l.target_type = :targetType");
+               countSql.append(" AND l.targettype = :targetType");
            }
            if (search != null && !search.isEmpty()) {
-               countSql.append(" AND (l.activity ILIKE :search OR l.performed_by ILIKE :search OR l.target_type ILIKE :search)");
+               countSql.append(" AND (l.activity ILIKE :search OR l.performed_by ILIKE :search OR l.targettype ILIKE :search)");
            }
 
            Query countQuery = entityManager.createNativeQuery(countSql.toString());
@@ -231,7 +232,69 @@ public class AdminLogService {
            // Don’t throw an error for empty results
            return new PageImpl<>(Collections.emptyList(), pageable, 0);
        }
-   }
+   }*/
+
+
+    public AdminLogResponseWithCounts getAllLogsWithCounts(Pageable pageable, String roleName, String performedBy, String targetType, String search) {
+        try {
+            String baseWhere = " FROM admin_logs l WHERE 1=1";
+
+            StringBuilder filterSql = new StringBuilder(baseWhere);
+            if (roleName != null && !roleName.equalsIgnoreCase(Constant.ADMIN)) {
+                filterSql.append(" AND LOWER(l.assignedRole) = LOWER(:roleName)");
+            }
+            if (performedBy != null && !performedBy.isEmpty()) {
+                filterSql.append(" AND l.performed_by = :performedBy");
+            }
+            if (targetType != null && !targetType.isEmpty()) {
+                filterSql.append(" AND l.targettype = :targetType");
+            }
+            if (search != null && !search.isEmpty()) {
+                filterSql.append(" AND (l.activity ILIKE :search OR l.performed_by ILIKE :search OR l.targettype ILIKE :search)");
+            }
+
+            // Main logs query
+            String selectSql = "SELECT *" + filterSql + " ORDER BY l.id DESC";
+            Query query = entityManager.createNativeQuery(selectSql, AdminLogs.class);
+            setQueryParameters(query, roleName, performedBy, targetType, search);
+            query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
+            List<AdminLogs> logs = query.getResultList();
+
+            // Total count
+            Query countQuery = entityManager.createNativeQuery("SELECT COUNT(*)" + filterSql);
+            setQueryParameters(countQuery, roleName, performedBy, targetType, search);
+            Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+            // Unread count
+            Query unreadQuery = entityManager.createNativeQuery("SELECT COUNT(*)" + filterSql + " AND l.read = false");
+            setQueryParameters(unreadQuery, roleName, performedBy, targetType, search);
+            long unreadCount = ((Number) unreadQuery.getSingleResult()).longValue();
+
+            long readCount = total - unreadCount;
+
+            Page<AdminLogs> pageResult = new PageImpl<>(logs, pageable, total);
+            return new AdminLogResponseWithCounts(pageResult, readCount, unreadCount);
+        } catch (Exception e) {
+            return new AdminLogResponseWithCounts(new PageImpl<>(Collections.emptyList(), pageable, 0), 0, 0);
+        }
+    }
+
+    private void setQueryParameters(Query query, String roleName, String performedBy, String targetType, String search) {
+        if (roleName != null && !roleName.equalsIgnoreCase(Constant.ADMIN)) {
+            query.setParameter("roleName", roleName);
+        }
+        if (performedBy != null && !performedBy.isEmpty()) {
+            query.setParameter("performedBy", performedBy);
+        }
+        if (targetType != null && !targetType.isEmpty()) {
+            query.setParameter("targetType", targetType);
+        }
+        if (search != null && !search.isEmpty()) {
+            query.setParameter("search", "%" + search + "%");
+        }
+    }
+
 
     public AdminLogResponseDTO mapToDto(AdminLogs log) {
         AdminLogResponseDTO dto = new AdminLogResponseDTO();
