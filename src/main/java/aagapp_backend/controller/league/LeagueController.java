@@ -50,10 +50,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -176,7 +173,8 @@ public class LeagueController {
     ) {
 
         try {
-            Pageable pageable = PageRequest.of(page, size);
+//            Pageable pageable = PageRequest.of(page, size);
+            PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
             Page<League> leagues = leagueService.getLeaguesWithFilters(
                     name, gameName, challengingVendorId, challengingVendorName, fee, move,
@@ -456,12 +454,13 @@ public class LeagueController {
     @GetMapping("/get-vendors-with-available-leagues")
     public ResponseEntity<?> getVendorsWithAvailableLeagues() {
         try {
-            // Fetch all vendors with league status 'AVAILABLE'
-//            List<VendorEntity> vendors = vendorRepository.findByLeagueStatus(LeagueStatus.AVAILABLE);
-            // Fetch vendors that are both AVAILABLE and ACTIVE
-            List<VendorEntity> vendors = vendorRepository.findByLeagueStatusAndStatus(
+//            Only fetch vendors that have been active for the last 24 hours & league status 'AVAILABLE'
+            Date oneDayAgo = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000L);
+
+            List<VendorEntity> vendors = vendorRepository.findActiveAvailableVendorsWithRecentActivity(
                     LeagueStatus.AVAILABLE,
-                    VendorStatus.ACTIVE
+                    VendorStatus.ACTIVE,
+                    oneDayAgo
             );
 
             if (vendors.isEmpty()) {

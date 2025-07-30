@@ -2,8 +2,10 @@ package aagapp_backend.services.ticket;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
+import org.joda.time.DateTime;
 
 import aagapp_backend.dto.TicketDTO;
+import aagapp_backend.dto.TicketDTOCustomer;
 import aagapp_backend.dto.TicketResponseDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
@@ -44,6 +46,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -226,9 +229,20 @@ public class TicketService {
             List<Ticket> tickets = query.getResultList();
             Long totalCount = countQuery.getSingleResult();
 
-            List<TicketDTO> ticketDTOs = tickets.stream()
+/*            List<TicketDTO> ticketDTOs = tickets.stream()
                     .map(this::mapToDTO)
+                    .collect(Collectors.toList());*/
+
+            List<?> ticketDTOs = tickets.stream()
+                    .map(ticket -> {
+                        if ("customer".equalsIgnoreCase(ticket.getRole())) {
+                            return mapToCustomerDTO(ticket);
+                        } else {
+                            return mapToDTO(ticket);
+                        }
+                    })
                     .collect(Collectors.toList());
+
 
             return responseService.generateSuccessResponseWithCount("Tickets fetched successfully", ticketDTOs, totalCount, HttpStatus.OK);
 
@@ -237,6 +251,32 @@ public class TicketService {
             return responseService.generateErrorResponse("Error fetching tickets: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    private TicketDTOCustomer mapToCustomerDTO(Ticket ticket) {
+        TicketDTOCustomer dto = new TicketDTOCustomer();
+        dto.setId(ticket.getId());
+        dto.setSubject(ticket.getSubject());
+        dto.setDescription(ticket.getDescription());
+        dto.setStatus(ticket.getStatus().name());
+//        dto.setRemark(ticket.getRemark());
+        dto.setCustomerOrVendorId(ticket.getCustomerOrVendorId());
+        dto.setRole(ticket.getRole());
+        dto.setMessages(ticket.getMessages());
+        dto.setCreatedDate(ticket.getCreatedDate()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime());
+
+        dto.setUpdatedDate(ticket.getUpdatedDate()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime());
+
+
+
+        return dto;
+    }
+
 
     private TicketDTO mapToDTO(Ticket ticket) {
         TicketDTO dto = new TicketDTO();

@@ -21,6 +21,12 @@ public class Constant {
     public static final long TOURNAMENT_START_TIME = 1;
     public static final long TOURNAMENT_END_TIME = 4;
     public static final BigDecimal LEAGUE_PRIZE_POOL = BigDecimal.valueOf(100.00);
+    public static final BigDecimal TOURNAMENT_PRIZE_POOL = BigDecimal.valueOf(100.00);
+
+    public static final BigDecimal TOURNAMENT_PRIZE_POOL_SENT_TO_USER = BigDecimal.valueOf(0.80);
+    public static final BigDecimal TOURNAMENT_PRIZE_POOL_SENT_AS_BONUS= BigDecimal.valueOf(0.20);
+
+    public static final Double TOURNAMENT_PRIZE_POOL_new = 100.00;
 
     //  Game URLs
     public static String ludobaseurl = "https://gamebackend.aagapp.com/game-api/ludo";
@@ -54,7 +60,7 @@ public class Constant {
     public static String PHONE_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code";
     public static String ACTIVE_PHONE_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code AND c.signedUp=:signedUp";
     public static String ROLE_QUERY_ADMIN = "SELECT c FROM CustomAdmin c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code";
-    public static String PHONE_QUERY_ADMIN = "SELECT c FROM CustomAdmin c WHERE c.mobileNumber = :mobileNumber AND c.country_code = :country_code";
+    public static String PHONE_QUERY_ADMIN = "SELECT c FROM CustomAdmin c WHERE c.mobileNumber = :mobileNumber";
 
     //  Username Queries
     public static String USERNAME_QUERY_SERVICE_PROVIDER = "SELECT c FROM VendorEntity c WHERE c.user_name = :username";

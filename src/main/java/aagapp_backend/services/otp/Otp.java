@@ -4,6 +4,8 @@ import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import com.twilio.Twilio;
+import com.twilio.rest.api.v2010.account.Message;
+import com.twilio.type.PhoneNumber;
 import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -47,18 +49,18 @@ public class Otp {
 
     public String sendOtponmobilenumber(String countryCode, String mobileNumber, String otp) {
 
-//        Twilio.init(accountSid, authToken);
+      Twilio.init(accountSid, authToken);
         String completeMobileNumber = countryCode + mobileNumber;
 
         String messageBody = "Your OTP for AAG app (Aapka Apna Game is: " + otp + ". Please use this code to verify your identity - AAG App";
 
         try {
 //            need to uncomment this line when otp service will be live
-/*            Message message = Message.creator(
+            Message message = Message.creator(
                     new PhoneNumber(completeMobileNumber),
                     serviceProviderSid,
                     messageBody
-            ).create();*/
+            ).create();
 /*            Message message = Message.creator(
                     new PhoneNumber(completeMobileNumber),
                     new PhoneNumber(twilioPhoneNumber),

@@ -135,5 +135,6 @@ public interface GameRepository extends JpaRepository<Game, Long>, JpaSpecificat
     List<Game> findByVendorId(@Param("vendorId") Long vendorId);
 
 
+    int countByVendorEntityAndCreatedDateBetween(VendorEntity vendor, ZonedDateTime startUTC, ZonedDateTime endUTC);
 }
 

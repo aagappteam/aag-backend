@@ -6,6 +6,7 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.Role;
 import aagapp_backend.entity.admin.Privilege;
+import aagapp_backend.repository.admin.CustomAdminRepository;
 import aagapp_backend.repository.admin.PrivilegeRepository;
 import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.services.*;
@@ -47,6 +48,9 @@ public class AdminService
 
     @Autowired
     private PrivilegeRepository privilegeRepo;
+
+    @Autowired
+    private CustomAdminRepository customAdminRepository;
 
     private RoleRepository roleRepo;
     private EntityManager entityManager;
@@ -127,7 +131,6 @@ public class AdminService
 
         return entityManager.createQuery(Constant.PHONE_QUERY_ADMIN, CustomAdmin.class)
                 .setParameter("mobileNumber", mobile_number)
-                .setParameter("country_code", countryCode)
                 .getResultStream()
                 .findFirst()
                 .orElse(null);
@@ -564,6 +567,29 @@ public class AdminService
             return ResponseService.generateErrorResponse("Error updating admin details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    public boolean setAdminActiveStatus(Long adminId, int activeStatus, String modifiedBy) {
+        Optional<CustomAdmin> optionalAdmin = customAdminRepository.findByAdminId(adminId);
+
+        if (optionalAdmin.isPresent()) {
+            CustomAdmin admin = optionalAdmin.get();
+
+            // If already in desired status, return false
+            if (admin.getActive() == activeStatus) {
+                return false;
+            }
+
+            admin.setActive(activeStatus); // 1 = active, 0 = terminated
+            admin.setUpdated_at(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            admin.setCreatedBy(modifiedBy); // Can be used to track who did the action
+
+            customAdminRepository.save(admin);
+            return true;
+        }
+
+        return false;
+    }
+
 
 
 

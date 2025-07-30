@@ -367,10 +367,6 @@ public class MatchService {
             return;
         }
 
-        System.out.println("[INFO] Valid players: " + validPlayers.stream()
-                .map(p -> "PlayerId=" + p.getPlayerId() + " Score=" + p.getScore())
-                .collect(Collectors.joining(", ")));
-
         BigDecimal totalCollection = BigDecimal.valueOf(game.getFee())
                 .multiply(BigDecimal.valueOf(totalPlayers));
         BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(Constant.USER_WIN_PERCENT));

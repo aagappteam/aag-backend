@@ -37,6 +37,7 @@ import aagapp_backend.services.social.FollowerNotificationService;
 import aagapp_backend.spec.TournamentSpecification;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
@@ -61,6 +62,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class TournamentService {
+
+    private final Dotenv dotenv = Dotenv.load();
+
 
     @Autowired
     private VendorWalletRepository walletRepo;
@@ -160,12 +164,45 @@ public class TournamentService {
         this.tournamentPlayerRegistrationRepository = tournamentPlayerRegistrationRepository;
     }
 
-
-
-
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 * * * * *") // Runs every minute, on 0th second
     @Transactional
-    public ResponseEntity<?> sendNotificationToUserBefore3Min() {
+    public ResponseEntity<?> sendNotificationToUserBefore2Min() {
+        try {
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+
+            // Get the target time: exactly 2 minutes from now, truncate to minute
+            ZonedDateTime targetTime = now.plusMinutes(2).withSecond(0).withNano(0);
+
+            List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAt(
+                    TournamentStatus.SCHEDULED,
+                    targetTime
+            );
+
+            if (upcomingTournaments.isEmpty()) {
+                return responseService.generateResponse(HttpStatus.OK, "No upcoming tournaments found.", null);
+            }
+
+            for (Tournament tournament : upcomingTournaments) {
+                notifyRegisteredPlayers(tournament);
+            }
+
+            return responseService.generateResponse(HttpStatus.OK, "Notifications sent successfully.", null);
+
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+
+/*    @Scheduled(cron = "0 * * * * *")
+    @Transactional
+    public ResponseEntity<?> sendNotificationToUserBefore2Min() {
         try {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
 
@@ -175,12 +212,6 @@ public class TournamentService {
             List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAtBetween(
                     TournamentStatus.SCHEDULED, windowStart, windowEnd
             );
-
-/*
-            List<Tournament> upcomingTournaments = tournamentRepository.findByStatusAndScheduledAtBetween(
-                    TournamentStatus.SCHEDULED, now, fiveMinutesLater
-            );
-*/
 
 
             if (upcomingTournaments.isEmpty()) {
@@ -200,49 +231,78 @@ public class TournamentService {
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
-    @Scheduled(cron = "*/2 * * * * *")
+    @Scheduled(cron = "*/10 * * * * *") // Runs every 10 seconds
     public void autoStartScheduledTournaments() {
-
-        try{
-
+        try {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
-/*            ZonedDateTime earlyWindowStart = now.plusSeconds(10);
-            ZonedDateTime earlyWindowEnd = now.plusSeconds(20);*/
 
-
-            ZonedDateTime targetScheduledAt = now.plusSeconds(10);
-
-            // Allow a small 1-second window around the target to handle scheduler delay
-            ZonedDateTime windowStart = targetScheduledAt.minusSeconds(1);
-            ZonedDateTime windowEnd = targetScheduledAt.plusSeconds(1);
-
-/*            List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
-                    TournamentStatus.SCHEDULED,
-                    windowStart,
-                    windowEnd,
-                    now
-            );*/
+            ZonedDateTime windowStart = now.minusSeconds(10);
+            ZonedDateTime windowEnd = now.plusSeconds(20);
 
             List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
                     TournamentStatus.SCHEDULED,
                     windowStart,
                     windowEnd
             );
+
             for (Tournament tournament : tournamentsToStart) {
-                if (tournament.getStatus() == TournamentStatus.SCHEDULED) {
-
+                try {
                     startTournament(tournament.getId());
-
+                } catch (Exception e) {
+                    exceptionHandling.handleException(e);
                 }
             }
-        }
-        catch (Exception e) {
-            exceptionHandling.handleException(e);
 
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
         }
     }
+
+
+
+//    @Scheduled(cron = "*/2 * * * * *")
+//    public void autoStartScheduledTournaments() {
+//
+//        try{
+//
+//            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).truncatedTo(ChronoUnit.SECONDS);
+///*            ZonedDateTime earlyWindowStart = now.plusSeconds(10);
+//            ZonedDateTime earlyWindowEnd = now.plusSeconds(20);*/
+//
+//
+//            ZonedDateTime targetScheduledAt = now.plusSeconds(10);
+//
+//            // Allow a small 1-second window around the target to handle scheduler delay
+//            ZonedDateTime windowStart = targetScheduledAt.minusSeconds(1);
+//            ZonedDateTime windowEnd = targetScheduledAt.plusSeconds(1);
+//
+///*            List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
+//                    TournamentStatus.SCHEDULED,
+//                    windowStart,
+//                    windowEnd,
+//                    now
+//            );*/
+//
+//            List<Tournament> tournamentsToStart = tournamentRepository.findTournamentsToStart(
+//                    TournamentStatus.SCHEDULED,
+//                    windowStart,
+//                    windowEnd
+//            );
+//            for (Tournament tournament : tournamentsToStart) {
+//                if (tournament.getStatus() == TournamentStatus.SCHEDULED) {
+//
+//                    startTournament(tournament.getId());
+//
+//                }
+//            }
+//        }
+//        catch (Exception e) {
+//            exceptionHandling.handleException(e);
+//
+//        }
+//    }
 
     private void notifyRegisteredPlayers(Tournament tournament) {
         int page = 0;
@@ -263,11 +323,15 @@ public class TournamentService {
                 if (player != null && player.getCustomer() != null) {
                     String fcmToken = player.getCustomer().getFcmToken();
                     if (fcmToken != null) {
-                        notoficationFirebase.sendNotification(
-                                fcmToken,
-                                "Tournament starting soon!",
-                                "Tournament '" + tournament.getName() + "' is going to start soon. Please join now!"
-                        );
+                        try {
+                            notoficationFirebase.sendNotification(
+                                    fcmToken,
+                                    "Tournament starting soon!",
+                                    "Tournament '" + tournament.getName() + "' is going to start soon. Please join now!"
+                            );
+                        } catch (Exception e) {
+                                System.out.println("Error sending notification: " + e.getMessage());
+                            }
                     }
                 }
             }
@@ -312,8 +376,6 @@ public class TournamentService {
             int totalRounds = (int) Math.ceil(Math.log(totalPlayers) / Math.log(2));
 
 
-
-
 //           BigDecimal roomprize = revenueAmmountforuser.divide(BigDecimal.valueOf(totalRounds));
             BigDecimal roomprize = revenueAmmountforuser.divide(
                     BigDecimal.valueOf(totalRounds), 2, RoundingMode.HALF_UP
@@ -341,6 +403,31 @@ public class TournamentService {
 
             // Get current time in Kolkata timezone
             ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+
+            if (tournamentRequest.getScheduledAt() != null) {
+                ZonedDateTime requestedTime = tournamentRequest.getScheduledAt()
+                        .withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+
+                int minutes = requestedTime.getMinute();
+                int remainder = minutes % 15;
+                if (remainder != 0 || requestedTime.getSecond() > 0 || requestedTime.getNano() > 0) {
+                    requestedTime = requestedTime
+                            .plusMinutes(15 - remainder)
+                            .withSecond(0)
+                            .withNano(0);
+                }
+
+                if (requestedTime.isBefore(nowInKolkata.plusHours(1))) {
+                    throw new BusinessException("The game must be scheduled at least 1 hour in advance.", HttpStatus.BAD_REQUEST);
+                }
+
+                tournament.setStatus(TournamentStatus.PENDING);
+                tournament.setScheduledAt(requestedTime);
+            } else {
+                throw new BusinessException("Scheduled date is required", HttpStatus.BAD_REQUEST);
+            }
+
+            /*ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
             if (tournamentRequest.getScheduledAt() != null) {
 
               ZonedDateTime scheduledInKolkata = tournamentRequest.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
@@ -357,7 +444,7 @@ public class TournamentService {
 
             }else {
                throw new BusinessException("Scheduled date is required" , HttpStatus.BAD_REQUEST);
-            }
+            }*/
 
 
             // Set created and updated timestamps
@@ -393,6 +480,89 @@ public class TournamentService {
 
 
     @Transactional
+    public Tournament createTournamentWithFixedFee(TournamentRequest request, Long vendorId) {
+        VendorEntity vendorEntity = em.find(VendorEntity.class, vendorId);
+        AagAvailableGames game = em.find(AagAvailableGames.class, request.getExistinggameId());
+        ThemeEntity theme = em.find(ThemeEntity.class, request.getThemeId());
+
+        if (vendorEntity == null || game == null || theme == null) {
+            throw new BusinessException("Vendor, Game, or Theme not found.", HttpStatus.NOT_FOUND);
+        }
+
+        int entryFee = request.getEntryFee();
+        int participants = request.getParticipants();
+        int totalRounds = (int) Math.ceil(Math.log(participants) / Math.log(2));
+
+        BigDecimal totalPrize = Constant.TOURNAMENT_PRIZE_POOL;
+        BigDecimal userPrizePool = totalPrize.multiply(PriceConstant.USER_PRIZE_PERCENT_FULL);
+        BigDecimal roomPrize = userPrizePool.divide(BigDecimal.valueOf(totalRounds), 2, RoundingMode.HALF_UP);
+
+        ZonedDateTime nowInKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+        ZonedDateTime scheduledAt = request.getScheduledAt();
+
+        if (scheduledAt == null) {
+            scheduledAt = nowInKolkata.plusHours(Constant.TOURNAMENT_START_TIME);
+        }
+
+        // Align time to next 15 min slot
+        int minutes = scheduledAt.getMinute();
+        int remainder = minutes % 15;
+        if (remainder != 0 || scheduledAt.getSecond() > 0 || scheduledAt.getNano() > 0) {
+            scheduledAt = scheduledAt
+                    .plusMinutes(15 - remainder)
+                    .withSecond(0)
+                    .withNano(0);
+        }
+
+        if (scheduledAt.isBefore(nowInKolkata.plusHours(1))) {
+            throw new BusinessException("The game must be scheduled at least 1 hour in advance.", HttpStatus.BAD_REQUEST);
+        }
+
+
+        Tournament tournament = new Tournament();
+        tournament.setName(game.getGameName());
+        tournament.setVendorId(vendorId);
+        tournament.setVendorEntity(vendorEntity);
+        tournament.setTheme(theme);
+        tournament.setExistinggameId(game.getId());
+        tournament.setParticipants(participants);
+        tournament.setEntryFee(entryFee);
+        tournament.setTotalPrizePool(totalPrize.doubleValue());
+        tournament.setRoomprize(roomPrize);
+        tournament.setTotalrounds(totalRounds);
+        tournament.setGameUrl(commonService.resolveGameImageUrl(game, theme.getId()));
+        tournament.setScheduledAt(scheduledAt);
+        tournament.setStatus(TournamentStatus.SCHEDULED);
+        tournament.setCreatedDate(nowInKolkata);
+
+        if (entryFee > 10) {
+            tournament.setMove(Constant.TENMOVES);
+        } else {
+            tournament.setMove(Constant.SIXTEENMOVES);
+        }
+
+        Tournament saved = tournamentRepository.save(tournament);
+
+        // Generate shareable link
+        String shareableLink = generateShareableLink(saved.getId(), vendorId);
+        saved.setShareableLink(shareableLink);
+        tournamentRepository.save(saved);
+
+        vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
+        vendorEntity.setTotal_tournament_published(vendorEntity.getTotal_tournament_published() == null ? 0 : vendorEntity.getTotal_tournament_published() + 1);
+        // Send notification asynchronously (non-blocking)
+        vendorRepository.save(vendorEntity);
+        CompletableFuture.runAsync(() ->
+                followerNotificationService.notifyFollowersInParallel("tournament", tournament.getName(), vendorEntity)
+        );
+
+
+        return saved;
+    }
+
+
+
+    @Transactional
     public TournamentPlayerRegistration registerPlayer(Long tournamentId, Long playerId) {
         try {
             Tournament tournament = tournamentRepository.findById(tournamentId)
@@ -401,6 +571,10 @@ public class TournamentService {
             if(tournament.getStatus() == TournamentStatus.ACTIVE) {
                 throw new BusinessException("Tournament is already active" , HttpStatus.BAD_REQUEST);
 
+            }
+
+            if(tournament.getStatus() == TournamentStatus.COMPLETED) {
+                throw new BusinessException("Tournament is already finished", HttpStatus.BAD_REQUEST);
             }
             BigDecimal entryFeetosent = BigDecimal.valueOf(tournament.getEntryFee()).stripTrailingZeros();
             String feeString = entryFeetosent.toPlainString();
@@ -413,8 +587,14 @@ public class TournamentService {
 
 
             BigDecimal vendorShareAmount = PriceConstant.VENDOR_REVENUE_PERCENT;
-            commonService.addVendorEarningForPayment(tournament.getVendorId(), BigDecimal.valueOf(tournament.getEntryFee()), vendorShareAmount);
+//            commonService.addVendorEarningForPayment(tournament.getVendorId(), BigDecimal.valueOf(tournament.getEntryFee()), vendorShareAmount);
 
+            commonService.addVendorEarningForPayment(
+                    tournament.getVendorId(),
+                    BigDecimal.valueOf(tournament.getEntryFee()),
+                    vendorShareAmount,
+                    "Tournament|" + tournament.getName() + "|" + tournament.getId()
+            );
 
 
             // Check if the tournament has reached the maximum participant limit
@@ -479,7 +659,56 @@ public class TournamentService {
         }
     }
 
+    @Transactional
+    public List<Player> getActivePlayers(Long tournamentId) {
+        try {
+            List<TournamentPlayerRegistration.RegistrationStatus> statuses = Arrays.asList(
+                    TournamentPlayerRegistration.RegistrationStatus.REGISTERED,
+                    TournamentPlayerRegistration.RegistrationStatus.ACTIVE
+            );
 
+            List<TournamentPlayerRegistration> registrations =
+                    tournamentPlayerRegistrationRepository.findByTournamentIdAndStatusIn(tournamentId, statuses);
+
+            return registrations.stream()
+                    .map(TournamentPlayerRegistration::getPlayer)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            throw new RuntimeException("Error fetching registered/active players for tournament " + tournamentId + ": " + e.getMessage(), e);
+        }
+    }
+
+
+/*    @Transactional
+    public List<Player> getActivePlayers(Long tournamentId) {
+        try {
+            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
+                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.ACTIVE);
+
+            List<TournamentPlayerRegistration> registrations = tournamentPlayerRegistrationRepository
+                    .findByTournamentIdAndStatus(tournamentId, TournamentPlayerRegistration.RegistrationStatus.REGISTERED);
+
+
+            List<Player> players = registrations.stream()
+                    .map(TournamentPlayerRegistration::getPlayer)
+                    .filter(Objects::nonNull)
+                    .distinct() // optional: removes duplicates based on equals/hashCode
+                    .collect(Collectors.toList());
+
+
+            return players;
+
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            throw new RuntimeException("Error fetching registered players for tournament " + tournamentId + ": " + e.getMessage(), e);
+        }
+    }*/
+
+    /*
     @Transactional
     public List<Player> getActivePlayers(Long tournamentId) {
         try {
@@ -488,6 +717,7 @@ public class TournamentService {
 
             List<Player> players = registrations.stream()
                     .map(TournamentPlayerRegistration::getPlayer)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
             return players;
@@ -499,7 +729,7 @@ public class TournamentService {
 
 
         }
-    }
+    }*/
     public Page<Player> getRegisteredPlayers(Long tournamentId, int page, int size) {
         try{
             Pageable pageable = PageRequest.of(page, size);
@@ -728,33 +958,44 @@ public class TournamentService {
         return game.isPresent(); // Return true if the game is found, false otherwise
     }
 
+
+/*
     private String generateShareableLink(Long gameId,Long vendorId) {
         return "https://backend.aagapp.com/vendor/"+  vendorId  +"/tournament/" + gameId ;
     }
+*/
+
+    private String generateShareableLink(Long gameId, Long vendorId) {
+        String domainUrl = dotenv.get("DOMAIN_URL");
+        return domainUrl + "/vendor/" + vendorId + "/tournament/" + gameId;
+    }
+
 
     private void updateTournamentStatus(Tournament tournament, TournamentStatus status, String reason) {
         tournament.setStatus(status);
         tournamentRepository.save(tournament);
 
-        if (status == TournamentStatus.REJECTED || status == TournamentStatus.CANCELLED) {
+        if (status == TournamentStatus.REJECTED || status == TournamentStatus.CANCELLED || status == TournamentStatus.COMPLETED) {
             String fcmToken = tournament.getVendorEntity().getFcmToken();
             if (fcmToken != null) {
-                notoficationFirebase.sendNotification(
-                        fcmToken,
-                        "⚠️ Tournament " + tournament.getName() + " was rejected",
-                        "Reason: " + reason
-                );
+                try {
+                    notoficationFirebase.sendNotification(
+                            fcmToken,
+                            "⚠️ Tournament " + tournament.getName() + " was concluded",
+                            "Reason: " + reason
+                    );
+                } catch (Exception e) {
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
             }
+
         }
     }
 
     @Transactional
     public Tournament startTournament(Long tournamentId) {
-
-
-        Tournament tournament = tournamentRepository.lockTournamentForProcessing(tournamentId)
+        Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new BusinessException("Tournament not found", HttpStatus.BAD_REQUEST));
-
 
         if (tournament.getStatus() != TournamentStatus.SCHEDULED) {
             throw new IllegalStateException("Tournament is not in SCHEDULED status");
@@ -771,11 +1012,16 @@ public class TournamentService {
             Player winner = activePlayers.get(0);
 
             BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
-            BigDecimal totalCollection = entryFeePerUser;
-            BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
-            tournament.setRoomprize(userPrizePool);
-            tournament.setTotalPrizePool(totalCollection.doubleValue());
+            Double totalCollection = tournament.getTotalPrizePool();
+            BigDecimal userPrizePool = BigDecimal.valueOf(totalCollection)
+                    .multiply(PriceConstant.USER_PRIZE_PERCENT_FULL);
+            BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(1), RoundingMode.HALF_UP);
             tournament.setTotalrounds(1);
+            tournament.setRoomprize(roomPrizePool);
+
+
+//            tournament.setRoomprize(userPrizePool);
+            tournament.setTotalPrizePool(totalCollection.doubleValue());
             tournament.setStatus(TournamentStatus.COMPLETED);
             tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
             tournamentRepository.save(tournament);
@@ -808,11 +1054,15 @@ public class TournamentService {
 
             String fcmToken = tournament.getVendorEntity().getFcmToken();
             if (fcmToken != null) {
-                notoficationFirebase.sendNotification(
-                        fcmToken,
-                        "⚠️ Tournament " + tournament.getName() + " was concluded",
-                        "⚠️ Tournament " + tournament.getName() + " was concluded. " +
-                                "User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
+                try{
+                    notoficationFirebase.sendNotification(
+                            fcmToken,
+                            "⚠️ Tournament " + tournament.getName() + " was concluded",
+                            "⚠️ Tournament " + tournament.getName() + " was concluded. " +
+                                    "User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
+                }catch (Exception e){
+                    System.out.println("Error sending notification: " + e.getMessage());
+                }
             }
 
             return tournament;
@@ -824,24 +1074,24 @@ public class TournamentService {
 
         Collections.shuffle(activePlayers);
 
-//        int totalPlayers = tournament.getCurrentJoinedPlayers();
         int totalPlayers = activePlayers.size();
 
         int freePassCount = activePlayers.size() % 2;
         int totalRounds = (int) Math.ceil(Math.log(totalPlayers + freePassCount) / Math.log(2));
-        tournament.setTotalrounds(totalRounds);
 
-       /* BigDecimal entryFeePerUser = BigDecimal.valueOf(tournament.getEntryFee());
-        BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers));
+        Double totalCollection = tournament.getTotalPrizePool();
+        BigDecimal userPrizePool = BigDecimal.valueOf(totalCollection)
+                .multiply(PriceConstant.USER_PRIZE_PERCENT_FULL);
 
-        BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
         BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
-*/
+
+        tournament.setTotalrounds(totalRounds);
+        tournament.setRoomprize(roomPrizePool);
+
         tournament.setStatus(TournamentStatus.ACTIVE);
         tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
         tournamentRepository.save(tournament);
-        int freePassAssigned = 0;
         for (int i = 0; i < activePlayers.size(); i += 2) {
             if (i + 1 < activePlayers.size()) {
                 TournamentRoom room = new TournamentRoom();
@@ -868,8 +1118,16 @@ public class TournamentService {
                 room.setGamepassword(gamePassword);
                 roomRepository.save(room);
 
-                assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
-                assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);
+                try {
+                    assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
+                    assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);
+                } catch (Exception e) {
+                    System.out.println("❌ Failed to assign players to room. Player IDs: " +
+                            activePlayers.get(i).getPlayerId() + ", " +
+                            activePlayers.get(i + 1).getPlayerId() + ". Error: " + e.getMessage());
+                }
+
+
             } else {
                 assignFreePassToPlayer(activePlayers.get(i), tournamentId, 1);
             }
@@ -877,32 +1135,28 @@ public class TournamentService {
 
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
+            try {
+                String message = String.format(
+                        "🎉 Tournament '%s' is now live!\n" +
+                                "Monitor the progress and enjoy the event!",
+                        tournament.getName(),
+                        activePlayers.size(),
+                        freePassCount,
+                        totalRounds,
+                        tournament.getTotalPrizePool()
+                );
 
-
-            String message = String.format(
-                    "🎉 Tournament '%s' is now live!\n" +
-                            "👥 Active Players: %d\n" +
-                            "🎟️ Free Pass Given: %d\n" +
-                            "🔁 Total Rounds: %d\n" +
-                            "💰 Total Prize Pool: ₹%.2f\n" +
-                            "🏆 Round Prize: ₹%.2f\n" +
-                            "Monitor the progress and enjoy the event!",
-                    tournament.getName(),
-                    activePlayers.size(),
-                    freePassCount,
-                    totalRounds,
-                    tournament.getTotalPrizePool()
-            );
-
-
-
-            notoficationFirebase.sendNotification(
-                    fcmToken,
-                    "🎉 Your Tournament Has Begun!",
-                    message
-            );
-
+                notoficationFirebase.sendNotification(
+                        fcmToken,
+                        "🎉 Your Tournament Has Begun!",
+                        message
+                );
+            } catch (Exception e) {
+                // Skip error silently or log for debugging (optional)
+                System.out.println("Error sending notification: " + e.getMessage());
+            }
         }
+
 
         return tournament;
     }
@@ -946,7 +1200,7 @@ public class TournamentService {
     }*/
 
 
-    public boolean assignPlayerToSpecificRoom(Player player, Long tournamentId, TournamentRoom room) {
+/*    public boolean assignPlayerToSpecificRoom(Player player, Long tournamentId, TournamentRoom room) {
 
         if (player.getTournamentRoom() != null){
             return false;
@@ -957,7 +1211,35 @@ public class TournamentService {
         playerRepository.save(player);
         roomRepository.save(room);
         return true;
+    }*/
+
+    public boolean assignPlayerToSpecificRoom(Player player, Long tournamentId, TournamentRoom room) {
+        TournamentRoom assignedRoom = player.getTournamentRoom();
+
+        if (assignedRoom != null) {
+            Long assignedTournamentId = assignedRoom.getTournament().getId();
+            if (assignedTournamentId.equals(tournamentId)) {
+                System.out.println("⚠️ Player " + player.getPlayerId() + " is already in a room for this tournament: " + assignedRoom.getId());
+                return false;
+            } else {
+                System.out.println("ℹ️ Player " + player.getPlayerId() + " is in tournament " + assignedTournamentId +
+                        ", assigning to different tournament " + tournamentId);
+            }
+        }
+
+        player.setTournamentRoom(room);
+        room.getCurrentPlayers().add(player);
+        room.setCurrentParticipants(room.getCurrentParticipants() + 1);
+
+        if (room.getCurrentParticipants() >= room.getMaxParticipants()) {
+            room.setStatus("PLAYING");
+        }
+
+        playerRepository.save(player);
+        roomRepository.save(room);
+        return true;
     }
+
 
     @Transactional
     public ResponseEntity<?> leaveRoom(Long playerId, Long tournamentId) {
@@ -1074,8 +1356,7 @@ public class TournamentService {
 
     @Transactional
     public TournamentRoom getMyRoomDetails(Long playerId, Long tournamentId) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new BusinessException("Player not found with ID: " + playerId, HttpStatus.BAD_REQUEST));
+
 
         TournamentRoom room = roomRepository.findRoomByPlayerIdAndTournamentId(playerId, tournamentId);
 
@@ -1320,11 +1601,15 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         String fcmToken = tournament.getVendorEntity().getFcmToken();
         if (fcmToken != null) {
-            notoficationFirebase.sendNotification(
-                    fcmToken,
-                    "🏆 Tournament " + tournament.getName() + " has been Completed now",
-                    "The tournament has successfully concluded. Check final results and prize distribution!"
-            );
+            try{
+                notoficationFirebase.sendNotification(
+                        fcmToken,
+                        "🏆 Tournament " + tournament.getName() + " has been Completed now",
+                        "The tournament has successfully concluded. Check final results and prize distribution!"
+                );
+            }catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
         }
 
     }
@@ -1653,9 +1938,8 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
     }
 
     @Transactional
-    public void distributeRoundPrize(Tournament tournament, int round) {
-        BigDecimal totalPrize = tournament.getRoomprize();
-        BigDecimal roundPrize = totalPrize;
+    public void distributeRoundPrizeOld(Tournament tournament, int round) {
+        BigDecimal roundPrize = tournament.getRoomprize();
 
         List<TournamentResultRecord> winners = tournamentResultRecordRepository
                 .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
@@ -1726,6 +2010,71 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         }
     }
+    @Transactional
+    public void distributeRoundPrize(Tournament tournament, int round) {
+        BigDecimal roundPrize = tournament.getRoomprize();
+
+        List<TournamentResultRecord> winners = tournamentResultRecordRepository
+                .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
+
+        Map<Long, TournamentResultRecord> uniqueWinnersMap = winners.stream()
+                .collect(Collectors.toMap(
+                        w -> w.getPlayer().getPlayerId(),
+                        w -> w,
+                        (existing, duplicate) -> existing
+                ));
+
+        List<TournamentResultRecord> uniqueWinners = new ArrayList<>(uniqueWinnersMap.values());
+
+        int winnersCount = uniqueWinners.size();
+
+        if (winnersCount == 0) return;
+
+
+
+        BigDecimal totalCash = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_TO_USER);
+        BigDecimal totalBonus = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_AS_BONUS);
+
+
+
+
+
+        BigDecimal cashPerWinner = totalCash.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
+        BigDecimal bonusPerWinner = totalBonus.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
+        BigDecimal prizePerWinner = cashPerWinner.add(bonusPerWinner);
+
+        for (TournamentResultRecord winner : uniqueWinners) {
+            // Create notification
+            Notification notification = new Notification();
+            notification.setAmount(prizePerWinner.doubleValue());
+            notification.setDetails("You won Rs. " + prizePerWinner.stripTrailingZeros().toPlainString() + " in Round " + round);
+            notification.setDescription("Round Prize");
+            notification.setRole("Customer");
+            notification.setCustomerId(winner.getPlayer().getCustomer().getId());
+            notification.setName(Optional.ofNullable(winner.getPlayer().getCustomer().getName()).orElse("N/A"));
+            notificationRepository.save(notification);
+
+            // Update winning wallet
+            Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
+            if (wallet.getWinningAmount() == null) {
+                wallet.setWinningAmount(BigDecimal.ZERO);
+            }
+            wallet.setWinningAmount(wallet.getWinningAmount().add(cashPerWinner));
+            walletRepository.save(wallet);
+
+            // Update result amount
+            winner.setAmmount(Optional.ofNullable(winner.getAmmount()).orElse(BigDecimal.ZERO).add(cashPerWinner));
+
+            // Update bonus balance
+            CustomCustomer customCustomer = winner.getPlayer().getCustomer();
+            BigDecimal currentBonus = Optional.ofNullable(customCustomer.getBonusBalance()).orElse(BigDecimal.ZERO);
+            customCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
+            customCustomerRepository.save(customCustomer);
+
+            tournamentResultRecordRepository.save(winner);
+        }
+    }
+
 
 
     @Transactional
@@ -1953,7 +2302,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
                         assignFreePassToPlayer(freePassPlayer, tournamentId, roundNumber);
 
-                        // Mark player as passed to next round
                         freePassParticipant.setStatus("FREE_PASS");
                         tournamentResultRecordRepository.save(freePassParticipant);
                     }
@@ -2226,10 +2574,22 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 Double totalPrizePool = request.getTotalPrizePool();
                 tournament.setTotalPrizePool(totalPrizePool);
 
-                BigDecimal calculatedRoomPrize = BigDecimal.valueOf(totalPrizePool)
-                        .multiply(PriceConstant.USER_PRIZE_PERCENT)
-                        .setScale(2, RoundingMode.HALF_UP);
-                tournament.setRoomprize(calculatedRoomPrize);
+//                BigDecimal calculatedRoomPrize = BigDecimal.valueOf(totalPrizePool)
+//                        .multiply(PriceConstant.USER_PRIZE_PERCENT_FULL)
+//                        .setScale(2, RoundingMode.HALF_UP);
+
+                BigDecimal userPrizePool = BigDecimal.valueOf(totalPrizePool)
+                        .multiply(PriceConstant.USER_PRIZE_PERCENT_FULL);
+
+                BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(tournament.getTotalrounds()), RoundingMode.HALF_UP);
+
+                tournament.setTotalrounds(tournament.getTotalrounds());
+                tournament.setRoomprize(roomPrizePool);
+
+//                tournament.setRoomprize(calculatedRoomPrize);
+
+
+
             }
 
 
@@ -2332,7 +2692,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 List<Integer> participants = List.of(512, 1024, 256);
                 Integer particpant = participants.get(new Random().nextInt(participants.size()));
 
-                Double totalPrize = (double) entryfee * particpant;
 
                 int totalPlayers = particpant;
 
@@ -2341,20 +2700,19 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
                 BigDecimal totalCollection = entryFeePerUser.multiply(BigDecimal.valueOf(totalPlayers));
 
-                BigDecimal userPrizePool = totalCollection.multiply(PriceConstant.USER_PRIZE_PERCENT);
-                BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(totalRounds), RoundingMode.HALF_UP);
+
                 request.setName(gameName);
                 request.setExistinggameId(gameId);
                 ZonedDateTime nowInIndia = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
                 ZonedDateTime scheduledAt = nowInIndia.plusHours(Constant.TOURNAMENT_START_TIME);
                 request.setScheduledAt(scheduledAt);
-               request.setTotalPrizePool(totalCollection.doubleValue());
+               request.setTotalPrizePool(Constant.TOURNAMENT_PRIZE_POOL_new);
                 request.setThemeId(themeId);
                 request.setParticipants(512);
                 request.setEntryFee(entryfee);
 
                 try {
-                 Tournament tournament = publishTournament(request, vendorId);
+                 Tournament tournament = createTournamentWithFixedFee(request, vendorId);
                     System.out.println("✅ Published TOURNAMENT " + gameName + " with theme " + themeId + " for vendor " + vendorId);
                     return;
                 } catch (Exception e) {
@@ -2378,5 +2736,10 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
     }
 
 
+
+    public Page<Tournament> getAllActiveScheduledTournamentsByVendorId(Pageable pageable, Long vendorId) {
+        List<TournamentStatus> statuses = List.of(TournamentStatus.SCHEDULED, TournamentStatus.ACTIVE);
+        return tournamentRepository.findByStatusInAndVendorId(statuses, vendorId, pageable);
+    }
 
 }

@@ -101,7 +101,7 @@ public class Game {
             this.endDate = ZonedDateTime.now().plusHours(4);
         }
         if (this.move == null) {
-            this.move = 12; // Default value for move if not provided
+            this.move = 12;
         }
     }
 

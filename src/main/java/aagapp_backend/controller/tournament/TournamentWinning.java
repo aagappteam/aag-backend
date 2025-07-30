@@ -63,12 +63,16 @@ public class TournamentWinning {
 //    for vendor this is api
     @GetMapping("/game/{tournamentId}")
     public ResponseEntity<?> getLeaderboard(@PathVariable Long tournamentId, @RequestParam(defaultValue = "0") int page,
-                                            @RequestParam(defaultValue = "10") int size) {
+                                            @RequestParam(defaultValue = "10") int size,
+                                            @RequestParam(defaultValue = "winners") String type
+                                            ) {
         try {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by("score").descending());
-            LeaderboardResponseDTOTournamentAdmin leaderboard = leaderBoardTournament.getLeaderboardforvendor(tournamentId, pageable);
-            return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
+            boolean fetchWinners = !type.equalsIgnoreCase("losers");
+
+            LeaderboardResponseDTOTournamentAdmin leaderboard = leaderBoardTournament.getLeaderboardforvendor(tournamentId, pageable,fetchWinners);
+            return responseService.generateResponsewithCount(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard,leaderboard.getTotalItems());
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

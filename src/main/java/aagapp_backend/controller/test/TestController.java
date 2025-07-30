@@ -193,7 +193,7 @@ public class TestController {
         String monthYear = LocalDate.now().toString().substring(0, 7); // "2025-05"
         BigDecimal entryFee = BigDecimal.valueOf(3);
         BigDecimal vendorShareAmount = entryFee.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
-        commonService.addVendorEarningForPayment(vendorid,entryFee, vendorShareAmount);
+        commonService.addVendorEarningForPayment(vendorid,entryFee, vendorShareAmount,"test");
 /*        InfluencerMonthlyEarning existing = earningRepository.findByInfluencerIdAndMonthYear(influencerId, monthYear);
 
         if (existing == null) {

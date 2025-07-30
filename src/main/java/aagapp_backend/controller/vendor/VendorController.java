@@ -1364,7 +1364,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
             commonService.notifyAdminsByRole(
                     Constant.ADMIN_ROLE,
-                    notificationTitle,
+                    "Withdrawal Request",
                     submittedByName,
                     vendor.getService_provider_id(),
                     notificationMessage,
@@ -1454,7 +1454,6 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             );
         }
     }
-
 
 
 

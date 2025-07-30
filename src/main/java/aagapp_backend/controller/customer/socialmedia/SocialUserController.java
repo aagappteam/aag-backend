@@ -120,7 +120,7 @@ public class SocialUserController {
 
             commonService.notifyAdminsByRole(
                     Constant.ADMIN_ROLE,
-                    notificationTitle,
+                    "Social Link Submission",
                     submittedByName,
                     userOrVendorId,
                     notificationMessage,

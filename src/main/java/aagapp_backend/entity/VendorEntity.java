@@ -31,7 +31,6 @@ import java.util.List;
         @Index(name = "idx_vendor_id", columnList = "service_provider_id"),
         @Index(name = "idx_vendor_email", columnList = "primary_email"),
         @Index(name = "idx_vendor_referral_code", columnList = "referral_code"),
-        @Index(name = "idx_vendor_is_active", columnList = "is_active"),
         @Index(name = "idx_vendor_is_paid", columnList = "is_paid"),
         @Index(name = "idx_vendor_mobile_number", columnList = "mobileNumber"),
         @Index(name = "idx_vendor_league_status", columnList = "league_status"),

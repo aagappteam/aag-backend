@@ -123,7 +123,7 @@ public class TournamentController {
 
         try {
 
-//            Pageable pageable = PageRequest.of(page, size);
+
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
             Page<Tournament> games = tournamentService.getAllTournaments(pageable, status, vendorId,gamename);
@@ -180,12 +180,14 @@ public class TournamentController {
             Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
             Page<Tournament> tournamentPage = tournamentService.getFilteredTournaments(page, size, sort, id, vendorId, name, totalPrizePool, status, vendorName, vendorEmail, vendorMobile,search);
 
-
+            List<TournamentGetallDTO> gameList = tournamentPage.getContent().stream()
+                    .map(this::mapToDTO)  // use your mapping logic
+                    .collect(Collectors.toList());
             Long scheduledCount = tournamentService.getScheduledCount();
             Long activeCount = tournamentService.getActiveCount();
             Long ExpiredCount = tournamentService.getExpiredCount();
 
-            return responseService.generateResponseForGame("Tournaments fetched successfully", tournamentPage.getContent(), tournamentPage.getTotalElements(), scheduledCount, activeCount, ExpiredCount, HttpStatus.OK);
+            return responseService.generateResponseForGame("Tournaments fetched successfully", gameList, tournamentPage.getTotalElements(), scheduledCount, activeCount, ExpiredCount, HttpStatus.OK);
 
         } catch (Exception e) {
             return responseService.generateErrorResponse(ApiConstants.SOME_EXCEPTION_OCCURRED + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -202,7 +204,7 @@ public class TournamentController {
         // Set vendorProfilePic from vendorEntity (can be null-safe)
         if (tournament.getVendorEntity() != null) {
             dto.setVendorProfilePic(tournament.getVendorEntity().getProfilePic());
-            dto.setVendorName(tournament.getVendorEntity().getName());
+            dto.setVendorName(tournament.getVendorEntity().getUser_name()!=null? tournament.getVendorEntity().getUser_name():"Aagveer");
 
         } else {
             dto.setVendorProfilePic(""); // or default image URL
@@ -321,7 +323,6 @@ public class TournamentController {
 
             Tournament publishedGame = tournamentService.publishTournament(tournamentRequest, vendorId);
 
-            // Now create a single notification for the vendor
             Notification notification = new Notification();
             notification.setRole("Vendor");
             
@@ -329,7 +330,6 @@ public class TournamentController {
 
             notification.setVendorId(vendorId);
             if (tournamentRequest.getScheduledAt() != null) {
-//                notification.setAmount((double) tournamentRequest.getEntryFee());
                 notification.setDescription("Tournament Submitted for Review");
                 notification.setDetails("Your Tournament has been submitted and is pending admin approval before going live at the scheduled time.");
             }else{
@@ -442,7 +442,6 @@ public class TournamentController {
 
                }
 
-//               emailService.sendTournamentEmail( vendor,title, body);
            }
 
            return responseService.generateSuccessResponse("Tournament status updated", tournament, HttpStatus.OK);
@@ -517,7 +516,6 @@ public class TournamentController {
 
             return ResponseEntity.ok(response);
         }
-
 
     @PostMapping("/startTournament/{tournamentId}")
     public ResponseEntity<?> startTournament(@PathVariable Long tournamentId) {
@@ -807,6 +805,7 @@ public class TournamentController {
             // 7. Prepare response
             Map<String, Object> response = new HashMap<>();
             response.put("tournament_status", tournament.getStatus());
+            response.put("totalRounds", tournament.getTotalrounds());
             response.put("waitingCount", waitingCount);
             response.put("round", roundNumber);
             response.put("remainingUsers", remainingPlayers);

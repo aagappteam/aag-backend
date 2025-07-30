@@ -4,6 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.components.cache.PrivilegeMappingCache;
 import aagapp_backend.dto.CustomAdminDTO;
+import aagapp_backend.dto.admin.Role.RoleDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.Role;
 import aagapp_backend.entity.admin.Privilege;
@@ -12,9 +13,11 @@ import aagapp_backend.repository.admin.PrivilegeRepository;
 import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.RoleService;
+import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.admin.CustomAdminSpecification;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.servlet.http.HttpServletRequest;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -34,6 +37,12 @@ public class RoleController {
     private ExceptionHandlingImplement exceptionHandlingImplement;
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private CustomAdminRepository customAdminRepository;
+
+    @Autowired
+    private AdminService adminService;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -91,6 +100,36 @@ public class RoleController {
 
     }
 
+    @GetMapping("/get-user")
+    public ResponseEntity<?> getAdminById(@RequestHeader(value = "Authorization") String authorization) {
+
+        String token = authorization.substring(7);
+        // Validate token & user
+        Long userId = jwtUtil.extractId(token);
+        Optional<CustomAdmin> optionalAdmin = customAdminRepository.findById(userId);
+
+        if (optionalAdmin.isPresent()) {
+            return responseService.generateSuccessResponse("Admin found.", optionalAdmin.get(), HttpStatus.OK);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("status", "ERROR", "message", "Admin not found with ID: " + userId));
+        }
+    }
+
+
+
+
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllRoles() {
+        List<Role> roles = roleRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        List<RoleDTO> roleDTOs = roles.stream()
+                .map(role -> new RoleDTO(role.getRoleId(), role.getRoleName()))
+                .collect(Collectors.toList());
+
+        return responseService.generateSuccessResponse("Roles fetched successfully", roleDTOs, HttpStatus.OK);
+
+    }
 
     //  Get All Roles
     @GetMapping
@@ -98,7 +137,7 @@ public class RoleController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "roleId") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) Integer roleId
     ) {
         Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
@@ -160,7 +199,7 @@ public class RoleController {
         }).toList();
 
         Map<String, Object> response = new HashMap<>();
-        response.put("roles", rolesList);
+        response.put("data", rolesList);
         response.put("currentPage", rolesPage.getNumber());
         response.put("totalItems", rolesPage.getTotalElements());
         response.put("totalPages", rolesPage.getTotalPages());
@@ -230,6 +269,29 @@ public class RoleController {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/status/{id}")
+    public ResponseEntity<?> updateAdminStatus(
+            @PathVariable("id") Long adminId,
+            @RequestParam(name = "status") int status,
+            @RequestParam(defaultValue = "system") String updatedBy) {
+        try {
+            boolean success = adminService.setAdminActiveStatus(adminId, status, updatedBy);
+
+            String action = (status == 1) ? "re-activated" : "terminated";
+            String message = success
+                    ? "Admin " + action + " successfully."
+                    : "Admin not found or already " + (status == 1 ? "active" : "terminated") + ".";
+
+            return responseService.generateSuccessResponse(message, success, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "ERROR", "message", e.getMessage()));
+        }
+    }
+
+
+
 
 /*    @PostMapping("/assign-roles")
     public ResponseEntity<?> assignRolesToUser(@RequestBody Map<String, Object> request) {

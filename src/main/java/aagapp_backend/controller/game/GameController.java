@@ -2,6 +2,9 @@ package aagapp_backend.controller.game;
 
 import aagapp_backend.components.Constant;
 import aagapp_backend.dto.*;
+import aagapp_backend.dto.game.GetGameResponseDTOCommon;
+import aagapp_backend.dto.league.LeagueResponseDTOCommon;
+import aagapp_backend.dto.tournament.TournamentResponseDTOCommon;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.Game;
@@ -420,7 +423,7 @@ public class GameController {
             switch (events.toLowerCase()) {
                 case "game":
                     // Filter for 'game' only
-                    Page<GetGameResponseDTO> games = gameleaguetournamentservice.getAllGames(status, vendorId, pageable, startDate, endDate, scheduleddate);
+                    Page<GetGameResponseDTOCommon> games = gameleaguetournamentservice.getAllGamesCommon(status, vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("games", games.getContent());
                     totalCount = games.getTotalElements();
 
@@ -428,7 +431,7 @@ public class GameController {
 
                 case "league":
                     // Filter for 'league' only
-                    Page<LeagueResponseDTO> leagues = gameleaguetournamentservice.getAllLeagues(status,vendorId, pageable, startDate, endDate, scheduleddate);
+                    Page<LeagueResponseDTOCommon> leagues = gameleaguetournamentservice.getAllLeaguesCommon(status,vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("leagues", leagues.getContent());
                     totalCount = leagues.getTotalElements();
 
@@ -436,7 +439,7 @@ public class GameController {
 
                 case "tournament":
                     // Filter for 'tournament' only
-                    Page<TournamentResponseDTO> tournaments = gameleaguetournamentservice.getAllTournaments(status,vendorId, pageable, startDate, endDate, scheduleddate);
+                    Page<TournamentResponseDTOCommon> tournaments = gameleaguetournamentservice.getAllTournamentscommon(status,vendorId, pageable, startDate, endDate, scheduleddate);
                     response.put("tournaments", tournaments.getContent());
 
                     break;
@@ -444,12 +447,14 @@ public class GameController {
                 case "league_tournament":
                     // Combine filter for 'league' and 'tournament'
                     Map<String, Object> leagueAndTournament = new HashMap<>();
-                    Page<LeagueResponseDTO> allLeagues = gameleaguetournamentservice.getAllLeagues(status,vendorId, pageable, startDate, endDate, scheduleddate);
-                    Page<TournamentResponseDTO> allTournaments = gameleaguetournamentservice.getAllTournaments(status,vendorId, pageable, startDate, endDate, scheduleddate);
+                    Page<LeagueResponseDTOCommon> allLeagues = gameleaguetournamentservice.getAllLeaguesCommon(status,vendorId, pageable, startDate, endDate, scheduleddate);
+                    Page<TournamentResponseDTOCommon> allTournaments = gameleaguetournamentservice.getAllTournamentscommon(status,vendorId, pageable, startDate, endDate, scheduleddate);
 
-                    leagueAndTournament.put("leagues", allLeagues.getContent());
-                    leagueAndTournament.put("tournaments", allTournaments.getContent());
-                    response.put("league_tournament", leagueAndTournament);
+//                    leagueAndTournament.put("leagues", allLeagues.getContent());
+//                    leagueAndTournament.put("tournaments", allTournaments.getContent());
+                    response.put("leagues", allLeagues.getContent());
+                    response.put("tournaments", allTournaments.getContent());
+//                    response.put("league_tournament", leagueAndTournament);
                     totalCount = allLeagues.getTotalElements() + allTournaments.getTotalElements();
 
                     break;
@@ -466,7 +471,10 @@ public class GameController {
             return responseService.generateErrorResponse("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
+    @GetMapping("/{vendorId}/today-count")
+    public ResponseEntity<Map<String, Object>> getTodayCreatedCount(@PathVariable Long vendorId) {
+        Map<String, Object> countMap = gameService.getTodayCreatedCount(vendorId);
+        return ResponseEntity.ok(countMap);
+    }
 
 }

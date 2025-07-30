@@ -6,6 +6,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.VendorStatus;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,6 +22,14 @@ import java.util.Optional;
 public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     //    List<VendorEntity> findByLeagueStatus(LeagueStatus leagueStatus);
     List<VendorEntity> findByLeagueStatusAndStatus(LeagueStatus leagueStatus, VendorStatus status);
+
+
+    @Query("SELECT v FROM VendorEntity v WHERE v.leagueStatus = :leagueStatus AND v.status = :status AND v.lastActiveAt >= :lastActiveCutoff")
+    List<VendorEntity> findActiveAvailableVendorsWithRecentActivity(
+            @Param("leagueStatus") LeagueStatus leagueStatus,
+            @Param("status") VendorStatus status,
+            @Param("lastActiveCutoff") Date lastActiveCutoff
+    );
 
 
     List<VendorEntity> findTop3ByOrderByRefferalbalanceDesc();
@@ -132,4 +141,6 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     Optional<Object> findByReferralCode(String referralCode);
 
     Optional<VendorEntity> findByMobileNumber(String mobileNumber);
+
+    Page<VendorEntity> findByIsPaid(boolean b, Pageable pageable);
 }
