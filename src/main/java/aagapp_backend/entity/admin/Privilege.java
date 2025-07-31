@@ -41,5 +41,9 @@ public class Privilege {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+
+
+
 }
+
 

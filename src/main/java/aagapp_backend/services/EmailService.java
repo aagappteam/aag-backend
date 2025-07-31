@@ -422,7 +422,7 @@ public class EmailService {
         // Replace placeholders with dynamic content
         String messageBody = template
                 .replace("{firstName}", firstName)
-                .replace("{ammount}",String.valueOf(withdrawalRequest.getAmount()))
+                .replace("{Ammount}",String.valueOf(withdrawalRequest.getAmount()))
 
                 .replace("{Date}",formattedDatescheduledate);
 
