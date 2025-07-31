@@ -4,6 +4,7 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.components.cache.PrivilegeMappingCache;
 import aagapp_backend.dto.CustomAdminDTO;
+import aagapp_backend.dto.admin.Role.AdminWithRoleResponse;
 import aagapp_backend.dto.admin.Role.RoleDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.Role;
@@ -102,19 +103,39 @@ public class RoleController {
 
     @GetMapping("/get-user")
     public ResponseEntity<?> getAdminById(@RequestHeader(value = "Authorization") String authorization) {
-
         String token = authorization.substring(7);
-        // Validate token & user
         Long userId = jwtUtil.extractId(token);
+
         Optional<CustomAdmin> optionalAdmin = customAdminRepository.findById(userId);
 
-        if (optionalAdmin.isPresent()) {
-            return responseService.generateSuccessResponse("Admin found.", optionalAdmin.get(), HttpStatus.OK);
-        } else {
+        if (optionalAdmin.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("status", "ERROR", "message", "Admin not found with ID: " + userId));
         }
+
+        CustomAdmin admin = optionalAdmin.get();
+        String roleName = "";
+
+        Optional<Role> optionalRole = roleRepository.findById(admin.getRole());
+        if (optionalRole.isPresent()) {
+            roleName = optionalRole.get().getRoleName();
+        }
+        AdminWithRoleResponse response = new AdminWithRoleResponse(
+                admin.getAdminId(),
+                admin.getUser_name(),
+                admin.getEmail(),
+                admin.getMobileNumber(),
+                admin.getCountry_code(),
+                admin.getActive(),
+                admin.getCreatedBy(),
+                admin.getCreated_at(),
+                admin.getUpdated_at(),
+                roleName
+        );
+
+        return responseService.generateSuccessResponse("Admin found.", response, HttpStatus.OK);
     }
+
 
 
 
