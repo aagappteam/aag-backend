@@ -16,6 +16,7 @@ public class AdminWithRoleResponse {
     private Long adminId;
     private String userName;
     private String email;
+    private Integer roleId;
     private String mobileNumber;
     private String countryCode;
     private int active;

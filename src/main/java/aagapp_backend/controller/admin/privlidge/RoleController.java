@@ -124,6 +124,7 @@ public class RoleController {
                 admin.getAdminId(),
                 admin.getUser_name(),
                 admin.getEmail(),
+                admin.getRole(),
                 admin.getMobileNumber(),
                 admin.getCountry_code(),
                 admin.getActive(),
