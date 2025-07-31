@@ -6,6 +6,7 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.services.*;
 import aagapp_backend.services.admin.AdminLogService;
@@ -14,9 +15,16 @@ import aagapp_backend.services.faqs.FAQService;
 import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.services.tournamnetservice.TournamentService;
 import jakarta.persistence.EntityManager;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -35,6 +43,9 @@ public class TestController {
 
     @Autowired
     private AdminLogService adminLogService;
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
 
     private EmailService emailService;
     private CommonService commonService;
@@ -313,6 +324,51 @@ public class TestController {
     }
 
 
+    @GetMapping("/customers/excel")
+    public void exportCustomersToExcel(HttpServletResponse response) throws IOException {
+        // Set response headers
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=customers.xlsx");
+
+        // Create workbook and sheet
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Customers");
+
+        // Create header row
+        Row headerRow = sheet.createRow(0);
+        String[] headers = {"Name", "Email", "Mobile Number", "Created Date"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+        }
+
+        // Fetch customer data sorted by createdDate DESC
+        List<CustomCustomer> customers = customCustomerRepository
+                .findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
+
+        // Fill data rows
+        int rowNum = 1;
+        for (CustomCustomer customer : customers) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(customer.getName() != null ? customer.getName() : "");
+            row.createCell(1).setCellValue(customer.getEmail() != null ? customer.getEmail() : "");
+            row.createCell(2).setCellValue(customer.getMobileNumber() != null ? customer.getMobileNumber() : "");
+
+            String createdDateStr = customer.getCreatedDate() != null
+                    ? new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(customer.getCreatedDate())
+                    : "";
+            row.createCell(3).setCellValue(createdDateStr);
+        }
+
+        // Auto-size columns
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        // Write to output stream
+        workbook.write(response.getOutputStream());
+        workbook.close();
+    }
 
 
 

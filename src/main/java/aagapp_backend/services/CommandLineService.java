@@ -288,7 +288,7 @@ public class CommandLineService implements CommandLineRunner {
 
             // --- Create Snakes & Ladders Game ---
             AagAvailableGames snakesAndLaddersGame = new AagAvailableGames();
-            snakesAndLaddersGame.setGameName("Snakes & Ladders Ultimate");
+            snakesAndLaddersGame.setGameName("snake & ladder");
             snakesAndLaddersGame.setGameImage("https://aag-data.s3.ap-south-1.amazonaws.com/game-folder/snakes+and+leader.png");
             snakesAndLaddersGame.setMinRange(1);
             snakesAndLaddersGame.setMaxRange(100);
@@ -328,7 +328,7 @@ public class CommandLineService implements CommandLineRunner {
 
             // --- Create Ludo Game ---
             AagAvailableGames ludoGame = new AagAvailableGames();
-            ludoGame.setGameName("Ludo");
+            ludoGame.setGameName("ludo");
             ludoGame.setGameImage("https://aag-data.s3.ap-south-1.amazonaws.com/game-folder/Ludo.png");
             ludoGame.setMinRange(1);
             ludoGame.setMaxRange(100);
@@ -413,60 +413,60 @@ public class CommandLineService implements CommandLineRunner {
 
         // ✅ Insert Privileges if empty
         if (entityManager.createQuery("SELECT COUNT(p) FROM Privilege p", Long.class).getSingleResult() == 0) {
+            long id = 1L;
 
+            // (1) Home
+            entityManager.merge(new Privilege(id++, "HOME", "MENU", null, "ADMIN", currentTimestamp));
 
-            // User Management Menu & Submenus
-            entityManager.merge(new Privilege(1L, "ACCESS_USER_MANAGEMENT", "MENU", null, "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(2L, "VIEW_USER", "SUBMENU", "ACCESS_USER_MANAGEMENT", "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(3L, "EDIT_USER", "SUBMENU", "ACCESS_USER_MANAGEMENT", "ADMIN", currentTimestamp));
+            // (2) User Management
+            entityManager.merge(new Privilege(id++, "ACCESS_USER_MANAGEMENT", "MENU", null, "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "USER_ACTIVITY", "SUBMENU", "ACCESS_USER_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VIEW_USER", "SUBMENU", "ACCESS_USER_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "USER_TRANSACTIONS", "SUBMENU", "ACCESS_USER_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "USER_WITHDRAWAL_REQUEST", "SUBMENU", "ACCESS_USER_MANAGEMENT", "ADMIN", currentTimestamp));
 
-            // Vendor Management Menu & Submenus
-            entityManager.merge(new Privilege(4L, "ACCESS_VENDOR_MANAGEMENT", "MENU", null, "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(5L, "VIEW_VENDOR", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(6L, "EDIT_VENDOR", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(7L, "VIEW_KYC", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            // (3) Vendor Management
+            entityManager.merge(new Privilege(id++, "ACCESS_VENDOR_MANAGEMENT", "MENU", null, "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VENDOR_ACTIVITY", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VIEW_VENDOR", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "NEW_REGISTRATION", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VENDOR_JOURNEY", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VENDOR_EARNING", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VENDOR_TRANSACTIONS", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "PLAN_UPGRADE", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "TOURNAMENT_APPROVAL", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "LEAGUE_APPROVAL", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "ADMIN", currentTimestamp));
 
-            // Finance Menu & Submenus
-            entityManager.merge(new Privilege(8L, "ACCESS_FINANCE_MENU", "MENU", null, "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(9L, "VIEW_WITHDRAW", "SUBMENU", "ACCESS_FINANCE_MENU", "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(10L, "DOWNLOAD_WITHDRAW", "SUBMENU", "ACCESS_FINANCE_MENU", "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(11L, "VIEW_TRANSACTIONS", "SUBMENU", "ACCESS_FINANCE_MENU", "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(12L, "DOWNLOAD_TRANSACTIONS", "SUBMENU", "ACCESS_FINANCE_MENU", "ADMIN", currentTimestamp));
+            // (4) Game Management
+            entityManager.merge(new Privilege(id++, "ACCESS_GAME_MANAGEMENT", "MENU", null, "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VIEW_GAME", "SUBMENU", "ACCESS_GAME_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VIEW_TOURNAMENT", "SUBMENU", "ACCESS_GAME_MANAGEMENT", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VIEW_LEAGUE", "SUBMENU", "ACCESS_GAME_MANAGEMENT", "ADMIN", currentTimestamp));
 
-            // Games Management Menu & Submenus
-            entityManager.merge(new Privilege(13L, "ACCESS_GAMES_MANAGEMENT", "MENU", null, "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(14L, "VIEW_GAMES", "SUBMENU", "ACCESS_GAMES_MANAGEMENT", "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(15L, "VIEW_LEAGUES", "SUBMENU", "ACCESS_GAMES_MANAGEMENT", "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(16L, "VIEW_TOURNAMENTS", "SUBMENU", "ACCESS_GAMES_MANAGEMENT", "ADMIN", currentTimestamp));
+            // (5) Subscription
+            entityManager.merge(new Privilege(id++, "SUBSCRIPTION", "MENU", null, "ADMIN", currentTimestamp));
 
-            // Home & Sub Features
-            entityManager.merge(new Privilege(17L, "Home", "MENU", null, "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(18L, "ROLES", "MENU", null, "ADMIN", currentTimestamp));
-            entityManager.merge(new Privilege(19L, "Subscriptions", "MENU", null, "ADMIN", currentTimestamp));
+            // (6) KYC Request
+            entityManager.merge(new Privilege(id++, "KYC_REQUEST", "MENU", null, "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "USER_KYC", "SUBMENU", "KYC_REQUEST", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VENDOR_KYC", "SUBMENU", "KYC_REQUEST", "ADMIN", currentTimestamp));
 
-            // EMPTY Role entries (limited access menus)
-            entityManager.merge(new Privilege(20L, "ACCESS_BLOCK_MENU", "SUBMENU", "ACCESS_USER_MANAGEMENT", "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(21L, "ACCESS_SUSPEND_MENU", "SUBMENU", "ACCESS_USER_MANAGEMENT", "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(22L, "ACCESS_VENDOR_REQUEST_MENU", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(23L, "ACCESS_VENDOR_JOURNEY_MENU", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "EMPTY", currentTimestamp));
+            // (7) Withdrawal Request
+            entityManager.merge(new Privilege(id++, "WITHDRAWAL_REQUEST", "MENU", null, "ADMIN", currentTimestamp));
 
-            entityManager.merge(new Privilege(24L, "Invoice", "MENU", null, "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(25L, "Support Ticket", "MENU", null, "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(26L, "FAQ", "MENU", null, "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(27L, "Analytics & Reporting", "MENU", null, "EMPTY", currentTimestamp));
+            // (8) FAQ
+            entityManager.merge(new Privilege(id++, "FAQ", "MENU", null, "ADMIN", currentTimestamp));
 
-            entityManager.merge(new Privilege(28L, "User Transactions", "SUBMENU", "ACCESS_USER_MANAGEMENT", "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(29L, "Vendors Request", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(30L, "Vendor journey", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(31L, "Vendors Earning", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(32L, "Vendors Transactions", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "EMPTY", currentTimestamp));
+            // (9) Invoice
+            entityManager.merge(new Privilege(id++, "INVOICE", "MENU", null, "ADMIN", currentTimestamp));
 
-            entityManager.merge(new Privilege(33L, "User Withdrawal Request", "SUBMENU", "ACCESS_USER_MANAGEMENT", "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(34L, "Vendors Approval Request", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(35L, "Vendors", "SUBMENU", "ACCESS_VENDOR_MANAGEMENT", "EMPTY", currentTimestamp));
+            // (10) Support Ticket
+            entityManager.merge(new Privilege(id++, "SUPPORT_TICKET", "MENU", null, "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "USER_SUPPORT", "SUBMENU", "SUPPORT_TICKET", "ADMIN", currentTimestamp));
+            entityManager.merge(new Privilege(id++, "VENDOR_SUPPORT", "SUBMENU", "SUPPORT_TICKET", "ADMIN", currentTimestamp));
 
-            entityManager.merge(new Privilege(36L, "Kyc Request", "MENU", null, "EMPTY", currentTimestamp));
-            entityManager.merge(new Privilege(37L, "Withdraw Request", "MENU", null, "EMPTY", currentTimestamp));
+            // (11) Roles
+            entityManager.merge(new Privilege(id++, "ROLES", "MENU", null, "ADMIN", currentTimestamp));
         }
 
 

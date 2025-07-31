@@ -136,14 +136,18 @@ public class RoleController {
     public ResponseEntity<?> getAllRoles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "roleId") String sortBy,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) Integer roleId
     ) {
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<Role> rolesPage;
+
         if (roleId != null) {
             Optional<Role> roleOptional = roleRepo.findById(roleId);
             rolesPage = roleOptional
@@ -161,39 +165,34 @@ public class RoleController {
             roleMap.put("updatedAt", role.getUpdatedAt());
             roleMap.put("createdBy", role.getCreatedBy());
 
-            List<Privilege> privileges = role.getPrivileges().stream().toList();
-            roleMap.put("privileges", privileges);
+            List<Privilege> privileges = new ArrayList<>(role.getPrivileges());
 
-            // 🔍 Submenus grouped by parentMenu
+            // Group SUBMENUs by their parentMenu
             Map<String, List<Map<String, Object>>> groupedSubmenus = privileges.stream()
                     .filter(p -> "SUBMENU".equalsIgnoreCase(p.getType()))
                     .collect(Collectors.groupingBy(
-                            Privilege::getParentMenu,
+                            p -> p.getParentMenu() != null ? p.getParentMenu().trim() : "",
                             Collectors.mapping(p -> Map.of(
                                     "submenuId", p.getId(),
                                     "submenuName", p.getName()
                             ), Collectors.toList())
                     ));
 
-            // 🔍 All parent menu names
-//            Set<String> parentMenuNames = groupedSubmenus.keySet();
-            Set<String> parentMenuNames = groupedSubmenus.keySet().stream()
-                    .map(String::trim)
-                    .collect(Collectors.toSet());
+            // Fetch MENU privileges
+            List<Privilege> menuPrivileges = privileges.stream()
+                    .filter(p -> "MENU".equalsIgnoreCase(p.getType()))
+                    .toList();
 
-
-            // ✅ Fetch actual MENU privileges by name
-            List<Privilege> menuPrivileges = privilegeRepo.findAllByNameIn(parentMenuNames);
-
-            // 🧩 Combine menu + submenus
+            // Combine MENU and corresponding SUBMENUs
             List<Map<String, Object>> menusList = menuPrivileges.stream()
                     .map(menu -> Map.of(
                             "menuId", menu.getId(),
                             "menuName", menu.getName(),
-                            "submenus", groupedSubmenus.getOrDefault(menu.getName(), List.of())
+                            "submenus", groupedSubmenus.getOrDefault(menu.getName().trim(), List.of())
                     ))
-                    .collect(Collectors.toList());
+                    .toList();
 
+            roleMap.put("privileges", privileges);
             roleMap.put("menus", menusList);
             return roleMap;
         }).toList();
@@ -208,6 +207,7 @@ public class RoleController {
 
         return ResponseEntity.ok(response);
     }
+
 
 
     @PostMapping("/add-user")
