@@ -201,59 +201,6 @@ public class OtpEndpoint {
         }
     }
 
-/*    @PostMapping("/send-otp")
-    public ResponseEntity<?> sendOtp(@RequestBody CustomCustomer customerDetails, HttpSession session) throws UnsupportedEncodingException {
-        try {
-            if (customerDetails.getMobileNumber() == null || customerDetails.getMobileNumber().isEmpty()) {
-                return responseService.generateErrorResponse(ApiConstants.MOBILE_NUMBER_NULL_OR_EMPTY, HttpStatus.NOT_ACCEPTABLE);
-            }
-
-            String mobileNumber = customerDetails.getMobileNumber().startsWith("0")
-                    ? customerDetails.getMobileNumber().substring(1)
-                    : customerDetails.getMobileNumber();
-
-            String countryCode = customerDetails.getCountryCode() == null || customerDetails.getCountryCode().isEmpty()
-                    ? Constant.COUNTRY_CODE
-                    : customerDetails.getCountryCode();
-
-            CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhoneWithOtp(customerDetails.getMobileNumber(), countryCode);
-            if (existingCustomer != null) {
-                return responseService.generateErrorResponse(ApiConstants.CUSTOMER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
-            }
-
-            if (customerDetails.getReferralCode() != null && !customerDetails.getReferralCode().isEmpty()) {
-                CustomCustomer referralCustomer = customCustomerService.findCustomCustomerByReferralCode(customerDetails.getReferralCode());
-                if (referralCustomer == null) {
-                    return responseService.generateErrorResponse(ApiConstants.INVALID_REFERRAL_CODE, HttpStatus.BAD_REQUEST);
-                }
-                customerDetails.setReferralCode(String.valueOf(referralCustomer.getId()));
-            }
-
-
-            Bucket bucket = rateLimiterService.resolveBucket(customerDetails.getMobileNumber(), "/otp/send-otp");
-            if (bucket.tryConsume(1)) {
-                if (!customCustomerService.isValidMobileNumber(mobileNumber)) {
-                    return responseService.generateErrorResponse(ApiConstants.INVALID_MOBILE_NUMBER, HttpStatus.BAD_REQUEST);
-
-                }
-
-                ResponseEntity<Map<String, Object>> otpResponse = twilioService.sendOtpToMobile(mobileNumber, countryCode);
-                Map<String, Object> responseBody = otpResponse.getBody();
-
-                if (responseBody.get("otp") != null) {
-                    return responseService.generateSuccessResponse((String) responseBody.get("message"), responseBody.get("otp"), HttpStatus.OK);
-                } else {
-                    return responseService.generateErrorResponse((String) responseBody.get("message"), HttpStatus.BAD_REQUEST);
-                }
-            } else {
-                return responseService.generateErrorResponse(ApiConstants.RATE_LIMIT_EXCEEDED, HttpStatus.BANDWIDTH_LIMIT_EXCEEDED);
-            }
-        } catch (Exception e) {
-            exceptionHandling.handleException(e);
-            return responseService.generateErrorResponse("Some error occurred" + e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }*/
-
     @Transactional
     @PostMapping("/vendor-signup")
     public ResponseEntity<?> sendOtpToMobile(@RequestBody Map<String, Object> signupDetails) {
