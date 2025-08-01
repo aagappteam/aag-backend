@@ -238,9 +238,9 @@ public ResponseEntity<?> getAllKycs(
                 .collect(Collectors.toList());
 
         long totalCount = kycRepository.count(spec);
-        long pendingCount = kycRepository.countByKycStatus(KycStatus.PENDING);
-        long rejectedCount = kycRepository.countByKycStatus(KycStatus.REJECTED);
-        long approvedCount = kycRepository.countByKycStatus(KycStatus.VERIFIED);
+        long pendingCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.PENDING)));
+        long rejectedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.REJECTED)));
+        long approvedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.VERIFIED)));
 
         return ResponseService.generateSuccessResponseForWithdrwalRequest(
                 "KYC records retrieved successfully",
