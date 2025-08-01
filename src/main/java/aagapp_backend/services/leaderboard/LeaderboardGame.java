@@ -108,7 +108,9 @@ public class LeaderboardGame {
         List<LeaderboardResponseDTOAdmin> pagedList = leaderboard.subList(start, end);
 
         // 8. Get total players in all rooms
-        long totalPlayers = gameRoomRepository.sumMaxPlayersByGameIdWithCompletedStatusAndPassword(gameId);
+        long totalPlayers = Optional.ofNullable(
+                gameRoomRepository.sumMaxPlayersByGameIdWithCompletedStatusAndPassword(gameId)
+        ).orElse(0L);
 
         // 9. Vendor name (only user_name)
         String vendorName = game.getVendorEntity() != null && game.getVendorEntity().getFirst_name() != null
@@ -197,7 +199,9 @@ public class LeaderboardGame {
         List<LeaderboardResponseDTOAdmin> pagedList = leaderboard.subList(start, end);
 
         // 8. Get total players in all rooms
-        long totalPlayers = gameRoomRepository.sumMaxPlayersByGameIdWithCompletedStatusAndPassword(gameId);
+        long totalPlayers = Optional.ofNullable(
+                gameRoomRepository.sumMaxPlayersByGameIdWithCompletedStatusAndPassword(gameId)
+        ).orElse(0L);
 
         // 9. Vendor name (only user_name)
         String vendorName = game.getVendorEntity() != null && game.getVendorEntity().getFirst_name() != null

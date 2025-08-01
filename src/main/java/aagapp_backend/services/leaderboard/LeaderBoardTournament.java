@@ -76,7 +76,10 @@ public class LeaderBoardTournament {
             List<TournamentResultRecord> results = resultPage.getContent();
 
             // 4. Fetch total players in game rooms
-            long totalPlayers = tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId);
+//            long totalPlayers = tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId);
+            long totalPlayers = Optional.ofNullable(
+                    tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId)
+            ).orElse(0L);
 
             // 5. Aggregate players
             Map<Long, GameLeaderboardResponseDTOTornamentAdmin> playerMap = new HashMap<>();
