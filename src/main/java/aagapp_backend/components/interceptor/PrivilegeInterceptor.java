@@ -115,7 +115,7 @@ public class PrivilegeInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        String requiredPrivilege = mapping.get().getPrivilegeName();
+/*        String requiredPrivilege = mapping.get().getPrivilegeName();
         System.out.println("requiredPrivilege " + requiredPrivilege);
 
         Role role = roleRepo.findById(roleId).orElseThrow();
@@ -138,7 +138,7 @@ public class PrivilegeInterceptor implements HandlerInterceptor {
             jwtAuthenticationFilter.respondWithUnauthorized(response, "Access Denied");
 
             return false;
-        }
+        }*/
 
         return true;
     }
