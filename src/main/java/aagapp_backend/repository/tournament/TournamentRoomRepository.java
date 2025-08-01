@@ -15,7 +15,12 @@ public interface TournamentRoomRepository extends JpaRepository<TournamentRoom ,
     List<TournamentRoom> findByTournamentIdAndStatus(Long tournamentId, String open);
 
 
-    @Query("SELECT COALESCE(SUM(r.maxParticipants), 0) FROM TournamentRoom r WHERE r.tournament.id = :tournamentId")
+/*    @Query("SELECT COALESCE(SUM(r.maxParticipants), 0) FROM TournamentRoom r WHERE r.tournament.id = :tournamentId")
+    long sumMaxParticipantsByTournamentId(@Param("tournamentId") Long tournamentId);*/
+
+    @Query("SELECT COALESCE(SUM(r.maxParticipants), 0) FROM TournamentRoom r " +
+            "WHERE r.tournament.id = :tournamentId " +
+            "AND r.gamepassword IS NOT NULL")
     long sumMaxParticipantsByTournamentId(@Param("tournamentId") Long tournamentId);
 
 
