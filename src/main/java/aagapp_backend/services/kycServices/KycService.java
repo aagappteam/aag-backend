@@ -177,12 +177,12 @@ public class KycService {
             description = "KYC Verified";
             details = "Your KYC has been successfully verified.";
             title = "KYC Verified Successfully";
-            if (email != null) emailService.sendKycVerifiedEmail(email, name);
+            if (email != null && isValidEmail(email)) emailService.sendKycVerifiedEmail(email, name);
         } else if (isVerified == KycStatus.REJECTED) {
             description = "KYC Rejected";
             details = "Your KYC verification has been rejected.";
             title = "KYC Rejected";
-            if (email != null) emailService.sendKycRejectedEmail(email, name);
+            if (email != null && isValidEmail(email)) emailService.sendKycRejectedEmail(email, name);
         } else {
             description = "KYC Status Updated";
             details = "Your KYC status was changed to: " + isVerified.name();
@@ -245,6 +245,11 @@ public class KycService {
         return kyc;
     }
 
+
+
+    private boolean isValidEmail(String email) {
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    }
 
 
 /*    @Transactional
