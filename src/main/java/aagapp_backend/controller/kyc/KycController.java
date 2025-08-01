@@ -237,7 +237,7 @@ public ResponseEntity<?> getAllKycs(
                 .map(kyc -> new KycDTO(kyc, kyc.getKycStatus()))
                 .collect(Collectors.toList());
 
-        long totalCount = kycRepository.count(spec);
+        long totalCount = kycRepository.findAll().stream().count();
         long pendingCount = kycRepository.countByKycStatus(KycStatus.PENDING);
         long rejectedCount = kycRepository.countByKycStatus(KycStatus.REJECTED);
         long approvedCount = kycRepository.countByKycStatus(KycStatus.VERIFIED);
