@@ -444,7 +444,7 @@ public class EmailService {
 
         String messageBody = template
                 .replace("{ammount}",String.valueOf(request.getAmount()))
-                .replace("{BankName}",request.getBankName())
+                .replace("{BankName}", request.getBankName() != null ? request.getBankName() : "")
                 .replace("{VendorName}", name)
                 .replace("{createdAt}", formattedDate);
 
@@ -466,7 +466,6 @@ public class EmailService {
 
         String messageBody = template
                 .replace("{ammount}",String.valueOf(request.getAmount()))
-                .replace("{BankName}",request.getBankName())
                 .replace("{VendorName}", name)
                 .replace("{createdAt}", formattedDate);
 
