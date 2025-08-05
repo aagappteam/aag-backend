@@ -2053,6 +2053,9 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     league.getName(),
                     winner.getTeamName(),
                     league.getPrizePool().toString(),
+                    league.getGameName(),
+                    league.getTheme().getName(),
+                    league.getTheme().getImageUrl(),
                     teamDetails
             );
 
@@ -2632,7 +2635,9 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             } else {
                 throw new IllegalArgumentException("Invalid league status: " + request.getStatus());
             }
-            league.setScheduledAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+            if(league.getScheduledAt()==null){
+                league.setScheduledAt(league.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata")));
+            }
 
             leagueRepository.save(league);
 
