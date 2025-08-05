@@ -2653,14 +2653,21 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             notificationRepository.save(opponentNotification);
 
             // Send emails to both vendors
-            if (vendorEntity.getPrimary_email() != null) {
-                emailService.sendLeagueRejectionEmail(vendorEntity, title, body,league);
+            if (request.getStatus() == LeagueStatus.APPROVED) {
+                if (vendorEntity.getPrimary_email() != null) {
+                    emailService.sendLeagueApprovalEmail(vendorEntity, title, body, league);
+                }
+                if (opponentVendor.getPrimary_email() != null) {
+                    emailService.sendLeagueApprovalEmail(opponentVendor, title, body, league);
+                }
+            } else if (request.getStatus() == LeagueStatus.REJECTED) {
+                if (vendorEntity.getPrimary_email() != null) {
+                    emailService.sendLeagueRejectionEmail(vendorEntity, title, body, league);
+                }
+                if (opponentVendor.getPrimary_email() != null) {
+                    emailService.sendLeagueRejectionEmail(opponentVendor, title, body, league);
+                }
             }
-            if (opponentVendor.getPrimary_email() != null) {
-                emailService.sendLeagueRejectionEmail(opponentVendor, title, body, league);
-            }
-
-//            emailService.sendLeagueApprovalEmail(vendorEntity, title, body,league);
 
             // Push FCM to both vendors' followers
             CompletableFuture.runAsync(() ->

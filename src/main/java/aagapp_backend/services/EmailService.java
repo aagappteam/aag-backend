@@ -418,46 +418,48 @@ public class EmailService {
         }
     }
 
-//    public void sendLeagueApprovalEmail(
-//            VendorEntity vendorEntity, String title, String body, League league
-//    ) throws IOException {
-//
-//        // Load HTML template (same for approval/rejection, use placeholders inside)
-//        String template = loadTemplate("email-templates/vendor-tournament-approved.html");
-//
-//        String firstName = vendorEntity.getFirst_name();
-//        String to = vendorEntity.getPrimary_email();
-//
-//
-//        ZonedDateTime renewalDate = tournament.getScheduledAt();
-//        ZonedDateTime createdate = tournament.getCreatedDate();
-//
-//        String formattedDatescheduledate = renewalDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-//        String formattedDatecreatedate = createdate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-//
-//        // Replace placeholders with dynamic content
-//        String messageBody = template
-//                .replace("{firstName}", firstName)
-//                .replace("{prizepool}",String.valueOf(tournament.getTotalPrizePool()))
-//                .replace("{tournamentName}", tournament.getName())
-//                .replace("{themeName}",tournament.getTheme().getName())
-//                .replace("{Date}",formattedDatecreatedate)
-//                .replace("{scheduledate}",formattedDatescheduledate)
-//
-//                .replace("{totalparticipants}",String.valueOf(tournament.getParticipants()))
-//                .replace("{gameicon}",tournament.getTheme().getGameimageUrl())
-//                .replace("{profilepic}",tournament.getVendorEntity().getProfilePic())
-//                .replace("{title}", title)
+    public void sendLeagueApprovalEmail(
+            VendorEntity vendorEntity, String title, String body, League league
+    ) throws IOException {
+
+        // Load HTML template (same for approval/rejection, use placeholders inside)
+        String template = loadTemplate("email-templates/vendor-league-approved.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+
+        ZonedDateTime renewalDate = league.getScheduledAt();
+        ZonedDateTime createdate = league.getCreatedDate();
+
+        String formattedDatescheduledate = renewalDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        String formattedDatecreatedate = createdate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+
+        // Replace placeholders with dynamic content
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{prizePool}",String.valueOf(league.getPrizePool()))
+                .replace("{gameName}", league.getName())
+                .replace("{themeName}",league.getTheme().getName())
+                .replace("{publishDate}",formattedDatecreatedate)
+                .replace("{scheduledDate}",formattedDatescheduledate)
+
+//                .replace("{totalparticipants}",String.valueOf(league.getParticipants()))
+//                .replace("{gameicon}",league.getTheme().getGameimageUrl())
+//                .replace("{profilepic}",league.getVendorEntity().getProfilePic())
+                .replace("{challengeTo}",league.getChallengingVendorName())
+                .replace("{challenger}",league.getOpponentVendorName())
+                .replace("{title}", title)
 //                .replace("{reason}", body)
-//                .replace("{fee}",String.valueOf(tournament.getEntryFee()))
-//                .replace("{body}", body);
-//
-//        try {
-//            sendEmail(to, title, messageBody, true);
-//        } catch (MessagingException e) {
-//            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
-//        }
-//    }
+                .replace("{fee}",String.valueOf(league.getFee()))
+                .replace("{body}", body);
+
+        try {
+            sendEmail(to, title, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
+        }
+    }
 
     public void sendAdminCommonmail(CustomAdmin admin, String type, String name,String message)
             throws IOException, MessagingException {
