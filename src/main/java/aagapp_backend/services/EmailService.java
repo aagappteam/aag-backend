@@ -2,6 +2,7 @@ package aagapp_backend.services;
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
 import jakarta.validation.constraints.Email;
@@ -348,6 +349,34 @@ public class EmailService {
         }
     }
 
+    public void sendLeagueRejectionEmail(
+            VendorEntity vendorEntity, String title, String body, League league
+    ) throws IOException {
+
+        // Load HTML template (same for approval/rejection, use placeholders inside)
+        String template = loadTemplate("email-templates/vendor-league-reject.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+        // Replace placeholders with dynamic content
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{gameName}", league.getName())
+                .replace("{themeName}",league.getTheme().getName())
+//                .replace("{gameicon}",league.getTheme().getGameimageUrl())
+//                .replace("{profilepic}",league.getVendorEntity().getProfilePic())
+                .replace("{title}", title)
+                .replace("{reason}", body)
+                .replace("{entryFee}",String.valueOf(league.getFee()));
+//                .replace("{body}", body);
+
+        try {
+            sendEmail(to, title, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
+        }
+    }
     public void sendTournamentApprovalEmail(
             VendorEntity vendorEntity, String title, String body, Tournament tournament
     ) throws IOException {
@@ -380,6 +409,49 @@ public class EmailService {
                 .replace("{title}", title)
                 .replace("{reason}", body)
                 .replace("{fee}",String.valueOf(tournament.getEntryFee()))
+                .replace("{body}", body);
+
+        try {
+            sendEmail(to, title, messageBody, true);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Error sending tournament status email: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendLeagueApprovalEmail(
+            VendorEntity vendorEntity, String title, String body, League league
+    ) throws IOException {
+
+        // Load HTML template (same for approval/rejection, use placeholders inside)
+        String template = loadTemplate("email-templates/vendor-league-approved.html");
+
+        String firstName = vendorEntity.getFirst_name();
+        String to = vendorEntity.getPrimary_email();
+
+
+        ZonedDateTime renewalDate = league.getScheduledAt();
+        ZonedDateTime createdate = league.getCreatedDate();
+
+        String formattedDatescheduledate = renewalDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        String formattedDatecreatedate = createdate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+
+        // Replace placeholders with dynamic content
+        String messageBody = template
+                .replace("{firstName}", firstName)
+                .replace("{prizePool}",String.valueOf(league.getPrizePool()))
+                .replace("{gameName}", league.getName())
+                .replace("{themeName}",league.getTheme().getName())
+                .replace("{publishDate}",formattedDatecreatedate)
+                .replace("{scheduledDate}",formattedDatescheduledate)
+
+//                .replace("{totalparticipants}",String.valueOf(league.getParticipants()))
+//                .replace("{gameicon}",league.getTheme().getGameimageUrl())
+//                .replace("{profilepic}",league.getVendorEntity().getProfilePic())
+                .replace("{challengeTo}",league.getChallengingVendorName())
+                .replace("{challenger}",league.getOpponentVendorName())
+                .replace("{title}", title)
+//                .replace("{reason}", body)
+                .replace("{entryFee}",String.valueOf(league.getFee()))
                 .replace("{body}", body);
 
         try {

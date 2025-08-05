@@ -57,7 +57,7 @@
                 <tr>
                     <td style="padding: 20px;">
                         <p style="font-size: 14px; color: #ffaaaa; margin: 0;">
-                            The reason for rejection will be mentioned here by the admin.
+                            {reason}
                         </p>
                     </td>
                 </tr>
@@ -65,11 +65,12 @@
                 <!-- Game Details -->
                 <tr>
                     <td style="padding: 20px;">
-                        <h3 style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 10px;">GAME DETAILS</h3>
+                        <h3 style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 10px;">LEAGUE DETAILS</h3>
                         <table cellpadding="0" cellspacing="0" width="100%" style="background-color: #36114d; border-radius: 12px; padding: 15px; text-align: left;">
                             <tr>
                                 <td colspan="2" style="padding: 10px; font-size: 14px; color: #ffffff;">
-                                    <p style="margin: 0 0 10px;">Game: <strong>{gameName}</strong> <span style="color: #bbbbbb;">Default theme</span></p>
+                                    <p style="margin: 0 0 10px;">Game: <strong>{gameName}</strong> <span style="color: #bbbbbb;">{themeName}</span></p>
+                                    <p style="margin: 0 0 10px;">League Name: <strong>{name}</strong></p>
                                     <p style="margin: 0 0 10px;">Entry Fee: ₹<strong>{entryFee}</strong></p>
                                 </td>
                             </tr>

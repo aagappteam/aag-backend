@@ -2410,8 +2410,6 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             throw new BusinessException("Error updating league details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
     public BigDecimal getTotalWinningsOfPlayer(Long playerId) {
         try {
             // Step 1: Get distinct league IDs where this player has participated
@@ -2617,8 +2615,6 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                 }
 
-
-
                 vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
                 vendorEntity.setTotal_league_published(vendorEntity.getTotal_league_published() == null ? 0 : vendorEntity.getTotal_league_published() + 1);
 
@@ -2636,6 +2632,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             } else {
                 throw new IllegalArgumentException("Invalid league status: " + request.getStatus());
             }
+            league.setScheduledAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
 
             leagueRepository.save(league);
 
@@ -2657,11 +2654,20 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             notificationRepository.save(opponentNotification);
 
             // Send emails to both vendors
-            if (vendorEntity.getPrimary_email() != null) {
-                emailService.sendTournamentEmail(vendorEntity, title, body);
-            }
-            if (opponentVendor.getPrimary_email() != null) {
-                emailService.sendTournamentEmail(opponentVendor, title, body);
+            if (request.getStatus() == LeagueStatus.APPROVED) {
+                if (vendorEntity.getPrimary_email() != null) {
+                    emailService.sendLeagueApprovalEmail(vendorEntity, title, body, league);
+                }
+                if (opponentVendor.getPrimary_email() != null) {
+                    emailService.sendLeagueApprovalEmail(opponentVendor, title, body, league);
+                }
+            } else if (request.getStatus() == LeagueStatus.REJECTED) {
+                if (vendorEntity.getPrimary_email() != null) {
+                    emailService.sendLeagueRejectionEmail(vendorEntity, title, body, league);
+                }
+                if (opponentVendor.getPrimary_email() != null) {
+                    emailService.sendLeagueRejectionEmail(opponentVendor, title, body, league);
+                }
             }
 
             // Push FCM to both vendors' followers
@@ -2679,6 +2685,4 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             throw new RuntimeException("Error updating league status: " + e.getMessage(), e);
         }
     }
-
-
 }
