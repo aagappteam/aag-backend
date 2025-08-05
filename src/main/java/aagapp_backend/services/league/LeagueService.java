@@ -2280,7 +2280,6 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             }
 
             int totalTeamScore = winner.getTotalScore();
-//            BigDecimal totalPrizePool = Constant.LEAGUE_PRIZE_POOL;
             BigDecimal distributedPrize = BigDecimal.ZERO;
 
             // Sort players by score descending
@@ -2292,7 +2291,12 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             List<Map.Entry<Player, Integer>> topPlayers = sortedPlayers.stream().limit(topN).toList();
             List<Map.Entry<Player, Integer>> remainingPlayers = sortedPlayers.stream().skip(topN).toList();
 
-            // Top N contribution-based prize
+            BigDecimal prizePool = league.getPrizePool();
+            if (prizePool == null) {
+                prizePool = BigDecimal.ZERO;
+            }
+
+            // Top N contribution-based prize distribution
             for (Map.Entry<Player, Integer> entry : topPlayers) {
                 Player player = entry.getKey();
                 int score = entry.getValue();
@@ -2301,38 +2305,33 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                         .multiply(BigDecimal.valueOf(100))
                         .divide(BigDecimal.valueOf(totalTeamScore), 2, RoundingMode.HALF_UP);
 
-                BigDecimal prize = league.getPrizePool()
+                BigDecimal prize = prizePool
                         .multiply(contributionPercent)
                         .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
                 distributedPrize = distributedPrize.add(prize);
 
+                // 80% winning, 20% bonus
+                BigDecimal winningPart = prize.multiply(BigDecimal.valueOf(0.8)).setScale(2, RoundingMode.HALF_UP);
+                BigDecimal bonusPart = prize.subtract(winningPart);
+
                 Wallet wallet = player.getCustomer().getWallet();
-                wallet.setWinningAmount(wallet.getWinningAmount().add(prize));
+                wallet.setWinningAmount(wallet.getWinningAmount().add(winningPart));
+                wallet.getCustomCustomer().setBonusBalance(wallet.getCustomCustomer().getBonusBalance().add(bonusPart));
                 walletRepo.save(wallet);
+
                 Notification notification = new Notification();
                 notification.setCustomerId(player.getPlayerId());
-                notification.setName(player.getCustomer().getName()!=null?player.getCustomer().getName():"N/A");
+                notification.setName(player.getCustomer().getName() != null ? player.getCustomer().getName() : "N/A");
                 notification.setDescription("Wallet balance credited");
                 notification.setAmount(prize.doubleValue());
-//                notification.setDetails("Rs. " + prize.doubleValue() + " won in " + league.getName());
                 notification.setDetails("Rs. " + prize.stripTrailingZeros().toPlainString() + " won in " + league.getName());
-
                 notification.setRole("Customer");
                 notificationRepository.save(notification);
             }
 
             // Remaining prize equal distribution
-//            BigDecimal remainingPrize = league.getPrizePool().subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
-
-
-            BigDecimal prizePool = league.getPrizePool();
-            if (prizePool == null) {
-                prizePool = BigDecimal.ZERO;
-            }
-
             BigDecimal remainingPrize = prizePool.subtract(distributedPrize).setScale(2, RoundingMode.HALF_UP);
-
 
             if (!remainingPlayers.isEmpty() && remainingPrize.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal equalShare = remainingPrize
@@ -2340,20 +2339,23 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                 for (Map.Entry<Player, Integer> entry : remainingPlayers) {
                     Player player = entry.getKey();
+
+                    BigDecimal winningPart = equalShare.multiply(BigDecimal.valueOf(0.8)).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal bonusPart = equalShare.subtract(winningPart);
+
                     Wallet wallet = player.getCustomer().getWallet();
                     if (wallet != null) {
-                        wallet.setWinningAmount(wallet.getWinningAmount().add(equalShare));
+                        wallet.setWinningAmount(wallet.getWinningAmount().add(winningPart));
+                        wallet.getCustomCustomer().setBonusBalance(wallet.getCustomCustomer().getBonusBalance().add(bonusPart));
                         walletRepo.save(wallet);
                     }
 
                     Notification notification = new Notification();
                     notification.setCustomerId(player.getPlayerId());
+                    notification.setName(player.getCustomer().getName() != null ? player.getCustomer().getName() : "N/A");
                     notification.setDescription("Wallet balance credited");
-                    notification.setName(player.getCustomer().getName()!=null?player.getCustomer().getName():"N/A");
                     notification.setAmount(equalShare.doubleValue());
                     notification.setDetails("Rs. " + equalShare.stripTrailingZeros().toPlainString() + " won in " + league.getName());
-
-//                    notification.setDetails("Rs. " + equalShare.doubleValue() + " won in " + league.getName());
                     notification.setRole("Customer");
                     notificationRepository.save(notification);
                 }
