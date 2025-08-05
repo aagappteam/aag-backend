@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class KycService {
@@ -222,17 +223,20 @@ public class KycService {
 
         // Log admin action
 
-        Object principalObj = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String emailperformedby = null;
 
-        if (principalObj instanceof AbstractMap.SimpleEntry<?, ?> entry) {
-            Long adminId = (Long) entry.getKey();
-            emailperformedby = (String) entry.getValue();
+        Object principalObj = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-            // ✅ Corrected variable name here
-            System.out.println("Logged-in Admin ID: " + adminId);
-            System.out.println("Logged-in Admin Email: " + emailperformedby);
+        if (principalObj instanceof Map<?, ?> map) {
+            Long adminId = (Long) map.get("adminId");
+             emailperformedby = (String) map.get("email");
+            String nameperformedby = (String) map.get("name");
+
+            System.out.println("Admin ID: " + adminId);
+            System.out.println("Admin Email: " + emailperformedby);
+            System.out.println("Admin Name: " + nameperformedby);
         }
+
 
         // Optional, if you still want this
         String performedBy = SecurityContextHolder.getContext().getAuthentication().getName(); // will print "1=admin@example.com"

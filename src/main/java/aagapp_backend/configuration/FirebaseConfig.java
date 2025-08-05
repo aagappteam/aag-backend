@@ -20,6 +20,9 @@ public class FirebaseConfig {
     @Value("${app.firebase-configuration-file}")
     private String firebaseConfigPath;
 
+//    private static final String firebaseConfigPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+
+
     private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
 
     @PostConstruct

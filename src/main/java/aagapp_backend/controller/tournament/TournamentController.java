@@ -421,7 +421,6 @@ public class TournamentController {
                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid tournament status");
            }
 
-//           notification.setAmount((double) tournament.getEntryFee());
            notification.setDescription(title);
            notification.setDetails(body);
            notificationRepository.save(notification);

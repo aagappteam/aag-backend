@@ -463,7 +463,7 @@ public class LeagueService {
                 league.setEndDate(league.getScheduledAt().plusHours(Constant.LEAGUE_SESSION_TIME));
             } else {
                 league.setStatus(LeagueStatus.PENDING);
-               league.setScheduledAt(nowInKolkata);
+
                 league.setEndDate(nowInKolkata.plusHours(Constant.LEAGUE_SESSION_TIME));
             }
             league.setMinPlayersPerTeam(1);
@@ -866,7 +866,7 @@ public class LeagueService {
                 // If the 10-minute window has passed since the challenge was scheduled
                 if (ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).isAfter(challenge.getCreatedAt().plusMinutes(10))) {
                     // Reject the challenge if it's expired
-                    challenge.setChallengeStatus(Challenge.ChallengeStatus.REJECTED);
+                    challenge.setChallengeStatus(Challenge.ChallengeStatus.EXPIRED);
                     challangeRepository.save(challenge);
 
                 }
@@ -2598,12 +2598,11 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                 if(league.getScheduledAt()!=null){
                     body = "Your league has been approved and will go live according to the scheduled time.";
-                    league.setStatus(LeagueStatus.SCHEDULED);
+                    league.setStatus(LeagueStatus.ACTIVE);
 
 
                 }else{
                     league.setStatus(LeagueStatus.ACTIVE);
-
                     body = "Your league has been approved and has been published.";
 
                 }
