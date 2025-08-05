@@ -362,7 +362,7 @@ public class EmailService {
         // Replace placeholders with dynamic content
         String messageBody = template
                 .replace("{firstName}", firstName)
-                .replace("{name}", league.getName())
+                .replace("{gameName}", league.getName())
                 .replace("{themeName}",league.getTheme().getName())
 //                .replace("{gameicon}",league.getTheme().getGameimageUrl())
 //                .replace("{profilepic}",league.getVendorEntity().getProfilePic())
@@ -451,7 +451,7 @@ public class EmailService {
                 .replace("{challenger}",league.getOpponentVendorName())
                 .replace("{title}", title)
 //                .replace("{reason}", body)
-                .replace("{fee}",String.valueOf(league.getFee()))
+                .replace("{entryFee}",String.valueOf(league.getFee()))
                 .replace("{body}", body);
 
         try {
