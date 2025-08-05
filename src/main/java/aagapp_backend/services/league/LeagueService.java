@@ -324,7 +324,7 @@ public class LeagueService {
             challenge.setChallengeStatus(Challenge.ChallengeStatus.REJECTED);
             challangeRepository.save(challenge);
 
-            VendorEntity opponentVendor = vendorRepository.findById(challenge.getOpponentVendorId())
+            VendorEntity opponentVendor = vendorRepository.findById(challenge.getVendorId())
                     .orElseThrow(() -> new BusinessException("Opponent Vendor not found", HttpStatus.BAD_REQUEST));
             String fcmToken = opponentVendor.getFcmToken();
 
@@ -348,7 +348,7 @@ public class LeagueService {
 
                     Notification notification = new Notification();
                     notification.setRole("Vendor");
-                    notification.setVendorId(challenge.getOpponentVendorId());
+                    notification.setVendorId(challenge.getVendorId());
                     notification.setName(opponentVendor.getFirst_name() + " " + opponentVendor.getLast_name());
                     notification.setDescription("League challenge");
                     notification.setDetails("Your opponent has declined your league challenge");
