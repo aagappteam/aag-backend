@@ -2053,6 +2053,9 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                     league.getName(),
                     winner.getTeamName(),
                     league.getPrizePool().toString(),
+                    league.getGameName(),
+                    league.getTheme().getName(),
+                    league.getTheme().getImageUrl(),
                     teamDetails
             );
 
