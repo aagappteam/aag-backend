@@ -2615,8 +2615,6 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
                 }
 
-
-
                 vendorEntity.setPublishedLimit((vendorEntity.getPublishedLimit() == null ? 0 : vendorEntity.getPublishedLimit()) + 1);
                 vendorEntity.setTotal_league_published(vendorEntity.getTotal_league_published() == null ? 0 : vendorEntity.getTotal_league_published() + 1);
 
@@ -2656,11 +2654,13 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
             // Send emails to both vendors
             if (vendorEntity.getPrimary_email() != null) {
-                emailService.sendTournamentEmail(vendorEntity, title, body);
+                emailService.sendLeagueRejectionEmail(vendorEntity, title, body,league);
             }
             if (opponentVendor.getPrimary_email() != null) {
-                emailService.sendTournamentEmail(opponentVendor, title, body);
+                emailService.sendLeagueRejectionEmail(opponentVendor, title, body, league);
             }
+
+//            emailService.sendLeagueApprovalEmail(vendorEntity, title, body,league);
 
             // Push FCM to both vendors' followers
             CompletableFuture.runAsync(() ->
