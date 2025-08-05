@@ -393,18 +393,21 @@ public class LeagueController {
 
             League publishedLeague = leagueService.publishLeague(challenge, vendorId);
 
+            //  Notification for opponent vendor (who is publishing the game)
+            Notification opponentNotification = new Notification();
+            opponentNotification.setVendorId(vendorId);
+            opponentNotification.setRole("Vendor");
+            opponentNotification.setDescription("League Submitted for Review");
+            opponentNotification.setDetails("League submitted. Pending admin approval before it goes live.");
+            notificationRepository.save(opponentNotification);
 
-            // Now create a single notification for the vendor
-            Notification notification = new Notification();
-            notification.setVendorId(vendorId);
-            notification.setRole("Vendor");
-//            notification.setAmount(publishedLeague.getFee());
-            notification.setDescription("League Submitted for Review");
-            notification.setDetails("Your league has been submitted and is pending admin approval before going live at the scheduled time.");
-
-            notificationRepository.save(notification);
-
-
+            //  Notification for challenge creator (vendor who created the challenge)
+            Notification creatorNotification = new Notification();
+            creatorNotification.setVendorId(challenge.getVendorId());
+            creatorNotification.setRole("Vendor");
+            creatorNotification.setDescription("League Submitted for Review");
+            creatorNotification.setDetails("Opponent accepted the challenge. League submitted for admin review.");
+            notificationRepository.save(creatorNotification);
 
 
             if (challenge.getScheduledAt() != null) {

@@ -379,8 +379,6 @@ public class MatchService {
                 .toList();
 
         BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
-//        int totalPlayers = roomPlayers.size();
-//        int totalPlayers = gameRoom.getMaxPlayers();
         int totalWinners = winners.size();
 
         BigDecimal singleBonus = entryFee.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT));

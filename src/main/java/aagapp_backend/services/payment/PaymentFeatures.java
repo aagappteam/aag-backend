@@ -75,11 +75,7 @@ public class PaymentFeatures {
 
 
             int dailyLimit = vendor.getPublishedLimit() != null ? vendor.getPublishedLimit() : 0;
-            System.out.println("Daily Usage: " + dailyLimit);
 
-            System.out.println("Daily Usage: " + vendor.getDailyLimit() );
-
-            System.out.println("Daily Limit: " + activePlan.getDailyLimit());
 
             if (dailyLimit >= activePlan.getDailyLimit()) {
                 return ResponseService.generateErrorResponse(
