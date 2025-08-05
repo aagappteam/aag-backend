@@ -2410,8 +2410,6 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             throw new BusinessException("Error updating league details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
     public BigDecimal getTotalWinningsOfPlayer(Long playerId) {
         try {
             // Step 1: Get distinct league IDs where this player has participated
@@ -2679,6 +2677,4 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             throw new RuntimeException("Error updating league status: " + e.getMessage(), e);
         }
     }
-
-
 }
