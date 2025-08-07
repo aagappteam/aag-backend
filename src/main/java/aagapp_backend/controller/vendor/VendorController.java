@@ -354,16 +354,31 @@ public class VendorController {
                 String[] nameParts = firstName.trim().split("\\s+");
                 String firstNamePart = nameParts.length >= 1 ? nameParts[0].trim() : "";
                 String lastNamePart = nameParts.length >= 2 ? nameParts[1].trim() : "";
-
                 if (nameParts.length == 1) {
+                    conditions.add("(" +
+                            "LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
+                            "OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
+                            "OR LOWER(s.user_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))" +
+                            ")");
+                }
+
+                /*if (nameParts.length == 1) {
                     conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
                             "OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')))");
-                } else {
+                } */else {
                     if (!firstNamePart.isEmpty()) {
-                        conditions.add("LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))");
+                        conditions.add("(" +
+                                "LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
+                                "OR LOWER(s.user_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))" +
+                                ")");
                     }
                     if (!lastNamePart.isEmpty()) {
-                        conditions.add("LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))");
+//                        conditions.add("LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))");
+                        conditions.add("(" +
+                                "LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%')) " +
+                                "OR LOWER(s.user_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))" +
+                                ")");
+
                     }
                 }
             }
