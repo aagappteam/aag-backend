@@ -106,14 +106,14 @@ public class PrivilegeInterceptor implements HandlerInterceptor {
 
         System.out.println("Path: " + path);
         System.out.println("Method: " + method);
-        Optional<PrivilegeMapping> mapping = mappingCache.getMapping(path, method);
+/*        Optional<PrivilegeMapping> mapping = mappingCache.getMapping(path, method);
 
 
         System.out.println("mapping " + mapping);
 
         if (mapping.isEmpty()) {
             return true;
-        }
+        }*/
 
 /*        String requiredPrivilege = mapping.get().getPrivilegeName();
         System.out.println("requiredPrivilege " + requiredPrivilege);
@@ -144,8 +144,13 @@ public class PrivilegeInterceptor implements HandlerInterceptor {
     }
 
     private boolean isUnsecuredUri(String requestURI) {
-        return UNSECURED_PATHS.stream().anyMatch(requestURI::startsWith) || "/".equals(requestURI);
+        if (UNSECURED_PATHS.stream().anyMatch(requestURI::startsWith) || "/".equals(requestURI)) {
+            return true;
+        }
+
+        return requestURI.matches("^/vendor/\\d+/(games|leagues|tournaments)/\\d+$");
     }
+
 
 }
 

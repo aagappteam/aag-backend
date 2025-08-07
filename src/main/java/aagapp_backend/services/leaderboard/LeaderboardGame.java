@@ -100,7 +100,8 @@ public class LeaderboardGame {
 
         // 6. Convert to list & sort by score descending
         List<LeaderboardResponseDTOAdmin> leaderboard = new ArrayList<>(playerMap.values());
-        leaderboard.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+//        leaderboard.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+        leaderboard.sort((a, b) -> Double.compare(b.getWinningAmmount(), a.getWinningAmmount()));
 
         // 7. Apply pagination manually
         int start = (int) pageable.getOffset();
@@ -108,8 +109,8 @@ public class LeaderboardGame {
         List<LeaderboardResponseDTOAdmin> pagedList = leaderboard.subList(start, end);
 
         // 8. Get total players in all rooms
-        long totalPlayers = game.getMaxPlayersPerTeam();
-
+       long totalPlayers = game.getMaxPlayersPerTeam();
+//        long totalPlayers = playerMap.size();
         // 9. Vendor name (only user_name)
         String vendorName = game.getVendorEntity() != null && game.getVendorEntity().getFirst_name() != null
                 ? game.getVendorEntity().getFirst_name()
@@ -189,7 +190,8 @@ public class LeaderboardGame {
 
         // 6. Convert to list & sort by score descending
         List<LeaderboardResponseDTOAdmin> leaderboard = new ArrayList<>(playerMap.values());
-        leaderboard.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+//        leaderboard.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+        leaderboard.sort((a, b) -> Double.compare(b.getWinningAmmount(), a.getWinningAmmount()));
 
         // 7. Apply pagination manually
         int start = (int) pageable.getOffset();

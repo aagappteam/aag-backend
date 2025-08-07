@@ -5,6 +5,7 @@ import aagapp_backend.repository.admin.PrivilegeMappingRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,7 +18,8 @@ public class PrivilegeMappingCache {
 
     private Map<String, PrivilegeMapping> privilegeMap = new HashMap<>();
 
-    @PostConstruct
+/*    @PostConstruct
+    @Transactional
     public void loadMappings() {
         privilegeMap = mappingRepo.findAll().stream()
                 .collect(Collectors.toMap(
@@ -39,5 +41,5 @@ public class PrivilegeMappingCache {
 
     public int getTotalMappings() {
         return privilegeMap.size();
-    }
+    }*/
 }

@@ -92,14 +92,25 @@ public class GlobalExceptionHandler {
         return generateErrorResponse("Invalid request body", HttpStatus.BAD_REQUEST,ex.getMessage());
     }
 
-    @ExceptionHandler(value = Exception.class)
+/*    @ExceptionHandler(value = Exception.class)
     public ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatus status, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setMessage("Internal Server Error");
         errorResponse.setStatus_code(status.value());
         errorResponse.setStatus(status);
         return new ResponseEntity<>(errorResponse, headers, status);
+    }*/
+
+    @ExceptionHandler(value = Exception.class)
+    public ResponseEntity<Object> handleExceptionInternal(Exception ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setMessage("Internal Server Error");
+        errorResponse.setStatus_code(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        errorResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
 
     @ExceptionHandler(value = { MethodArgumentNotValidException.class })
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, WebRequest request) {
