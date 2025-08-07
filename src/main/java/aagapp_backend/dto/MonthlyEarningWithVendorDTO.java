@@ -38,7 +38,8 @@ public class MonthlyEarningWithVendorDTO {
         this.vendorName = vendor.getFirst_name() + " " + vendor.getLast_name();
         this.mobile = vendor.getMobileNumber();
         this.email = vendor.getPrimary_email();
-        this.createdDate = e.getCreatedDate().toString();
-    }
+        this.createdDate = (e.getCreatedDate() != null)
+                ? e.getCreatedDate().toString()
+                : null;    }
 
 }
