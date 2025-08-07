@@ -214,8 +214,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || requestURI.startsWith("/MerchantAcknowledgement")
                 || requestURI.startsWith("/Bank")
                 || requestURI.equals("/payment/payout-callback")
+                || requestURI.matches("^/vendor/\\d+/(games|leagues|tournaments)/\\d+$");
 
-                ;
+
     }
 
 
