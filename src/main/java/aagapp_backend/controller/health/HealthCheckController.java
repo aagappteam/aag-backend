@@ -14,8 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthCheckController {
     @Autowired
     private ResponseService responseService;
-    @GetMapping("/ping")
+    @GetMapping(value = "/ping", produces = "application/json")
     public ResponseEntity<SuccessResponse> ping() {
         return responseService.generateSuccessResponse("ping ", null, HttpStatus.OK);
     }
+
 }
