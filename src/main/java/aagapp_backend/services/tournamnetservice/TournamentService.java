@@ -1029,7 +1029,7 @@ public class TournamentService {
 
             TournamentRoom room = new TournamentRoom();
             room.setTournament(tournament);
-            room.setMaxParticipants(2);
+            room.setMaxParticipants(1);
             room.setCurrentParticipants(1);
             room.setStatus("COMPLETED");
             room.setRound(1);
@@ -1049,18 +1049,6 @@ public class TournamentService {
             result.setPlayedAt(LocalDateTime.now());
             tournamentResultRecordRepository.save(result);
 
-/*            Notification notification = new Notification();
-            notification.setAmount(userPrizePool.doubleValue());
-//            notification.setDetails("You won ₹ " + userPrizePool + " in Round 1");
-            String prizeStr = userPrizePool.stripTrailingZeros().toPlainString();
-            notification.setDetails("You won ₹ " + prizeStr + " in Round 1");
-
-            notification.setDescription("Round Prize");
-            notification.setRole("Customer");
-            notification.setCustomerId(winner.getCustomer().getId());
-            notification.setName(winner.getCustomer().getName()!=null?winner.getCustomer().getName():"N/A");
-
-            notificationRepository.save(notification);*/
             distributeRoundPrize(tournament, 1);
 
             String fcmToken = tournament.getVendorEntity().getFcmToken();
@@ -2520,8 +2508,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
                 Notification notification = new Notification();
                 notification.setAmount(tournament.getRoomprize().doubleValue());
-//                notification.setDetails("You won ₹ " + tournament.getRoomprize().doubleValue() + " in Round " + nextRound);
-                notification.setDetails("You won ₹ " + prize.stripTrailingZeros().toPlainString() + " in Round " + nextRound);
+                notification.setDetails("You won Rs. " + prize.stripTrailingZeros().toPlainString() + " in Round " + nextRound);
 
                 notification.setDescription("Round Prize");
                 notification.setRole("Customer");
