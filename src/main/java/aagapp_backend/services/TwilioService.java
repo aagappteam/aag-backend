@@ -26,6 +26,9 @@ import java.util.Random;
 @Service
 public class TwilioService {
 
+    @Autowired
+    CommonService commonservice;
+
     private ExceptionHandlingImplement exceptionHandling;
 
     private CustomCustomerService customCustomerService;
@@ -61,9 +64,20 @@ public class TwilioService {
     public ResponseEntity<Map<String, Object>> sendOtpToMobile(String mobileNumber, String countryCode) {
 
         try {
-            String otp = generateOTP();
+           /* String otp = generateOTP();
 
          otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
+*/
+
+            boolean isBypassNumber = commonservice.getBypassNumbers().contains(mobileNumber);
+
+            String otp;
+            if (isBypassNumber) {
+                otp = "2025";
+            } else {
+                otp = generateOTP();
+                otpservice.sendOtponmobilenumber(countryCode, mobileNumber, otp);
+            }
 
             CustomCustomer existingCustomer = customCustomerService.findCustomCustomerByPhone(mobileNumber, countryCode);
 /*
@@ -142,8 +156,21 @@ public class TwilioService {
         }
 
         try {
-            String otp = generateOTP();
-          otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);
+           /* String otp = generateOTP();
+          otpservice.sendOtponmobilenumber(countryCode,mobileNumber,otp);*/
+
+
+
+            boolean isBypassNumber = commonservice.getBypassNumbers().contains(mobileNumber);
+
+            String otp;
+            if (isBypassNumber) {
+                otp = "2025";
+            } else {
+                otp = generateOTP();
+                otpservice.sendOtponmobilenumber(countryCode, mobileNumber, otp);
+            }
+
 
             VendorEntity existingServiceProvider = venderService.findServiceProviderByPhone(mobileNumber, countryCode);
 
