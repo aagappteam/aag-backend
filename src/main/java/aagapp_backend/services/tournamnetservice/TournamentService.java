@@ -1021,12 +1021,22 @@ public class TournamentService {
 
 
 //            tournament.setRoomprize(userPrizePool);
-            tournament.setTotalPrizePool(totalCollection.doubleValue());
+            tournament.setTotalPrizePool(totalCollection);
             tournament.setStatus(TournamentStatus.COMPLETED);
             tournament.setStatusUpdatedAt(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
             tournamentRepository.save(tournament);
 
-            distributeRoundPrize(tournament, 1);
+
+            TournamentRoom room = new TournamentRoom();
+            room.setTournament(tournament);
+            room.setMaxParticipants(2);
+            room.setCurrentParticipants(1);
+            room.setStatus("COMPLETED");
+            room.setRound(1);
+            room.setGamepassword("COMPLETED"+tournament.getId());
+            roomRepository.save(room);
+
+
 
             TournamentResultRecord result = new TournamentResultRecord();
             result.setTournament(tournament);
@@ -1039,7 +1049,7 @@ public class TournamentService {
             result.setPlayedAt(LocalDateTime.now());
             tournamentResultRecordRepository.save(result);
 
-            Notification notification = new Notification();
+/*            Notification notification = new Notification();
             notification.setAmount(userPrizePool.doubleValue());
 //            notification.setDetails("You won ₹ " + userPrizePool + " in Round 1");
             String prizeStr = userPrizePool.stripTrailingZeros().toPlainString();
@@ -1050,15 +1060,16 @@ public class TournamentService {
             notification.setCustomerId(winner.getCustomer().getId());
             notification.setName(winner.getCustomer().getName()!=null?winner.getCustomer().getName():"N/A");
 
-            notificationRepository.save(notification);
+            notificationRepository.save(notification);*/
+            distributeRoundPrize(tournament, 1);
 
             String fcmToken = tournament.getVendorEntity().getFcmToken();
             if (fcmToken != null) {
                 try{
                     notoficationFirebase.sendNotification(
                             fcmToken,
-                            "⚠️ Tournament " + tournament.getName() + " was concluded",
-                            "⚠️ Tournament " + tournament.getName() + " was concluded. " +
+                            "️ Tournament " + tournament.getName() + " was concluded",
+                            " Tournament " + tournament.getName() + " was concluded. " +
                                     "User " + winner.getPlayerId() + " is the winner with prize: " + userPrizePool);
                 }catch (Exception e){
                     System.out.println("Error sending notification: " + e.getMessage());
@@ -2036,9 +2047,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         BigDecimal totalBonus = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_AS_BONUS);
 
 
-
-
-
         BigDecimal cashPerWinner = totalCash.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
         BigDecimal bonusPerWinner = totalBonus.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
         BigDecimal prizePerWinner = cashPerWinner.add(bonusPerWinner);
@@ -2063,13 +2071,14 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             walletRepository.save(wallet);
 
             // Update result amount
-            winner.setAmmount(Optional.ofNullable(winner.getAmmount()).orElse(BigDecimal.ZERO).add(cashPerWinner));
+            winner.setAmmount(Optional.ofNullable(winner.getAmmount()).orElse(BigDecimal.ZERO).add(prizePerWinner));
 
             // Update bonus balance
             CustomCustomer customCustomer = winner.getPlayer().getCustomer();
             BigDecimal currentBonus = Optional.ofNullable(customCustomer.getBonusBalance()).orElse(BigDecimal.ZERO);
             customCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
             customCustomerRepository.save(customCustomer);
+
 
             tournamentResultRecordRepository.save(winner);
         }
