@@ -77,9 +77,9 @@ public class LeaderBoardTournament {
 
             // 4. Fetch total players in game rooms
 //            long totalPlayers = tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId);
-            long totalPlayers = Optional.ofNullable(
+          /*  long totalPlayers = Optional.ofNullable(
                     tournamentRoomRepository.sumMaxParticipantsByTournamentId(tournamentId)
-            ).orElse(0L);
+            ).orElse(0L);*/
 
             // 5. Aggregate players
             Map<Long, GameLeaderboardResponseDTOTornamentAdmin> playerMap = new HashMap<>();
@@ -158,7 +158,7 @@ public class LeaderBoardTournament {
             response.setRoundprize(game.getRoomprize().toString());
             response.setGameIcon(game.getGameUrl());
             response.setThemeName(theme.getName());
-            response.setTotalPlayers((int) totalPlayers);
+            response.setTotalPlayers( totalItems);
             response.setPlayers(pagedPlayers);
             response.setTotalPages(totalPages);
             response.setTotalItems(totalItems);
