@@ -52,6 +52,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class CommonService {
@@ -479,4 +480,23 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
         customCustomerRepository.saveAll(customers);
 
     }
+
+
+    public Set<String> getBypassNumbers() {
+        return Set.of(
+                "7985043830",
+                "8576858549",
+                "7985043831",
+                "8887505826",
+                "8651201320",
+                "7492911839",
+                "6388250709",
+                "7068871043",
+                "7007430214",
+                "7290809136"
+        );
+    }
+
 }
+
+

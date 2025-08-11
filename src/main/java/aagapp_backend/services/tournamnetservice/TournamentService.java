@@ -2029,8 +2029,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         if (winnersCount == 0) return;
 
-
-
         BigDecimal totalCash = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_TO_USER);
         BigDecimal totalBonus = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_AS_BONUS);
 

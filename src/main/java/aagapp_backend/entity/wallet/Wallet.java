@@ -46,6 +46,10 @@ public class Wallet {
     @Column(name = "winning_amount", nullable = false)
     private BigDecimal winningAmount;
 
+
+
+
+
     @Column(name = "is_test", nullable = false)
     private Boolean isTest = false;
 
@@ -53,6 +57,14 @@ public class Wallet {
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at", updatable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
 }
