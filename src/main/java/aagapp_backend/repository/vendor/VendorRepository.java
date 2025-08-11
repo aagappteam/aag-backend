@@ -143,4 +143,6 @@ public interface VendorRepository extends JpaRepository<VendorEntity, Long> {
     Optional<VendorEntity> findByMobileNumber(String mobileNumber);
 
     Page<VendorEntity> findByIsPaid(boolean b, Pageable pageable);
+
+    List<VendorEntity> findAllByMobileNumberIn(List<String> testMobileNumbers);
 }
