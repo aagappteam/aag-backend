@@ -2048,10 +2048,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             // Update winning wallet
             Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
 
-            System.out.println(wallet.getWinningAmount());
-            System.out.println(cashPerWinner);
-            System.out.println(wallet.getWalletId());
-            System.out.println(winner.getPlayer().getCustomer().getId());
             if (wallet.getWinningAmount() == null) {
                 wallet.setWinningAmount(BigDecimal.ZERO);
             }
