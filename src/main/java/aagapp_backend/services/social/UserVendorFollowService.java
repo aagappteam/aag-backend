@@ -681,32 +681,29 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
     }
 
 
-    //following vendors
     public Map<String, Object> getFeedOfVendors(int page, int size, Long currentUserId) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
-        Pageable pageable1 = PageRequest.of(0, 10);
+        Pageable expandedPageable = PageRequest.of(0, size * 10, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Pageable itemPageable = PageRequest.of(0, 20); // For fetching games/leagues/tournaments
 
-
-
-        Page<VendorEntity> followPage = vendorRepo.findByIsPaid(true, pageable);
+        Page<VendorEntity> followPage = vendorRepo.findByIsPaid(true, expandedPageable);
 
         List<Map<String, Object>> filteredVendors = followPage.getContent().stream()
                 .map(vendor -> {
                     Long vendorId = vendor.getService_provider_id();
 
-                    Page<GetGameResponseDTO> games = gameService.getVisibleGames( vendorId, pageable1);
-                    Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendorFeed(pageable1, vendorId);
+                    Page<GetGameResponseDTO> games = gameService.getVisibleGames(vendorId, itemPageable);
+                    Page<League> leaguesPage = leagueService.getAllActiveLeaguesByVendorFeed(itemPageable, vendorId);
                     List<TournamentStatus> statuses = Arrays.asList(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED);
-                    Page<Tournament> gamesPage = tournamentService.getAllTournaments(pageable1, statuses, vendorId, null);
+                    Page<Tournament> gamesPage = tournamentService.getAllTournaments(itemPageable, statuses, vendorId, null);
+
+                    // Skip if all are empty
+                    if (games.isEmpty() && leaguesPage.isEmpty() && gamesPage.isEmpty()) {
+                        return null;
+                    }
 
                     List<TournamentGetallDTO> gameList = gamesPage.getContent().stream()
-                            .map(this::mapToDTO)  // use your mapping logic
+                            .map(this::mapToDTO)
                             .collect(Collectors.toList());
-
-                    // Skip only if all three are empty
-                    if (games.isEmpty() && leaguesPage.isEmpty() && gamesPage.isEmpty()) {
-                        return null; // skip vendor
-                    }
 
                     Map<String, Object> vendorInfo = new HashMap<>();
                     vendorInfo.put("name", vendor.getUser_name() != null ? vendor.getUser_name() : "Aagveer");
@@ -717,22 +714,31 @@ public List<TopHostWeekDto> getTopHostsThisWeek() {
                     vendorInfo.put("isFollowing", currentUserId != null && followRepo.existsByUserIdAndVendorId(currentUserId, vendorId));
                     vendorInfo.put("games", games.getContent());
                     vendorInfo.put("leagues", leaguesPage.getContent());
-//                    vendorInfo.put("tournaments", gamesPage.getContent());
                     vendorInfo.put("tournaments", gameList);
-
 
                     return vendorInfo;
                 })
-                .filter(Objects::nonNull) // remove skipped/null vendors
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
+        // 🔁 Apply pagination *after* filtering
+        List<Map<String, Object>> paginatedFilteredVendors = filteredVendors.stream()
+                .skip((long) page * size)
+                .limit(size)
+                .collect(Collectors.toList());
+
+        // 🔢 Compute pagination metadata
+        int totalElements = filteredVendors.size();
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+        boolean isLastPage = (page + 1) >= totalPages;
+
         Map<String, Object> vendorPageMap = new HashMap<>();
-        vendorPageMap.put("content", filteredVendors);
+        vendorPageMap.put("content", paginatedFilteredVendors);
         vendorPageMap.put("pageNumber", page);
         vendorPageMap.put("pageSize", size);
-        vendorPageMap.put("totalPages", (int) Math.ceil((double) filteredVendors.size() / size));
-        vendorPageMap.put("totalElements", filteredVendors.size());
-        vendorPageMap.put("last", followPage.isLast());
+        vendorPageMap.put("totalPages", totalPages);
+        vendorPageMap.put("totalElements", totalElements);
+        vendorPageMap.put("last", isLastPage);
 
         Map<String, Object> response = new HashMap<>();
         response.put("vendors", vendorPageMap);
