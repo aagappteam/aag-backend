@@ -2039,7 +2039,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         for (TournamentResultRecord winner : uniqueWinners) {
             // Create notification
-            Notification notification = new Notification();
+           /* Notification notification = new Notification();
             notification.setAmount(prizePerWinner.doubleValue());
             notification.setDetails("You won Rs. " + prizePerWinner.stripTrailingZeros().toPlainString() + " in Round " + round);
             notification.setDescription("Round Prize");
@@ -2047,13 +2047,19 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
             notification.setName(Optional.ofNullable(winner.getPlayer().getCustomer().getName()).orElse("N/A"));
             notificationRepository.save(notification);
-
+*/
             // Update winning wallet
             Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
+
+            System.out.println(wallet.getWinningAmount());
+            System.out.println(cashPerWinner);
+            System.out.println(wallet.getWalletId());
+            System.out.println(winner.getPlayer().getCustomer().getId());
             if (wallet.getWinningAmount() == null) {
                 wallet.setWinningAmount(BigDecimal.ZERO);
             }
             wallet.setWinningAmount(wallet.getWinningAmount().add(cashPerWinner));
+            wallet.setUpdatedAt(LocalDateTime.now());
             walletRepository.save(wallet);
 
             // Update result amount
@@ -2064,8 +2070,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             BigDecimal currentBonus = Optional.ofNullable(customCustomer.getBonusBalance()).orElse(BigDecimal.ZERO);
             customCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
             customCustomerRepository.save(customCustomer);
-
-
             tournamentResultRecordRepository.save(winner);
         }
     }
