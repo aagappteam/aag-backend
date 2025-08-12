@@ -1018,8 +1018,6 @@ public class TournamentService {
             BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(1), RoundingMode.HALF_UP);
             tournament.setTotalrounds(1);
             tournament.setRoomprize(roomPrizePool);
-
-
 //            tournament.setRoomprize(userPrizePool);
             tournament.setTotalPrizePool(totalCollection);
             tournament.setStatus(TournamentStatus.COMPLETED);
@@ -2039,7 +2037,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         for (TournamentResultRecord winner : uniqueWinners) {
             // Create notification
-           /* Notification notification = new Notification();
+            Notification notification = new Notification();
             notification.setAmount(prizePerWinner.doubleValue());
             notification.setDetails("You won Rs. " + prizePerWinner.stripTrailingZeros().toPlainString() + " in Round " + round);
             notification.setDescription("Round Prize");
@@ -2047,7 +2045,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
             notification.setName(Optional.ofNullable(winner.getPlayer().getCustomer().getName()).orElse("N/A"));
             notificationRepository.save(notification);
-*/
             // Update winning wallet
             Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
 
@@ -2482,9 +2479,14 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         int currentRound = tournament.getRound();
 
+        if (tournament.getStatus() == TournamentStatus.COMPLETED) {
+            throw new BusinessException("Tournament is not active.", HttpStatus.BAD_REQUEST);
+        }
+
         if (!isRoundCompleted(tournamentId, currentRound)) {
             throw new BusinessException("Round " + currentRound + " is not completed yet.", HttpStatus.BAD_REQUEST);
         }
+
 
         int nextRound = currentRound + 1;
         if (nextRound <= tournament.getTotalrounds()) {
