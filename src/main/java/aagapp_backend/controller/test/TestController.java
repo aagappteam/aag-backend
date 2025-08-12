@@ -6,8 +6,10 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
+import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.services.*;
 import aagapp_backend.services.admin.AdminLogService;
 import aagapp_backend.services.download.InfluencerEarningsService;
@@ -43,6 +45,9 @@ public class TestController {
 
     @Autowired
     private AdminLogService adminLogService;
+
+    @Autowired
+    private TournamentRepository tournamentRepository;
 
     @Autowired
     private CustomCustomerRepository customCustomerRepository;
@@ -368,6 +373,16 @@ public class TestController {
         // Write to output stream
         workbook.write(response.getOutputStream());
         workbook.close();
+    }
+
+    @PostMapping("/distribute")
+    public ResponseEntity<?> distributePrizePool(@RequestParam Long tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId).orElse(null);
+        if (tournament == null) {
+            return ResponseEntity.notFound().build();
+        }
+         tournamentService.distributeRoundPrize(tournament,1);
+        return ResponseEntity.ok().build();
     }
 
 

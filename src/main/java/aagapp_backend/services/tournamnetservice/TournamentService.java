@@ -1018,8 +1018,6 @@ public class TournamentService {
             BigDecimal roomPrizePool = userPrizePool.divide(new BigDecimal(1), RoundingMode.HALF_UP);
             tournament.setTotalrounds(1);
             tournament.setRoomprize(roomPrizePool);
-
-
 //            tournament.setRoomprize(userPrizePool);
             tournament.setTotalPrizePool(totalCollection);
             tournament.setStatus(TournamentStatus.COMPLETED);
@@ -2047,13 +2045,14 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
             notification.setName(Optional.ofNullable(winner.getPlayer().getCustomer().getName()).orElse("N/A"));
             notificationRepository.save(notification);
-
             // Update winning wallet
             Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
+
             if (wallet.getWinningAmount() == null) {
                 wallet.setWinningAmount(BigDecimal.ZERO);
             }
             wallet.setWinningAmount(wallet.getWinningAmount().add(cashPerWinner));
+            wallet.setUpdatedAt(LocalDateTime.now());
             walletRepository.save(wallet);
 
             // Update result amount
@@ -2064,8 +2063,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             BigDecimal currentBonus = Optional.ofNullable(customCustomer.getBonusBalance()).orElse(BigDecimal.ZERO);
             customCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
             customCustomerRepository.save(customCustomer);
-
-
             tournamentResultRecordRepository.save(winner);
         }
     }
@@ -2478,9 +2475,14 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         int currentRound = tournament.getRound();
 
+        if (tournament.getStatus() == TournamentStatus.COMPLETED) {
+            throw new BusinessException("Tournament is not active.", HttpStatus.BAD_REQUEST);
+        }
+
         if (!isRoundCompleted(tournamentId, currentRound)) {
             throw new BusinessException("Round " + currentRound + " is not completed yet.", HttpStatus.BAD_REQUEST);
         }
+
 
         int nextRound = currentRound + 1;
         if (nextRound <= tournament.getTotalrounds()) {
