@@ -63,6 +63,9 @@ import java.util.stream.Collectors;
 @Service
 public class TournamentService {
 
+    @Autowired
+    TournamentPrizeService tournamentPrizeService;
+
     private final Dotenv dotenv = Dotenv.load();
 
 
@@ -1047,7 +1050,7 @@ public class TournamentService {
             result.setPlayedAt(LocalDateTime.now());
             tournamentResultRecordRepository.save(result);
 
-            distributeRoundPrize(tournament, 1);
+            tournamentPrizeService.distributeRoundPrize(tournament, 1);
 
             String fcmToken = tournament.getVendorEntity().getFcmToken();
             if (fcmToken != null) {
@@ -1116,8 +1119,16 @@ public class TournamentService {
                 roomRepository.save(room);
 
                 try {
-                    assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
-                    assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);
+/*                    assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
+                    assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);*/
+
+                    boolean p1Assigned = assignPlayerToSpecificRoom(activePlayers.get(i), tournamentId, room);
+                    boolean p2Assigned = assignPlayerToSpecificRoom(activePlayers.get(i + 1), tournamentId, room);
+
+                    if (p1Assigned && p2Assigned) {
+                        roomRepository.save(room);
+                    }
+
                 } catch (Exception e) {
                     System.out.println("❌ Failed to assign players to room. Player IDs: " +
                             activePlayers.get(i).getPlayerId() + ", " +
@@ -1233,7 +1244,7 @@ public class TournamentService {
         }
 
         playerRepository.save(player);
-        roomRepository.save(room);
+//        roomRepository.save(room);
         return true;
     }
 
@@ -1611,26 +1622,6 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
     }
 
-    public void setvendorShare(Tournament tournament) {
-        BigDecimal totalWinningAmount = BigDecimal.valueOf(tournament.getTotalPrizePool());
-        BigDecimal vendorShareAmount = totalWinningAmount.multiply(PriceConstant.VENDOR_REVENUE_PERCENT);
-
-        VendorEntity vendor = tournament.getVendorEntity();
-        VendorWallet wallet = vendor.getWallet();
-
-        if (wallet == null) {
-            VendorWallet vendorWallet = new VendorWallet();
-            vendorWallet.setVendorEntity(vendor);
-            vendorWallet.setWinningAmount(vendorShareAmount);
-            walletRepo.save(vendorWallet);
-
-            vendor.setWallet(vendorWallet);
-            vendorRepository.save(vendor);
-        } else {
-            wallet.setWinningAmount(wallet.getWinningAmount().add(vendorShareAmount));
-            walletRepo.save(wallet);
-        }
-    }
     @Transactional
     public void processMatchResults(GameResult gameResult) {
         List<PlayerDtoWinner> players = gameResult.getPlayers();
@@ -1904,7 +1895,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                     .orElseThrow(() -> new BusinessException("Tournament not found" , HttpStatus.BAD_REQUEST));
 
             if (isRoundCompleted(tournamentId, currentRound)) {
-                distributeRoundPrize(tournament, currentRound);
+                tournamentPrizeService.distributeRoundPrize(tournament, currentRound);
 
                 long freePassCount = tournamentResultRecordRepository
                         .countByTournamentIdAndRoundAndStatus(tournamentId, currentRound, "FREE_PASS");
@@ -2030,10 +2021,17 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
         BigDecimal totalCash = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_TO_USER);
         BigDecimal totalBonus = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_AS_BONUS);
 
+        System.out.println("Total Cash: " + totalCash);
+        System.out.println("Total Bonus: " + totalBonus);
+
 
         BigDecimal cashPerWinner = totalCash.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
         BigDecimal bonusPerWinner = totalBonus.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
         BigDecimal prizePerWinner = cashPerWinner.add(bonusPerWinner);
+
+        System.out.println("Total cashPerWinner: " + cashPerWinner);
+        System.out.println("Total bonusPerWinner: " + bonusPerWinner);
+        System.out.println("Total prizePerWinner: " + prizePerWinner);
 
         for (TournamentResultRecord winner : uniqueWinners) {
             // Create notification
@@ -2047,6 +2045,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             notificationRepository.save(notification);
             // Update winning wallet
             Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
+            System.out.println(winner.getPlayer().getCustomer().getId());
 
             if (wallet.getWinningAmount() == null) {
                 wallet.setWinningAmount(BigDecimal.ZERO);
@@ -2054,6 +2053,9 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             wallet.setWinningAmount(wallet.getWinningAmount().add(cashPerWinner));
             wallet.setUpdatedAt(LocalDateTime.now());
             walletRepository.save(wallet);
+
+            System.out.println("wallet: " + wallet.getWalletId());
+
 
             // Update result amount
             winner.setAmmount(Optional.ofNullable(winner.getAmmount()).orElse(BigDecimal.ZERO).add(prizePerWinner));
@@ -2491,7 +2493,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
             if (readyPlayers.size() <= 1) {
                 // Only one player is ready for the next round
-                distributeRoundPrize(tournament, nextRound);
+                tournamentPrizeService.distributeRoundPrize(tournament, nextRound);
                 finishTournament(tournamentId);
 
                 TournamentResultRecord result = new TournamentResultRecord();
