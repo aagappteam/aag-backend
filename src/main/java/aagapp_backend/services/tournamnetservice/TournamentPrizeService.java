@@ -134,9 +134,6 @@ public class TournamentPrizeService {
             wallet.setUpdatedAt(LocalDateTime.now());
             walletRepository.save(wallet);
 
-//            System.out.println("wallet: " + wallet.getWalletId());
-
-
             // Update result amount
             winner.setAmmount(Optional.ofNullable(winner.getAmmount()).orElse(BigDecimal.ZERO).add(prizePerWinner));
 
