@@ -60,22 +60,6 @@
                 </tr>
 
                 <!-- Game Details -->
-                <!--<tr>-->
-                <!--    <td style="padding: 20px;">-->
-                <!--        <h3 style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 10px;">LEAGUE DETAILS</h3>-->
-                <!--        <table cellpadding="0" cellspacing="0" width="100%" style="background-color: #36114d; border-radius: 12px; padding: 15px; text-align: left;">-->
-                <!--            <tr>-->
-                <!--                <td colspan="2" style="padding: 10px; font-size: 14px; color: #ffffff;">-->
-                <!--                    <p style="margin: 0 0 10px;">Game: <strong>{gameName}</strong> <span style="color: #bbbbbb;">{themeName}</span></p>-->
-                <!--                    <p style="margin: 0 0 10px;">League Name: <strong>{name}</strong></p>-->
-                <!--                    <p style="margin: 0 0 10px;">Entry Fee: ₹<strong>{entryFee}</strong></p>-->
-                <!--                </td>-->
-                <!--            </tr>-->
-                <!--        </table>-->
-                <!--    </td>-->
-                <!--</tr>-->
-
-                <!-- Game Details -->
                 <tr>
                     <td style="padding: 20px;">
                         <h3 style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 10px;">LEAGUE DETAILS</h3>
@@ -88,7 +72,19 @@
                                         <tr>
                                             <!-- Team Kohli -->
                                             <td align="center" style="padding: 0 10px;">
-                                                <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/blue+opponent+card.png" width="120" alt="Team Kohli" style="display:block;">
+                                                <div style="position: relative; display: inline-block; text-align: center;">
+                                                    <!-- Card Image -->
+                                                    <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/blue+card+2_11zon.png" width="140" alt="Team Kohli" style="display:block; border-radius: 10px;">
+
+                                                    <!-- Player Image Overlay -->
+                                                    <img src="{challengerImage}" width="50" alt="Img not Availble"
+                                                         style="position: absolute; top: 30px; left: 50%; transform: translateX(-40%); border-radius: 50%; border: 2px solid white;">
+
+                                                    <!-- Team Name -->
+                                                    <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); color: #ffffff; font-weight: bold; font-size: 14px;">
+                                                        {challangerTeamName}
+                                                    </div>
+                                                </div>
                                             </td>
 
                                             <!-- VS Icon -->
@@ -96,14 +92,22 @@
                                                 <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/Group+1000005409.png" width="50" alt="VS" style="display:block;">
                                             </td>
 
-                                            <!-- Players Icon -->
-                                            <!--<td align="center" style="padding: 0 10px;">-->
-                                            <!--  <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/team+4+1.png" width="40" alt="Players" style="display:block;">-->
-                                            <!--</td>-->
-
+                                            <!-- Team Dhoni -->
                                             <!-- Team Dhoni -->
                                             <td align="center" style="padding: 0 10px;">
-                                                <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/yellow+opponent+card.png" width="120" alt="Team Dhoni" style="display:block;">
+                                                <div style="position: relative; display: inline-block; text-align: center;">
+                                                    <!-- Card Image -->
+                                                    <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/yellow+crd_11zon.png" width="140" alt="Team Dhoni" style="display:block; border-radius: 10px;">
+
+                                                    <!-- Player Image Overlay -->
+                                                    <img src="{opponentImage}" width="50" alt="Img not Availble"
+                                                         style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); border-radius: 50%; border: 2px solid white;">
+
+                                                    <!-- Team Name -->
+                                                    <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); color: #ffffff; font-weight: bold; font-size: 14px;">
+                                                        {opponentTeamName}
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     </table>
@@ -112,13 +116,21 @@
                             </tr>
 
                             <!-- Text Info -->
-                            <tr>
-                                <td colspan="5" style="padding: 15px; font-size: 14px; color: #ffffff; text-align: left;">
-                                    <p style="margin: 0 0 10px;">Game: <strong>{gameName}</strong> <span style="color: #bbbbbb;">{themeName}</span></p>
-                                    <p style="margin: 0 0 10px;">League Name: <strong>{name}</strong></p>
-                                    <p style="margin: 0;">Entry Fee: ₹<strong>{entryFee}</strong></p>
-                                </td>
-                            </tr>
+                            <!-- Game Details -->
+
+                            <td style="padding: 20px;">
+                                <!--<h3 style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 10px;">LEAGUE DETAILS</h3>-->
+                                <table cellpadding="0" cellspacing="0" width="100%" style="background-color: #36114d; border-radius: 12px; padding: 15px; text-align: left;">
+                                    <tr>
+                                        <td colspan="2" style="padding: 10px; font-size: 14px; color: #ffffff;">
+                                            <p style="margin: 0 0 10px;">Game: <strong>{gameName}</strong> <span style="color: #bbbbbb;">{themeName}</span></p>
+                                            <p style="margin: 0 0 10px;">League Name: <strong>{name}</strong></p>
+                                            <p style="margin: 0 0 10px;">Entry Fee: ₹<strong>{entryFee}</strong></p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+
                         </table>
                     </td>
                 </tr>
