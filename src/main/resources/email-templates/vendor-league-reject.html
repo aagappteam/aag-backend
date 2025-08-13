@@ -43,6 +43,12 @@
                     </td>
                 </tr>
 
+                <tr>
+                    <td align="center" style="padding: 30px 0 10px;">
+                        <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/Group+1000005414.png" width="200" alt="AAGVEER Logo">
+                    </td>
+                </tr>
+
                 <!-- Status -->
                 <tr>
                     <td style="padding: 20px 20px 0;">
@@ -53,28 +59,77 @@
                     </td>
                 </tr>
 
-                <!-- Rejection Reason -->
-                <tr>
-                    <td style="padding: 20px;">
-                        <p style="font-size: 14px; color: #ffaaaa; margin: 0;">
-                            {reason}
-                        </p>
-                    </td>
-                </tr>
+                <!-- Game Details -->
+                <!--<tr>-->
+                <!--    <td style="padding: 20px;">-->
+                <!--        <h3 style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 10px;">LEAGUE DETAILS</h3>-->
+                <!--        <table cellpadding="0" cellspacing="0" width="100%" style="background-color: #36114d; border-radius: 12px; padding: 15px; text-align: left;">-->
+                <!--            <tr>-->
+                <!--                <td colspan="2" style="padding: 10px; font-size: 14px; color: #ffffff;">-->
+                <!--                    <p style="margin: 0 0 10px;">Game: <strong>{gameName}</strong> <span style="color: #bbbbbb;">{themeName}</span></p>-->
+                <!--                    <p style="margin: 0 0 10px;">League Name: <strong>{name}</strong></p>-->
+                <!--                    <p style="margin: 0 0 10px;">Entry Fee: ₹<strong>{entryFee}</strong></p>-->
+                <!--                </td>-->
+                <!--            </tr>-->
+                <!--        </table>-->
+                <!--    </td>-->
+                <!--</tr>-->
 
                 <!-- Game Details -->
                 <tr>
                     <td style="padding: 20px;">
                         <h3 style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 10px;">LEAGUE DETAILS</h3>
-                        <table cellpadding="0" cellspacing="0" width="100%" style="background-color: #36114d; border-radius: 12px; padding: 15px; text-align: left;">
+                        <table cellpadding="0" cellspacing="0" width="100%" style="background-color: #36114d; border-radius: 12px; padding: 15px; text-align: center;">
                             <tr>
-                                <td colspan="2" style="padding: 10px; font-size: 14px; color: #ffffff;">
+                                <td colspan="5" style="padding: 10px;">
+
+                                    <!-- Matchup Section -->
+                                    <table cellpadding="0" cellspacing="0" align="center">
+                                        <tr>
+                                            <!-- Team Kohli -->
+                                            <td align="center" style="padding: 0 10px;">
+                                                <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/blue+opponent+card.png" width="120" alt="Team Kohli" style="display:block;">
+                                            </td>
+
+                                            <!-- VS Icon -->
+                                            <td align="center" style="padding: 0 10px;">
+                                                <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/Group+1000005409.png" width="50" alt="VS" style="display:block;">
+                                            </td>
+
+                                            <!-- Players Icon -->
+                                            <!--<td align="center" style="padding: 0 10px;">-->
+                                            <!--  <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/team+4+1.png" width="40" alt="Players" style="display:block;">-->
+                                            <!--</td>-->
+
+                                            <!-- Team Dhoni -->
+                                            <td align="center" style="padding: 0 10px;">
+                                                <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/yellow+opponent+card.png" width="120" alt="Team Dhoni" style="display:block;">
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                </td>
+                            </tr>
+
+                            <!-- Text Info -->
+                            <tr>
+                                <td colspan="5" style="padding: 15px; font-size: 14px; color: #ffffff; text-align: left;">
                                     <p style="margin: 0 0 10px;">Game: <strong>{gameName}</strong> <span style="color: #bbbbbb;">{themeName}</span></p>
                                     <p style="margin: 0 0 10px;">League Name: <strong>{name}</strong></p>
-                                    <p style="margin: 0 0 10px;">Entry Fee: ₹<strong>{entryFee}</strong></p>
+                                    <p style="margin: 0;">Entry Fee: ₹<strong>{entryFee}</strong></p>
                                 </td>
                             </tr>
                         </table>
+                    </td>
+                </tr>
+
+
+                <!--Rejection Reason -->
+                <tr>
+                    <td style="padding: 20px;">
+                        <p style="font-size: 14px; color: #ffaaaa; margin: 0;">
+                            {reason}
+                        </p>
                     </td>
                 </tr>
 

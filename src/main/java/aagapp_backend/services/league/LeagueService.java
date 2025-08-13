@@ -2601,6 +2601,13 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             VendorEntity opponentVendor = vendorRepository.findById(league.getChallengingVendorId())
                     .orElseThrow(() -> new NoSuchElementException("Opponent vendor not found with ID: " + league.getChallengingVendorId()));
 
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+
+            if(league.getScheduledAt()==null){
+                league.setScheduledAt(now);
+                leagueRepository.save(league);
+            }
+
             String title;
             String body;
 
@@ -2635,9 +2642,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
             } else {
                 throw new IllegalArgumentException("Invalid league status: " + request.getStatus());
             }
-            if(league.getScheduledAt()==null){
-                league.setScheduledAt(league.getScheduledAt().withZoneSameInstant(ZoneId.of("Asia/Kolkata")));
-            }
+
 
             leagueRepository.save(league);
 
@@ -2687,6 +2692,7 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
 
         } catch (Exception e) {
             exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            System.out.println("Error updating league status: " + e.getMessage());
             throw new RuntimeException("Error updating league status: " + e.getMessage(), e);
         }
     }
