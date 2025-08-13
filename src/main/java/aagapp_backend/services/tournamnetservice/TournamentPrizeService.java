@@ -85,9 +85,96 @@ public class TournamentPrizeService {
         List<TournamentResultRecord> winners = tournamentResultRecordRepository
                 .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
 
+        // Track duplicates before filtering
+        Map<Long, List<Long>> customerToPlayersMap = new HashMap<>();
+        for (TournamentResultRecord w : winners) {
+            Long customerId = w.getPlayer().getCustomer().getId();
+            Long playerId = w.getPlayer().getPlayerId();
+            customerToPlayersMap.computeIfAbsent(customerId, k -> new ArrayList<>()).add(playerId);
+        }
+
+        // Log duplicates
+        customerToPlayersMap.forEach((customerId, playerIds) -> {
+            if (playerIds.size() > 1) {
+                System.out.println("⚠ Duplicate winner detected for customerId " + customerId +
+                        " with multiple playerIds: " + playerIds);
+            }
+        });
+
+        // Filter unique winners by customerId
         Map<Long, TournamentResultRecord> uniqueWinnersMap = winners.stream()
                 .collect(Collectors.toMap(
-                        w -> w.getPlayer().getPlayerId(),
+                        w -> w.getPlayer().getCustomer().getId(),
+                        w -> w,
+                        (existing, duplicate) -> existing
+                ));
+
+        List<TournamentResultRecord> uniqueWinners = new ArrayList<>(uniqueWinnersMap.values());
+
+        int winnersCount = uniqueWinners.size();
+        if (winnersCount == 0) return;
+
+        BigDecimal totalCash = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_TO_USER);
+        BigDecimal totalBonus = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_AS_BONUS);
+
+        BigDecimal cashPerWinner = totalCash.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
+        BigDecimal bonusPerWinner = totalBonus.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
+        BigDecimal prizePerWinner = cashPerWinner.add(bonusPerWinner);
+
+        for (TournamentResultRecord winner : uniqueWinners) {
+            // Create notification
+            Notification notification = new Notification();
+            notification.setAmount(prizePerWinner.doubleValue());
+            notification.setDetails("You Won Rs. " + prizePerWinner.stripTrailingZeros().toPlainString() + " in Round " + round);
+            notification.setDescription("Round Prize");
+            notification.setRole("Customer");
+            notification.setCustomerId(winner.getPlayer().getCustomer().getId());
+            notification.setName(Optional.ofNullable(winner.getPlayer().getCustomer().getName()).orElse("N/A"));
+            notificationRepository.save(notification);
+
+            // Update winning wallet
+            Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
+            if (wallet.getWinningAmount() == null) {
+                wallet.setWinningAmount(BigDecimal.ZERO);
+            }
+
+            wallet.setWinningAmount(wallet.getWinningAmount().add(cashPerWinner));
+            wallet.setUpdatedAt(LocalDateTime.now());
+            walletRepository.save(wallet);
+
+
+            // Update result amount
+            winner.setAmmount(Optional.ofNullable(winner.getAmmount()).orElse(BigDecimal.ZERO).add(prizePerWinner));
+
+            // Update bonus balance
+            CustomCustomer customCustomer = winner.getPlayer().getCustomer();
+//            System.out.println("customCustomer " + customCustomer.getId());
+
+            BigDecimal currentBonus = Optional.ofNullable(customCustomer.getBonusBalance()).orElse(BigDecimal.ZERO);
+            customCustomer.setBonusBalance(currentBonus.add(bonusPerWinner));
+//            System.out.println("currentBonus " + currentBonus);
+
+            customCustomerRepository.save(customCustomer);
+          /*  System.out.println("customCustomer " + customCustomer.getId());
+            System.out.println("currentBonus " + customCustomer.getBonusBalance());*/
+
+            tournamentResultRecordRepository.save(winner);
+        }
+    }
+
+
+/*    @Transactional
+    public void distributeRoundPrize(Tournament tournament, int round) {
+        BigDecimal roundPrize = tournament.getRoomprize();
+
+        List<TournamentResultRecord> winners = tournamentResultRecordRepository
+                .findByTournamentIdAndRoundAndIsWinnerTrue(tournament.getId(), round);
+
+        Map<Long, TournamentResultRecord> uniqueWinnersMap = winners.stream()
+                .collect(Collectors.toMap(
+//                        w -> w.getPlayer().getPlayerId(),
+                        w -> w.getPlayer().getCustomer().getId(), // customerId instead of playerId
+
                         w -> w,
                         (existing, duplicate) -> existing
                 ));
@@ -101,17 +188,13 @@ public class TournamentPrizeService {
         BigDecimal totalCash = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_TO_USER);
         BigDecimal totalBonus = roundPrize.multiply(Constant.TOURNAMENT_PRIZE_POOL_SENT_AS_BONUS);
 
-       /* System.out.println("Total Cash: " + totalCash);
+       *//* System.out.println("Total Cash: " + totalCash);
         System.out.println("Total Bonus: " + totalBonus);
-*/
+*//*
 
         BigDecimal cashPerWinner = totalCash.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
         BigDecimal bonusPerWinner = totalBonus.divide(BigDecimal.valueOf(winnersCount), 2, RoundingMode.HALF_UP);
         BigDecimal prizePerWinner = cashPerWinner.add(bonusPerWinner);
-
-/*        System.out.println("Total cashPerWinner: " + cashPerWinner);
-        System.out.println("Total bonusPerWinner: " + bonusPerWinner);
-        System.out.println("Total prizePerWinner: " + prizePerWinner);*/
 
         for (TournamentResultRecord winner : uniqueWinners) {
             // Create notification
@@ -144,5 +227,5 @@ public class TournamentPrizeService {
             customCustomerRepository.save(customCustomer);
             tournamentResultRecordRepository.save(winner);
         }
-    }
+    }*/
 }
