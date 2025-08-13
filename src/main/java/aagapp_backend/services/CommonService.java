@@ -159,7 +159,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
         notificationService.sendRejectionNotificationToVendor(l.getVendorEntity(), "League", l.getGameName());
 //       @todo:- need to send rejection mail template
-        emailService.sendTournamentEmail(l.getVendorEntity(), title, body);
+        emailService.sendLeagueRejectionEmail(l.getVendorEntity(), title, body, l);
     }
 }
 
