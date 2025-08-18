@@ -11,6 +11,7 @@ import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.league.*;
 
 
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.entity.team.LeagueTeam;
 
 import aagapp_backend.entity.notification.Notification;
@@ -24,6 +25,7 @@ import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.ChallangeRepository;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.admin.AdminLogsInterface;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
@@ -142,6 +144,9 @@ public class LeagueService {
     @Autowired
     private NotificationRepository notificationRepository;
 
+
+    @Autowired
+    private UserNotificationRepository usernotificationRepository;
     @Autowired
     private LeaguePassRepository leaguePassRepository;
 
@@ -2323,14 +2328,14 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                 wallet.getCustomCustomer().setBonusBalance(wallet.getCustomCustomer().getBonusBalance().add(bonusPart));
                 walletRepo.save(wallet);
 
-                Notification notification = new Notification();
+                UserNotification notification = new UserNotification();
                 notification.setCustomerId(player.getPlayerId());
                 notification.setName(player.getCustomer().getName() != null ? player.getCustomer().getName() : "N/A");
                 notification.setDescription("Wallet balance credited");
                 notification.setAmount(prize.doubleValue());
                 notification.setDetails("Rs. " + prize.stripTrailingZeros().toPlainString() + " won in " + league.getName());
                 notification.setRole("Customer");
-                notificationRepository.save(notification);
+                usernotificationRepository.save(notification);
             }
 
             // Remaining prize equal distribution
@@ -2353,14 +2358,14 @@ public void processMatch(LeagueMatchProcess leagueMatchProcess) {
                         walletRepo.save(wallet);
                     }
 
-                    Notification notification = new Notification();
+                    UserNotification notification = new UserNotification();
                     notification.setCustomerId(player.getPlayerId());
                     notification.setName(player.getCustomer().getName() != null ? player.getCustomer().getName() : "N/A");
                     notification.setDescription("Wallet balance credited");
                     notification.setAmount(equalShare.doubleValue());
                     notification.setDetails("Rs. " + equalShare.stripTrailingZeros().toPlainString() + " won in " + league.getName());
                     notification.setRole("Customer");
-                    notificationRepository.save(notification);
+                    usernotificationRepository.save(notification);
                 }
             }
 

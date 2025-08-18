@@ -42,7 +42,6 @@ private GameRoomRepository gameRoomRepository;
     @PostMapping("/processGameResult")
     public ResponseEntity<?> processGameResult(@RequestBody GameResult gameResult) {
         try {
-            System.out.println("processGameResult");
 
             // Process game result (you may want to keep this as is, or include some additional logic here)
                matchService.processMatch(gameResult);
@@ -58,6 +57,10 @@ private GameRoomRepository gameRoomRepository;
             exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
             return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+        catch (Exception e) {
+            exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 
@@ -66,7 +69,8 @@ private GameRoomRepository gameRoomRepository;
     public ResponseEntity<?> getLeaderboard(
             @PathVariable Long gameId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(required = false, defaultValue = "winners") String type, // WINNER, LOSER, ALL
+//            @RequestParam(required = false, defaultValue = "winners") String type, // WINNER, LOSER, ALL
+            @RequestParam(required = false) String type,
 
             @RequestParam(defaultValue = "10") int size) {
         try {

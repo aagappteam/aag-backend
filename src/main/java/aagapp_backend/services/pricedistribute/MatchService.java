@@ -12,11 +12,11 @@ import aagapp_backend.entity.game.GameRoom;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueRoom;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.wallet.VendorWallet;
 import aagapp_backend.entity.wallet.Wallet;
-import aagapp_backend.enums.GameRoomStatus;
-import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.*;
 import aagapp_backend.repository.league.LeagueRepository;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 public class MatchService {
 
     @Autowired
-    private NotificationRepository notificationRepository;
+    private UserNotificationRepository notificationRepository;
 
     private GameResultRecordRepository gameResultRecordRepository;
     private LeagueRoomRepository leagueRoomRepository;
@@ -358,10 +358,16 @@ public class MatchService {
         }
         int totalPlayers = gameRoom.getMaxPlayers();
 
-        List<PlayerDtoWinner> validPlayers = gameResult.getPlayers().stream()
+/*        List<PlayerDtoWinner> validPlayers = gameResult.getPlayers().stream()
                 .filter(p -> p.getPlayerId() != 0)
                 .filter(p -> roomPlayers.stream().anyMatch(rp -> rp.getPlayerId().equals(p.getPlayerId())))
+                .collect(Collectors.toList());*/
+
+
+        List<PlayerDtoWinner> validPlayers = gameResult.getPlayers().stream()
+                .filter(p -> p.getPlayerId() != 0)
                 .collect(Collectors.toList());
+
 
         if (validPlayers.isEmpty()) {
             return;
@@ -438,7 +444,7 @@ public class MatchService {
             winnerRecord.setPlayedAt(LocalDateTime.now());
             gameResultRecordRepository.save(winnerRecord);
 
-            Notification notification = new Notification();
+            UserNotification notification = new UserNotification();
             notification.setAmount(finalWinnerAmount.doubleValue());
             String formattedAmount = finalWinnerAmount.stripTrailingZeros().toPlainString();
             notification.setDetails("You won Rs. " + formattedAmount + " in Game " + game.getName());

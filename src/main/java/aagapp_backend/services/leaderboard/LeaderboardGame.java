@@ -52,9 +52,17 @@ public class LeaderboardGame {
                 .orElseThrow(() -> new RuntimeException("Theme not found for game ID: " + gameId));
 
         // 3. Filter type: winner / loser / all
-        Boolean isWinner = null;
+/*        Boolean isWinner = null;
         if ("winners".equalsIgnoreCase(type)) isWinner = true;
-        else if ("losers".equalsIgnoreCase(type)) isWinner = false;
+        else if ("losers".equalsIgnoreCase(type)) isWinner = false;*/
+
+
+        Boolean isWinner = null;
+        if (type != null) {
+            if ("winners".equalsIgnoreCase(type)) isWinner = true;
+            else if ("losers".equalsIgnoreCase(type)) isWinner = false;
+        }
+
 
         // 4. Fetch all GameResultRecords (filtered)
         List<GameResultRecord> results = (isWinner == null)
@@ -134,8 +142,6 @@ public class LeaderboardGame {
 
         return response;
     }
-
-
 
     public GameLeaderboardResponseDTOADMIN getLeaderboardParticpants(Long gameId,  Pageable pageable) {
         // 1. Fetch game details

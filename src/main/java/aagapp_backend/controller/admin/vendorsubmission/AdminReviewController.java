@@ -9,6 +9,7 @@ import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.invoice.InvoiceAdmin;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.entity.payment.PlanUpgradeRequest;
 import aagapp_backend.entity.social.SocialUser;
 import aagapp_backend.entity.ticket.Ticket;
@@ -17,6 +18,7 @@ import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.entity.withdrawrequest.CustomerWithdrawalRequest;
 import aagapp_backend.enums.*;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.payment.PaymentPlanUpgradeRepository;
 import aagapp_backend.repository.social.SocialUserRepository;
@@ -100,6 +102,9 @@ public class AdminReviewController {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private UserNotificationRepository usernotificationRepository;
 
     @Autowired
     private WalletRepository walletRepository;
@@ -744,7 +749,7 @@ public class AdminReviewController {
             if (status == WithdrawalStatus.PAID) {
 
                 // Notify customer: Request PAID
-                Notification notification = new Notification();
+                UserNotification notification = new UserNotification();
                 notification.setCustomerId(request.getCustomer().getId());
                 notification.setRole("Customer");
                 notification.setDescription("Withdrawal Request Paid");
@@ -753,7 +758,7 @@ public class AdminReviewController {
 
 //                notification.setDetails("Your withdrawal of Rs." + request.getAmount() + " has been paid successfully.");
                 notification.setAmount(request.getAmount().doubleValue());
-                notificationRepository.save(notification);
+                usernotificationRepository.save(notification);
             }
 
             if (status == WithdrawalStatus.REJECTED) {
@@ -764,7 +769,7 @@ public class AdminReviewController {
                 }
 
                 // Notify customer: Request REJECTED
-                Notification notification = new Notification();
+                UserNotification notification = new UserNotification();
                 notification.setCustomerId(request.getCustomer().getId());
                 notification.setRole("Customer");
                 notification.setDescription("Withdrawal Request Rejected");
@@ -773,7 +778,7 @@ public class AdminReviewController {
 
 //                notification.setDetails("Your withdrawal of Rs." + request.getAmount() + " has been rejected.");
                 notification.setAmount(request.getAmount().doubleValue());
-                notificationRepository.save(notification);
+                usernotificationRepository.save(notification);
             }
 
             customerWithdrawalRequestRepository.save(request);

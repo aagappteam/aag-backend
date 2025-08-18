@@ -10,8 +10,10 @@ import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.NotificationShareRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.GameResultRecordRepository;
 import aagapp_backend.repository.game.PlayerRepository;
@@ -20,6 +22,7 @@ import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.spec.NotificationShareSpecification;
 import aagapp_backend.spec.NotificationSpecifications;
+import aagapp_backend.spec.UserNotificationSpecifications;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
@@ -57,6 +60,8 @@ public class DashboardAdmin {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private UserNotificationRepository usernotificationRepository;
     @Autowired
     private NotificationShareRepository notificationShareRepository;
 
@@ -655,8 +660,139 @@ public class DashboardAdmin {
             throw new RuntimeException("Error fetching notifications: " + e.getMessage(), e);
         }
     }
-
     public Page<Transaction> getFilteredNotificationsDto(
+            String role,
+            Long vendorId,
+            Long customerId,
+            Double amount,
+            Double minAmount,
+            Double maxAmount,
+            ZonedDateTime startDate,
+            ZonedDateTime endDate,
+            String description,
+            String details,
+            int page,
+            int size,
+            String search,
+            String transaction,
+            String activity
+    ) {
+        List<Transaction> enrichedList;
+
+        if ("CUSTOMER".equalsIgnoreCase(role) || "USER".equalsIgnoreCase(role)) {
+            // --- Fetch from UserNotification ---
+            Specification<UserNotification> spec = Specification
+                    .where(UserNotificationSpecifications.hasRole(role))
+                    .and(UserNotificationSpecifications.hasCustomerId(customerId))
+                    .and(UserNotificationSpecifications.hasAmount(amount))
+                    .and(UserNotificationSpecifications.hasMinAmount(minAmount))
+                    .and(UserNotificationSpecifications.hasMaxAmount(maxAmount))
+                    .and(UserNotificationSpecifications.createdBetween(startDate, endDate))
+                    .and(UserNotificationSpecifications.descriptionContains(description))
+                    .and(UserNotificationSpecifications.detailsContains(details));
+
+            if (activity != null && !activity.isBlank()) {
+                spec = spec.and((root, query, cb) -> cb.isNull(root.get("amount")));
+            } else {
+                spec = spec.and((root, query, cb) -> cb.isNotNull(root.get("amount")));
+            }
+
+            List<UserNotification> fullList = usernotificationRepository.findAll(spec, Sort.by("createdDate").descending());
+
+            enrichedList = fullList.stream().map(n -> {
+                final String[] name = {""};
+                final String[] email = {""};
+
+                if (n.getCustomerId() != null) {
+                    customerRepository.findById(n.getCustomerId()).ifPresent(c -> {
+                        name[0] = c.getName();
+                        email[0] = c.getEmail();
+                    });
+                }
+
+                return new Transaction(
+                        n.getId(),
+                        null, // vendorId not relevant here
+                        n.getCustomerId(),
+                        n.getRole(),
+                        name[0],
+                        email[0],
+                        n.getDescription(),
+                        n.getAmount(),
+                        n.getDetails(),
+                        n.getCreatedDate()
+                );
+            }).collect(Collectors.toList());
+
+        } else {
+            // --- Fetch from Vendor Notification (Notification) ---
+            Specification<Notification> spec = Specification
+                    .where(NotificationSpecifications.hasRole(role))
+                    .and(NotificationSpecifications.hasVendorId(vendorId))
+                    .and(NotificationSpecifications.hasAmount(amount))
+                    .and(NotificationSpecifications.hasMinAmount(minAmount))
+                    .and(NotificationSpecifications.hasMaxAmount(maxAmount))
+                    .and(NotificationSpecifications.createdBetween(startDate, endDate))
+                    .and(NotificationSpecifications.descriptionContains(description))
+                    .and(NotificationSpecifications.detailsContains(details));
+
+            if (activity != null && !activity.isBlank()) {
+                spec = spec.and((root, query, cb) -> cb.isNull(root.get("amount")));
+            } else {
+                spec = spec.and((root, query, cb) -> cb.isNotNull(root.get("amount")));
+            }
+
+            List<Notification> fullList = notificationRepository.findAll(spec, Sort.by("createdDate").descending());
+
+            enrichedList = fullList.stream().map(n -> {
+            /*    String name = "";
+                String email = "";*/
+
+                final String[] name = {""};
+                final String[] email = {""};
+
+                if (n.getVendorId() != null) {
+                    vendorRepository.findById(n.getVendorId()).ifPresent(v -> {
+                        name[0] = (v.getFirst_name() + " " + v.getLast_name()).trim();
+                        email[0] = v.getPrimary_email();
+                    });
+                }
+
+                return new Transaction(
+                        n.getId(),
+                        n.getVendorId(),
+                        null, // customer not relevant here
+                        n.getRole(),
+                        name[0],
+                        email[0],
+                        n.getDescription(),
+                        n.getAmount(),
+                        n.getDetails(),
+                        n.getCreatedDate()
+                );
+            }).collect(Collectors.toList());
+        }
+
+        // --- Apply search filtering ---
+        if (search != null && !search.isBlank()) {
+            String lowered = normalize(search);
+            enrichedList = enrichedList.stream()
+                    .filter(dto ->
+                            containsIgnoreCase(dto.getName(), lowered) ||
+                                    containsIgnoreCase(dto.getEmail(), lowered))
+                    .collect(Collectors.toList());
+        }
+
+        // --- Apply paging manually ---
+        int start = Math.min(page * size, enrichedList.size());
+        int end = Math.min(start + size, enrichedList.size());
+        List<Transaction> pagedList = enrichedList.subList(start, end);
+
+        return new PageImpl<>(pagedList, PageRequest.of(page, size), enrichedList.size());
+    }
+
+
+    /*    public Page<Transaction> getFilteredNotificationsDto(
             String role,
             Long vendorId,
             Long customerId,
@@ -739,7 +875,7 @@ public class DashboardAdmin {
         List<Transaction> pagedList = enrichedList.subList(start, end);
 
         return new PageImpl<>(pagedList, PageRequest.of(page, size), enrichedList.size());
-    }
+    }*/
     private boolean containsIgnoreCase(String source, String keyword) {
         return source != null && source.toLowerCase().contains(keyword.toLowerCase());
     }
