@@ -6,6 +6,7 @@ import aagapp_backend.dto.CreateNotificationRequest;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.enums.NotificationType;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.UserNotificationRepository;
@@ -115,7 +116,19 @@ public class NotificationService {
             } else {
                 notificationsPage = notificationRepository.findByVendorIdOrderByCreatedDateDesc(id, pageable);
             }
-        } else if ("customer".equalsIgnoreCase(role)) {
+        } else {
+            throw new IllegalArgumentException("Invalid role specified");
+        }
+
+        return notificationsPage;
+    }
+
+
+    public Page<UserNotification> getNotificationsOfuser(Long id, String role, int page, int size, String transaction, String activity) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<UserNotification> notificationsPage;
+
+            if ("customer".equalsIgnoreCase(role)) {
             if ("transaction".equalsIgnoreCase(transaction)) {
                 notificationsPage = userNotificationRepository.findByCustomerIdAndAmountIsNotNullOrderByCreatedDateDesc(id, pageable);
             } else if (activity != null && !activity.isEmpty()) {
