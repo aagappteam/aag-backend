@@ -47,6 +47,7 @@ public class NotificationService {
             CustomCustomerService customCustomerService
     ) {
         this.notificationRepository = notificationRepository;
+        this.userNotificationRepository = userNotificationRepository;
         this.jwtUtil = jwtUtil;
         this.vendorService = vendorService;
         this.responseService = responseService;
