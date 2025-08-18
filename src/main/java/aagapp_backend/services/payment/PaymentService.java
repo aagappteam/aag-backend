@@ -489,6 +489,7 @@ public class PaymentService {
                 .setParameter("start", startOfMonth)
                 .setParameter("end", endOfMonth)
                 .getSingleResult();
+        System.out.println("monthlyPaymentCount: " + monthlyPaymentCount);
 
         if (monthlyPaymentCount >= 2) {
             throw new BusinessException("Monthly payment limit reached. You can make a maximum of 2 payments per month.", HttpStatus.BAD_REQUEST);
@@ -577,9 +578,13 @@ public class PaymentService {
         List<PaymentEntity> activePayments = query.getResultList();
         LocalDateTime newExpiry;
 
+        System.out.println("activePayments: " + activePayments.size());
+
         if (!activePayments.isEmpty()) {
             PaymentEntity latestPayment = activePayments.get(0);
             LocalDateTime oldExpiry = latestPayment.getExpiryAt();
+
+            System.out.println("oldExpiry: " + oldExpiry);
 
             latestPayment.setStatus(PaymentStatus.EXPIRED);
             latestPayment.setExpiredAt(LocalDateTime.now());
@@ -599,6 +604,8 @@ public class PaymentService {
             // No active plan, fresh purchase
             newExpiry = LocalDateTime.now().plusMonths(1);
         }
+
+        System.out.println("newExpiry: " + newExpiry);
 
         paymentRequest.setExpiryAt(newExpiry);
         paymentRequest.setPaymentType(paymentRequest.getPaymentType());
