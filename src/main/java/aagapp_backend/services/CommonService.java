@@ -11,6 +11,7 @@ import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.Tournament;
@@ -21,6 +22,7 @@ import aagapp_backend.enums.PaymentStatus;
 import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.NotificationShareRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.admin.AdminLogsInterface;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
@@ -82,11 +84,17 @@ public class CommonService {
     private InfluencerMonthlyEarningRepository earningRepository;
     private EntityManager entityManager;
     private NotificationRepository notificationRepository;
+    private UserNotificationRepository usernotificationRepository;
     private NotificationShareRepository notificationShareRepository;
 
     @Autowired
     public void setCustomCustomerService(CustomCustomerService customCustomerService) {
         this.customCustomerService = customCustomerService;
+    }
+
+    @Autowired
+    public void setUsernotificationRepository(UserNotificationRepository usernotificationRepository) {
+        this.usernotificationRepository = usernotificationRepository;
     }
 
     @Autowired
@@ -228,7 +236,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
 
         // ✅ Notification
-        Notification notification = new Notification();
+        UserNotification notification = new UserNotification();
         notification.setCustomerId(customer.getId());
         notification.setDescription("Wallet balance deducted");
         notification.setAmount(gameAmount.doubleValue());
@@ -238,7 +246,7 @@ public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
 
 
 
-        notificationRepository.save(notification);
+        usernotificationRepository.save(notification);
     }
 
 

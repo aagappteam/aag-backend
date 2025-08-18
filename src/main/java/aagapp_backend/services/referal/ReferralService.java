@@ -4,8 +4,10 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.services.CustomCustomerService;
@@ -24,7 +26,7 @@ public class ReferralService {
     private CustomCustomerRepository customCustomerRepository;
 
     @Autowired
-    private NotificationRepository notificationRepository;
+    private UserNotificationRepository notificationRepository;
 
     @Autowired
     private CustomCustomerService customCustomerService;
@@ -85,7 +87,7 @@ public class ReferralService {
                 // Save the updated referrer (this will also save the wallet if it's changed)
                 customCustomerRepository.save(referrer);
 
-                Notification referralNotification = new Notification();
+                UserNotification referralNotification = new UserNotification();
                 referralNotification.setRole("Customer");
                 referralNotification.setCustomerId(referrer.getId());
                 referralNotification.setDescription("Referral Bonus Earned");

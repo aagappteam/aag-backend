@@ -7,6 +7,7 @@ import aagapp_backend.dto.KwickPayResponse;
 import aagapp_backend.dto.WalletBalanceDTO;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.entity.withdrawrequest.CustomerWithdrawalRequest;
 import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
@@ -14,6 +15,7 @@ import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.enums.WithdrawalStatus;
 import aagapp_backend.enums.WithdrawalType;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.wallet.WalletRepository;
 import aagapp_backend.repository.withdrawrequest.CustomerWithdrawalRequestRepository;
@@ -58,7 +60,7 @@ public class WalletService {
     private CustomerWithdrawalRequestRepository customerWithdrawalRequestRepository;
 
     @Autowired
-    private NotificationRepository notificationRepository;
+    private UserNotificationRepository notificationRepository;
 
     @Autowired
     public WalletService(WalletRepository walletRepository,
@@ -296,7 +298,7 @@ public class WalletService {
         customerWithdrawalRequestRepository.save(withdrawal);
 
         // Notify
-        Notification n = new Notification();
+        UserNotification n = new UserNotification();
         n.setRole("Customer");
         n.setCustomerId(dto.getCustomerId());
         n.setDescription("Withdrawal Request Submitted");
@@ -322,7 +324,7 @@ public class WalletService {
         walletRepository.save(wallet);
 
         // Notify the customer about the refund
-        Notification notification = new Notification();
+        UserNotification notification = new UserNotification();
         notification.setRole("Customer");
         notification.setCustomerId(customerId);
         notification.setDescription("Withdrawal Refunded");

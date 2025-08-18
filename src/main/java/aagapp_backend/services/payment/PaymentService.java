@@ -613,6 +613,8 @@ public class PaymentService {
         }
 
         existingVendor.setIsPaid(true);
+        paymentRequest.setId(null);
+
         entityManager.persist(existingVendor);
 
         // Notification

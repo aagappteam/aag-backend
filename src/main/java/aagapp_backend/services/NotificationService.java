@@ -8,6 +8,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.enums.NotificationType;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.services.vendor.VenderService;
 import com.amazonaws.services.ec2.model.CreateNatGatewayRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +35,11 @@ public class NotificationService {
     private final VenderService vendorService;
     private final ResponseService responseService;
     private final CustomCustomerService customCustomerService;
+    private UserNotificationRepository userNotificationRepository;
 
     public NotificationService(
             NotificationRepository notificationRepository,
+            UserNotificationRepository userNotificationRepository,
             JwtUtil jwtUtil,
             @Lazy VenderService vendorService,
             ResponseService responseService,
@@ -114,11 +117,11 @@ public class NotificationService {
             }
         } else if ("customer".equalsIgnoreCase(role)) {
             if ("transaction".equalsIgnoreCase(transaction)) {
-                notificationsPage = notificationRepository.findByCustomerIdAndAmountIsNotNullOrderByCreatedDateDesc(id, pageable);
+                notificationsPage = userNotificationRepository.findByCustomerIdAndAmountIsNotNullOrderByCreatedDateDesc(id, pageable);
             } else if (activity != null && !activity.isEmpty()) {
-                notificationsPage = notificationRepository.findByCustomerIdAndAmountIsNullOrderByCreatedDateDesc(id, pageable);
+                notificationsPage = userNotificationRepository.findByCustomerIdAndAmountIsNullOrderByCreatedDateDesc(id, pageable);
             } else {
-                notificationsPage = notificationRepository.findByCustomerIdOrderByCreatedDateDesc(id, pageable);
+                notificationsPage = userNotificationRepository.findByCustomerIdOrderByCreatedDateDesc(id, pageable);
             }
         } else {
             throw new IllegalArgumentException("Invalid role specified");

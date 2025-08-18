@@ -9,6 +9,7 @@ import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.game.AagAvailableGames;
 import aagapp_backend.entity.game.Game;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.entity.players.Player;
 import aagapp_backend.entity.tournament.*;
 import aagapp_backend.entity.wallet.VendorWallet;
@@ -18,6 +19,7 @@ import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
@@ -93,6 +95,7 @@ public class TournamentService {
     private TournamentRepository tournamentRepository;
     private EntityManager em;
     private NotificationRepository notificationRepository;
+    private UserNotificationRepository userNotificationRepository;
     private AagGameRepository aagGameRepository;
     private NotoficationFirebase notoficationFirebase;
     private ExceptionHandlingImplement exceptionHandling;
@@ -117,6 +120,11 @@ public class TournamentService {
     @Autowired
     public void setNotificationRepository(NotificationRepository notificationRepository) {
         this.notificationRepository = notificationRepository;
+    }
+
+    @Autowired
+    public void setUserNotificationRepository(UserNotificationRepository userNotificationRepository) {
+        this.userNotificationRepository = userNotificationRepository;
     }
 
     @Autowired
@@ -1957,7 +1965,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
 
         for (TournamentResultRecord winner : uniqueWinners) {
-            Notification notification = new Notification();
+            UserNotification notification = new UserNotification();
             notification.setAmount(finalPayoutPerWinner.doubleValue());
 //            notification.setDetails("You won Rs. " + finalPayoutPerWinner + " in Round " + round);
             String payoutStr = finalPayoutPerWinner.stripTrailingZeros().toPlainString();
@@ -1968,7 +1976,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
             notification.setName(winner.getPlayer().getCustomer().getName()!=null?winner.getPlayer().getCustomer().getName():"N/A");
 
-            notificationRepository.save(notification);
+            userNotificationRepository.save(notification);
 
             Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
 
@@ -2035,14 +2043,14 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
 
         for (TournamentResultRecord winner : uniqueWinners) {
             // Create notification
-            Notification notification = new Notification();
+            UserNotification notification = new UserNotification();
             notification.setAmount(prizePerWinner.doubleValue());
             notification.setDetails("You won Rs. " + prizePerWinner.stripTrailingZeros().toPlainString() + " in Round " + round);
             notification.setDescription("Round Prize");
             notification.setRole("Customer");
             notification.setCustomerId(winner.getPlayer().getCustomer().getId());
             notification.setName(Optional.ofNullable(winner.getPlayer().getCustomer().getName()).orElse("N/A"));
-            notificationRepository.save(notification);
+            userNotificationRepository.save(notification);
             // Update winning wallet
             Wallet wallet = walletRepository.findByCustomCustomer_Id(winner.getPlayer().getCustomer().getId());
             System.out.println(winner.getPlayer().getCustomer().getId());
@@ -2508,7 +2516,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 tournamentResultRecordRepository.save(result);
                 BigDecimal prize = tournament.getRoomprize();
 
-                Notification notification = new Notification();
+                UserNotification notification = new UserNotification();
                 notification.setAmount(tournament.getRoomprize().doubleValue());
                 notification.setDetails("You won Rs. " + prize.stripTrailingZeros().toPlainString() + " in Round " + nextRound);
 
@@ -2516,7 +2524,7 @@ public TournamentResultRecord addPlayerToNextRound(Long tournamentId, Integer ro
                 notification.setRole("Customer");
                 notification.setCustomerId(readyPlayers.get(0).getPlayer().getPlayerId());
                 notification.setName(readyPlayers.get(0).getPlayer().getCustomer().getName()!=null?readyPlayers.get(0).getPlayer().getCustomer().getName():"N/A");
-                notificationRepository.save(notification);
+                userNotificationRepository.save(notification);
                 return "🏁 Only one player remains. Tournament finished.";
             }
 

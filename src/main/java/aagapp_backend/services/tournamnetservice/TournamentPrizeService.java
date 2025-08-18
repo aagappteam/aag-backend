@@ -3,10 +3,12 @@ package aagapp_backend.services.tournamnetservice;
 import aagapp_backend.components.Constant;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.tournament.TournamentResultRecord;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.AagGameRepository;
 import aagapp_backend.repository.game.PlayerRepository;
@@ -55,7 +57,7 @@ public class TournamentPrizeService {
     @Autowired
     private TournamentRepository tournamentRepository;
     @Autowired
-    private NotificationRepository notificationRepository;
+    private UserNotificationRepository notificationRepository;
     @Autowired
     private TournamentResultRecordRepository tournamentResultRecordRepository;
 /*    @Autowired
@@ -123,7 +125,7 @@ public class TournamentPrizeService {
 
         for (TournamentResultRecord winner : uniqueWinners) {
             // Create notification
-            Notification notification = new Notification();
+            UserNotification notification = new UserNotification();
             notification.setAmount(prizePerWinner.doubleValue());
             notification.setDetails("You Won Rs. " + prizePerWinner.stripTrailingZeros().toPlainString() + " in Round " + round);
             notification.setDescription("Round Prize");

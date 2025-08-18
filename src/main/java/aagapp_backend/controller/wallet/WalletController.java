@@ -8,6 +8,7 @@ import aagapp_backend.dto.KwickPayResponse;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
+import aagapp_backend.entity.notification.UserNotification;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.entity.withdrawrequest.CustomerWithdrawalRequest;
 import aagapp_backend.enums.NotificationType;
@@ -15,6 +16,7 @@ import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.enums.WithdrawalStatus;
 import aagapp_backend.enums.WithdrawalType;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.UserNotificationRepository;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.withdrawrequest.CustomerWithdrawalRequestRepository;
 import aagapp_backend.services.CustomCustomerService;
@@ -86,8 +88,11 @@ public class WalletController {
     private VenderService vendorService;
 
     @Autowired
-    private NotificationRepository notificationRepository;
+    private UserNotificationRepository usernotificationRepository;
 
+
+    @Autowired
+    private NotificationRepository notificationRepository;
     @Autowired
     private InvoiceServiceAdmin invoiceServiceAdmin;
 
@@ -220,13 +225,13 @@ public class WalletController {
                 // Save updated user
                 customCustomerRepository.save(customer);
 
-                Notification downloadBonusNotification = new Notification();
+                UserNotification downloadBonusNotification = new UserNotification();
                 downloadBonusNotification.setRole("Customer");
                 downloadBonusNotification.setCustomerId(customerId);
                 downloadBonusNotification.setDescription("Welcome Bonus!");
                 downloadBonusNotification.setAmount((double) downloadBonus);
                 downloadBonusNotification.setDetails(Constant.DOWNLOAD_BONUS_DESCRIPTION);
-                notificationRepository.save(downloadBonusNotification);
+                usernotificationRepository.save(downloadBonusNotification);
 
 
                 String referredBy = customer.getReferredBy();
@@ -257,32 +262,52 @@ public class WalletController {
                 customCustomerService.addBonusAndUpdateCoupon(customerId, bonusAmount, couponCode);
 
                 // Send bonus notification
-                Notification bonusNotification = new Notification();
+                UserNotification bonusNotification = new UserNotification();
                 bonusNotification.setRole("Customer");
                 bonusNotification.setCustomerId(customerId);
                 bonusNotification.setDescription("Bonus Added!");
                 bonusNotification.setAmount((double) bonusAmount);
                 BigDecimal formattedBonus = BigDecimal.valueOf(bonusAmount).stripTrailingZeros();
                 bonusNotification.setDetails("You received Rs. " + formattedBonus.toPlainString() + " as bonus");
-                notificationRepository.save(bonusNotification);
+                usernotificationRepository.save(bonusNotification);
             }
 
-            // Notification for wallet balance
-            Notification notification = new Notification();
-            notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
 
             if (role == Constant.VENDOR_ROLE) {
-                VendorEntity vendor = vendorService.getServiceProviderById(userId);
-                notification.setVendorId(vendor.getService_provider_id());
-            } else {
-                notification.setCustomerId(customerId);
-            }
+                // Notification for wallet balance
+                Notification notification = new Notification();
+                notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
 
-            notification.setDescription("Wallet balance added");
-            notification.setAmount((double) amount);
-            BigDecimal formattedAmount = BigDecimal.valueOf(amount).stripTrailingZeros();
-            notification.setDetails("Rs. " + formattedAmount.toPlainString() + " added to Wallet");
-            notificationRepository.save(notification);
+                if (role == Constant.VENDOR_ROLE) {
+                    VendorEntity vendor = vendorService.getServiceProviderById(userId);
+                    notification.setVendorId(vendor.getService_provider_id());
+                } else {
+                    notification.setCustomerId(customerId);
+                }
+
+                notification.setDescription("Wallet balance added");
+                notification.setAmount((double) amount);
+                BigDecimal formattedAmount = BigDecimal.valueOf(amount).stripTrailingZeros();
+                notification.setDetails("Rs. " + formattedAmount.toPlainString() + " added to Wallet");
+                notificationRepository.save(notification);
+            } else {
+                // Notification for wallet balance
+                UserNotification notification = new UserNotification();
+                notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
+
+                if (role == Constant.VENDOR_ROLE) {
+                    VendorEntity vendor = vendorService.getServiceProviderById(userId);
+                    notification.setVendorId(vendor.getService_provider_id());
+                } else {
+                    notification.setCustomerId(customerId);
+                }
+
+                notification.setDescription("Wallet balance added");
+                notification.setAmount((double) amount);
+                BigDecimal formattedAmount = BigDecimal.valueOf(amount).stripTrailingZeros();
+                notification.setDetails("Rs. " + formattedAmount.toPlainString() + " added to Wallet");
+                usernotificationRepository.save(notification);
+            }
 
             // Generate invoice
             invoiceServiceAdmin.createInvoiceForCustomer((double) amount, customerId);
