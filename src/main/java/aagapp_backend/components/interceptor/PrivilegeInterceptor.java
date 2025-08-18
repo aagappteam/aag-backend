@@ -106,16 +106,16 @@ public class PrivilegeInterceptor implements HandlerInterceptor {
 
         System.out.println("Path: " + path);
         System.out.println("Method: " + method);
-        Optional<PrivilegeMapping> mapping = mappingCache.getMapping(path, method);
+/*        Optional<PrivilegeMapping> mapping = mappingCache.getMapping(path, method);
 
 
         System.out.println("mapping " + mapping);
 
         if (mapping.isEmpty()) {
             return true;
-        }
+        }*/
 
-        String requiredPrivilege = mapping.get().getPrivilegeName();
+/*        String requiredPrivilege = mapping.get().getPrivilegeName();
         System.out.println("requiredPrivilege " + requiredPrivilege);
 
         Role role = roleRepo.findById(roleId).orElseThrow();
@@ -138,14 +138,19 @@ public class PrivilegeInterceptor implements HandlerInterceptor {
             jwtAuthenticationFilter.respondWithUnauthorized(response, "Access Denied");
 
             return false;
-        }
+        }*/
 
         return true;
     }
 
     private boolean isUnsecuredUri(String requestURI) {
-        return UNSECURED_PATHS.stream().anyMatch(requestURI::startsWith) || "/".equals(requestURI);
+        if (UNSECURED_PATHS.stream().anyMatch(requestURI::startsWith) || "/".equals(requestURI)) {
+            return true;
+        }
+
+        return requestURI.matches("^/vendor/\\d+/(games|leagues|tournaments)/\\d+$");
     }
+
 
 }
 

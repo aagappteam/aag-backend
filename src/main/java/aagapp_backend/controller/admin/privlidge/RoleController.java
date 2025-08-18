@@ -1,8 +1,11 @@
 package aagapp_backend.controller.admin.privlidge;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.components.cache.PrivilegeMappingCache;
 import aagapp_backend.dto.CustomAdminDTO;
+import aagapp_backend.dto.admin.Role.AdminWithRoleResponse;
+import aagapp_backend.dto.admin.Role.RoleDTO;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.Role;
 import aagapp_backend.entity.admin.Privilege;
@@ -11,9 +14,11 @@ import aagapp_backend.repository.admin.PrivilegeRepository;
 import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.RoleService;
+import aagapp_backend.services.admin.AdminService;
 import aagapp_backend.services.admin.CustomAdminSpecification;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import jakarta.servlet.http.HttpServletRequest;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -33,6 +38,12 @@ public class RoleController {
     private ExceptionHandlingImplement exceptionHandlingImplement;
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private CustomAdminRepository customAdminRepository;
+
+    @Autowired
+    private AdminService adminService;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -57,9 +68,18 @@ public class RoleController {
     @PostMapping("/create")
     public ResponseEntity<?> createRole(@RequestBody Map<String, Object> request, HttpServletRequest req) {
         String roleName = request.get("roleName").toString();
+        if (roleName == null || roleName.isEmpty()) {
+            return responseService.generateErrorResponse("Role name is required", HttpStatus.BAD_REQUEST);
+        }
         String token = jwtUtil.resolveToken(req);
         Long adminId = jwtUtil.extractAdminId(token);
         String adminName = roleService.findRoleName(Math.toIntExact(adminId));
+
+
+        if (!roleRepo.findAllByRoleNameIgnoreCase(roleName).isEmpty()) {
+            return responseService.generateErrorResponse("Role with name '" + roleName + "' already exists.", HttpStatus.BAD_REQUEST);
+        }
+
 
         List<Integer> privilegeIds = (List<Integer>) request.get("privilegeIds");
 
@@ -81,45 +101,75 @@ public class RoleController {
 
     }
 
+    @GetMapping("/get-user")
+    public ResponseEntity<?> getAdminById(@RequestHeader(value = "Authorization") String authorization) {
+        String token = authorization.substring(7);
+        Long userId = jwtUtil.extractId(token);
 
-/*    //  Create New Role
-    @PostMapping
-    public ResponseEntity<?> createRole(@RequestBody Map<String, Object> request, HttpServletRequest req) {
-        String token = jwtUtil.resolveToken(req);
-        Long adminId = jwtUtil.extractAdminId(token);
+        Optional<CustomAdmin> optionalAdmin = customAdminRepository.findById(userId);
 
-        String roleName = request.get("roleName").toString();
-        List<Integer> privilegeIds = (List<Integer>) request.get("privilegeIds");
+        if (optionalAdmin.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("status", "ERROR", "message", "Admin not found with ID: " + userId));
+        }
 
-        Set<Privilege> privileges = privilegeIds.stream()
-                .map(id -> privilegeRepo.findById(Long.valueOf(id)).orElseThrow())
-                .collect(Collectors.toSet());
+        CustomAdmin admin = optionalAdmin.get();
+        String roleName = "";
 
-        Role role = new Role();
-        role.setRoleName(roleName);
-        role.setPrivileges(privileges);
-        role.setCreatedAt(LocalDateTime.now());
-        role.setUpdatedAt(LocalDateTime.now());
-        role.setCreatedBy("ADMIN_ID_" + adminId);
+        Optional<Role> optionalRole = roleRepository.findById(admin.getRole());
+        if (optionalRole.isPresent()) {
+            roleName = optionalRole.get().getRoleName();
+        }
+        AdminWithRoleResponse response = new AdminWithRoleResponse(
+                admin.getAdminId(),
+                admin.getUser_name(),
+                admin.getEmail(),
+                admin.getRole(),
+                admin.getMobileNumber(),
+                admin.getCountry_code(),
+                admin.getActive(),
+                admin.getCreatedBy(),
+                admin.getCreated_at(),
+                admin.getUpdated_at(),
+                roleName
+        );
 
-        roleRepo.save(role);
+        return responseService.generateSuccessResponse("Admin found.", response, HttpStatus.OK);
+    }
 
-        return ResponseEntity.ok(Map.of("message", "Role created successfully", "roleId", role.getRoleId()));
-    }*/
+
+
+
+
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllRoles() {
+        List<Role> roles = roleRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        List<RoleDTO> roleDTOs = roles.stream()
+                .map(role -> new RoleDTO(role.getRoleId(), role.getRoleName()))
+                .collect(Collectors.toList());
+
+        return responseService.generateSuccessResponse("Roles fetched successfully", roleDTOs, HttpStatus.OK);
+
+    }
 
     //  Get All Roles
     @GetMapping
     public ResponseEntity<?> getAllRoles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "roleId") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) Integer roleId
     ) {
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<Role> rolesPage;
+
         if (roleId != null) {
             Optional<Role> roleOptional = roleRepo.findById(roleId);
             rolesPage = roleOptional
@@ -137,41 +187,40 @@ public class RoleController {
             roleMap.put("updatedAt", role.getUpdatedAt());
             roleMap.put("createdBy", role.getCreatedBy());
 
-            List<Privilege> privileges = role.getPrivileges().stream().toList();
-            roleMap.put("privileges", privileges);
+            List<Privilege> privileges = new ArrayList<>(role.getPrivileges());
 
-            // 🔍 Submenus grouped by parentMenu
+            // Group SUBMENUs by their parentMenu
             Map<String, List<Map<String, Object>>> groupedSubmenus = privileges.stream()
                     .filter(p -> "SUBMENU".equalsIgnoreCase(p.getType()))
                     .collect(Collectors.groupingBy(
-                            Privilege::getParentMenu,
+                            p -> p.getParentMenu() != null ? p.getParentMenu().trim() : "",
                             Collectors.mapping(p -> Map.of(
                                     "submenuId", p.getId(),
                                     "submenuName", p.getName()
                             ), Collectors.toList())
                     ));
 
-            // 🔍 All parent menu names
-            Set<String> parentMenuNames = groupedSubmenus.keySet();
+            // Fetch MENU privileges
+            List<Privilege> menuPrivileges = privileges.stream()
+                    .filter(p -> "MENU".equalsIgnoreCase(p.getType()))
+                    .toList();
 
-            // ✅ Fetch actual MENU privileges by name
-            List<Privilege> menuPrivileges = privilegeRepo.findAllByNameIn(parentMenuNames);
-
-            // 🧩 Combine menu + submenus
+            // Combine MENU and corresponding SUBMENUs
             List<Map<String, Object>> menusList = menuPrivileges.stream()
                     .map(menu -> Map.of(
                             "menuId", menu.getId(),
                             "menuName", menu.getName(),
-                            "submenus", groupedSubmenus.getOrDefault(menu.getName(), List.of())
+                            "submenus", groupedSubmenus.getOrDefault(menu.getName().trim(), List.of())
                     ))
-                    .collect(Collectors.toList());
+                    .toList();
 
+            roleMap.put("privileges", privileges);
             roleMap.put("menus", menusList);
             return roleMap;
         }).toList();
 
         Map<String, Object> response = new HashMap<>();
-        response.put("roles", rolesList);
+        response.put("data", rolesList);
         response.put("currentPage", rolesPage.getNumber());
         response.put("totalItems", rolesPage.getTotalElements());
         response.put("totalPages", rolesPage.getTotalPages());
@@ -182,125 +231,111 @@ public class RoleController {
     }
 
 
+
     @PostMapping("/add-user")
     public ResponseEntity<?> createUserWithRole(@RequestBody Map<String, Object> request, HttpServletRequest req) {
         try {
             String token = jwtUtil.resolveToken(req);
-            Long adminId = jwtUtil.extractAdminId(token);
 
             String mobile = request.get("mobile").toString();
             String userName = request.get("userName").toString();
             String password = request.get("password").toString();
             String countryCode = request.getOrDefault("countryCode", "+91").toString();
+            String email = request.getOrDefault("email", "").toString();
 
-            Integer roleId = Integer.valueOf(request.get("roleId").toString());
 
-            // Check if mobile exists
             Optional<CustomAdmin> existingUser = adminRepo.findByMobileNumber(mobile);
             if (existingUser.isPresent()) {
                 return responseService.generateErrorResponse("Mobile number already exists", HttpStatus.BAD_REQUEST);
             }
 
-
-            //  Fetch Role
-            Role role = roleRepo.findById(roleId)
-                    .orElseThrow(() -> new RuntimeException("Role not found with ID: " + roleId));
-
-            //  Check if role is vendor or customer
-            if (role.getRoleName().equalsIgnoreCase("VENDOR") || role.getRoleName().equalsIgnoreCase("CUSTOMER")) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Cannot create VENDOR or CUSTOMER from this API"));
-            }
-
-            //  Save CustomAdmin (User)
             CustomAdmin user = new CustomAdmin();
             user.setMobileNumber(mobile);
+            Long id = jwtUtil.extractId(token);
+
+            String adminName = roleService.findRoleName(Math.toIntExact(id));
+
+
+            user.setCreatedBy(adminName);
+
+            user.setEmail(email);
             user.setUser_name(userName);
             user.setPassword(passwordEncoder.encode(password));
-            user.setCountry_code(countryCode);
-            user.setRole(role.getRoleId());
+            user.setCountry_code(countryCode!=null?countryCode: Constant.COUNTRY_CODE);
             user.setActive(1);
             user.setCreated_at(new Date());
 
             adminRepo.save(user);
-            return responseService.generateSuccessResponse("User created successfully",user, HttpStatus.OK);
-
+            return responseService.generateSuccessResponse("User created successfully", user, HttpStatus.OK);
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "error", e.getMessage()
-            ));
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/assign-role")
+    public ResponseEntity<?> assignRoleToUser(@RequestBody Map<String, Object> request) {
+        try {
+            Long userId = Long.valueOf(request.get("userId").toString());
+            Integer roleId = Integer.valueOf(request.get("roleId").toString());
+
+            CustomAdmin user = adminRepo.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            user.setRole(roleId);
+
+            adminRepo.save(user);
+
+            return responseService.generateSuccessResponse("Role assigned successfully", user, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/status/{id}")
+    public ResponseEntity<?> updateAdminStatus(
+            @PathVariable("id") Long adminId,
+            @RequestParam(name = "status") int status,
+            @RequestParam(defaultValue = "system") String updatedBy) {
+        try {
+            boolean success = adminService.setAdminActiveStatus(adminId, status, updatedBy);
+
+            String action = (status == 1) ? "re-activated" : "terminated";
+            String message = success
+                    ? "Admin " + action + " successfully."
+                    : "Admin not found or already " + (status == 1 ? "active" : "terminated") + ".";
+
+            return responseService.generateSuccessResponse(message, success, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "ERROR", "message", e.getMessage()));
         }
     }
 
 
-/*    @PostMapping("/add-user")
-    public ResponseEntity<?> createUserWithRole(@RequestBody Map<String, Object> request, HttpServletRequest req) {
+
+
+/*    @PostMapping("/assign-roles")
+    public ResponseEntity<?> assignRolesToUser(@RequestBody Map<String, Object> request) {
         try {
-            String token = jwtUtil.resolveToken(req);
-            Long adminId = jwtUtil.extractAdminId(token);
+            Long userId = Long.valueOf(request.get("userId").toString());
+            List<Integer> roleIds = (List<Integer>) request.get("roleIds");
 
-            String mobile = request.get("mobile").toString();
-            String userName = request.get("userName").toString();
-            String password = request.get("password").toString();
-            String countryCode = request.getOrDefault("countryCode", "+91").toString();
+            CustomAdmin user = adminRepo.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-            String roleName = request.get("roleName").toString();
-            List<Integer> privilegeIds = (List<Integer>) request.get("privilegeIds");
-
-            //  Check if mobile exists
-            Optional<CustomAdmin> existingUser = adminRepo.findByMobileNumber(mobile);
-            if (existingUser.isPresent()) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Mobile number already exists"));
-            }
-
-            //  Check if roleName is vendor or customer → throw error
-            if (roleName.equalsIgnoreCase("VENDOR") || roleName.equalsIgnoreCase("CUSTOMER")) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Cannot create VENDOR or CUSTOMER from this API"));
-            }
-
-            //  Create Role (or find if exists)
-            Role role = roleRepo.findByRoleName(roleName)
-                    .orElseGet(() -> {
-                        Role newRole = new Role();
-                        newRole.setRoleName(roleName);
-                        newRole.setCreatedAt(LocalDateTime.now());
-                        newRole.setUpdatedAt(LocalDateTime.now());
-                        newRole.setCreatedBy("ADMIN_ID_" + adminId);
-                        return newRole;
-                    });
-
-            //Attach Privileges
-            Set<Privilege> privileges = privilegeIds.stream()
-                    .map(id -> privilegeRepo.findById(Long.valueOf(id))
-                            .orElseThrow(() -> new RuntimeException("Privilege ID not found: " + id)))
-                    .collect(Collectors.toSet());
-
-            role.setPrivileges(privileges);
-            roleRepo.save(role);
-
-            // 🔥 Save CustomAdmin (User)
-            CustomAdmin user = new CustomAdmin();
-            user.setMobileNumber(mobile);
-            user.setUser_name(userName);
-            user.setPassword(passwordEncoder.encode(password));
-            user.setCountry_code(countryCode);
-            user.setRole(role.getRoleId());
-            user.setActive(1);
-            user.setCreated_at(new Date());
+            List<Role> roles = roleRepository.findAllById(roleIds);
+            user.setRoles(new HashSet<>(roles)); // Replace existing roles
 
             adminRepo.save(user);
-
-            return ResponseEntity.ok(Map.of(
-                    "message", "User created successfully",
-                    "userId", user.getAdmin_id(),
-                    "roleId", role.getRoleId()
-            ));
+            return responseService.generateSuccessResponse("Roles assigned successfully", user, HttpStatus.OK);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "error", e.getMessage()
-            ));
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }*/
+
+
+
 
 //    edit user and add privlidge
 
@@ -351,42 +386,16 @@ public class RoleController {
     }
 
 //    get all custom admin with pagination
-
-/*    @GetMapping("/custom-admins")
-    public ResponseEntity<?> getCustomAdminsWithPagination(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) Integer role,
-            @RequestParam(required = false) String mobileNumber,
-            @RequestParam(required = false) String userName
-    ) {
-        try {
-            Pageable pageable = PageRequest.of(page, size);
-
-            Specification<CustomAdmin> spec = Specification
-                    .where(CustomAdminSpecification.hasRole(role))
-                    .and(CustomAdminSpecification.hasMobileNumber(mobileNumber))
-                    .and(CustomAdminSpecification.hasUserName(userName));
-
-            Page<CustomAdmin> customAdminPage = adminRepo.findAll(spec, pageable);
-            return responseService.generateSuccessResponseWithCount("Custom Admins fetched successfully", customAdminPage.getContent(),customAdminPage.getTotalElements(), HttpStatus.OK);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "ERROR", "message", e.getMessage()));
-        }
-    }*/
-
-
-    @GetMapping("/custom-admins")
-    public ResponseEntity<?> getCustomAdminsWithPagination(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String roleName,
-            @RequestParam(required = false) String mobileNumber,
-            @RequestParam(required = false) String userName
-    ) {
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "adminId"));
+@GetMapping("/custom-admins")
+public ResponseEntity<?> getCustomAdminsWithPagination(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String roleName,
+        @RequestParam(required = false) String mobileNumber,
+        @RequestParam(required = false) String userName
+) {
+    try {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "adminId"));
 
             Integer roleId = null;
             if (roleName != null && !roleName.isBlank()) {
@@ -405,7 +414,68 @@ public class RoleController {
                 }
             }
 
-            // Apply filtering
+        // Apply filtering
+        Specification<CustomAdmin> spec = Specification
+                .where(CustomAdminSpecification.hasRole(roleId))
+                .and(CustomAdminSpecification.hasMobileNumber(mobileNumber))
+                .and(CustomAdminSpecification.hasUserName(userName));
+
+        Page<CustomAdmin> customAdminPage = adminRepo.findAll(spec, pageable);
+
+        // Map entities to DTOs with resolved roleName
+        List<CustomAdminDTO> dtoList = customAdminPage.getContent().stream().map(admin -> {
+            String resolvedRoleName = "Unknown";
+            if (admin.getRole() != null) {
+                resolvedRoleName = roleRepository.findById(admin.getRole())
+                        .map(Role::getRoleName)
+                        .orElse("Unknown");
+            }
+            return new CustomAdminDTO(admin, resolvedRoleName);
+        }).toList();
+
+
+        return responseService.generateSuccessResponseWithCount(
+                "Custom Admins fetched successfully",
+                dtoList,
+                customAdminPage.getTotalElements(),
+                HttpStatus.OK
+        );
+
+    } catch (Exception e) {
+        exceptionHandlingImplement.handleException(e);
+        return responseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+
+
+
+/*
+    @GetMapping("/custom-adminsold")
+    public ResponseEntity<?> getCustomAdminsWithPaginationOld(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String roleName,
+            @RequestParam(required = false) String mobileNumber,
+            @RequestParam(required = false) String userName
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "adminId"));
+
+            Integer roleId = null;
+            if (roleName != null && !roleName.isBlank()) {
+                Optional<Role> roleOptional = roleRepository.findByRoleNameIgnoreCase(roleName);
+                if (roleOptional.isPresent()) {
+                    roleId = roleOptional.get().getRoleId();
+                } else {
+                    return responseService.generateSuccessResponseWithCount(
+                            "No admins found for the given role name",
+                            Collections.emptyList(),
+                            0L,
+                            HttpStatus.OK
+                    );
+                }
+            }
+
             Specification<CustomAdmin> spec = Specification
                     .where(CustomAdminSpecification.hasRole(roleId))
                     .and(CustomAdminSpecification.hasMobileNumber(mobileNumber))
@@ -413,13 +483,9 @@ public class RoleController {
 
             Page<CustomAdmin> customAdminPage = adminRepo.findAll(spec, pageable);
 
-            // Map entities to DTOs with resolved roleName
-            List<CustomAdminDTO> dtoList = customAdminPage.getContent().stream().map(admin -> {
-                String resolvedRoleName = roleRepository.findById(admin.getRole())
-                        .map(Role::getRoleName)
-                        .orElse("Unknown");
-                return new CustomAdminDTO(admin, resolvedRoleName);
-            }).toList();
+            List<CustomAdminDTO> dtoList = customAdminPage.getContent().stream()
+                    .map(CustomAdminDTO::new) // Use the DTO constructor directly
+                    .toList();
 
             return responseService.generateSuccessResponseWithCount(
                     "Custom Admins fetched successfully",
@@ -433,8 +499,6 @@ public class RoleController {
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
-
+*/
 
 }

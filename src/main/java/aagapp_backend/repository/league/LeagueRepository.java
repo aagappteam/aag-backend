@@ -108,4 +108,37 @@ public interface LeagueRepository extends JpaRepository<League, Long>, JpaSpecif
 
     @Query("SELECT g FROM League g WHERE g.vendorEntity.id = :vendorId")
     List<League> findByVendorId(@Param("vendorId") Long vendorId);
+
+
+    @Query("SELECT l FROM League l " +
+            "WHERE l.vendorEntity = :vendorEntity " +
+            "AND l.scheduledAt BETWEEN :startTime AND :endTime " +
+            "AND l.status IN :statuses")
+    List<League> findByVendorEntityAndScheduledAtBetweenAndStatusIn(
+            @Param("vendorEntity") VendorEntity vendorEntity,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime,
+            @Param("statuses") List<LeagueStatus> statuses
+    );
+
+
+
+    List<League> findAllByStatusAndCreatedDateBefore(LeagueStatus status, ZonedDateTime dateTime);
+
+    @Query("""
+    SELECT l FROM League l
+    WHERE 
+        (l.challengingVendorId = :vendorId OR l.opponentVendorId = :vendorId)
+        AND l.createdDate BETWEEN :startTime AND :endTime
+        AND l.status IN :statuses
+""")
+    List<League> findLeaguesByVendorIdInChallengingOrOpponentAndCreatedDateAndStatusIn(
+            @Param("vendorId") Long vendorId,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime,
+            @Param("statuses") List<LeagueStatus> statuses
+    );
+
+
+    int countByVendorEntityAndCreatedDateBetween(VendorEntity vendor, ZonedDateTime startUTC, ZonedDateTime endUTC);
 }

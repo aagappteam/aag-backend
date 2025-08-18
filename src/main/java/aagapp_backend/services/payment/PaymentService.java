@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -135,7 +136,90 @@ public class PaymentService {
         this.mailSender = mailSender;
     }
 
- @Scheduled(cron = "0 0 * * * *") // Runs every hour
+    @Scheduled(cron = "0 0 * * * *") // Runs every hour
+    public void expireOldSubscriptions() {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1️⃣ Normal flow: Expire active plans
+        List<PaymentEntity> expiredPayments = paymentRepository.findAllByExpiryAtBeforeAndStatus(
+                now, PaymentStatus.ACTIVE
+        );
+
+        for (PaymentEntity payment : expiredPayments) {
+            try {
+                payment.setStatus(PaymentStatus.EXPIRED);
+                payment.setExpiredAt(now);
+                paymentRepository.save(payment);
+
+                VendorEntity vendor = payment.getVendorEntity();
+                if (vendor != null && vendor.getPrimary_email() != null) {
+                    PlanEntity planEntity = entityManager.find(PlanEntity.class, payment.getPlanId());
+
+                    if (!Constant.TEST_MOBILE_NUMBERS.contains(vendor.getMobileNumber())) {
+                        emailService.sendSubscriptionExpiredMail(
+                                vendor.getPrimary_email(),
+                                vendor.getFirst_name(),
+                                now,
+                                planEntity.getPlanName(),
+                                payment.getAmount()
+                        );
+                        vendor.setIsPaid(false);
+                        vendorRepository.save(vendor);
+                    }
+                }
+
+            } catch (Exception e) {
+                exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                System.err.println("Failed to expire subscription ID: " + payment.getId() +
+                        " | Error: " + e.getMessage());
+            }
+        }
+
+        // Test numbers always get a fresh plan
+        List<VendorEntity> testVendors = vendorRepository.findAllByMobileNumberIn(Constant.TEST_MOBILE_NUMBERS);
+
+        for (VendorEntity vendor : testVendors) {
+            try {
+                // Find latest payment for this vendor
+                PaymentEntity latestPayment = paymentRepository.findTopByVendorEntityOrderByExpiryAtDesc(vendor);
+
+                if (latestPayment == null || latestPayment.getExpiryAt().isBefore(now)) {
+                    // Create new test payment
+                    PaymentEntity newPayment = new PaymentEntity();
+                    newPayment.setVendorEntity(vendor);
+                    newPayment.setAmount(50000.0);
+                    newPayment.setPlanDuration("Monthly");
+                    newPayment.setPaymentType(PaymentType.CREDIT);
+                    newPayment.setStatus(PaymentStatus.ACTIVE);
+                    newPayment.setPlanId(5L); // Plan ID 5
+                    newPayment.setCreatedAt(now);
+                    newPayment.setExpiryAt(now.plusMonths(1));
+                    newPayment.setIsTest(true);
+
+                    paymentRepository.save(newPayment);
+
+                    PlanEntity planEntity = entityManager.find(PlanEntity.class, newPayment.getPlanId());
+
+                    vendor.setPlanName(planEntity.getPlanName());
+                    vendor.setIsPaid(true);
+                    vendor.setDailyLimit(20); // only for testing
+                    vendorRepository.save(vendor);
+
+                    System.out.println("New test plan created for vendor: " + vendor.getMobileNumber());
+                }
+
+            } catch (Exception e) {
+                exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                System.err.println("Failed to create test plan for vendor: " + vendor.getMobileNumber() +
+                        " | Error: " + e.getMessage());
+            }
+        }
+
+        System.out.println("Subscription expiry task completed at " + now);
+    }
+
+
+/* @Scheduled(cron = "0 0 * * * *") // Runs every hour
     public void expireOldSubscriptions() {
         List<PaymentEntity> expiredPayments = paymentRepository.findAllByExpiryAtBeforeAndStatus(
                 LocalDateTime.now(), PaymentStatus.ACTIVE
@@ -143,7 +227,6 @@ public class PaymentService {
         for (PaymentEntity payment : expiredPayments) {
             try {
 
-                System.out.println("Expiring subscription ID: " + payment.getId() + " at " + LocalDateTime.now());
                 payment.setStatus(PaymentStatus.EXPIRED);
                 payment.setExpiredAt(LocalDateTime.now());
                 paymentRepository.save(payment);
@@ -200,7 +283,7 @@ public class PaymentService {
         }
 
         System.out.println("Subscription expiry task completed at " + LocalDateTime.now());
-    }
+    }*/
 
 
 
@@ -334,8 +417,12 @@ public class PaymentService {
                 " " +
                 (existingVendor.getLast_name() != null ? existingVendor.getLast_name() : "N/A");
         notification.setName(fullName.trim());
+        String amountStr = new BigDecimal(paymentRequest.getAmount().toString())
+                .stripTrailingZeros()
+                .toPlainString();
 
-        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
+        notification.setDetails("Purchase of Rs. " + amountStr + " has been processed");
+//        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
         notificationRepository.save(notification);
 
         paymentRepository.save(paymentRequest);
@@ -537,7 +624,13 @@ public class PaymentService {
         String fullName = (existingVendor.getFirst_name() != null ? existingVendor.getFirst_name() : "N/A") +
                 " " + (existingVendor.getLast_name() != null ? existingVendor.getLast_name() : "N/A");
         notification.setName(fullName.trim());
-        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
+        String amountStr = new BigDecimal(paymentRequest.getAmount().toString())
+                .stripTrailingZeros()
+                .toPlainString();
+
+        notification.setDetails("Purchase of Rs. " + amountStr + " has been processed");
+
+//        notification.setDetails("Purchase of Rs. " + paymentRequest.getAmount() + " has been processed");
         notificationRepository.save(notification);
 
         paymentRepository.save(paymentRequest);
@@ -911,7 +1004,7 @@ public class PaymentService {
 
     // Updated to include transactionReference as an additional parameter
     public List<PaymentEntity> getTransactionsByVendorId(Long vendorId, int page, int size, String transactionReference) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return paymentRepository.findAllTransactionsByVendorId(vendorId, transactionReference, pageable);
     }/*
     public Optional<PaymentDashboardDTO> getActiveTransactionsByVendorIdOld(Long vendorId, Integer dailyPercentage,Integer PublishedLimit,Integer dailyLimit) {

@@ -12,43 +12,50 @@ import java.time.ZonedDateTime;
 
 @Entity
 @Table(
-        name = "admin_logs",
-        indexes = {
+        name = "admin_logs"
+        /*indexes = {
                 @Index(name = "idx_activity_admin_logs", columnList = "activity"),
-                @Index(name = "idx_role_admin_logs", columnList = "role"),
+//                @Index(name = "idx_role_admin_logs", columnList = "role"),
                 @Index(name = "idx_createdFor_admin_logs", columnList = "createdDate")
-        }
+        }*/
 )
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class AdminLogs {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 1000)
-    private String activity;
+    private Long senderid;
+    private String senderrole;
 
-    @Column(length = 10)
-    private String role;
+    @Column(length = 1000)
+    private String message;
+
+    private String targetType; // e.g., "KYC", "PLAN", "TICKET"
+    private Long targetId;
+
+    private String targetRole; // who this originally came for
+    private Long receiverId;   // direct user receiver (optional)
+
+    private String assignedRole;     // assigned to role
+    private Long assignedUserId;     // assigned to a specific user
+    private Long assignedBy;         // admin who assigned
+
+    private boolean read = false;
+
 
     @Column(name = "performed_by", length = 255)
     private String performedBy;
 
-    @Column(name = "target_id")
-    private Long targetId;
-
-    @Column(name = "target_type", length = 100)
-    private String targetType;
-
 
     @CreationTimestamp
-    @Column(name = "createdDate", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "created_date", updatable = false)
     private ZonedDateTime createdDate;
+
 
 
     @Column(name = "updated_date")

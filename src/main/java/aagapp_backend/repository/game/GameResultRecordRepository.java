@@ -40,4 +40,6 @@ public interface GameResultRecordRepository extends JpaRepository<GameResultReco
 
     @Query("SELECT COALESCE(SUM(grr.winningammount), 0) FROM GameResultRecord grr WHERE grr.player.id = :playerId AND grr.isWinner = true")
     BigDecimal getTotalWinningAmountByPlayer(Long playerId);
+
+    List<GameResultRecord> findByGame_IdAndIsWinner(Long gameId, Boolean isWinner);
 }

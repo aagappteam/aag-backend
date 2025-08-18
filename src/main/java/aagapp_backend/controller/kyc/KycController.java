@@ -1,12 +1,16 @@
 package aagapp_backend.controller.kyc;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.dto.KycDTO;
 import aagapp_backend.dto.KycVerificationRequest;
+import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.kyc.KycEntity;
 import aagapp_backend.enums.KycStatus;
 import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.kycRepository.KycRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.kycServices.KycService;
 import aagapp_backend.services.s3services.S3Service;
@@ -34,6 +38,9 @@ public class KycController {
 
     @Autowired
     private KycService kycService;
+
+    @Autowired
+    private CommonService commonService;
 
     @Autowired
     private S3Service s3Service;
@@ -124,6 +131,31 @@ public class KycController {
                     panImage
             );
 
+            String notificationTitle = role.equalsIgnoreCase("vendor") ? "Vendor KYC Request" : "User KYC Request";
+            String notificationMessage = "A new " + role.toLowerCase() + " KYC request has been submitted. Please review the KYC for +" + role.toLowerCase() + " ID: " + userOrVendorId + ".";
+
+            String submittedByName = "";
+            Long senderId = userOrVendorId;
+            String senderRole = role.equalsIgnoreCase("vendor") ? Constant.ROLE_VENDOR : Constant.ROLE_CUSTOMER;
+            if (role.equalsIgnoreCase("vendor")) {
+                VendorEntity vendorEntity = vendorRepository.findById(userOrVendorId).orElse(null);
+                submittedByName = vendorEntity != null ? vendorEntity.getName() : "";
+            } else {
+                CustomCustomer user = customCustomerRepository.findById(userOrVendorId).orElse(null);
+                submittedByName = user != null ? user.getName() : "";
+            }
+
+            commonService.notifyAdminsByRole(
+                    Constant.ADMIN_ROLE,
+                    notificationTitle,
+                    submittedByName,
+                    userOrVendorId,
+                    notificationMessage,
+                     senderId,
+                     senderRole
+            );
+
+
             return ResponseService.generateSuccessResponse("KYC Request applied successfully. Kindly wait for verification.", kycEntity, HttpStatus.OK);
         } catch (Exception e) {
             return ResponseService.generateErrorResponse("KYC Request Failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -206,9 +238,9 @@ public ResponseEntity<?> getAllKycs(
                 .collect(Collectors.toList());
 
         long totalCount = kycRepository.count(spec);
-        long pendingCount = kycRepository.countByKycStatus(KycStatus.PENDING);
-        long rejectedCount = kycRepository.countByKycStatus(KycStatus.REJECTED);
-        long approvedCount = kycRepository.countByKycStatus(KycStatus.VERIFIED);
+        long pendingCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.PENDING)));
+        long rejectedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.REJECTED)));
+        long approvedCount = kycRepository.count(spec.and(KycSpecification.hasStatus(KycStatus.VERIFIED)));
 
         return ResponseService.generateSuccessResponseForWithdrwalRequest(
                 "KYC records retrieved successfully",

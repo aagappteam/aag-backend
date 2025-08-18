@@ -123,4 +123,5 @@ public interface TournamentResultRecordRepository extends JpaRepository<Tourname
     @Query("SELECT COALESCE(SUM(trr.ammount), 0) FROM TournamentResultRecord trr WHERE trr.player.id = :playerId AND trr.isWinner = true")
     BigDecimal getTotalWinningAmountByPlayer(Long playerId);
 
+    Page<TournamentResultRecord> findByTournamentIdAndIsWinnerFalse(Long tournamentId, Pageable unpaged);
 }

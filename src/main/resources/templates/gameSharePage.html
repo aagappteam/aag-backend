@@ -4,77 +4,118 @@
   <meta charset="UTF-8" />
   <title th:text="'Play ' + ${game.gamename} + ' of Vendor ' + ${vendor.name}">Game Detail</title>
 
-  <!-- Open Graph Meta Tags for WhatsApp, Facebook -->
-  <meta property="og:title" th:content="'Play ' + ${game.gamename} + ' of Vendor ' + ${vendor.name}" />
-  <meta property="og:description" th:content="'Play exciting game ' + ${game.gamename} + ' with Vendor ' + ${vendor.name}" />
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" th:content="'Play ' + ${game.gamename} + ' of  ' + ${vendor.name}" />
+  <meta property="og:description" th:content="'Play exciting game ' + ${game.gamename} + ' of ' + ${vendor.name}" />
   <meta property="og:image" th:content="${game.gameIcon}" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-
   <meta property="og:url" th:content="${game.shareableLink}" />
   <meta property="og:type" content="website" />
 
-  <!-- Twitter Card Meta Tags -->
+  <!-- Twitter Meta -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" th:content="'Play ' + ${game.gamename} + ' of Vendor ' + ${vendor.name}" />
   <meta name="twitter:description" th:content="'Play exciting game ' + ${game.gamename}" />
   <meta name="twitter:image" th:content="${game.gameIcon}" />
 
-  <!-- Mobile Responsiveness -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f8f9fa;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #222;
+      margin-bottom: 20px;
     }
 
     .game-banner {
-      max-width: 100%;
+      width: 250px;
+      max-width: 90%;
       height: auto;
-      margin-bottom: 20px;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      margin-bottom: 30px;
     }
 
     .vendor-info {
       display: flex;
       align-items: center;
-      margin-top: 30px;
+      justify-content: center;
       gap: 15px;
+      margin-bottom: 30px;
     }
 
     .vendor-profile-pic {
-      width: 80px;
-      height: 80px;
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid #ddd;
+      border: 2px solid #ccc;
     }
 
     .vendor-name {
       font-weight: bold;
       font-size: 1.2rem;
+      color: #333;
     }
 
-    h1 {
-      font-size: 1.6rem;
-      color: #333;
+    .play-button {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #007bff;
+      color: white;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .play-button:hover {
+      background-color: #0056b3;
+    }
+
+    .footer-link {
+      margin-top: 40px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .footer-link a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
 
-<h1 th:text="'Play ' + ${game.gamename} + ' of Vendor ' + ${vendor.name}">Game Detail</h1>
+<h1 th:text="'Play ' + ${game.gamename} + ' of Vendor ' + ${vendor.name}">Game Title</h1>
 
 <img th:src="${game.gameIcon}" alt="Game Banner" class="game-banner" />
 
-<section class="vendor-info">
-  <img th:src="${vendor.profilePic}" alt="Vendor Profile Picture" class="vendor-profile-pic" />
+<div class="vendor-info">
+  <img th:src="${vendor.profilePic}" alt="Vendor Profile" class="vendor-profile-pic" />
   <div class="vendor-name" th:text="${vendor.name}">Vendor Name</div>
-</section>
+</div>
+
+<a th:href="${playLink}" target="_blank" class="play-button">Play Now</a>
+
+<div class="footer-link">
+  Want more games? <a href="https://aagapp.com" target="_blank">Visit AAG App</a>
+</div>
 
 </body>
 </html>

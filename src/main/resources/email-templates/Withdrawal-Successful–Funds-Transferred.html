@@ -42,18 +42,18 @@
                 </tr>
                 <tr>
                     <td style="font-size: 18px; font-weight: 600; color: #FF6B35; padding-bottom: 10px;">
-                        Dear <strong>{Vendor Name}</strong>,
+                        Dear <strong>{VendorName}</strong>,
                     </td>
                 </tr>
-                <!--<tr>
-                    <td style="font-size: 16px; font-weight: 400; color: #ffffff; padding-bottom: 20px;">
-                        Dear <strong>{Vendor Name}</strong>,
+                <tr>
+                    <td style="padding: 20px 20px 10px;">
+                        <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/Group+1000005201.png" width="200" alt="Request Rejected" />
                     </td>
-                </tr>-->
+                </tr>
                 <tr>
                     <td class="content-padding" style="padding: 0 20px 20px;">
                         <p style="font-size: 14px; line-height: 1.5; color: #dddddd; text-align: left;">
-                            Great news! 🎉 Your withdrawal request for <strong>₹{Amount}</strong> has been successfully processed, and the funds have been credited to your registered account.
+                            Great news! 🎉 Your withdrawal request for <strong>₹{ammount}</strong> has been successfully processed, and the funds have been credited to your registered account.
                         </p>
                     </td>
                 </tr>
@@ -61,13 +61,13 @@
                     <td class="content-padding" style="padding: 0 20px 20px;">
                         <table cellpadding="0" cellspacing="0" border="0" width="100%" style="text-align: left; font-size: 14px; color: #ffffff;">
                             <tr>
-                                <td style="padding: 8px 0;"><strong>💰 Amount Credited:</strong> ₹{Amount}</td>
+                                <td style="padding: 8px 0;"><strong>💰 Amount Credited:</strong> ₹{ammount}</td>
                             </tr>
                             <tr>
-                                <td style="padding: 8px 0;"><strong>🏦 Bank/Wallet:</strong> {Bank Name / Wallet Name}</td>
+                                <td style="padding: 8px 0;"><strong>🏦 Bank/Wallet:</strong> {BankName}</td>
                             </tr>
                             <tr>
-                                <td style="padding: 8px 0;"><strong>📅 Date Processed:</strong> {DD/MM/YYYY}</td>
+                                <td style="padding: 8px 0;"><strong>📅 Date Processed:</strong> {createdAt}</td>
                             </tr>
                         </table>
                     </td>
@@ -75,18 +75,12 @@
                 <tr>
                     <td class="content-padding" style="padding: 0 20px 20px;">
                         <p style="font-size: 14px; line-height: 1.5; color: #dddddd; text-align: left;">
-                            ✔ <strong>Check your account</strong> to confirm the credited amount.<br>
-                            ✔ If you face any issues or delays, please reach out to us immediately.
+                            <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/checklogo.png" width="15" alt="Check"> <strong> Check your account</strong> to confirm the credited amount.<br>
+                            <img src="https://aag-data.s3.ap-south-1.amazonaws.com/email-tamplate/checklogo.png" width="15" alt="Check"> If you face any issues or delays, please reach out to us immediately.
                         </p>
                     </td>
                 </tr>
-                <tr>
-                    <td class="content-padding" style="padding: 0 20px 20px;">
-                        <p style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">📧 Need Help?</p>
-                        <p style="font-size: 13px; color: #cccccc; margin: 0 0 5px;">📩 Email: support@aag.com</p>
-                        <p style="font-size: 13px; color: #cccccc;">📞 Helpline: +91 XXXXXXXXXX</p>
-                    </td>
-                </tr>
+
                 <tr>
                     <td class="content-padding" style="padding: 0 10px 10px;">
                         <p style="font-size: 14px; color: #dddddd;">
@@ -96,22 +90,25 @@
                 </tr>
                 <tr>
                     <td align="center" class="content-padding" style="padding: 10px;">
-                        <p style="font-size: 13px; color: #cccccc;">Best regards,<br><strong>Team AAGVEER</strong></p>
-                        <p style="font-size: 13px; color: #999999;">www.aag.com</p>
+                        <p style="font-size: 13px; color: #cccccc;">Best regards,<br><br><strong>Team AAGVEER</strong></p>
+                        <br>
+                        <p style="font-size: 13px; color: #999999;">
+                            <a href="https://www.aagapp.com" style="color: #999999; text-decoration: none;" target="_blank">www.aagapp.com</a>
+                        </p>
                         <table cellpadding="0" cellspacing="0" border="0">
                             <tr>
                                 <td style="padding: 0 6px;">
-                                    <a href="#"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Facebook_white.png" width="22" alt="Facebook"></a>
+                                    <a href="https://www.facebook.com/aagapp/"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Facebook_white.png" width="22" alt="Facebook"></a>
                                 </td>
                                 <td style="padding: 0 6px;">
-                                    <a href="#"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Instagram_white.png" width="22" alt="Instagram"></a>
+                                    <a href="https://www.instagram.com/aagapp/?igsh=MTZvc205Y2NhY2plaw%3D%3D#"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Instagram_white.png" width="22" alt="Instagram"></a>
                                 </td>
                                 <td style="padding: 0 6px;">
                                     <a href="https://x.com/aapkapnagame" target="_blank"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Twitter_white.png" width="22" alt="Twitter"></a>
                                 </td>
-                                <td style="padding: 0 6px;">
-                                    <a href="#"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Mail_white.png" width="22" alt="Mail"></a>
-                                </td>
+                                <!--<td style="padding: 0 6px;">
+                                  <a href="#"><img src="https://aag-data.s3.ap-south-1.amazonaws.com/default-data/Emailler+(5)/Mail_white.png"  width="22" alt="Mail"></a>
+                                </td-->
                             </tr>
                         </table>
                     </td>

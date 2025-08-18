@@ -10,5 +10,7 @@ public class WithdrawalRequestSubmitDto {
 
     private Long influencerId;
     private BigDecimal amount;
-    private String reason; // Optional
+    private String bankName;
+    private String monthYear;
+    private String reason;
 }

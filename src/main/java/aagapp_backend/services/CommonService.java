@@ -1,43 +1,80 @@
 package aagapp_backend.services;
 
 import aagapp_backend.components.Constant;
+import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.ThemeEntity;
 import aagapp_backend.entity.VendorEntity;
+import aagapp_backend.entity.admin.AdminLogs;
 import aagapp_backend.entity.earning.InfluencerMonthlyEarning;
 import aagapp_backend.entity.game.AagAvailableGames;
+import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.enums.ActivityType;
+import aagapp_backend.enums.LeagueStatus;
 import aagapp_backend.enums.PaymentStatus;
+import aagapp_backend.enums.TournamentStatus;
 import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.NotificationShareRepository;
+import aagapp_backend.repository.admin.AdminLogsInterface;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
 import aagapp_backend.repository.game.PlayerRepository;
+import aagapp_backend.repository.league.LeagueRepository;
 import aagapp_backend.repository.payment.PaymentRepository;
+import aagapp_backend.repository.tournament.TournamentRepository;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.payment.PaymentService;
+import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class CommonService {
+
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private AdminLogsInterface adminLogsInterface;
+
+    @Autowired
+    private TournamentRepository tournamentRepository;
+
+    @Autowired
+    private LeagueRepository leagueRepository;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
     private CustomCustomerService customCustomerService;
     private PlayerRepository playerRepository;
     private PaymentService paymentService;
@@ -90,6 +127,43 @@ public class CommonService {
     public <T> T findOrThrow(Optional<T> opt, String entityName, Object id) {
         return opt.orElseThrow(() -> new BusinessException(entityName + " not found with ID: " + id, HttpStatus.BAD_REQUEST));
     }
+
+//    2 minutes cron auto reject stale tournaments & leagues
+@Scheduled(fixedRate = 120000) // every 2 minutes
+public void autoRejectUnapprovedTournamentsAndLeagues() throws IOException {
+    ZonedDateTime fifteenMinutesAgo = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).minusMinutes(15);
+
+    // Reject stale tournaments
+    List<Tournament> staleTournaments = tournamentRepository.findAllByStatusAndCreatedDateBefore(
+            TournamentStatus.PENDING, fifteenMinutesAgo);
+    for (Tournament t : staleTournaments) {
+        t.setStatus(TournamentStatus.REJECTED);
+        tournamentRepository.save(t);
+
+        String title = "Tournament Rejected";
+        String body = "Your tournament has been automatically rejected by the admin.";
+
+        notificationService.sendRejectionNotificationToVendor(t.getVendorEntity(), "Tournament", t.getName());
+        emailService.sendTournamentRejectionEmail(t.getVendorEntity(), title, body,t);
+    }
+
+    // Reject stale leagues
+    List<League> staleLeagues = leagueRepository.findAllByStatusAndCreatedDateBefore(
+            LeagueStatus.PENDING, fifteenMinutesAgo);
+    for (League l : staleLeagues) {
+        l.setStatus(LeagueStatus.REJECTED);
+        leagueRepository.save(l);
+
+        String title = "League Rejected";
+        String body = "Your league has been automatically rejected by the admin.";
+
+        notificationService.sendRejectionNotificationToVendor(l.getVendorEntity(), "League", l.getGameName());
+//       @todo:- need to send rejection mail template
+        emailService.sendLeagueRejectionEmail(l.getVendorEntity(), title, body, l);
+    }
+}
+
+
 
 
     public String resolveGameImageUrl(AagAvailableGames game, Long themeId) {
@@ -169,7 +243,7 @@ public class CommonService {
 
 
     @Transactional
-    public void addVendorEarningForPayment(Long vendorId, BigDecimal paymentAmount, BigDecimal vendorSharePercent) {
+    public void addVendorEarningForPayment(Long vendorId, BigDecimal paymentAmount, BigDecimal vendorSharePercent,String addon) {
         String monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
         List<PaymentEntity> activePlanOptional = paymentService.getActivePlanByVendorId(vendorId);
@@ -200,12 +274,26 @@ public class CommonService {
         earning.setEarnedAmount(earning.getEarnedAmount().add(shareAmount));
         earningRepository.save(earning);
 
+        // Step 5: Parse addon & log notification
+        String[] parts = addon.split("\\|");
+        String type = parts.length > 0 ? parts[0] : "Unknown";
+        String name = parts.length > 1 ? parts[1] : "Unnamed";
+        String id = parts.length > 2 ? parts[2] : "N/A";
+
+        String details = String.format(
+                "You earned ₹%s from a %s (Name: %s, ID: %s) played by a user.",
+                shareAmount.stripTrailingZeros().toPlainString(),
+                type, name, id
+        );
+
         // Step 5: Log notification
         NotificationShare notification = new NotificationShare();
         notification.setVendorId(vendorId);
         notification.setDescription("Vendor Earning for Payment");
         notification.setAmount(shareAmount.doubleValue());
-        notification.setDetails("You earned Rs. " + shareAmount.doubleValue() + " from a recent game played by a user.");
+        notification.setDetails(details);
+
+//        notification.setDetails("You earned Rs. " + shareAmount.doubleValue() + " from a recent game played by a user.");
         notificationShareRepository.save(notification);
     }
 
@@ -248,4 +336,167 @@ public class CommonService {
             earningRepository.save(existing);
         }
     }
+
+    @Async
+    public void notifyAdminsByRoleGeneric(int role, Object entity) throws MessagingException, IOException {
+        List<CustomAdmin> admins = entityManager.createQuery(
+                        "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
+                .setParameter("role", role)
+                .getResultList();
+
+        String type;
+        String name;
+        Double fee;
+        Long id;
+        Long senderid;
+        String senderrole;
+        ZonedDateTime createdDate;
+        String gameIcon;
+        String vendorname;
+
+        if (entity instanceof League) {
+            League league = (League) entity;
+            type = "League Approval";
+            name = league.getName();
+            senderid= league.getVendorEntity().getService_provider_id();
+            senderrole= Constant.ROLE_VENDOR;
+
+            vendorname = league.getVendorEntity().getName();
+            fee = league.getFee();
+            id = league.getId();
+            createdDate = league.getCreatedDate();
+            gameIcon = league.getTheme().getGameimageUrl(); // Assumes getter
+        } else if (entity instanceof Tournament) {
+            Tournament tournament = (Tournament) entity;
+            type = "Tournament Approval";
+            name = tournament.getName();
+            senderid= tournament.getVendorEntity().getService_provider_id();
+            senderrole= Constant.ROLE_VENDOR;
+            vendorname = tournament.getVendorEntity().getName();
+
+            fee = Double.valueOf(tournament.getEntryFee());
+            id = tournament.getId();
+            createdDate = tournament.getCreatedDate();
+            gameIcon = tournament.getTheme().getGameimageUrl(); // Assumes getter
+        } else {
+            throw new IllegalArgumentException("Unsupported entity type");
+        }
+
+        // Log admin notification
+        AdminLogs adminLogs = new AdminLogs();
+        adminLogs.setMessage("New Request for " + type + " created by" + vendorname);
+        adminLogs.setTargetRole(Constant.ROLE_ADMIN);
+        adminLogs.setPerformedBy("System");
+        adminLogs.setSenderid(senderid);
+        adminLogs.setSenderrole(senderrole);
+        adminLogs.setAssignedRole(Constant.ROLE_ADMIN);
+        adminLogs.setTargetId(id);
+//        adminLogs.setTargetType(type);
+        adminLogs.setTargetType(type.replace(" ", "_"));
+
+        adminLogs.setRead(false);
+        adminLogs.setCreatedDate(createdDate);
+        adminLogsInterface.save(adminLogs);
+
+        // Send email to all admins
+        for (CustomAdmin admin : admins) {
+            if (admin.getEmail() != null && !admin.getEmail().isEmpty()) {
+                emailService.sendEmailLeague(admin, type, name, fee, id, createdDate, gameIcon,vendorname);
+            }
+        }
+    }
+
+    @Async
+    public void notifyAdminsByRole(int role, String type,String name,Long targetid,String message, Long senderId,
+                                   String senderRole) throws MessagingException, IOException {
+        List<CustomAdmin> admins = entityManager.createQuery(
+                        "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
+                .setParameter("role", role)
+                .getResultList();
+
+        ZonedDateTime createdDate = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+
+        // Log admin notification
+        AdminLogs adminLogs = new AdminLogs();
+        adminLogs.setMessage("New Request for " + type + " created by" + name);
+        adminLogs.setTargetRole(Constant.ROLE_ADMIN);
+        adminLogs.setPerformedBy("System");
+        adminLogs.setAssignedRole(Constant.ROLE_ADMIN);
+        adminLogs.setSenderid(senderId);
+        adminLogs.setSenderrole(senderRole);
+        adminLogs.setTargetId(targetid);
+//        adminLogs.setTargetType(type);
+        adminLogs.setTargetType(type.replace(" ", "_"));
+        adminLogs.setRead(false);
+        adminLogs.setCreatedDate(createdDate);
+        adminLogsInterface.save(adminLogs);
+
+        // Send email to all admins
+        for (CustomAdmin admin : admins) {
+            if (admin.getEmail() != null && !admin.getEmail().isEmpty()) {
+                emailService.sendAdminCommonmail(admin, type, name, message);
+            }
+        }
+    }
+
+
+
+    public void addXpPoints(ActivityType activityType, Player player) {
+
+        CustomCustomer customer = playerRepository.findById(player.getPlayerId()).map(Player::getCustomer).orElse(null);
+
+        int xpToAdd = 0;
+
+        switch (activityType) {
+            case GAME:
+                xpToAdd = customer.getIsWeeklyBoosterActive() ? 4 : 2;
+                break;
+            case LEAGUE:
+                xpToAdd = customer.getIsWeeklyBoosterActive() ? 10 : 5;
+                break;
+            case TOURNAMENT:
+                xpToAdd = customer.getIsWeeklyBoosterActive() ? 10 : 5;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported activity type: " + activityType);
+        }
+
+        customer.setXpPoints(customer.getXpPoints() + xpToAdd);
+        customCustomerRepository.save(customer);
+    }
+
+
+
+    // Every Monday at 00:00 AM
+    @Scheduled(cron = "0 0 0 * * MON")
+    public void resetWeeklyBoosters() {
+        List<CustomCustomer> customers = customCustomerRepository.findAll();
+
+        for (CustomCustomer customer : customers) {
+            customer.setWeeklyBoostersLeft(2);
+            customer.setBoosterActivatedAt(null);
+        }
+
+        customCustomerRepository.saveAll(customers);
+
+    }
+
+
+    public Set<String> getBypassNumbers() {
+        return Set.of(
+                "7985043830",
+                "8576858549",
+                "7985043831",
+                "8887505826",
+                "8651201320",
+                "7492911839",
+                "6388250709",
+                "7068871043",
+                "7007430214",
+                "7290809136"
+        );
+    }
+
 }
+
+

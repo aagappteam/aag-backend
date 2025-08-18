@@ -141,6 +141,7 @@ public class DashboardService {
                 game.getShareableLink(),
                 game.getAaggameid(),
                 game.getImageUrl(),
+
                 game.getTheme() != null ? game.getTheme().getName() : null,
                 game.getTheme() != null ? game.getTheme().getImageUrl() : null,
                 game.getCreatedDate() != null ? game.getCreatedDate() : null,
@@ -149,7 +150,10 @@ public class DashboardService {
                 game.getMinPlayersPerTeam(),
                 game.getMaxPlayersPerTeam(),
                 gameService.calculateTotalPrizeNew(game),
-                game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
+                game.getVendorEntity() != null && game.getVendorEntity().getUser_name() != null
+                        ? game.getVendorEntity().getUser_name()
+                        : "Aagveer",
+
                 game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
         );
     }

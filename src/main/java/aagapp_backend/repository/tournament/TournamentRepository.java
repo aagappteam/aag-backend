@@ -2,10 +2,12 @@ package aagapp_backend.repository.tournament;
 
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.enums.TournamentStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -51,7 +53,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
             @Param("currentTime") ZonedDateTime currentTime
     );
 
-    @Query("""
+/*    @Query("""
     SELECT t FROM Tournament t 
     WHERE t.status = :status AND (
         (t.scheduledAt BETWEEN :start AND :end)
@@ -63,7 +65,38 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
             @Param("start") ZonedDateTime start,
             @Param("end") ZonedDateTime end,
             @Param("currentTime") ZonedDateTime currentTime
+    );*/
+/*    @Query("""
+        SELECT t FROM Tournament t 
+        WHERE t.status = :status AND t.scheduledAt BETWEEN :start AND :end
+    """)
+    List<Tournament> findTournamentsToStart(
+            @Param("status") TournamentStatus status,
+            @Param("start") ZonedDateTime start,
+            @Param("end") ZonedDateTime end
+    );*/
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM Tournament t WHERE t.id = :id")
+    Optional<Tournament> lockTournamentForProcessing(@Param("id") Long id);
+
+
+/*    @Query("SELECT t FROM Tournament t WHERE t.status = :status " +
+            "AND t.scheduledAt BETWEEN :start AND :end")
+    List<Tournament> findTournamentsToStart(
+            @Param("status") TournamentStatus status,
+            @Param("start") ZonedDateTime start,
+            @Param("end") ZonedDateTime end
+    );*/
+
+
+    @Query("SELECT t FROM Tournament t WHERE t.status = :status AND t.scheduledAt BETWEEN :windowStart AND :windowEnd")
+    List<Tournament> findTournamentsToStart(
+            @Param("status") TournamentStatus status,
+            @Param("windowStart") ZonedDateTime windowStart,
+            @Param("windowEnd") ZonedDateTime windowEnd
     );
+
 
 
     Page<Tournament> findByStatusIn(List<TournamentStatus> statuses, Pageable pageable);
@@ -115,4 +148,34 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>, J
 
     @Query("SELECT g FROM Tournament g WHERE g.vendorEntity.id = :vendorId")
     List<Tournament> findByVendorId(@Param("vendorId") Long vendorId);
+
+    boolean existsByVendorIdAndStatus(Long vendorId, TournamentStatus tournamentStatus);
+    @Query("SELECT t FROM Tournament t " +
+            "WHERE t.vendorId = :vendorId " +
+            "AND t.scheduledAt BETWEEN :startTime AND :endTime " +
+            "AND t.status IN :statuses")
+    List<Tournament> findByVendorIdAndScheduledAtBetweenAndStatusIn(
+            @Param("vendorId") Long vendorId,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime,
+            @Param("statuses") List<TournamentStatus> statuses
+    );
+
+    @Query("SELECT t FROM Tournament t WHERE t.vendorId = :vendorId AND t.createdDate BETWEEN :startTime AND :endTime AND t.status IN :statuses")
+    List<Tournament> findTournamentsByVendorAndCreatedDateAndStatusIn(
+            @Param("vendorId") Long vendorId,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime,
+            @Param("statuses") List<TournamentStatus> statuses
+    );
+
+
+
+
+
+    List<Tournament> findAllByStatusAndCreatedDateBefore(TournamentStatus tournamentStatus, ZonedDateTime fifteenMinutesAgo);
+
+    List<Tournament> findByStatusAndScheduledAt(TournamentStatus tournamentStatus, ZonedDateTime targetTime);
+
+    int countByVendorIdAndCreatedDateBetween(Long vendorId, ZonedDateTime startUTC, ZonedDateTime endUTC);
 }

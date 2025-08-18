@@ -11,7 +11,7 @@ public enum TournamentStatus {
     REJECTED,
     PENDING,
     AVAILABLE,
-    ACCEPTED,
+    APPROVED,
     DECLINED,
     CHALLENGED,
     ENGAGED,

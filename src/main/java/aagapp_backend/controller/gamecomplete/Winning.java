@@ -66,10 +66,28 @@ private GameRoomRepository gameRoomRepository;
     public ResponseEntity<?> getLeaderboard(
             @PathVariable Long gameId,
             @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "winners") String type, // WINNER, LOSER, ALL
+
             @RequestParam(defaultValue = "10") int size) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by("score").descending());
-            GameLeaderboardResponseDTOADMIN leaderboard = leaderboardService.getLeaderboard(gameId, pageable);
+            GameLeaderboardResponseDTOADMIN leaderboard = leaderboardService.getLeaderboard(gameId, type,pageable);
+            return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
+        } catch (Exception e) {
+            exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error processing game: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/getParticpants/{gameId}")
+    public ResponseEntity<?> getParticpants(
+            @PathVariable Long gameId,
+            @RequestParam(defaultValue = "0") int page,
+
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("score").descending());
+            GameLeaderboardResponseDTOADMIN leaderboard = leaderboardService.getLeaderboardParticpants(gameId,pageable);
             return responseService.generateResponse(HttpStatus.OK, "Leaderboard fetched successfully", leaderboard);
         } catch (Exception e) {
             exceptionHandlingImplement.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);

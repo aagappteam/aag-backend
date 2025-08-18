@@ -235,6 +235,7 @@ public class BankAccountService {
                 bankAccountDTO.setId(bankDetails.getId());
                 bankAccountDTO.setCustomerName(bankDetails.getCustomerName());
                 bankAccountDTO.setAccountNumber(bankDetails.getAccountNumber());
+                bankAccountDTO.setReEnterAccountNumber(bankDetails.getAccountNumber());
                 bankAccountDTO.setIfscCode(bankDetails.getIfscCode());
                 bankAccountDTO.setBankName(bankDetails.getBankName());
                 bankAccountDTO.setBranchName(bankDetails.getBranchName());

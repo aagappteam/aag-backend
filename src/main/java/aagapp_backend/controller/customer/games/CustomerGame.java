@@ -5,6 +5,8 @@ import aagapp_backend.dto.LeagueResultRecordDTO;
 import aagapp_backend.dto.TournamentResultRecordDTO;
 import aagapp_backend.dto.game.GameResultRecordDTO;
 import aagapp_backend.dto.game.PlayerSummaryCompactDTO;
+import aagapp_backend.entity.CustomCustomer;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.game.GameResultRecordRepository;
 import aagapp_backend.repository.league.LeagueResultRecordRepository;
 import aagapp_backend.repository.tournament.TournamentResultRecordRepository;
@@ -23,6 +25,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Date;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("customer/games")
@@ -47,6 +51,9 @@ public class CustomerGame {
     private  LeagueResultRecordRepository leagueRepo;
     @Autowired
     private TournamentResultRecordRepository tournamentRepo;
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
 
     @GetMapping("/get-games-by-user/{userId}")
     public ResponseEntity<?> getGamesByUserId(
@@ -195,6 +202,38 @@ public class CustomerGame {
         }
     }
 
+
+    @PostMapping("/weekly-booster/activate/{userId}")
+    public ResponseEntity<?> activateWeeklyBooster(@PathVariable Long userId) {
+        CustomCustomer user = customCustomerRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return responseService.generateErrorResponse(
+                    "User not found",
+                    HttpStatus.NOT_FOUND
+            );
+        }
+
+        if (user.isWeeklyBoosterActive()) {
+            return responseService.generateErrorResponse(
+                    "Weekly booster is already active",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (user.getWeeklyBoostersLeft() <= 0) {
+            return responseService.generateSuccessResponse("You have used all weekly booster.", user.getWeeklyBoostersLeft(), HttpStatus.OK);
+        }
+
+        user.setIsWeeklyBoosterActive(true);
+        user.setBoosterActivatedAt(new Date());
+        user.setWeeklyBoostersLeft(user.getWeeklyBoostersLeft() - 1);
+        customCustomerRepository.save(user);
+
+        return responseService.generateSuccessResponse(
+                "Weekly booster activated successfully",user.getWeeklyBoostersLeft(),
+                HttpStatus.OK
+        );
+    }
 
 
 

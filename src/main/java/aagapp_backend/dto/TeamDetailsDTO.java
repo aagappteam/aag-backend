@@ -20,4 +20,5 @@ public class TeamDetailsDTO {
     private String profilePic;
     private Integer totalScore;
     private List<PlayerLeagueScoreDTO> players;
+    private Integer allplayers;
 }

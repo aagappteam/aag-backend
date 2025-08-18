@@ -50,7 +50,10 @@ public class SecurityConfig {
                 "/ws/info",
                 "/app/**",
                 "/topic/**",
-                "/ludo-websocket/**"
+                "/ludo-websocket/**",
+                "/vendor/*/games/*",
+                "/vendor/*/leagues/*",
+                "/vendor/*/tournaments/*"
                /* "/vendor/**"*/
         );
     }

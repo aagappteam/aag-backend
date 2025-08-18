@@ -6,6 +6,7 @@ import aagapp_backend.components.JwtUtil;
 import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.Role;
 import aagapp_backend.entity.admin.Privilege;
+import aagapp_backend.repository.admin.CustomAdminRepository;
 import aagapp_backend.repository.admin.PrivilegeRepository;
 import aagapp_backend.repository.admin.RoleRepository;
 import aagapp_backend.services.*;
@@ -47,6 +48,9 @@ public class AdminService
 
     @Autowired
     private PrivilegeRepository privilegeRepo;
+
+    @Autowired
+    private CustomAdminRepository customAdminRepository;
 
     private RoleRepository roleRepo;
     private EntityManager entityManager;
@@ -127,11 +131,18 @@ public class AdminService
 
         return entityManager.createQuery(Constant.PHONE_QUERY_ADMIN, CustomAdmin.class)
                 .setParameter("mobileNumber", mobile_number)
-                .setParameter("country_code", countryCode)
                 .getResultStream()
                 .findFirst()
                 .orElse(null);
     }
+
+    public List<CustomAdmin> findAdminsByRole(int role) {
+        return entityManager.createQuery(
+                        "SELECT a FROM CustomAdmin a WHERE a.role = :role AND a.active = 1", CustomAdmin.class)
+                .setParameter("role", role)
+                .getResultList();
+    }
+
 
     public ResponseEntity<?> sendOtpForAdmin(String mobileNumber, String countryCode, HttpSession session) throws UnsupportedEncodingException {
         try {
@@ -159,7 +170,7 @@ public class AdminService
         }
     }
 
-   @Transactional
+/*   @Transactional
     public ResponseEntity<?> verifyOtpForAdmin(Map<String, Object> adminDetails, HttpSession session, HttpServletRequest request) {
         try {
             String username = (String) adminDetails.get("username");
@@ -183,24 +194,33 @@ public class AdminService
                 customAdmin = findAdminByPhone(mobileNumber, countryCode);
                 if(roleService.findRoleName(role).equals(Constant.ADMIN))
                 {
-                    if(customAdmin.getRole()!=2)
-                    {
-                        return responseService.generateErrorResponse("Custom Admin with username "+ mobileNumber+" does not have role "+ roleService.findRoleName(role), HttpStatus.BAD_REQUEST);
+                    int targetRoleId = 2;
+
+                    boolean hasRole = customAdmin.getRole().stream()
+                            .anyMatch(r -> r.getRoleId() == targetRoleId);
+
+                    if (!hasRole) {
+                        return responseService.generateErrorResponse(
+                                "Custom Admin with username " + mobileNumber + " does not have role " + roleService.findRoleName(targetRoleId),
+                                HttpStatus.BAD_REQUEST
+                        );
                     }
+
                 }
-/*                else if(roleService.findRoleName(role).equals(Constant.SUPER_ADMIN))
-                {
-                    if(customAdmin.getRole()!=1)
-                    {
-                        return responseService.generateErrorResponse("Custom Admin with username "+ mobileNumber+" does not have role "+ roleService.findRoleName(role), HttpStatus.BAD_REQUEST);
-                    }
-                }*/
                 else if(roleService.findRoleName(role).equals(Constant.SUPPORT))
                 {
-                    if(customAdmin.getRole()!=1)
-                    {
-                        return responseService.generateErrorResponse(" SUPPORT with username "+ mobileNumber+" does not have role "+ roleService.findRoleName(role), HttpStatus.BAD_REQUEST);
+                    int supportRoleId = 1;
+
+                    boolean hasSupportRole = customAdmin.getRoles().stream()
+                            .anyMatch(r -> r.getRoleId() == supportRoleId);
+
+                    if (!hasSupportRole) {
+                        return responseService.generateErrorResponse(
+                                "Support with username " + mobileNumber + " does not have role " + roleService.findRoleName(role),
+                                HttpStatus.BAD_REQUEST
+                        );
                     }
+
                 }
 
             }
@@ -244,11 +264,11 @@ public class AdminService
                     customAdmin.setToken(newToken);
                     entityManager.persist(customAdmin);
                     Map<String, Object> responseBody = createAuthResponseForAdmin(newToken, customAdmin).getBody();
-/*                    if(customAdmin.getSignedUp()==0) {
+*//*                    if(customAdmin.getSignedUp()==0) {
                         customAdmin.setSignedUp(1);
                         entityManager.merge(customAdmin);
                         responseBody.put("message", "User has been signed up");
-                    }*/
+                    }*//*
                     responseBody.put("message", "User has been signed up");
 
                     return ResponseEntity.ok(responseBody);
@@ -262,7 +282,7 @@ public class AdminService
             exceptionHandling.handleException(e);
             return responseService.generateErrorResponse("Otp verification error" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     private ResponseEntity<Map<String, Object>> createAuthResponseForAdmin(String token, CustomAdmin adminEntity) {
         Map<String, Object> responseBody = new HashMap<>();
@@ -306,7 +326,6 @@ public class AdminService
                 return responseService.generateErrorResponse("Invalid Password", HttpStatus.BAD_REQUEST);
             }
 
-            // 🎟️ Generate Token
             String token = jwtUtil.generateToken(
                     customAdmin.getAdminId(),
                     customAdmin.getRole(),
@@ -504,16 +523,7 @@ public class AdminService
     }
 */
 
-    public ResponseEntity<?> authenticateByPhone(String mobileNumber, String countryCode, String password, HttpServletRequest request, HttpSession session) {
-        CustomAdmin existingAdmin = findAdminByPhone(mobileNumber, countryCode);
 
-        return validateAdmin(existingAdmin, password, request, session);
-    }
-
-    public ResponseEntity<?> authenticateByUsername(String username, String password, HttpServletRequest request, HttpSession session) {
-        CustomAdmin existingCustomAdmin = findAdminByUsername(username);
-        return validateAdmin(existingCustomAdmin, password, request, session);
-    }
 
     public CustomAdmin findAdminByUsername(String username) {
 
@@ -524,40 +534,6 @@ public class AdminService
                 .orElse(null);
     }
 
-    public ResponseEntity<?> validateAdmin(CustomAdmin customAdmin, String password, HttpServletRequest request, HttpSession session) {
-        if (customAdmin == null) {
-            return responseService.generateErrorResponse("No Records Found", HttpStatus.NOT_FOUND);
-        }
-        if (passwordEncoder.matches(password, customAdmin.getPassword())) {
-            String ipAddress = request.getRemoteAddr();
-            String userAgent = request.getHeader("User-Agent");
-            String tokenKey = "authTokenAdmin_" + customAdmin.getMobileNumber();
-
-
-            String existingToken = customAdmin.getToken();
-
-
-            if(existingToken != null && jwtUtil.validateToken(existingToken, ipAddress, userAgent)) {
-
-                Map<String, Object> responseBody = createAuthResponseForAdmin(existingToken, customAdmin).getBody();
-
-                return ResponseEntity.ok(responseBody);
-            } else {
-                String newToken = jwtUtil.generateToken(customAdmin.getAdminId(), customAdmin.getRole(), ipAddress, userAgent);
-                session.setAttribute(tokenKey, newToken);
-
-                customAdmin.setToken(newToken);
-                entityManager.persist(customAdmin);
-
-                Map<String, Object> responseBody = createAuthResponseForAdmin(newToken, customAdmin).getBody();
-
-
-                return ResponseEntity.ok(responseBody);
-            }
-        } else {
-            return responseService.generateErrorResponse(ApiConstants.INVALID_DATA, HttpStatus.BAD_REQUEST);
-        }
-    }
 
     @Transactional
     public ResponseEntity<?> updateDetails(Long userId, Map<String, Object> adminDetails) {
@@ -591,6 +567,29 @@ public class AdminService
             return ResponseService.generateErrorResponse("Error updating admin details: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    public boolean setAdminActiveStatus(Long adminId, int activeStatus, String modifiedBy) {
+        Optional<CustomAdmin> optionalAdmin = customAdminRepository.findByAdminId(adminId);
+
+        if (optionalAdmin.isPresent()) {
+            CustomAdmin admin = optionalAdmin.get();
+
+            // If already in desired status, return false
+            if (admin.getActive() == activeStatus) {
+                return false;
+            }
+
+            admin.setActive(activeStatus); // 1 = active, 0 = terminated
+            admin.setUpdated_at(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            admin.setCreatedBy(modifiedBy); // Can be used to track who did the action
+
+            customAdminRepository.save(admin);
+            return true;
+        }
+
+        return false;
+    }
+
 
 
 

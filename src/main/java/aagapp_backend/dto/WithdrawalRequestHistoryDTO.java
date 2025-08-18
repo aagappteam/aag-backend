@@ -17,6 +17,7 @@ public class WithdrawalRequestHistoryDTO {
     private String mobile;
     private String email;
     private BigDecimal amount;
+    private String bankName;
     private String monthYear;
     private String status;
 
@@ -28,6 +29,7 @@ public class WithdrawalRequestHistoryDTO {
         this.id = request.getId();
         this.influencerId = request.getInfluencerId();
         this.influencerName = influencerName;
+        this.bankName = request.getBankName();
         this.mobile = mobile;
         this.email = email;
         this.amount = request.getAmount();

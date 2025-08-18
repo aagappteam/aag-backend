@@ -326,7 +326,10 @@ public class WalletService {
         notification.setRole("Customer");
         notification.setCustomerId(customerId);
         notification.setDescription("Withdrawal Refunded");
-        notification.setDetails("Refund of Rs." + amount + " processed due to failure.");
+        String amountStr = BigDecimal.valueOf(amount).stripTrailingZeros().toPlainString();
+        notification.setDetails("Refund of Rs. " + amountStr + " processed due to failure.");
+
+//        notification.setDetails("Refund of Rs." + amount + " processed due to failure.");
         notification.setAmount((double) amount);
         notificationRepository.save(notification);
     }

@@ -367,10 +367,6 @@ public class MatchService {
             return;
         }
 
-        System.out.println("[INFO] Valid players: " + validPlayers.stream()
-                .map(p -> "PlayerId=" + p.getPlayerId() + " Score=" + p.getScore())
-                .collect(Collectors.joining(", ")));
-
         BigDecimal totalCollection = BigDecimal.valueOf(game.getFee())
                 .multiply(BigDecimal.valueOf(totalPlayers));
         BigDecimal userWin = totalCollection.multiply(BigDecimal.valueOf(Constant.USER_WIN_PERCENT));
@@ -383,8 +379,6 @@ public class MatchService {
                 .toList();
 
         BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
-//        int totalPlayers = roomPlayers.size();
-//        int totalPlayers = gameRoom.getMaxPlayers();
         int totalWinners = winners.size();
 
         BigDecimal singleBonus = entryFee.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT));
@@ -446,7 +440,10 @@ public class MatchService {
 
             Notification notification = new Notification();
             notification.setAmount(finalWinnerAmount.doubleValue());
-            notification.setDetails("You won Rs. " + finalWinnerAmount + " in Game " + game.getName());
+            String formattedAmount = finalWinnerAmount.stripTrailingZeros().toPlainString();
+            notification.setDetails("You won Rs. " + formattedAmount + " in Game " + game.getName());
+
+//            notification.setDetails("You won Rs. " + finalWinnerAmount + " in Game " + game.getName());
             notification.setDescription("Game Winning Prize");
             notification.setRole("Customer");
             notification.setName(winnerPlayer.getCustomer().getName()!=null?winnerPlayer.getCustomer().getName():"N/A");

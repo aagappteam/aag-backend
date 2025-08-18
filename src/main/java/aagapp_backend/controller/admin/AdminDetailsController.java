@@ -1,5 +1,6 @@
 package aagapp_backend.controller.admin;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.components.JwtUtil;
 import aagapp_backend.controller.otp.OtpEndpoint;
 import aagapp_backend.dto.*;
@@ -9,9 +10,11 @@ import aagapp_backend.entity.CustomAdmin;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.notification.Notification;
 import aagapp_backend.entity.notification.NotificationShare;
+import aagapp_backend.repository.NotificationRepository;
 import aagapp_backend.repository.NotificationShareRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.services.admin.DashboardAdmin;
+import aagapp_backend.services.firebase.NotoficationFirebase;
 import aagapp_backend.spec.InfluencerMonthlyEarningSpecification;
 import aagapp_backend.spec.NotificationShareSpecification;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,6 +45,7 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -56,6 +60,15 @@ public class AdminDetailsController {
 
     @Autowired
     private DashboardAdmin dashboardAdmin;
+
+    @Autowired
+    private NotificationRepository vendorNotificationRepository;
+
+    @Autowired
+    private NotoficationFirebase notoficationFirebase;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private InfluencerMonthlyEarningRepository earningRepo;
@@ -312,12 +325,14 @@ public class AdminDetailsController {
             @RequestParam(required = false) String details,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String transaction,
+            @RequestParam(required = false) String activity
     ) {
         try {
             Page<Transaction> notifications = dashboardAdmin.getFilteredNotificationsDto(
                     role, vendorId, customerId, amount, minAmount, maxAmount,
-                    startDate, endDate, description, details, page, size, search
+                    startDate, endDate, description, details, page, size, search,transaction,activity
             );
             return responseService.generateSuccessResponseWithCount(
                     "Notifications retrieved successfully.",
@@ -652,11 +667,48 @@ public class AdminDetailsController {
                 WithdrawalRequest request = wr.get();
                 request.setStatus("APPROVED");
                 withdrawalRepo.save(request);
+
+
+                VendorEntity vendor = vendorRepository.findById(request.getInfluencerId()).orElse(null);
+                if (vendor != null && vendor.getPrimary_email()!=null) {
+                    String email = vendor.getPrimary_email();
+                    String subject = "Withdrawal request approved";
+
+                    String pushBody = "Your withdrawal request of ₹" + request.getAmount() + " has been approved successfully.";
+
+                    emailService.sendwithdrawalapproveEmail(email, subject, request,vendor.getFirst_name()!=null?vendor.getFirst_name():"Aagveer");
+
+                    String fcmToken = vendor.getFcmToken();
+                    if (fcmToken != null) {
+                        String pushTitle = "🎉 Withdrawal Approved!";
+
+                        notoficationFirebase.sendNotification(
+                                fcmToken,
+                                pushTitle,
+                                pushBody
+                        );
+                    }
+
+                    Notification notification = new Notification();
+                    notification.setVendorId(vendor.getService_provider_id());
+                    notification.setRole(Constant.VENDOR);
+                    notification.setDescription(subject);
+                    notification.setAmount(request.getAmount().doubleValue());
+                    notification.setDetails(pushBody);
+                    notification.setCreatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+
+                    vendorNotificationRepository.save(notification);
+
+
+                }
+
                 return responseService.generateSuccessResponse(
                         "Withdrawal request approved successfully",
                         request,
                         HttpStatus.OK
                 );
+
             }else
             {
                 return responseService.generateErrorResponse(
@@ -681,6 +733,40 @@ public class AdminDetailsController {
                 WithdrawalRequest request = wr.get();
                 request.setStatus("REJECTED");
                 withdrawalRepo.save(request);
+
+
+                VendorEntity vendor = vendorRepository.findById(request.getInfluencerId()).orElse(null);
+
+                if (vendor != null && vendor.getPrimary_email() != null) {
+                    String email = vendor.getPrimary_email();
+                    String subject = "Withdrawal request rejected";
+
+                    String pushBody = "Your withdrawal request of ₹" + request.getAmount() + " has been rejected.";
+
+                    emailService.sendwithdrawalrejectEmail(
+                            email,
+                            subject,
+                            request,
+                            vendor.getFirst_name() != null ? vendor.getFirst_name() : "Aagveer"
+                    );
+
+                    // Send FCM push notification
+                    String fcmToken = vendor.getFcmToken();
+                    if (fcmToken != null) {
+                        String pushTitle = "❌ Withdrawal Rejected";
+                        notoficationFirebase.sendNotification(fcmToken, pushTitle, pushBody);
+                    }
+
+                    Notification notification = new Notification();
+                    notification.setVendorId(vendor.getService_provider_id());
+                    notification.setRole(Constant.VENDOR);
+                    notification.setDescription(subject);
+                    notification.setAmount(request.getAmount().doubleValue());
+                    notification.setDetails(pushBody);
+                    notification.setCreatedDate(ZonedDateTime.now(ZoneId.of("Asia/Kolkata")));
+
+                    vendorNotificationRepository.save(notification);
+                }
                 return responseService.generateSuccessResponse(
                         "Withdrawal request rejected successfully",
                         request,

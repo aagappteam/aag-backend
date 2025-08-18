@@ -10,6 +10,7 @@ import aagapp_backend.entity.withdrawrequest.WithdrawalRequest;
 import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.exception.GameNotFoundException;
 import aagapp_backend.repository.earning.InfluencerMonthlyEarningRepository;
+import aagapp_backend.services.*;
 import aagapp_backend.services.gameservice.GameService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,9 +18,6 @@ import org.springframework.data.domain.Pageable;
 import aagapp_backend.repository.ticket.TicketRepository;
 import aagapp_backend.repository.vendor.VendorRepository;
 import aagapp_backend.repository.withdrawrequest.WithdrawalRequestRepository;
-import aagapp_backend.services.ApiConstants;
-import aagapp_backend.services.CustomCustomerService;
-import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.social.UserVendorFollowService;
 import aagapp_backend.services.vendor.VenderService;
@@ -50,6 +48,12 @@ public class VendorController {
 
     @Autowired
     private InfluencerMonthlyEarningRepository earningRepo;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private CommonService commonService;
 
     @Autowired
     private WithdrawalRequestRepository withdrawalRepo;
@@ -350,16 +354,31 @@ public class VendorController {
                 String[] nameParts = firstName.trim().split("\\s+");
                 String firstNamePart = nameParts.length >= 1 ? nameParts[0].trim() : "";
                 String lastNamePart = nameParts.length >= 2 ? nameParts[1].trim() : "";
-
                 if (nameParts.length == 1) {
+                    conditions.add("(" +
+                            "LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
+                            "OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
+                            "OR LOWER(s.user_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))" +
+                            ")");
+                }
+
+                /*if (nameParts.length == 1) {
                     conditions.add("(LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
                             "OR LOWER(s.last_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')))");
-                } else {
+                } */else {
                     if (!firstNamePart.isEmpty()) {
-                        conditions.add("LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))");
+                        conditions.add("(" +
+                                "LOWER(s.first_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%')) " +
+                                "OR LOWER(s.user_name) LIKE LOWER(CONCAT('%', :firstNamePart, '%'))" +
+                                ")");
                     }
                     if (!lastNamePart.isEmpty()) {
-                        conditions.add("LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))");
+//                        conditions.add("LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))");
+                        conditions.add("(" +
+                                "LOWER(s.last_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%')) " +
+                                "OR LOWER(s.user_name) LIKE LOWER(CONCAT('%', :lastNamePart, '%'))" +
+                                ")");
+
                     }
                 }
             }
@@ -1188,6 +1207,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
 
                         Map<String, Object> vendorData = new HashMap<>();
                         vendorData.put("service_provider_id", vendor.getService_provider_id());
+                        vendorData.put("isAccountPrivate", vendor.getIsPrivate());
                         vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
                         vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
                                 .map(firstName -> firstName + " " + vendor.getLast_name())
@@ -1207,6 +1227,7 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             leaderboard = allVendors.stream().map(vendor -> {
                 Map<String, Object> vendorData = new HashMap<>();
                 vendorData.put("service_provider_id", vendor.getService_provider_id());
+                vendorData.put("isAccountPrivate", vendor.getIsPrivate());
                 vendorData.put("profileImage", Optional.ofNullable(vendor.getProfilePic()).orElse(Constant.PROFILE_IMAGE_URL));
                 vendorData.put("vendorName", Optional.ofNullable(vendor.getFirst_name())
                         .map(firstName -> firstName + " " + vendor.getLast_name())
@@ -1330,6 +1351,8 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             WithdrawalRequest req = new WithdrawalRequest();
             req.setInfluencerId(dto.getInfluencerId());
             req.setAmount(dto.getAmount());
+            req.setBankName(dto.getBankName());
+            req.setMonthYear(dto.getMonthYear());
             req.setMonthYear(month);
             req.setStatus("PENDING");
             req.setRequestedAt(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
@@ -1339,6 +1362,31 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             }
 
             withdrawalRepo.save(req);
+
+            String submittedByName = vendor.getFirst_name() + " " + vendor.getLast_name();
+            String notificationTitle = "Withdrawal Request has been submitted";
+            String notificationMessage = "A new withdrawal request of ₹" + dto.getAmount() +
+                    " has been submitted by vendor: " + submittedByName + " (ID: " + vendor.getService_provider_id() + ").";
+
+            if(vendor.getPrimary_email()!=null){
+                emailService.sendwithdrawlreciveEmail(
+                        vendor,
+                        req,
+                        "Withdrawal Request has been submitted"
+                );
+            }
+
+
+            commonService.notifyAdminsByRole(
+                    Constant.ADMIN_ROLE,
+                    "Withdrawal Request",
+                    submittedByName,
+                    vendor.getService_provider_id(),
+                    notificationMessage,
+                    vendor.getService_provider_id(),
+                    Constant.VENDOR
+            );
+
 
             return responseService.generateSuccessResponse(
                     "Withdraw request submitted",
@@ -1421,7 +1469,6 @@ public ResponseEntity<?> leaderboards(@RequestHeader("Authorization") String tok
             );
         }
     }
-
 
 
 

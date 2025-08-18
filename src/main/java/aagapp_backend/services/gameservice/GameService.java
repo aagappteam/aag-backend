@@ -8,10 +8,8 @@ import aagapp_backend.entity.*;
 import aagapp_backend.entity.game.*;
 
 import aagapp_backend.entity.league.League;
-import aagapp_backend.entity.notification.Notification;
-import aagapp_backend.entity.notification.NotificationShare;
+
 import aagapp_backend.entity.players.Player;
-import aagapp_backend.entity.social.UserVendorFollow;
 import aagapp_backend.entity.tournament.Tournament;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.*;
@@ -41,6 +39,7 @@ import aagapp_backend.spec.GameSpecification;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
@@ -87,6 +86,9 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 public class GameService {
+
+    private final Dotenv dotenv = Dotenv.load();
+
 
     @Autowired
     private CommonService commonservice;
@@ -199,7 +201,7 @@ public class GameService {
     }
 
     /// at 12 am cron should run daily
-    @Scheduled(cron = "0 0 0 * * *")  // Every day at midnight
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Kolkata")  // 12 AM IST
     @Transactional
     public void updateDailylimit() {
         int page = 0;
@@ -208,7 +210,9 @@ public class GameService {
 
         while (!(vendorIds = getActiveVendorIdsInBatch(page, pageSize)).isEmpty()) {
             try {
-                vendorRepository.updateDailyLimitForVendors(vendorIds);
+
+                System.out.println("vendorIds: " + vendorIds);
+               vendorRepository.updateDailyLimitForVendors(vendorIds);
             } catch (Exception e) {
                 logger.error("Failed to update daily limits for batch page {} with vendorIds: {}", page, vendorIds, e);
             }
@@ -360,10 +364,14 @@ public class GameService {
         String shareableLink = generateShareableLink(savedGame.getId(),vendorId);
         savedGame.setShareableLink(shareableLink);
 
+        if(gameRequest.getScheduledAt() == null) {
+            CompletableFuture.runAsync(() -> {
+                followerNotificationService.notifyFollowersInParallel("game", savedGame.getName(), vendorEntity);
+            });
+        }
 
-        CompletableFuture.runAsync(() -> {
-            followerNotificationService.notifyFollowersInParallel("game", savedGame.getName(), vendorEntity);
-        });
+
+
         return savedGame;
 
 //        return gameRepository.save(savedGame);
@@ -436,6 +444,22 @@ public class GameService {
 
     }
 
+    public Double calculateTotalPrizeNewdouble(Game game) {
+        BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
+
+        BigDecimal singleBonus = entryFee.multiply(BigDecimal.valueOf(Constant.BONUS_PERCENT));
+        BigDecimal totalBonusCollected = singleBonus.multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
+
+        BigDecimal totalCollection = entryFee.multiply(BigDecimal.valueOf(game.getMaxPlayersPerTeam()));
+        BigDecimal totalPrize = totalCollection.multiply(Constant.USER_PERCENTAGE);
+
+        BigDecimal finalWinnerAmount = totalPrize.add(totalBonusCollected.multiply(BigDecimal.valueOf(2)));
+
+        // Strip trailing zeros and return as double
+        return finalWinnerAmount.stripTrailingZeros().doubleValue();
+    }
+
+
     public BigDecimal calculateTotalPrizeNew(Game game) {
         BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
 
@@ -463,10 +487,11 @@ public class GameService {
             Game game = gameRepository.findById(gameId)
                     .orElseThrow(() -> new BusinessException("Game not found with ID: " + gameId, HttpStatus.BAD_REQUEST));
 
-            BigDecimal entryFee = BigDecimal.valueOf(game.getFee());
-
             BigDecimal vendorShareAmount = (PriceConstant.VENDOR_REVENUE_PERCENT);
 
+            if(game.getStatus()==GameStatus.EXPIRED) {
+                throw new BusinessException("Game ID: " + game.getId() + " has already expired. No update allowed.", HttpStatus.BAD_REQUEST);
+            }
 
             if (isPlayerInRoom(player)) {
                 leaveRoom(playerId, player.getGameRoom().getGame().getId());
@@ -474,11 +499,24 @@ public class GameService {
 
             GameRoom gameRoom = findAvailableGameRoom(game);
 
+            BigDecimal fee = BigDecimal.valueOf(game.getFee()).stripTrailingZeros();
+            String feeString = fee.toPlainString();
 
-            commonservice.deductFromWallet(playerId, game.getFee(),"Rs. " + game.getFee() + " deducted for playing " + game.getName() + " game");
+            commonservice.deductFromWallet(
+                    playerId,
+                    game.getFee(),
+                    "Rs. " + feeString + " deducted for playing " + game.getName() + " game"
+            );
 
-            commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount);
+//            commonservice.deductFromWallet(playerId, game.getFee(),"Rs. " + game.getFee() + " deducted for playing " + game.getName() + " game");
 
+//            commonservice.addVendorEarningForPayment(game.getVendorEntity().getService_provider_id(), BigDecimal.valueOf(game.getFee()), vendorShareAmount, " Game: " + game.getName());
+            commonservice.addVendorEarningForPayment(
+                    game.getVendorEntity().getService_provider_id(),
+                    BigDecimal.valueOf(game.getFee()),
+                    vendorShareAmount,
+                    "Game|" + game.getName() + "|" + game.getId()
+            );
             boolean playerJoined = addPlayerToRoom(gameRoom, player);
 
             if (!playerJoined) {
@@ -513,6 +551,7 @@ public class GameService {
 
             notificationRepository.save(notification);*/
 
+            commonservice.addXpPoints(ActivityType.GAME, player);
 
             return responseService.generateSuccessResponse("Player joined the Game Room", gameRoom, HttpStatus.OK);
         } catch (BusinessException e) {
@@ -595,9 +634,19 @@ public class GameService {
             ZonedDateTime startTimeUTC = startOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
             ZonedDateTime endTimeUTC = endOfDayInKolkata.withZoneSameInstant(ZoneId.of("UTC"));
 
-            List<Game> games = gameRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
-            List<League> leagues = leagueRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
-            List<Tournament> tournaments = tournamentRepository.findByVendorEntityAndScheduledAtBetween(vendorId, startTimeUTC, endTimeUTC);
+            List<Game> games = gameRepository.findByVendorEntityAndCreatedDateBetween(vendorEntity, startTimeUTC, endTimeUTC);
+/*            List<League> leagues = leagueRepository.findByVendorEntityAndScheduledAtBetween(vendorEntity, startTimeUTC, endTimeUTC);
+            List<Tournament> tournaments = tournamentRepository.findByVendorEntityAndScheduledAtBetween(vendorId, startTimeUTC, endTimeUTC);*/
+
+            List<LeagueStatus> leagueStatuses = List.of(LeagueStatus.ACTIVE, LeagueStatus.SCHEDULED,LeagueStatus.EXPIRED);
+            List<TournamentStatus> tournamentStatuses = List.of(TournamentStatus.ACTIVE, TournamentStatus.SCHEDULED,TournamentStatus.COMPLETED);
+
+
+            List<League> leagues = leagueRepository.findLeaguesByVendorIdInChallengingOrOpponentAndCreatedDateAndStatusIn(
+                    vendorId, startTimeUTC, endTimeUTC,leagueStatuses);
+
+            List<Tournament> tournaments = tournamentRepository.findTournamentsByVendorAndCreatedDateAndStatusIn(
+                    vendorId, startTimeUTC, endTimeUTC,tournamentStatuses);
             List<AagAvailableGames> availableGames = aagAvailbleGamesRepository.findAll();
 
             VendorGameResponse response = new VendorGameResponse();
@@ -613,6 +662,8 @@ public class GameService {
                         Map<String, String> gameMap = new HashMap<>();
                         gameMap.put("imageUrl",(game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl()
                         );
+                        gameMap.put("id", game.getId().toString());
+                        gameMap.put("event", "Game");
                         gameMap.put("name", game.getName() != null ? game.getName() : "n/a");
                         gameMap.put("themename", game.getTheme().getName());
                         return gameMap;
@@ -624,6 +675,10 @@ public class GameService {
                         Map<String, String> gameMap = new HashMap<>();
                         gameMap.put("imageUrl",             (league.getTheme() != null && league.getTheme().getGameimageUrl() != null) ? league.getTheme().getGameimageUrl() : league.getTheme().getImageUrl()
                         );
+                        gameMap.put("id", league.getId().toString());
+
+                        gameMap.put("event", "league");
+
                         gameMap.put("name", league.getName() != null ? league.getName() : "n/a");
                         gameMap.put("themename", league.getTheme().getName());
                         return gameMap;
@@ -634,8 +689,12 @@ public class GameService {
             publishedContent.addAll(tournaments.stream()
                     .map(tournament -> {
                         Map<String, String> gameMap = new HashMap<>();
+                        gameMap.put("id", tournament.getId().toString());
+
                         gameMap.put("imageUrl",(tournament.getTheme() != null && tournament.getTheme().getGameimageUrl() != null) ? tournament.getTheme().getGameimageUrl() : tournament.getTheme().getImageUrl());
                         gameMap.put("name", tournament.getName() != null ? tournament.getName() : "n/a");
+                        gameMap.put("event", "tournament");
+
                         gameMap.put("themename", tournament.getTheme().getName());
                         return gameMap;
                     })
@@ -839,8 +898,13 @@ public class GameService {
             return "https://backend.aagapp.com/games/" + gameId;
 
         }*/
-    private String generateShareableLink(Long gameId,Long vendorId) {
+/*    private String generateShareableLink(Long gameId,Long vendorId) {
         return "https://backend.aagapp.com/vendor/"+  vendorId  +"/games/" + gameId ;
+    }*/
+
+    private String generateShareableLink(Long gameId, Long vendorId) {
+        String domainUrl = dotenv.get("DOMAIN_URL");
+        return domainUrl + "/vendor/" + vendorId + "/games/" + gameId;
     }
 
 
@@ -899,7 +963,8 @@ public class GameService {
                             game.getMinPlayersPerTeam(),
                             game.getMaxPlayersPerTeam(),
                             calculateTotalPrizeNew(game),
-                            game.getVendorEntity() != null ? game.getVendorEntity().getFirst_name() : null,
+
+                            game.getVendorEntity() != null ? game.getVendorEntity().getUser_name() : "Aagveer",
                             game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
                     ))
                     .collect(Collectors.toList());
@@ -927,6 +992,77 @@ public class GameService {
             throw new RuntimeException("Error retrieving games", e);
         }
     }
+
+
+    @Transactional
+    public Page<GetGameResponseDTO> getVisibleGames(Long vendorId, Pageable pageable) {
+        try {
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime nowMinus24Hours = now.minusHours(24);
+
+            StringBuilder queryBase = new StringBuilder("FROM aag_ludo_game g WHERE (");
+            queryBase.append(" (g.status = 'ACTIVE' AND g.scheduled_at <= :now)");
+            queryBase.append(" OR (g.status = 'EXPIRED' AND g.scheduled_at >= :nowMinus24Hours)");
+            queryBase.append(")");
+
+            if (vendorId != null) {
+                queryBase.append(" AND g.vendor_id = :vendorId");
+            }
+
+            // Final data + count queries
+            Query dataQuery = em.createNativeQuery("SELECT * " + queryBase + " ORDER BY g.created_date DESC", Game.class);
+            Query countQuery = em.createNativeQuery("SELECT COUNT(*) " + queryBase);
+
+            // Set required params
+            dataQuery.setParameter("now", now);
+            dataQuery.setParameter("nowMinus24Hours", nowMinus24Hours);
+            countQuery.setParameter("now", now);
+            countQuery.setParameter("nowMinus24Hours", nowMinus24Hours);
+
+            if (vendorId != null) {
+                dataQuery.setParameter("vendorId", vendorId);
+                countQuery.setParameter("vendorId", vendorId);
+            }
+
+            dataQuery.setFirstResult((int) pageable.getOffset());
+            dataQuery.setMaxResults(pageable.getPageSize());
+
+            List<Game> games = dataQuery.getResultList();
+            Long count = ((Number) countQuery.getSingleResult()).longValue();
+
+            List<GetGameResponseDTO> dtoList = games.stream().map(this::mapToDTO).collect(Collectors.toList());
+
+            return new PageImpl<>(dtoList, pageable, count);
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching visible games", e);
+        }
+    }
+
+
+
+    private GetGameResponseDTO mapToDTO(Game game) {
+        return new GetGameResponseDTO(
+                game.getId(),
+                game.getName(),
+                game.getFee(),
+                game.getMove(),
+                game.getStatus(),
+                game.getShareableLink(),
+                game.getAaggameid(),
+                (game.getTheme() != null && game.getTheme().getGameimageUrl() != null) ? game.getTheme().getGameimageUrl() : game.getImageUrl(),
+                game.getTheme() != null ? game.getTheme().getName() : null,
+                game.getTheme() != null ? game.getTheme().getImageUrl() : null,
+                game.getCreatedDate(),
+                game.getScheduledAt(),
+                game.getEndDate(),
+                game.getMinPlayersPerTeam(),
+                game.getMaxPlayersPerTeam(),
+                calculateTotalPrizeNew(game),
+                game.getVendorEntity() != null ? game.getVendorEntity().getUser_name() : "Aagveer",
+                game.getVendorEntity() != null ? game.getVendorEntity().getProfilePic() : null
+        );
+    }
+
 
     public Page<GetGameResponseDTO> getAllGamesByAdmin(String status, Long vendorId, String email, String mobileNumber, String gamename, String vendorName,
                                                 ZonedDateTime startDateStr, ZonedDateTime endDateStr, String search, Pageable pageable) {
@@ -1145,7 +1281,7 @@ public class GameService {
             for (League league : leagues) {
                 // Ensure we have an end date for the league (e.g., league could have an "endDate" property)
                 if (league.getEndDate() != null && league.getEndDate().isBefore(nowInKolkata)) {
-                    league.setStatus(LeagueStatus.EXPIRED); // Change the status to EXPIRED
+                    league.setStatus(LeagueStatus.EXPIRED);
                     league.setUpdatedDate(nowInKolkata);
                     leagueService.distributePrizePoolSilently(league.getId());
                     leagueRepository.save(league);
@@ -1717,6 +1853,42 @@ public class GameService {
     }
 
 
+    @Transactional
+    public Map<String, Object> getTodayCreatedCount(Long vendorId) {
+        try {
+            VendorEntity vendor = em.find(VendorEntity.class, vendorId);
+            if (vendor == null) {
+                throw new BusinessException("Vendor not found with ID: " + vendorId, HttpStatus.BAD_REQUEST);
+            }
+
+            // Set today's start and end in Asia/Kolkata
+            ZonedDateTime nowKolkata = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime startOfDay = nowKolkata.toLocalDate().atStartOfDay(ZoneId.of("Asia/Kolkata"));
+            ZonedDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
+
+            // Convert to UTC (because @CreationTimestamp uses UTC)
+            ZonedDateTime startUTC = startOfDay.withZoneSameInstant(ZoneId.of("UTC"));
+            ZonedDateTime endUTC = endOfDay.withZoneSameInstant(ZoneId.of("UTC"));
+
+            int gameCount = gameRepository.countByVendorEntityAndCreatedDateBetween(vendor, startUTC, endUTC);
+            int leagueCount = leagueRepository.countByVendorEntityAndCreatedDateBetween(vendor, startUTC, endUTC);
+            int tournamentCount = tournamentRepository.countByVendorIdAndCreatedDateBetween(vendorId, startUTC, endUTC);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("games", gameCount);
+            result.put("leagues", leagueCount);
+            result.put("tournaments", tournamentCount);
+            result.put("total", gameCount + leagueCount + tournamentCount);
+
+            return result;
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            throw new RuntimeException("Error fetching today's created content count", e);
+        }
+    }
 
 
 

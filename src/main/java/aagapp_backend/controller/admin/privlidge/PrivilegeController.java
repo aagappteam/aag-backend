@@ -52,11 +52,11 @@ public class PrivilegeController {
     @Autowired
     private ResponseService responseService;
 
-    @PostMapping("/reload-mapping")
+/*    @PostMapping("/reload-mapping")
     public String reloadMappings() {
         privilegeMappingCache.reload();
         return "Privilege Mappings Reloaded";
-    }
+    }*/
 
 
     @PostMapping

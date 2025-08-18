@@ -15,13 +15,17 @@ import aagapp_backend.enums.VendorStatus;
 import aagapp_backend.enums.WithdrawalStatus;
 import aagapp_backend.enums.WithdrawalType;
 import aagapp_backend.repository.NotificationRepository;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
 import aagapp_backend.repository.withdrawrequest.CustomerWithdrawalRequestRepository;
 import aagapp_backend.services.CustomCustomerService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.RoleService;
 import aagapp_backend.services.admin.InvoiceServiceAdmin;
+import aagapp_backend.services.bonus.BonusOfferService;
+import aagapp_backend.services.dashboard.CouponService;
 import aagapp_backend.services.exception.BusinessException;
 import aagapp_backend.services.exception.ExceptionHandlingService;
+import aagapp_backend.services.referal.ReferralService;
 import aagapp_backend.services.vendor.VenderService;
 import aagapp_backend.services.wallet.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +48,25 @@ import java.util.Map;
 @RequestMapping("/wallet")
 public class WalletController {
 
+
+    @Autowired
+    private ReferralService referralService;
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
+
     @Autowired
     private WalletService walletService;
+
+    @Autowired
+    private CouponService couponService;
+
+    @Autowired
+    private BonusOfferService bonusOfferService;
+
+    @Autowired
+    private CustomCustomerService customCustomerService;
+
 
     @Autowired
     private RoleService roleService;
@@ -59,8 +80,7 @@ public class WalletController {
     @Autowired
     private ExceptionHandlingService exceptionHandling;
 
-    @Autowired
-    private CustomCustomerService customCustomerService;
+
 
     @Autowired
     private VenderService vendorService;
@@ -75,7 +95,7 @@ public class WalletController {
     private CustomerWithdrawalRequestRepository customerWithdrawalRequestRepository;
 
     // Endpoint to add balance to the wallet
-    @PostMapping("/addBalance")
+/*    @PostMapping("/addBalance")
     public ResponseEntity<?> addBalance(@RequestBody AddBalanceRequest addBalanceRequest, @RequestHeader(value = "Authorization") String authorization) {
         try {
             // Validate Authorization header
@@ -129,12 +149,13 @@ public class WalletController {
                 CustomCustomer customer = customCustomerService.getCustomerById(userId);
                 notification.setCustomerId(customer.getId());
             }
-/*
-            notification.setType(NotificationType.WALLET_CREDIT);  // Example NotificationType for a successful payment
-*/
+
+
             notification.setDescription("Wallet balance added"); // Example NotificationType for a successful
             notification.setAmount((double) amount);
-            notification.setDetails("Rs. " +amount + " added to Wallet"); // Example NotificationType for a successful
+//            notification.setDetails("Rs. " +amount + " added to Wallet"); // Example NotificationType for a successful
+            BigDecimal formattedAmount = BigDecimal.valueOf(amount).stripTrailingZeros();
+            notification.setDetails("Rs. " + formattedAmount.toPlainString() + " added to Wallet");
 
             notificationRepository.save(notification);
             invoiceServiceAdmin.createInvoiceForCustomer((double)amount, customerId);
@@ -145,6 +166,133 @@ public class WalletController {
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (IllegalStateException e) {
             // Handle specific case when the wallet is not found
+            return responseService.generateErrorResponse("No wallet found for customer with ID " + addBalanceRequest.getCustomerId(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            exceptionHandling.handleException(e);
+            return responseService.generateErrorResponse("Error adding balance: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }*/
+
+    @PostMapping("/addBalance")
+    public ResponseEntity<?> addBalance(@RequestBody AddBalanceRequest addBalanceRequest,
+                                        @RequestHeader(value = "Authorization") String authorization) {
+        try {
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
+                return responseService.generateErrorResponse("Invalid or missing Authorization header", HttpStatus.BAD_REQUEST);
+            }
+
+            String token = authorization.substring(7);
+            Long customerId = addBalanceRequest.getCustomerId();
+            float amount = addBalanceRequest.getAmount();
+            boolean isTest = addBalanceRequest.getIsTest();
+            String couponCode = addBalanceRequest.getCouponCode(); // Optional
+
+            // Validate user status
+            CustomCustomer customer = customCustomerService.getCustomerById(customerId);
+            if (customer.getStatus() != VendorStatus.ACTIVE) {
+                throw new BusinessException("You are Suspended or Blocked", HttpStatus.BAD_REQUEST);
+            }
+
+            // Validate token & user
+            Long userId = jwtUtil.extractId(token);
+            Integer role = jwtUtil.extractRoleId(token);
+
+            if (userId == null) {
+                return responseService.generateErrorResponse("Invalid or expired token", HttpStatus.UNAUTHORIZED);
+            }
+
+            if (!userId.equals(customerId)) {
+                return responseService.generateErrorResponse("You are not authorized to perform this action", HttpStatus.FORBIDDEN);
+            }
+
+            if (amount <= 0) {
+                return responseService.generateErrorResponse("Amount must be greater than 0", HttpStatus.BAD_REQUEST);
+            }
+
+            // Check and apply download bonus if first recharge
+            if (customCustomerService.isFirstRecharge(customerId)) {
+                float downloadBonus = Constant.DOWNLOAD_BONUS;
+                customCustomerService.addBonusAndUpdateCoupon(customerId, downloadBonus, "AAG_DOWNLOAD");
+
+
+                customer.setFirstRechargeDone(true);
+
+                // Save updated user
+                customCustomerRepository.save(customer);
+
+                Notification downloadBonusNotification = new Notification();
+                downloadBonusNotification.setRole("Customer");
+                downloadBonusNotification.setCustomerId(customerId);
+                downloadBonusNotification.setDescription("Welcome Bonus!");
+                downloadBonusNotification.setAmount((double) downloadBonus);
+                downloadBonusNotification.setDetails(Constant.DOWNLOAD_BONUS_DESCRIPTION);
+                notificationRepository.save(downloadBonusNotification);
+
+
+                String referredBy = customer.getReferredBy();
+                if (referredBy != null && !referredBy.trim().isEmpty()) {
+                    referralService.updateReferrerEarnings(referredBy);
+                }
+            }
+
+
+            Wallet updatedWallet = walletService.addBalanceToWallet(customerId, amount, isTest);
+
+            float bonusAmount = 0f;
+            if (amount == 200) {
+                bonusAmount = 100;
+//                appliedCoupon = "AUTO_50PERCENT_200";
+            } else if (amount == 500) {
+                bonusAmount = 500;
+//                appliedCoupon = "AUTO_100PERCENT_500";
+            } else if (amount == 1000) {
+                bonusAmount = 500;
+//                appliedCoupon = "AUTO_FLAT500_1000";
+            }
+
+
+
+            // Add bonus and save coupon code
+            if (bonusAmount > 0) {
+                customCustomerService.addBonusAndUpdateCoupon(customerId, bonusAmount, couponCode);
+
+                // Send bonus notification
+                Notification bonusNotification = new Notification();
+                bonusNotification.setRole("Customer");
+                bonusNotification.setCustomerId(customerId);
+                bonusNotification.setDescription("Bonus Added!");
+                bonusNotification.setAmount((double) bonusAmount);
+                BigDecimal formattedBonus = BigDecimal.valueOf(bonusAmount).stripTrailingZeros();
+                bonusNotification.setDetails("You received Rs. " + formattedBonus.toPlainString() + " as bonus");
+                notificationRepository.save(bonusNotification);
+            }
+
+            // Notification for wallet balance
+            Notification notification = new Notification();
+            notification.setRole(role == Constant.VENDOR_ROLE ? "Vendor" : "Customer");
+
+            if (role == Constant.VENDOR_ROLE) {
+                VendorEntity vendor = vendorService.getServiceProviderById(userId);
+                notification.setVendorId(vendor.getService_provider_id());
+            } else {
+                notification.setCustomerId(customerId);
+            }
+
+            notification.setDescription("Wallet balance added");
+            notification.setAmount((double) amount);
+            BigDecimal formattedAmount = BigDecimal.valueOf(amount).stripTrailingZeros();
+            notification.setDetails("Rs. " + formattedAmount.toPlainString() + " added to Wallet");
+            notificationRepository.save(notification);
+
+            // Generate invoice
+            invoiceServiceAdmin.createInvoiceForCustomer((double) amount, customerId);
+
+            return responseService.generateSuccessResponse("Balance added successfully", updatedWallet, HttpStatus.OK);
+
+        } catch (BusinessException e) {
+            exceptionHandling.handleException(HttpStatus.BAD_REQUEST, e);
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalStateException e) {
             return responseService.generateErrorResponse("No wallet found for customer with ID " + addBalanceRequest.getCustomerId(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
             exceptionHandling.handleException(e);

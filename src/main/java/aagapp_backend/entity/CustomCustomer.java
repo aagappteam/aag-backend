@@ -2,6 +2,7 @@ package aagapp_backend.entity;
 
 import aagapp_backend.entity.devices.UserDevice;
 import aagapp_backend.entity.players.Player;
+import aagapp_backend.entity.social.SocialUser;
 import aagapp_backend.entity.wallet.Wallet;
 import aagapp_backend.enums.KycStatus;
 import aagapp_backend.enums.ProfileStatus;
@@ -31,9 +32,13 @@ import java.util.Set;
                 @Index(name = "idx_email", columnList = "email"),
                 @Index(name = "idx_profile_status_CUSTOM_USER", columnList = "profile_status"),
                 @Index(name = "idx_kyc_status", columnList = "kyc_status"),
-                @Index(name = "idx_created_date_CUSTOM_USER", columnList = "created_date")
+                @Index(name = "idx_created_date_CUSTOM_USER", columnList = "created_date"),
+                @Index(name = "idx_referral_code_CUSTOM_USER", columnList = "referral_code"),
+                @Index(name = "idx_referred_by_CUSTOM_USER", columnList = "referred_by")
+//                @Index(name = "idx_coupon_code_CUSTOM_USER", columnList = "coupon_code")
         }
 )
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -77,7 +82,6 @@ public class CustomCustomer {
     @Column(name = "referral_code", unique = true)
     private String referralCode;
 
-
     @Nullable
     @Column(name = "referred_count")
     private int referralCount;
@@ -108,6 +112,8 @@ public class CustomCustomer {
     @Nullable
     @Column(name = "otp")
     private String otp;
+
+
 
     /*@Nullable
     @Column(name = "father_name")
@@ -143,13 +149,7 @@ public class CustomCustomer {
     @Column(name = "last_active_at")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastActiveAt;
-   /* @Nullable
-    @Column(name = "district")
-    private String district;
 
-    @Nullable
-    @Column(name = "city")
-    private String city;*/
 
     @Column(name = "fcm_token")
     private String fcmToken;
@@ -169,6 +169,33 @@ public class CustomCustomer {
     @JsonIgnore
     private Player player;
 
+    @Column(name = "last_coupon_code")
+    private String couponCode; // Record which coupon was used last
+
+
+    @Column(name = "is_first_recharge_done", nullable = false)
+    private boolean isFirstRechargeDone = false;
+
+    @Nullable
+    @Column(name = "referred_by")
+    private String referredBy; // Stores referral code of the referrer
+
+    @Column(name = "xp_points", nullable = false)
+    private int xpPoints = 0;
+
+    @Column(name = "weekly_boosters_left", nullable = false)
+    private int weeklyBoostersLeft = 0;
+
+    private Boolean isWeeklyBoosterActive= false;
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SocialUser> socials = new ArrayList<>();
+
+    @JsonIgnore
+    @Column(name = "booster_activated_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date boosterActivatedAt;
+
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -186,5 +213,12 @@ public class CustomCustomer {
     }
 
 
+
+    public boolean isWeeklyBoosterActive() {
+        if (boosterActivatedAt == null) return false;
+
+        long twoHoursInMillis = 2 * 60 * 60 * 1000L;
+        return (new Date().getTime() - boosterActivatedAt.getTime()) < twoHoursInMillis;
+    }
 
 }

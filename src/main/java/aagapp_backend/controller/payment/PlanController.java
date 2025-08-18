@@ -1,5 +1,6 @@
 package aagapp_backend.controller.payment;
 
+import aagapp_backend.components.Constant;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.payment.PaymentEntity;
 import aagapp_backend.entity.payment.PlanEntity;
@@ -7,6 +8,7 @@ import aagapp_backend.entity.payment.PlanUpgradeRequest;
 import aagapp_backend.enums.RequestStatus;
 import aagapp_backend.enums.VendorLevelPlan;
 import aagapp_backend.repository.payment.PaymentPlanUpgradeRepository;
+import aagapp_backend.services.CommonService;
 import aagapp_backend.services.ResponseService;
 import aagapp_backend.services.exception.ExceptionHandlingImplement;
 import aagapp_backend.services.payment.PlanService;
@@ -29,6 +31,9 @@ public class PlanController {
 
     @Autowired
     private PaymentPlanUpgradeRepository paymentPlanUpgradeRepository;
+
+    @Autowired
+    private CommonService commonService;
 
     @Autowired
     private PlanService planService;
@@ -246,6 +251,24 @@ public class PlanController {
             request.setRequestDate(LocalDateTime.now());
 
             paymentPlanUpgradeRepository.save(request);
+
+
+            // Send notification to all admins about the upgrade request
+            String notificationTitle = "Plan Upgrade";
+            String notificationMessage = "A new plan upgrade request has been submitted. Please review the request for Vendor ID: " + vendorId + ".";
+
+            String submittedByName = vendor.getFirst_name() + " " + vendor.getLast_name();
+
+            commonService.notifyAdminsByRole(
+                    Constant.ADMIN_ROLE,
+                    notificationTitle,
+                    submittedByName,
+                    vendorId,
+                    notificationMessage,
+                    vendorId,
+                    Constant.ROLE_VENDOR
+            );
+
 
             return ResponseService.generateSuccessResponse("Plan upgrade request submitted successfully!", request, HttpStatus.OK);
 

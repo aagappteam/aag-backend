@@ -13,6 +13,8 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(
@@ -35,10 +37,23 @@ public class CustomAdmin
     @Column(name = "admin_id")
     private Long adminId;
 
+/*    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "custom_admin_roles",
+            joinColumns = @JoinColumn(name = "admin_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();*/
 
-    private int role;
+
+
+    private Integer role;
+
     private String password;
     private String user_name;
+
+    private String email;
+
     private String otp;
     @Size(min = 9, max = 13)
     private String mobileNumber;
@@ -48,6 +63,9 @@ public class CustomAdmin
     @Column(length = 512)
     private String token;
     private int active=0;
+
+    @Column(name = "created_by")
+    private String createdBy;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
@@ -59,16 +77,4 @@ public class CustomAdmin
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private String updated_at;
 
-   /* public CustomAdmin(Long admin_id, int role, String password, String user_name, String mobileNumber, String country_code, int active, Date created_at, String created_by) {
-        this.admin_id = admin_id;
-        this.role = role;
-        this.password = password;
-        this.user_name=user_name;
-        this.mobileNumber = mobileNumber;
-        this.country_code = country_code;
-        this.active = active;
-        this.created_at = created_at;
-        this.updated_at = updated_at;
-
-    }*/
 }

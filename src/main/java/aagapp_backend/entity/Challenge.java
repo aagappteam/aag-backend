@@ -78,6 +78,6 @@ public class Challenge {
     }
 
     public enum ChallengeStatus {
-        PENDING, ACCEPTED, REJECTED
+        PENDING, ACCEPTED, REJECTED,EXPIRED
     }
 }

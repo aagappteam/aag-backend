@@ -31,7 +31,6 @@ import java.util.List;
         @Index(name = "idx_vendor_id", columnList = "service_provider_id"),
         @Index(name = "idx_vendor_email", columnList = "primary_email"),
         @Index(name = "idx_vendor_referral_code", columnList = "referral_code"),
-        @Index(name = "idx_vendor_is_active", columnList = "is_active"),
         @Index(name = "idx_vendor_is_paid", columnList = "is_paid"),
         @Index(name = "idx_vendor_mobile_number", columnList = "mobileNumber"),
         @Index(name = "idx_vendor_league_status", columnList = "league_status"),
@@ -258,21 +257,6 @@ public class VendorEntity {
     @OneToOne(mappedBy = "vendorEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private VendorSubmissionEntity submissionEntity;
 
-    // Custom getter for first_name
-    public String getFirst_name() {
-        if (isPrivate != null && isPrivate) {
-            return "Anonymous";
-        }
-        return first_name;
-    }
-
-    // Custom getter for last_name
-    public String getLast_name() {
-        if (isPrivate != null && isPrivate) {
-            return "User";
-        }
-        return last_name;
-    }
 
 
     @Transient

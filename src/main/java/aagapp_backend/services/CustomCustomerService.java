@@ -4,6 +4,10 @@ import aagapp_backend.components.Constant;
 import aagapp_backend.dto.PermissionUpdateRequest;
 import aagapp_backend.entity.CustomCustomer;
 
+import aagapp_backend.entity.wallet.Wallet;
+import aagapp_backend.repository.customcustomer.CustomCustomerRepository;
+import aagapp_backend.repository.wallet.WalletRepository;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import aagapp_backend.enums.ProfileStatus;
@@ -32,6 +36,12 @@ public class CustomCustomerService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private WalletRepository walletRepository;
+
+    @Autowired
+    private CustomCustomerRepository customCustomerRepository;
 
     private EntityManager entityManager;
 
@@ -361,6 +371,30 @@ public class CustomCustomerService {
             return ResponseService.generateErrorResponse("Error to get profile picture: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    public void addBonusAndUpdateCoupon(Long customerId, float bonusAmount, String couponCode) {
+        CustomCustomer customer = customCustomerRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+        BigDecimal currentBonus = customer.getBonusBalance() != null ? customer.getBonusBalance() : BigDecimal.ZERO;
+        customer.setBonusBalance(currentBonus.add(BigDecimal.valueOf(bonusAmount)));
+
+        if (couponCode != null && !couponCode.isEmpty()) {
+            customer.setCouponCode(couponCode);
+        }
+
+        customCustomerRepository.save(customer);
+    }
+
+    public boolean isFirstRecharge(Long customerId) {
+        CustomCustomer customer = customCustomerRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+        return !customer.isFirstRechargeDone();
+    }
+
+
+
 }
 
 

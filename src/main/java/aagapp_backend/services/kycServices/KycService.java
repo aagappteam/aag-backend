@@ -24,8 +24,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class KycService {
@@ -73,6 +75,7 @@ public class KycService {
                 mailId = vendor.getPrimary_email();
                 name = vendor.getName();
                 vendor.setKycStatus(KycStatus.PENDING);
+                vendorRepository.save(vendor);
             } else if (role.equalsIgnoreCase("user") || role.equalsIgnoreCase("customer")) {
                 CustomCustomer user = customCustomerRepository.findById(userOrVendorId)
                         .orElseThrow(() -> new RuntimeException("User not found"));
@@ -80,6 +83,8 @@ public class KycService {
                 mailId = user.getEmail();
                 name = user.getName();
                 user.setKycStatus(KycStatus.PENDING);
+                customCustomerRepository.save(user);
+
             } else {
                 throw new RuntimeException("Invalid role");
             }
@@ -173,12 +178,12 @@ public class KycService {
             description = "KYC Verified";
             details = "Your KYC has been successfully verified.";
             title = "KYC Verified Successfully";
-            if (email != null) emailService.sendKycVerifiedEmail(email, name);
+            if (email != null && isValidEmail(email)) emailService.sendKycVerifiedEmail(email, name);
         } else if (isVerified == KycStatus.REJECTED) {
             description = "KYC Rejected";
             details = "Your KYC verification has been rejected.";
             title = "KYC Rejected";
-            if (email != null) emailService.sendKycRejectedEmail(email, name);
+            if (email != null && isValidEmail(email)) emailService.sendKycRejectedEmail(email, name);
         } else {
             description = "KYC Status Updated";
             details = "Your KYC status was changed to: " + isVerified.name();
@@ -192,9 +197,7 @@ public class KycService {
 
                 if (customer.getBonusBalance() != null) {
                     BigDecimal bonusToAdd = Constant.KYC_VERIFICATION_BONUS;
-
                     customer.setBonusBalance(customer.getBonusBalance().add(bonusToAdd));
-
                     customCustomerRepository.save(customer);
                 }
             }
@@ -219,13 +222,38 @@ public class KycService {
         kycRepository.save(kyc);
 
         // Log admin action
-        String performedBy = SecurityContextHolder.getContext().getAuthentication().getName();
-        String activity = "KYC status updated to " + isVerified + " for " + role + " ID " + userOrVendorId;
-        adminLogsService.logAction(activity, role, performedBy, userOrVendorId, "KYC Verification");
+
+        String emailperformedby = null;
+
+        Object principalObj = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principalObj instanceof Map<?, ?> map) {
+            Long adminId = (Long) map.get("adminId");
+             emailperformedby = (String) map.get("email");
+            String nameperformedby = (String) map.get("name");
+
+            System.out.println("Admin ID: " + adminId);
+            System.out.println("Admin Email: " + emailperformedby);
+            System.out.println("Admin Name: " + nameperformedby);
+        }
+
+
+        // Optional, if you still want this
+        String performedBy = SecurityContextHolder.getContext().getAuthentication().getName(); // will print "1=admin@example.com"
+
+        String activity = "KYC status updated to " + isVerified + " for " + role + " which has ID " + userOrVendorId;
+
+        adminLogsService.logAction(activity, Constant.ROLE_ADMIN, emailperformedby, userOrVendorId, "KYC Verification");
+
 
         return kyc;
     }
 
+
+
+    private boolean isValidEmail(String email) {
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    }
 
 
 /*    @Transactional

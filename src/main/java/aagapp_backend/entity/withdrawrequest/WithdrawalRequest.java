@@ -26,6 +26,8 @@ public class WithdrawalRequest {
 
     private Long influencerId;
 
+    private String bankName;
+
     private BigDecimal amount;
 
     private String reason;

@@ -92,16 +92,16 @@ public class Game {
     @PrePersist
     public void prePersist() {
         if (this.minPlayersPerTeam == null) {
-            this.minPlayersPerTeam = 1; // Default value for minPlayersPerTeam
+            this.minPlayersPerTeam = 1;
         }
         if (this.maxPlayersPerTeam == null) {
-            this.maxPlayersPerTeam = 2; // Default value for maxPlayersPerTeam
+            this.maxPlayersPerTeam = 2;
         }
         if (this.endDate == null) {
             this.endDate = ZonedDateTime.now().plusHours(4);
         }
         if (this.move == null) {
-            this.move = 12; // Default value for move if not provided
+            this.move = 12;
         }
     }
 

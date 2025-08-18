@@ -2,7 +2,10 @@ package aagapp_backend.controller.league;
 
 import aagapp_backend.components.ZonedDateTimeAdapter;
 import aagapp_backend.dto.*;
+import aagapp_backend.dto.admin.league.AdminLeagueUpdateRequest;
 import aagapp_backend.entity.Challenge;
+import aagapp_backend.entity.CustomAdmin;
+import aagapp_backend.entity.CustomCustomer;
 import aagapp_backend.entity.VendorEntity;
 import aagapp_backend.entity.league.League;
 import aagapp_backend.entity.league.LeagueResultRecord;
@@ -31,7 +34,9 @@ import aagapp_backend.services.pricedistribute.MatchService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import jakarta.persistence.EntityManager;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,10 +50,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.naming.LimitExceededException;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -171,7 +173,8 @@ public class LeagueController {
     ) {
 
         try {
-            Pageable pageable = PageRequest.of(page, size);
+//            Pageable pageable = PageRequest.of(page, size);
+            PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
 
             Page<League> leagues = leagueService.getLeaguesWithFilters(
                     name, gameName, challengingVendorId, challengingVendorName, fee, move,
@@ -390,36 +393,27 @@ public class LeagueController {
 
             League publishedLeague = leagueService.publishLeague(challenge, vendorId);
 
+            //  Notification for opponent vendor (who is publishing the game)
+            Notification opponentNotification = new Notification();
+            opponentNotification.setVendorId(vendorId);
+            opponentNotification.setRole("Vendor");
+            opponentNotification.setDescription("League Submitted for Review");
+            opponentNotification.setDetails("League submitted. Pending admin approval before it goes live.");
+            notificationRepository.save(opponentNotification);
 
-/*            // Now create a single notification for the vendor
-            Notification notification = new Notification();
-            notification.setRole("Vendor");
+            //  Notification for challenge creator (vendor who created the challenge)
+            Notification creatorNotification = new Notification();
+            creatorNotification.setVendorId(challenge.getVendorId());
+            creatorNotification.setRole("Vendor");
+            creatorNotification.setDescription("League Submitted for Review");
+            creatorNotification.setDetails("Opponent accepted the challenge. League submitted for admin review.");
+            notificationRepository.save(creatorNotification);
 
-            notification.setVendorId(vendorId);
-            if (challenge.getScheduledAt() != null) {
-*//*
-                notification.setType(NotificationType.GAME_SCHEDULED);  // Example NotificationType for a successful payment
-*//*
-                notification.setDescription("Scheduled Game"); // Example NotificationType for a successful
-                notification.setDetails("Game has been Scheduled"); // Example NotificationType for a successful
-            } else {
-*//*
-                notification.setType(NotificationType.GAME_PUBLISHED);  // Example NotificationType for a successful payment
-*//*
-                notification.setDescription("Published Game"); // Example NotificationType for a successful
-                notification.setDetails("Game has been Published"); // Example NotificationType for a successful
-            }
-
-
-
-
-
-            notificationRepository.save(notification);*/
 
             if (challenge.getScheduledAt() != null) {
-                return responseService.generateSuccessResponse("League scheduled successfully", publishedLeague, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("League scheduled successfully and submitted for review", publishedLeague, HttpStatus.CREATED);
             } else {
-                return responseService.generateSuccessResponse("League published successfully", publishedLeague, HttpStatus.CREATED);
+                return responseService.generateSuccessResponse("League published successfully and submitted for review", publishedLeague, HttpStatus.CREATED);
             }
         }catch (BusinessException e){
             return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -442,15 +436,34 @@ public class LeagueController {
         }
     }
 
+
+    @PostMapping("/update-leagues-by-admin")
+    public ResponseEntity<?> updateLeagueStatusByAdmin(@Valid @RequestBody AdminLeagueUpdateRequest request) {
+        try {
+            League updatedLeague = leagueService.updateLeagueStatusByAdmin(request);
+            return responseService.generateSuccessResponse("League status updated", updatedLeague, HttpStatus.OK);
+        } catch (BusinessException e) {
+            return responseService.generateErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (NoSuchElementException e) {
+            return responseService.generateErrorResponse("Entity not found: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (IllegalArgumentException e) {
+            return responseService.generateErrorResponse("Invalid data: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            exceptionHandling.handleException(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            return responseService.generateErrorResponse("Error updating league status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/get-vendors-with-available-leagues")
     public ResponseEntity<?> getVendorsWithAvailableLeagues() {
         try {
-            // Fetch all vendors with league status 'AVAILABLE'
-//            List<VendorEntity> vendors = vendorRepository.findByLeagueStatus(LeagueStatus.AVAILABLE);
-            // Fetch vendors that are both AVAILABLE and ACTIVE
-            List<VendorEntity> vendors = vendorRepository.findByLeagueStatusAndStatus(
+//            Only fetch vendors that have been active for the last 24 hours & league status 'AVAILABLE'
+            Date oneDayAgo = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000L);
+
+            List<VendorEntity> vendors = vendorRepository.findActiveAvailableVendorsWithRecentActivity(
                     LeagueStatus.AVAILABLE,
-                    VendorStatus.ACTIVE
+                    VendorStatus.ACTIVE,
+                    oneDayAgo
             );
 
             if (vendors.isEmpty()) {

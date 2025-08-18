@@ -266,7 +266,7 @@ return ResponseService.generateSuccessResponseWithCount("List of customers : ", 
     }
 
 
-    @Cacheable(value = "customerDetailsCache", key = "#userId")
+//    @Cacheable(value = "customerDetailsCache", key = "#userId")
     @Transactional
     @GetMapping("/get/{userId}")
     public ResponseEntity<?> getUserById(@PathVariable Long userId) {
