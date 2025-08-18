@@ -11,20 +11,20 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UserNotificationRepository extends JpaRepository<UserNotification, Long>, JpaSpecificationExecutor<UserNotification> {
     // Find notifications by vendor ID and filter by non-null amount
-    Page<Notification> findByVendorIdAndAmountIsNotNullOrderByCreatedDateDesc(Long vendorId, Pageable pageable);
+    Page<UserNotification> findByVendorIdAndAmountIsNotNullOrderByCreatedDateDesc(Long vendorId, Pageable pageable);
 
     // Find notifications by customer ID and filter by non-null amount
-    Page<Notification> findByCustomerIdAndAmountIsNotNullOrderByCreatedDateDesc(Long customerId, Pageable pageable);
+    Page<UserNotification> findByCustomerIdAndAmountIsNotNullOrderByCreatedDateDesc(Long customerId, Pageable pageable);
 
     // Fetch notifications for Vendor where amount is null
-    Page<Notification> findByVendorIdAndAmountIsNullOrderByCreatedDateDesc(Long vendorId, Pageable pageable);
+    Page<UserNotification> findByVendorIdAndAmountIsNullOrderByCreatedDateDesc(Long vendorId, Pageable pageable);
 
     // Fetch notifications for Customer where amount is null
-    Page<Notification> findByCustomerIdAndAmountIsNullOrderByCreatedDateDesc(Long customerId, Pageable pageable);
+    Page<UserNotification> findByCustomerIdAndAmountIsNullOrderByCreatedDateDesc(Long customerId, Pageable pageable);
 
     // Original methods for regular fetching
-    Page<Notification> findByVendorIdOrderByCreatedDateDesc(Long vendorId, Pageable pageable);
-    Page<Notification> findByCustomerIdOrderByCreatedDateDesc(Long customerId, Pageable pageable);
+    Page<UserNotification> findByVendorIdOrderByCreatedDateDesc(Long vendorId, Pageable pageable);
+    Page<UserNotification> findByCustomerIdOrderByCreatedDateDesc(Long customerId, Pageable pageable);
 
 
 }
