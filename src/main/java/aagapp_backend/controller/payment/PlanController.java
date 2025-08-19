@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @RestController
@@ -127,10 +128,11 @@ public class PlanController {
             // Fetch current plan of the vendor if vendorId is provided
             PlanEntity currentPlan = null;
 
+            LocalDateTime expiryDate=null;
+
             if (vendorId != null) {
                 VendorEntity vendor = vendorService.getServiceProviderById(vendorId);
-                System.out.println(vendor.getPayments() + " frds");
-                if (vendor != null && vendor.getPayments() != null) {
+                if (vendor.getPayments() != null) {
                     List<PaymentEntity> payments = vendor.getPayments();
 
                     Optional<PaymentEntity> activePayment = payments
@@ -145,7 +147,20 @@ public class PlanController {
                     if (activePayment.isPresent()) {
                         Long planId = activePayment.get().getPlanId();
                         currentPlan = planService.getPlanById(planId); //
-                        // Retrieve plan details using planId
+
+
+                        expiryDate=activePayment.get().getExpiryAt();
+                    }else {
+                        // 2. No active payment → fallback to latest payment by createdAt
+                        Optional<PaymentEntity> latestPayment = payments.stream()
+                                .sorted(Comparator.comparing(PaymentEntity::getCreatedAt).reversed())
+                                .findFirst();
+
+                        if (latestPayment.isPresent()) {
+                            PaymentEntity payment = latestPayment.get();
+                            currentPlan = planService.getPlanById(payment.getPlanId());
+                            expiryDate = payment.getExpiryAt();
+                        }
                     }
 
 
@@ -183,8 +198,13 @@ public class PlanController {
 
             // Create response with all plans and current vendor plan
             Map<String, Object> response = new HashMap<>();
+
             response.put("allPlans", planEntities);
             response.put("currentPlan", currentPlan);
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            response.put("expiryDate", expiryDate != null ? expiryDate.format(formatter) : null);
+//            response.put("expiryDate",expiryDate);
             response.put("activePlanUpgradeRequest", activePlanMap);
 
             return ResponseService.generateSuccessResponse("All Plans fetched successfully!", response, HttpStatus.OK);
